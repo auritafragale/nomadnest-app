@@ -7,16 +7,6 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
   ArrowLeft,
   MapPin,
   Calendar,
@@ -35,12 +25,12 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
-  Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
+import { ApplyDialog } from "@/components/applications/ApplyDialog";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -121,8 +111,6 @@ const ListingDetail = () => {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [selectedDateId, setSelectedDateId] = useState<string | null>(null);
-  const [applicationMessage, setApplicationMessage] = useState("");
-  const [isApplying, setIsApplying] = useState(false);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -188,43 +176,8 @@ const ListingDetail = () => {
     );
   };
 
-  const handleApply = async () => {
-    if (!user || !selectedDateId || !listing) return;
-
-    setIsApplying(true);
-
-    try {
-      const { error } = await supabase.from("applications").insert({
-        listing_id: listing.id,
-        sit_dates_id: selectedDateId,
-        sitter_user_id: user.id,
-        message: applicationMessage || null,
-        status: "applied",
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Application sent!",
-        description: "The owner will review your application soon",
-      });
-
-      setApplyDialogOpen(false);
-      setApplicationMessage("");
-      setSelectedDateId(null);
-    } catch (error: any) {
-      console.error("Error applying:", error);
-      toast({
-        title: "Failed to apply",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      });
-    } finally {
-      setIsApplying(false);
-    }
-  };
-
   const openDates = listing?.sit_dates.filter((d) => d.status === "open") || [];
+  const selectedSitDate = openDates.find((d) => d.id === selectedDateId) || null;
   const isOwner = user?.id === listing?.owner_user_id;
   const canApply = user && !isOwner && (role === "sitter" || role === "both");
 
@@ -665,72 +618,24 @@ const ListingDetail = () => {
 
               {/* Apply Button */}
               {canApply && openDates.length > 0 && (
-                <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="w-full" size="lg">
-                      Apply for this Sit
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Apply for this sit</DialogTitle>
-                      <DialogDescription>
-                        Send a message to the owner explaining why you'd be a
-                        great fit
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <div className="space-y-2">
-                        <Label>Selected dates</Label>
-                        {selectedDateId ? (
-                          <div className="p-3 bg-muted rounded-lg">
-                            {(() => {
-                              const date = openDates.find(
-                                (d) => d.id === selectedDateId
-                              );
-                              if (!date) return null;
-                              return (
-                                <span>
-                                  {format(parseISO(date.start_date), "MMM d")} -{" "}
-                                  {format(
-                                    parseISO(date.end_date),
-                                    "MMM d, yyyy"
-                                  )}
-                                </span>
-                              );
-                            })()}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-destructive">
-                            Please select dates from the sidebar first
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="message">Your message</Label>
-                        <Textarea
-                          id="message"
-                          placeholder="Introduce yourself and explain why you'd be a great sitter for these pets..."
-                          value={applicationMessage}
-                          onChange={(e) =>
-                            setApplicationMessage(e.target.value)
-                          }
-                          rows={5}
-                        />
-                      </div>
-                      <Button
-                        className="w-full"
-                        onClick={handleApply}
-                        disabled={!selectedDateId || isApplying}
-                      >
-                        {isApplying ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : null}
-                        Send Application
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <>
+                  <Button 
+                    className="w-full" 
+                    size="lg"
+                    onClick={() => setApplyDialogOpen(true)}
+                    disabled={!selectedDateId}
+                  >
+                    {selectedDateId ? "Apply for this Sit" : "Select dates to apply"}
+                  </Button>
+                  <ApplyDialog
+                    open={applyDialogOpen}
+                    onOpenChange={setApplyDialogOpen}
+                    listingId={listing.id}
+                    listingTitle={listing.title}
+                    sitDate={selectedSitDate}
+                    onSuccess={() => setSelectedDateId(null)}
+                  />
+                </>
               )}
 
               {!user && (
