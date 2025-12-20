@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { Calendar, Loader2, Star, User, Sparkles } from "lucide-react";
+import { sendNotification } from "@/lib/notifications";
 
 interface SitDate {
   id: string;
@@ -117,6 +118,33 @@ export const ApplyDialog = ({
       });
 
       if (error) throw error;
+
+      // Get listing owner and sitter profile for notification
+      const { data: listing } = await supabase
+        .from("listings")
+        .select("owner_user_id")
+        .eq("id", listingId)
+        .single();
+
+      const { data: sitterProfile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", user.id)
+        .single();
+
+      // Send notification to owner
+      if (listing?.owner_user_id) {
+        sendNotification({
+          type: "new_application",
+          recipientUserId: listing.owner_user_id,
+          data: {
+            listingTitle,
+            sitterName: [sitterProfile?.first_name, sitterProfile?.last_name].filter(Boolean).join(" ") || "A sitter",
+            startDate: format(parseISO(sitDate.start_date), "MMM d, yyyy"),
+            endDate: format(parseISO(sitDate.end_date), "MMM d, yyyy"),
+          },
+        });
+      }
 
       toast({
         title: "Application sent!",

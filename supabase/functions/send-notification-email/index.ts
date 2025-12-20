@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import webpush from "https://esm.sh/web-push@3.6.7";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -37,6 +38,92 @@ const sendEmail = async (to: string, subject: string, html: string) => {
   return response.json();
 };
 
+const sendPushNotification = async (
+  supabase: any,
+  userId: string,
+  title: string,
+  body: string,
+  url: string,
+  type: string
+) => {
+  const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
+  const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
+
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    console.log('VAPID keys not configured, skipping push notification');
+    return;
+  }
+
+  try {
+    // Get user's push subscriptions
+    const { data: subscriptions, error } = await supabase
+      .from('push_subscriptions')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error fetching push subscriptions:', error);
+      return;
+    }
+
+    if (!subscriptions || subscriptions.length === 0) {
+      console.log('No push subscriptions found for user:', userId);
+      return;
+    }
+
+    console.log(`Sending push to ${subscriptions.length} subscription(s) for user ${userId}`);
+
+    // Configure web-push
+    webpush.setVapidDetails(
+      'mailto:admin@trustedpetsitter.com',
+      vapidPublicKey,
+      vapidPrivateKey
+    );
+
+    const payload = JSON.stringify({
+      title,
+      body,
+      url,
+      tag: type,
+    });
+
+    // Send to all subscriptions
+    const results = await Promise.allSettled(
+      subscriptions.map(async (sub: any) => {
+        try {
+          await webpush.sendNotification(
+            {
+              endpoint: sub.endpoint,
+              keys: { p256dh: sub.p256dh, auth: sub.auth },
+            },
+            payload
+          );
+          console.log('Push sent to:', sub.endpoint.substring(0, 50));
+          return { success: true };
+        } catch (err: any) {
+          console.error('Push failed:', err.message);
+          // Remove invalid subscriptions
+          if (err.statusCode === 404 || err.statusCode === 410) {
+            await supabase
+              .from('push_subscriptions')
+              .delete()
+              .eq('id', sub.id);
+            console.log('Removed invalid subscription:', sub.id);
+          }
+          return { success: false };
+        }
+      })
+    );
+
+    const successCount = results.filter(
+      (r) => r.status === 'fulfilled' && (r.value as any).success
+    ).length;
+    console.log(`Push notifications: ${successCount}/${subscriptions.length} successful`);
+  } catch (error) {
+    console.error('Error sending push notifications:', error);
+  }
+};
+
 const getEmailContent = (type: string, data: Record<string, string>) => {
   switch (type) {
     case "new_application":
@@ -48,6 +135,9 @@ const getEmailContent = (type: string, data: Record<string, string>) => {
           <p>Dates: ${data.startDate} - ${data.endDate}</p>
           <p><a href="${data.appUrl}/applications">View the application</a></p>
         `,
+        pushTitle: "New Application!",
+        pushBody: `${data.sitterName} applied for ${data.listingTitle}`,
+        pushUrl: "/applications",
       };
     case "application_status":
       return {
@@ -58,6 +148,9 @@ const getEmailContent = (type: string, data: Record<string, string>) => {
           ${data.status === "accepted" ? "<p>Congratulations! The owner will be in touch soon.</p>" : ""}
           <p><a href="${data.appUrl}/dashboard">View your dashboard</a></p>
         `,
+        pushTitle: `Application ${data.status === "accepted" ? "Accepted!" : "Updated"}`,
+        pushBody: `Your application for ${data.listingTitle} was ${data.status}`,
+        pushUrl: "/dashboard",
       };
     case "new_message":
       return {
@@ -70,6 +163,9 @@ const getEmailContent = (type: string, data: Record<string, string>) => {
           </blockquote>
           <p><a href="${data.appUrl}/inbox?conversation=${data.conversationId}">Reply now</a></p>
         `,
+        pushTitle: `Message from ${data.senderName}`,
+        pushBody: data.messagePreview.substring(0, 100),
+        pushUrl: `/inbox?conversation=${data.conversationId}`,
       };
     case "invite":
       return {
@@ -80,6 +176,9 @@ const getEmailContent = (type: string, data: Record<string, string>) => {
           <p>Dates: ${data.startDate} - ${data.endDate}</p>
           <p><a href="${data.appUrl}/dashboard">View the invitation</a></p>
         `,
+        pushTitle: "New Invitation!",
+        pushBody: `${data.ownerName} invited you to ${data.listingTitle}`,
+        pushUrl: "/dashboard",
       };
     case "review":
       return {
@@ -90,11 +189,17 @@ const getEmailContent = (type: string, data: Record<string, string>) => {
           ${data.text ? `<blockquote style="border-left: 3px solid #ccc; padding-left: 12px; color: #555;">${data.text}</blockquote>` : ""}
           <p><a href="${data.appUrl}/dashboard">View your profile</a></p>
         `,
+        pushTitle: "New Review!",
+        pushBody: `${data.reviewerName} left you a ${data.rating}-star review`,
+        pushUrl: "/dashboard",
       };
     default:
       return {
         subject: "NomadNest Notification",
         html: `<p>You have a new notification on NomadNest.</p>`,
+        pushTitle: "NomadNest",
+        pushBody: "You have a new notification",
+        pushUrl: "/dashboard",
       };
   }
 };
@@ -145,16 +250,27 @@ const handler = async (req: Request): Promise<Response> => {
       review: "email_reviews",
     };
 
+    const emailContent = getEmailContent(type, data);
+
+    // Always send push notification (regardless of email preferences)
+    await sendPushNotification(
+      supabaseClient,
+      recipientUserId,
+      emailContent.pushTitle,
+      emailContent.pushBody,
+      emailContent.pushUrl,
+      type
+    );
+
+    // Check if email notifications are enabled
     const prefKey = prefMap[type];
     if (prefs && prefKey && !prefs[prefKey]) {
       console.log(`User has disabled ${type} email notifications`);
       return new Response(
-        JSON.stringify({ message: "Email notifications disabled for this type" }),
+        JSON.stringify({ message: "Email notifications disabled, push sent" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const emailContent = getEmailContent(type, data);
 
     const fullHtml = `
       <!DOCTYPE html>
