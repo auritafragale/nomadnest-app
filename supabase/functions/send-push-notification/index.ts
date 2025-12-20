@@ -1,0 +1,135 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "https://esm.sh/web-push@3.6.7";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface PushPayload {
+  title: string;
+  body: string;
+  url?: string;
+  tag?: string;
+  data?: Record<string, unknown>;
+}
+
+interface RequestBody {
+  user_id: string;
+  payload: PushPayload;
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
+    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      console.error('VAPID keys not configured');
+      throw new Error('VAPID keys not configured');
+    }
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Supabase credentials not configured');
+      throw new Error('Supabase credentials not configured');
+    }
+
+    const { user_id, payload }: RequestBody = await req.json();
+    console.log('Sending push notification to user:', user_id, 'payload:', payload);
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get user's push subscriptions
+    const { data: subscriptions, error: subError } = await supabase
+      .from('push_subscriptions')
+      .select('*')
+      .eq('user_id', user_id);
+
+    if (subError) {
+      console.error('Error fetching subscriptions:', subError);
+      throw subError;
+    }
+
+    if (!subscriptions || subscriptions.length === 0) {
+      console.log('No push subscriptions found for user:', user_id);
+      return new Response(
+        JSON.stringify({ success: true, message: 'No subscriptions found' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Found ${subscriptions.length} subscriptions for user`);
+
+    // Configure web-push with VAPID details
+    webpush.setVapidDetails(
+      'mailto:admin@trustedpetsitter.com',
+      vapidPublicKey,
+      vapidPrivateKey
+    );
+
+    const results = await Promise.allSettled(
+      subscriptions.map(async (sub) => {
+        const pushSubscription = {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth,
+          },
+        };
+
+        try {
+          await webpush.sendNotification(
+            pushSubscription,
+            JSON.stringify(payload)
+          );
+          console.log('Push notification sent successfully to endpoint:', sub.endpoint.substring(0, 50));
+          return { success: true, endpoint: sub.endpoint };
+        } catch (error) {
+          const err = error as { statusCode?: number; message?: string };
+          console.error('Error sending to endpoint:', sub.endpoint.substring(0, 50), err.message);
+          
+          // If subscription is no longer valid, delete it
+          if (err.statusCode === 404 || err.statusCode === 410) {
+            console.log('Removing invalid subscription:', sub.id);
+            await supabase
+              .from('push_subscriptions')
+              .delete()
+              .eq('id', sub.id);
+          }
+          
+          return { success: false, endpoint: sub.endpoint, error: err.message };
+        }
+      })
+    );
+
+    const successCount = results.filter(
+      (r) => r.status === 'fulfilled' && (r.value as { success: boolean }).success
+    ).length;
+
+    console.log(`Push notifications sent: ${successCount}/${subscriptions.length} successful`);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        sent: successCount, 
+        total: subscriptions.length 
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error in send-push-notification:', errorMessage);
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

@@ -50,6 +50,7 @@ import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
 import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { useDeleteAccount } from "@/hooks/useDeleteAccount";
 import { useProfileVisibility, useUpdateProfileVisibility } from "@/hooks/useProfileVisibility";
+import PushNotificationSettings from "@/components/settings/PushNotificationSettings";
 
 interface Profile {
   first_name: string;
@@ -763,6 +764,11 @@ const Settings = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Push Notifications */}
+                <PushNotificationSettings />
+                
+                <Separator />
+
                 {notificationsLoading ? (
                   <div className="space-y-4">
                     <Skeleton className="h-12 w-full" />
@@ -771,6 +777,7 @@ const Settings = () => {
                   </div>
                 ) : (
                   <>
+                    <p className="text-sm font-medium text-muted-foreground">Email Notifications</p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <FileText className="w-5 h-5 text-muted-foreground" />
