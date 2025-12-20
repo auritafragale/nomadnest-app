@@ -150,7 +150,7 @@ const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | "owner"
                   <AlertDialogCancel>Keep Sit</AlertDialogCancel>
                   <AlertDialogAction 
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => updateStatus({ sitId: sit.id, status: "cancelled" })}
+                    onClick={() => updateStatus({ sitId: sit.id, sitDatesId: sit.sit_dates_id, status: "cancelled" })}
                   >
                     Cancel Sit
                   </AlertDialogAction>
