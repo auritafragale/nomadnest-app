@@ -1,10 +1,14 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { MapPin, Star, Cat, Dog, Bird, Rabbit, MessageSquare, Languages, Shield, CheckCircle } from "lucide-react";
+import { MapPin, Star, Cat, Dog, Bird, Rabbit, MessageSquare, Languages, Shield, CheckCircle, Loader2 } from "lucide-react";
 import { SitterWithProfile } from "@/hooks/useSitters";
+import { useStartConversation } from "@/hooks/useConversations";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface SitterCardProps {
   sitter: SitterWithProfile;
@@ -19,6 +23,12 @@ const petIcons: Record<string, typeof Dog> = {
 };
 
 const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const startConversation = useStartConversation();
+  const [isStartingChat, setIsStartingChat] = useState(false);
+
   const name = sitter.profile
     ? `${sitter.profile.first_name || ""} ${sitter.profile.last_name || ""}`.trim() || "Sitter"
     : "Sitter";
@@ -38,6 +48,46 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
     if (!sitter.available_from || !sitter.available_to) return true;
     const today = new Date().toISOString().split("T")[0];
     return sitter.available_from <= today;
+  };
+
+  const handleMessageClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Sign in required",
+        description: "Please sign in to message sitters.",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    if (user.id === sitter.user_id) {
+      toast({
+        variant: "destructive",
+        title: "Cannot message yourself",
+        description: "You cannot start a conversation with yourself.",
+      });
+      return;
+    }
+
+    setIsStartingChat(true);
+    try {
+      const result = await startConversation.mutateAsync({
+        otherUserId: sitter.user_id,
+      });
+      navigate(`/inbox?conversation=${result.conversationId}`);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to start conversation. Please try again.",
+      });
+    } finally {
+      setIsStartingChat(false);
+    }
   };
 
   return (
@@ -174,9 +224,14 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={handleMessageClick}
+                  disabled={isStartingChat}
                 >
-                  <MessageSquare className="w-4 h-4 mr-2" />
+                  {isStartingChat ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                  )}
                   Message
                 </Button>
                 <Button size="sm">
@@ -192,9 +247,14 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
             <Button
               variant="outline"
               className="flex-1"
-              onClick={(e) => e.stopPropagation()}
+              onClick={handleMessageClick}
+              disabled={isStartingChat}
             >
-              <MessageSquare className="w-4 h-4 mr-2" />
+              {isStartingChat ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <MessageSquare className="w-4 h-4 mr-2" />
+              )}
               Message
             </Button>
             <Button className="flex-1">
