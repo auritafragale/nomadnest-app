@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
@@ -46,8 +46,10 @@ import {
   Mail,
   Clock,
   Award,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
+import { useStartConversation } from "@/hooks/useConversations";
 
 interface SitterProfile {
   id: string;
@@ -100,7 +102,8 @@ const petIcons: Record<string, typeof Dog> = {
 
 const SitterDetail = () => {
   const { userId } = useParams();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const navigate = useNavigate();
   const [sitter, setSitter] = useState<SitterProfile | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
@@ -111,6 +114,9 @@ const SitterDetail = () => {
   const [inviteMessage, setInviteMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<number>(0);
+  const [isStartingChat, setIsStartingChat] = useState(false);
+  
+  const startConversation = useStartConversation();
 
   useEffect(() => {
     const fetchSitterData = async () => {
@@ -411,18 +417,36 @@ const SitterDetail = () => {
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 mb-6">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      toast({
-                        title: "Coming soon",
-                        description: "Messaging feature is under development",
-                      });
-                    }}
-                  >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Message
-                  </Button>
+                  {user && user.id !== userId && (role === "owner" || role === "both") && (
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        setIsStartingChat(true);
+                        try {
+                          const { conversationId } = await startConversation.mutateAsync({
+                            otherUserId: userId!,
+                          });
+                          navigate(`/inbox?conversation=${conversationId}`);
+                        } catch (error: any) {
+                          toast({
+                            variant: "destructive",
+                            title: "Error",
+                            description: error.message || "Failed to start conversation",
+                          });
+                        } finally {
+                          setIsStartingChat(false);
+                        }
+                      }}
+                      disabled={isStartingChat}
+                    >
+                      {isStartingChat ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                      )}
+                      Message
+                    </Button>
+                  )}
                   {user && listings.length > 0 && user.id !== userId && (
                     <Button onClick={() => setShowInviteDialog(true)}>
                       <Send className="w-4 h-4 mr-2" />

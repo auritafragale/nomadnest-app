@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
 import { ConversationList } from "@/components/inbox/ConversationList";
@@ -14,7 +14,9 @@ import { cn } from "@/lib/utils";
 
 const Inbox = () => {
   const { user, loading } = useAuth();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const conversationParam = searchParams.get("conversation");
+  const [selectedId, setSelectedId] = useState<string | null>(conversationParam);
 
   const { data: conversations = [], isLoading: conversationsLoading } = useConversations();
   const { data: messages = [], isLoading: messagesLoading } = useMessages(selectedId);
@@ -22,6 +24,23 @@ const Inbox = () => {
   const markAsRead = useMarkAsRead();
 
   const selectedConversation = conversations.find((c) => c.id === selectedId) || null;
+
+  // Update selected ID when URL param changes
+  useEffect(() => {
+    if (conversationParam && conversationParam !== selectedId) {
+      setSelectedId(conversationParam);
+    }
+  }, [conversationParam]);
+
+  // Update URL when selection changes
+  const handleSelect = (id: string | null) => {
+    setSelectedId(id);
+    if (id) {
+      setSearchParams({ conversation: id });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   // Mark messages as read when conversation is selected
   useEffect(() => {
@@ -67,7 +86,7 @@ const Inbox = () => {
               <ConversationList
                 conversations={conversations}
                 selectedId={selectedId}
-                onSelect={setSelectedId}
+                onSelect={handleSelect}
                 isLoading={conversationsLoading}
               />
             </div>
@@ -85,7 +104,7 @@ const Inbox = () => {
                 isLoading={messagesLoading}
                 onSend={handleSend}
                 isSending={sendMessage.isPending}
-                onBack={() => setSelectedId(null)}
+                onBack={() => handleSelect(null)}
               />
             </div>
           </div>

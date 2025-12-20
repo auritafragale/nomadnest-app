@@ -51,18 +51,36 @@ export const useSitters = (options: UseSittersOptions = {}) => {
       setError(null);
 
       try {
-        let query = supabase
+        // Fetch sitter profiles first
+        const { data: sitterData, error: sitterError } = await supabase
           .from("sitter_profiles")
-          .select(`
-            *,
-            profile:user_id (first_name, last_name, avatar_url, city, country)
-          `);
+          .select("*");
 
-        const { data, error: fetchError } = await query;
+        if (sitterError) throw sitterError;
 
-        if (fetchError) throw fetchError;
+        if (!sitterData || sitterData.length === 0) {
+          setSitters([]);
+          return;
+        }
 
-        let filteredData = (data as unknown as SitterWithProfile[]) || [];
+        // Fetch profiles for all sitters
+        const userIds = sitterData.map((s) => s.user_id);
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name, avatar_url, city, country")
+          .in("id", userIds);
+
+        if (profilesError) throw profilesError;
+
+        // Map profiles to sitters
+        const profilesMap = new Map(
+          (profilesData || []).map((p) => [p.id, p])
+        );
+
+        let filteredData: SitterWithProfile[] = sitterData.map((sitter) => ({
+          ...sitter,
+          profile: profilesMap.get(sitter.user_id) || null,
+        })) as SitterWithProfile[];
 
         // Client-side filtering
         if (options.searchQuery) {
