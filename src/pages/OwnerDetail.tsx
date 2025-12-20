@@ -17,11 +17,13 @@ import {
   Star,
   Home,
   Calendar,
+  Flag,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
 import OwnerReviewsSection from "@/components/reviews/OwnerReviewsSection";
 import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
+import ReportDialog from "@/components/reports/ReportDialog";
 
 interface OwnerProfile {
   id: string;
@@ -265,6 +267,18 @@ const OwnerDetail = () => {
                       )}
                       Message
                     </Button>
+                  )}
+                  {user && user.id !== userId && (
+                    <ReportDialog
+                      targetType="user"
+                      targetId={userId!}
+                      targetLabel="owner"
+                      trigger={
+                        <Button variant="ghost" size="icon" className="text-muted-foreground">
+                          <Flag className="w-4 h-4" />
+                        </Button>
+                      }
+                    />
                   )}
                 </div>
 

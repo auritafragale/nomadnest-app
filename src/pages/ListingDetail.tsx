@@ -26,6 +26,7 @@ import {
   ChevronRight,
   User,
   Loader2,
+  Flag,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +39,7 @@ import { useStartConversation } from "@/hooks/useConversations";
 import OwnerReviewsSection from "@/components/reviews/OwnerReviewsSection";
 import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
 import { Star } from "lucide-react";
+import ReportDialog from "@/components/reports/ReportDialog";
 
 interface Pet {
   id: string;
@@ -755,6 +757,17 @@ const ListingDetail = () => {
                 <Button className="w-full" size="lg" variant="outline" disabled>
                   This is your listing
                 </Button>
+              )}
+
+              {/* Report Button */}
+              {user && !isOwner && (
+                <div className="flex justify-center pt-2">
+                  <ReportDialog
+                    targetType="listing"
+                    targetId={listing.id}
+                    targetLabel="listing"
+                  />
+                </div>
               )}
             </div>
           </div>

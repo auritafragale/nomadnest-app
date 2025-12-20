@@ -7,9 +7,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, isToday, isYesterday } from "date-fns";
-import { Send, ArrowLeft, Check, CheckCheck } from "lucide-react";
+import { Send, ArrowLeft, Check, CheckCheck, Flag } from "lucide-react";
 import type { Message, Conversation } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
+import ReportDialog from "@/components/reports/ReportDialog";
 
 interface MessageThreadProps {
   conversation: Conversation | null;
@@ -146,8 +147,22 @@ export const MessageThread = ({
               return (
                 <div
                   key={message.id}
-                  className={cn("flex", isOwn ? "justify-end" : "justify-start")}
+                  className={cn("flex group", isOwn ? "justify-end" : "justify-start")}
                 >
+                  {/* Report button for received messages */}
+                  {!isOwn && (
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center mr-1">
+                      <ReportDialog
+                        targetType="message"
+                        targetId={message.id}
+                        trigger={
+                          <button className="p-1 text-muted-foreground hover:text-foreground rounded">
+                            <Flag className="h-3 w-3" />
+                          </button>
+                        }
+                      />
+                    </div>
+                  )}
                   <div
                     className={cn(
                       "max-w-[80%] rounded-lg px-4 py-2",
