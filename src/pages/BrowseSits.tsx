@@ -6,12 +6,34 @@ import { useListings, ListingFilters } from "@/hooks/useListings";
 import ListingCard from "@/components/browse/ListingCard";
 import ListingFiltersComponent from "@/components/browse/ListingFilters";
 import BackToTopButton from "@/components/ui/BackToTopButton";
+import Pagination from "@/components/browse/Pagination";
+import { usePagination } from "@/hooks/usePagination";
+
+const ITEMS_PER_PAGE = 12;
 
 const BrowseSits = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [filters, setFilters] = useState<ListingFilters>({});
   
   const { data: listings, isLoading, error } = useListings(filters);
+
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems,
+    setCurrentPage,
+    startIndex,
+    endIndex,
+    totalItems,
+  } = usePagination({
+    items: listings || [],
+    itemsPerPage: ITEMS_PER_PAGE,
+  });
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -58,17 +80,24 @@ const BrowseSits = () => {
           ) : listings && listings.length > 0 ? (
             <>
               <p className="text-sm text-muted-foreground mb-6">
-                Showing {listings.length} sit{listings.length !== 1 ? "s" : ""}
+                Showing {startIndex}-{endIndex} of {totalItems} sit{totalItems !== 1 ? "s" : ""}
               </p>
               <div className={`grid gap-6 ${
                 viewMode === "grid" 
                   ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" 
                   : "grid-cols-1"
               }`}>
-                {listings.map((listing) => (
+                {paginatedItems.map((listing) => (
                   <ListingCard key={listing.id} listing={listing} viewMode={viewMode} />
                 ))}
               </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                className="mt-8"
+              />
             </>
           ) : (
             <div className="text-center py-12">
