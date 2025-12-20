@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Home, Search, Plus, MessageSquare, Calendar, Settings, 
   LogOut, User, Briefcase, ArrowRight, MapPin, Clock,
-  FileText, Star, Bell, ClipboardList, Heart
+  FileText, Star, ClipboardList, Heart
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
@@ -20,6 +20,8 @@ import { SitsCalendar } from "@/components/dashboard/SitsCalendar";
 import { OwnerListingCard } from "@/components/dashboard/OwnerListingCard";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
 import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
+import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection";
+import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 
 interface Profile {
   first_name: string | null;
@@ -128,9 +130,7 @@ const Dashboard = () => {
             </div>
             
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="icon">
-                <Bell className="w-4 h-4" />
-              </Button>
+              <NotificationsDropdown />
               <Link to="/settings">
                 <Button variant="outline" size="icon">
                   <Settings className="w-4 h-4" />
@@ -382,6 +382,9 @@ const SitterDashboard = ({
             )}
           </CardContent>
         </Card>
+
+        {/* Sitter Invites */}
+        <SitterInvitesSection />
 
         {/* Sits Calendar */}
         <SitsCalendar viewAs="sitter" />
