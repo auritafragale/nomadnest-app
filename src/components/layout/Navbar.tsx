@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText } from "lucide-react";
+import { Home, Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
@@ -63,6 +63,14 @@ const Navbar = () => {
               <div className="w-24 h-9 bg-muted animate-pulse rounded-md" />
             ) : user ? (
               <>
+                {(role === "sitter" || role === "both") && (
+                  <Link to="/saved">
+                    <Button variant="ghost" className={cn(isActive("/saved") && "text-primary bg-terracotta-light")}>
+                      <Heart className="w-4 h-4 mr-2" />
+                      Saved
+                    </Button>
+                  </Link>
+                )}
                 {(role === "owner" || role === "both") && (
                   <Link to="/applications">
                     <Button variant="ghost" className={cn("relative", isActive("/applications") && "text-primary bg-terracotta-light")}>
@@ -143,6 +151,14 @@ const Navbar = () => {
             <div className="pt-4 space-y-2 border-t border-border">
               {user ? (
                 <>
+                  {(role === "sitter" || role === "both") && (
+                    <Link to="/saved" onClick={() => setIsOpen(false)}>
+                      <Button variant="ghost" className={cn("w-full justify-start", isActive("/saved") && "text-primary bg-terracotta-light")}>
+                        <Heart className="w-4 h-4 mr-2" />
+                        Saved Listings
+                      </Button>
+                    </Link>
+                  )}
                   {(role === "owner" || role === "both") && (
                     <Link to="/applications" onClick={() => setIsOpen(false)}>
                       <Button variant="ghost" className={cn("w-full justify-start relative", isActive("/applications") && "text-primary bg-terracotta-light")}>
