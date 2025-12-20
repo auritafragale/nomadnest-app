@@ -21,7 +21,7 @@ const Onboarding = () => {
   const [step, setStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, refreshRole } = useAuth();
+  const { user, refreshRole, onboardingCompleted, loading } = useAuth();
   const { toast } = useToast();
 
   // Form state
@@ -41,12 +41,16 @@ const Onboarding = () => {
   // Owner preferences
   const [wantsToCreateListing, setWantsToCreateListing] = useState<boolean | null>(null);
 
-  // Redirect if not logged in
+  // Redirect if not logged in, or if already onboarded
   useEffect(() => {
+    if (loading) return; // Wait for auth state to be determined
+    
     if (!user) {
       navigate("/auth");
+    } else if (onboardingCompleted) {
+      navigate("/dashboard");
     }
-  }, [user, navigate]);
+  }, [user, onboardingCompleted, loading, navigate]);
 
   // Pre-fill from profile if available
   useEffect(() => {
