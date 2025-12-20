@@ -12,6 +12,9 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
+import { useSitterApplications } from "@/hooks/useSitterApplications";
+import { SitterApplicationCard } from "@/components/applications/SitterApplicationCard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Profile {
   first_name: string | null;
@@ -187,6 +190,14 @@ const SitterDashboard = ({
   sitterProfile: SitterProfile | null; 
 }) => {
   const profileCompletion = calculateSitterProfileCompletion(profile, sitterProfile);
+  const { data: applications = [], isLoading: applicationsLoading } = useSitterApplications();
+
+  const applicationStats = {
+    total: applications.length,
+    pending: applications.filter((a) => a.status === "applied").length,
+    shortlisted: applications.filter((a) => a.status === "shortlisted").length,
+    accepted: applications.filter((a) => a.status === "accepted").length,
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -248,15 +259,15 @@ const SitterDashboard = ({
           <CardContent className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Applications sent</span>
-              <Badge variant="secondary">0</Badge>
+              <Badge variant="secondary">{applicationStats.total}</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Sits completed</span>
-              <Badge variant="secondary">0</Badge>
+              <span className="text-sm text-muted-foreground">Shortlisted</span>
+              <Badge variant="secondary">{applicationStats.shortlisted}</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Reviews</span>
-              <Badge variant="secondary">0</Badge>
+              <span className="text-sm text-muted-foreground">Accepted</span>
+              <Badge variant="secondary">{applicationStats.accepted}</Badge>
             </div>
           </CardContent>
         </Card>
@@ -305,21 +316,45 @@ const SitterDashboard = ({
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />
               My Applications
+              {applicationStats.pending > 0 && (
+                <Badge variant="secondary" className="ml-auto">
+                  {applicationStats.pending} pending
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription>Track your sit applications</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p className="font-medium">No applications yet</p>
-              <p className="text-sm mt-1">Start browsing sits to apply!</p>
-              <Link to="/browse-sits">
-                <Button className="mt-4">
-                  Browse Sits
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-            </div>
+            {applicationsLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-24 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : applications.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">No applications yet</p>
+                <p className="text-sm mt-1">Start browsing sits to apply!</p>
+                <Link to="/browse-sits">
+                  <Button className="mt-4">
+                    Browse Sits
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {applications.slice(0, 5).map((application) => (
+                  <SitterApplicationCard key={application.id} application={application} />
+                ))}
+                {applications.length > 5 && (
+                  <p className="text-sm text-muted-foreground text-center pt-2">
+                    And {applications.length - 5} more applications...
+                  </p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
