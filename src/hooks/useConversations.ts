@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -104,6 +105,46 @@ export const useConversations = () => {
 
 export const useMessages = (conversationId: string | null) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Subscribe to realtime messages
+  useEffect(() => {
+    if (!conversationId || !user) return;
+
+    const channel = supabase
+      .channel(`messages:${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          console.log("New message received:", payload);
+          // Add new message to cache
+          queryClient.setQueryData<Message[]>(
+            ["messages", conversationId],
+            (old) => {
+              if (!old) return [payload.new as Message];
+              // Avoid duplicates
+              if (old.some((m) => m.id === (payload.new as Message).id)) {
+                return old;
+              }
+              return [...old, payload.new as Message];
+            }
+          );
+          // Refresh conversations list for updated counts
+          queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, user, queryClient]);
 
   return useQuery({
     queryKey: ["messages", conversationId],
