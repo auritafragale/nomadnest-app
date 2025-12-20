@@ -42,6 +42,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
@@ -99,17 +100,27 @@ const Contact = () => {
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
     
-    // Simulate form submission (in production, this would call an edge function)
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    console.log("Contact form submitted:", { 
-      category: data.category, 
-      subject: data.subject.slice(0, 50) 
-    });
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    toast.success("Message sent! We'll get back to you soon.");
+    try {
+      const { data: response, error } = await supabase.functions.invoke('send-contact-email', {
+        body: data,
+      });
+
+      if (error) {
+        console.error("Error sending contact email:", error);
+        toast.error("Failed to send message. Please try again.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log("Contact form submitted successfully:", response);
+      setIsSubmitted(true);
+      toast.success("Message sent! We'll get back to you soon.");
+    } catch (error) {
+      console.error("Error sending contact email:", error);
+      toast.error("Failed to send message. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
