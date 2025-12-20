@@ -1,0 +1,216 @@
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ListingFormData } from "@/hooks/useListingForm";
+import { cn } from "@/lib/utils";
+import { 
+  Home, Building2, Building, TreePine, 
+  Wifi, WifiOff, Bed, Sofa 
+} from "lucide-react";
+
+interface HomeInfoStepProps {
+  formData: ListingFormData;
+  updateFormData: (data: Partial<ListingFormData>) => void;
+}
+
+const homeTypes = [
+  { value: "apartment", label: "Apartment", icon: Building2 },
+  { value: "house", label: "House", icon: Home },
+  { value: "condo", label: "Condo", icon: Building },
+  { value: "cottage", label: "Cottage / Rural", icon: TreePine },
+];
+
+const wifiOptions = [
+  { value: "excellent", label: "Excellent (Fiber/high-speed)", icon: Wifi },
+  { value: "good", label: "Good (works for video calls)", icon: Wifi },
+  { value: "basic", label: "Basic (browsing only)", icon: WifiOff },
+  { value: "none", label: "No WiFi", icon: WifiOff },
+];
+
+const sleepingOptions = [
+  { value: "private_room", label: "Private room", icon: Bed },
+  { value: "private_bathroom", label: "Private room with bathroom", icon: Bed },
+  { value: "shared_space", label: "Shared space", icon: Sofa },
+  { value: "entire_place", label: "Entire place to yourself", icon: Home },
+];
+
+const amenitiesList = [
+  "Washer/Dryer",
+  "Dishwasher",
+  "Air Conditioning",
+  "Heating",
+  "TV/Streaming",
+  "Garden/Yard",
+  "Balcony/Terrace",
+  "Parking",
+  "Gym Access",
+  "Pool",
+  "Workspace/Desk",
+  "Coffee Machine",
+  "BBQ/Grill",
+  "Bike Available",
+  "Car Available",
+];
+
+const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
+  const toggleAmenity = (amenity: string) => {
+    const current = formData.amenities;
+    const updated = current.includes(amenity)
+      ? current.filter((a) => a !== amenity)
+      : [...current, amenity];
+    updateFormData({ amenities: updated });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-display font-bold text-foreground">
+          About your home
+        </h2>
+        <p className="text-muted-foreground mt-2">
+          Help sitters understand your living space
+        </p>
+      </div>
+
+      <div className="space-y-6">
+        {/* Home Type */}
+        <div className="space-y-2">
+          <Label>Home Type *</Label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {homeTypes.map((type) => {
+              const Icon = type.icon;
+              return (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => updateFormData({ home_type: type.value })}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-lg border transition-all",
+                    formData.home_type === type.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:border-primary/50"
+                  )}
+                >
+                  <Icon className="w-6 h-6" />
+                  <span className="text-sm font-medium">{type.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Location */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="city">City *</Label>
+            <Input
+              id="city"
+              placeholder="e.g., Barcelona"
+              value={formData.city}
+              onChange={(e) => updateFormData({ city: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="country">Country *</Label>
+            <Input
+              id="country"
+              placeholder="e.g., Spain"
+              value={formData.country}
+              onChange={(e) => updateFormData({ country: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="area">Neighborhood / Area</Label>
+          <Input
+            id="area"
+            placeholder="e.g., Gothic Quarter, near the beach"
+            value={formData.area}
+            onChange={(e) => updateFormData({ area: e.target.value })}
+          />
+        </div>
+
+        {/* WiFi */}
+        <div className="space-y-2">
+          <Label>WiFi Quality</Label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {wifiOptions.map((option) => {
+              const Icon = option.icon;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => updateFormData({ wifi_quality: option.value })}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-3 rounded-lg border transition-all text-center",
+                    formData.wifi_quality === option.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:border-primary/50"
+                  )}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="text-xs font-medium">{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sleeping Arrangement */}
+        <div className="space-y-2">
+          <Label>Sleeping Arrangement</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {sleepingOptions.map((option) => {
+              const Icon = option.icon;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => updateFormData({ sleeping_arrangement: option.value })}
+                  className={cn(
+                    "flex items-center gap-3 p-4 rounded-lg border transition-all",
+                    formData.sleeping_arrangement === option.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:border-primary/50"
+                  )}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="text-sm font-medium">{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Amenities */}
+        <div className="space-y-3">
+          <Label>Amenities</Label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {amenitiesList.map((amenity) => (
+              <div
+                key={amenity}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
+                  formData.amenities.includes(amenity)
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:border-primary/50"
+                )}
+                onClick={() => toggleAmenity(amenity)}
+              >
+                <Checkbox
+                  checked={formData.amenities.includes(amenity)}
+                  onCheckedChange={() => toggleAmenity(amenity)}
+                />
+                <span className="text-sm">{amenity}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default HomeInfoStep;
