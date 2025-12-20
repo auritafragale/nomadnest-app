@@ -35,6 +35,8 @@ import {
   Star,
   Trash2,
   AlertTriangle,
+  Mail,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +72,16 @@ const Settings = () => {
     email: "",
   });
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  
+  // Email change state
+  const [newEmail, setNewEmail] = useState("");
+  const [emailChangeLoading, setEmailChangeLoading] = useState(false);
+  
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
 
   // Use DB-based notification preferences
   const { data: notifications, isLoading: notificationsLoading } = useNotificationPreferences();
@@ -152,6 +164,96 @@ const Settings = () => {
 
   const handleNotificationChange = (key: string, value: boolean) => {
     updateNotifications.mutate({ [key]: value });
+  };
+
+  const handleEmailChange = async () => {
+    if (!newEmail) {
+      toast({
+        title: "Email required",
+        description: "Please enter a new email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setEmailChangeLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        email: newEmail,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Verification email sent",
+        description: "Please check both your old and new email to confirm the change",
+      });
+      setNewEmail("");
+    } catch (error: any) {
+      console.error("Error changing email:", error);
+      toast({
+        title: "Error changing email",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setEmailChangeLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({
+        title: "Password required",
+        description: "Please enter and confirm your new password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your passwords match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPasswordChangeLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password updated",
+        description: "Your password has been changed successfully",
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      toast({
+        title: "Error changing password",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setPasswordChangeLoading(false);
+    }
   };
 
   const getRoleLabel = () => {
@@ -298,7 +400,7 @@ const Settings = () => {
                   </div>
                 </div>
 
-                {/* Email (read-only) */}
+                {/* Email (display only) */}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -309,7 +411,7 @@ const Settings = () => {
                     className="bg-muted"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Contact support to change your email address
+                    To change your email, use the "Change Email" section below
                   </p>
                 </div>
 
@@ -350,6 +452,98 @@ const Settings = () => {
                     <Save className="w-4 h-4 mr-2" />
                   )}
                   Save Changes
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Email Change */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="w-5 h-5" />
+                  Change Email
+                </CardTitle>
+                <CardDescription>
+                  Update your email address
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Current Email</Label>
+                  <Input value={profile.email} disabled className="bg-muted" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new_email">New Email</Label>
+                  <Input
+                    id="new_email"
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Enter new email address"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    You'll receive a confirmation email at both addresses
+                  </p>
+                </div>
+                <Button 
+                  onClick={handleEmailChange} 
+                  disabled={emailChangeLoading || !newEmail}
+                >
+                  {emailChangeLoading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Mail className="w-4 h-4 mr-2" />
+                  )}
+                  Update Email
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Password Change */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="w-5 h-5" />
+                  Change Password
+                </CardTitle>
+                <CardDescription>
+                  Update your account password
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new_password">New Password</Label>
+                  <Input
+                    id="new_password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm_password">Confirm New Password</Label>
+                  <Input
+                    id="confirm_password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Password must be at least 6 characters
+                  </p>
+                </div>
+                <Button 
+                  onClick={handlePasswordChange} 
+                  disabled={passwordChangeLoading || !newPassword || !confirmPassword}
+                >
+                  {passwordChangeLoading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Lock className="w-4 h-4 mr-2" />
+                  )}
+                  Update Password
                 </Button>
               </CardContent>
             </Card>

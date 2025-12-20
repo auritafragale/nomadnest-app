@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ActiveRoleProvider } from "@/contexts/ActiveRoleContext";
+import ProtectedRoute from "@/components/layout/ProtectedRoute";
 import Index from "./pages/Index";
 import BrowseSits from "./pages/BrowseSits";
 import BrowseSitters from "./pages/BrowseSitters";
@@ -46,18 +47,18 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/create-listing" element={<CreateListing />} />
-              <Route path="/edit-listing/:id" element={<EditListing />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/create-listing" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
+              <Route path="/edit-listing/:id" element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
               <Route path="/listing/:id" element={<ListingDetail />} />
-              <Route path="/edit-sitter-profile" element={<EditSitterProfile />} />
-              <Route path="/edit-owner-profile" element={<EditOwnerProfile />} />
+              <Route path="/edit-sitter-profile" element={<ProtectedRoute><EditSitterProfile /></ProtectedRoute>} />
+              <Route path="/edit-owner-profile" element={<ProtectedRoute><EditOwnerProfile /></ProtectedRoute>} />
               <Route path="/sitter/:userId" element={<SitterDetail />} />
               <Route path="/owner/:userId" element={<OwnerDetail />} />
-              <Route path="/inbox" element={<Inbox />} />
-              <Route path="/applications" element={<Applications />} />
-              <Route path="/saved" element={<SavedListings />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/inbox" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
+              <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
+              <Route path="/saved" element={<ProtectedRoute><SavedListings /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

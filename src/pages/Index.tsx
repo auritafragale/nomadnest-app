@@ -1,3 +1,6 @@
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/landing/HeroSection";
@@ -8,6 +11,27 @@ import TrustSection from "@/components/landing/TrustSection";
 import CTASection from "@/components/landing/CTASection";
 
 const Index = () => {
+  const { user, loading, onboardingCompleted } = useAuth();
+
+  // Show loading state while auth is being determined
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Redirect logged-in users to dashboard
+  if (user && onboardingCompleted) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If user is logged in but hasn't completed onboarding
+  if (user && !onboardingCompleted) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
