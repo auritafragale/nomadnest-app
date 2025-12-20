@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export interface Sit {
   id: string;
@@ -73,5 +74,45 @@ export const useSits = () => {
       })) as Sit[];
     },
     enabled: !!user,
+  });
+};
+
+export const useUpdateSitStatus = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      sitId,
+      status,
+    }: {
+      sitId: string;
+      status: "in_progress" | "completed" | "cancelled";
+    }) => {
+      const updateData: { 
+        status: "in_progress" | "completed" | "cancelled"; 
+        completed_at?: string;
+      } = { status };
+      
+      if (status === "completed") {
+        updateData.completed_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from("sits")
+        .update(updateData)
+        .eq("id", sitId);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, { status }) => {
+      queryClient.invalidateQueries({ queryKey: ["sits", user?.id] });
+      const statusLabel = status.replace("_", " ");
+      toast.success(`Sit marked as ${statusLabel}`);
+    },
+    onError: (error) => {
+      console.error("Error updating sit status:", error);
+      toast.error("Failed to update sit status");
+    },
   });
 };
