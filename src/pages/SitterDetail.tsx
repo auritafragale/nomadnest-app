@@ -55,6 +55,7 @@ import { useStartConversation } from "@/hooks/useConversations";
 import { SitterReviewsSection } from "@/components/reviews/SitterReviewsSection";
 import { useSitterAverageRating } from "@/hooks/useSitterReviews";
 import ReportDialog from "@/components/reports/ReportDialog";
+import { ShareDialog } from "@/components/share/ShareDialog";
 
 interface SitterProfile {
   id: string;
@@ -494,6 +495,10 @@ const SitterDetail = () => {
                       Invite to Sit
                     </Button>
                   )}
+                  <ShareDialog 
+                    title={`${name} - Pet Sitter`}
+                    description={sitter.headline || `Check out ${name}'s pet sitting profile`}
+                  />
                   {user && user.id !== userId && (
                     <ReportDialog
                       targetType="user"

@@ -28,6 +28,7 @@ import {
   Loader2,
   Flag,
 } from "lucide-react";
+import { ShareDialog } from "@/components/share/ShareDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -394,17 +395,25 @@ const ListingDetail = () => {
 
           {/* Title & Location */}
           <div className="mb-8">
-            <h1 className="text-3xl font-display font-bold text-foreground mb-2">
-              {listing.title}
-            </h1>
-            <div className="flex items-center gap-4 text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
-                {listing.city}, {listing.country}
-              </span>
-              {listing.area && (
-                <span className="text-sm">• {listing.area}</span>
-              )}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-display font-bold text-foreground mb-2">
+                  {listing.title}
+                </h1>
+                <div className="flex items-center gap-4 text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-4 h-4" />
+                    {listing.city}, {listing.country}
+                  </span>
+                  {listing.area && (
+                    <span className="text-sm">• {listing.area}</span>
+                  )}
+                </div>
+              </div>
+              <ShareDialog 
+                title={listing.title}
+                description={`Check out this pet sitting opportunity in ${listing.city}, ${listing.country}`}
+              />
             </div>
           </div>
 
