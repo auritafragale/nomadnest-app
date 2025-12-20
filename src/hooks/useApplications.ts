@@ -120,9 +120,13 @@ export const useUpdateApplicationStatus = () => {
     mutationFn: async ({
       applicationId,
       status,
+      sitterUserId,
+      listingTitle,
     }: {
       applicationId: string;
       status: ApplicationStatus;
+      sitterUserId?: string;
+      listingTitle?: string;
     }) => {
       const { data, error } = await supabase
         .from("applications")
@@ -132,6 +136,19 @@ export const useUpdateApplicationStatus = () => {
         .single();
 
       if (error) throw error;
+
+      // Send notification for declined status
+      if (status === "declined" && sitterUserId) {
+        sendNotification({
+          type: "application_status",
+          recipientUserId: sitterUserId,
+          data: {
+            listingTitle: listingTitle || "a listing",
+            status: "declined",
+          },
+        });
+      }
+
       return data;
     },
     onSuccess: () => {

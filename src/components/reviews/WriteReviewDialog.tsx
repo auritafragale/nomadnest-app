@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Star, PenLine } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sendNotification } from "@/lib/notifications";
 
 interface WriteReviewDialogProps {
   sitId: string;
@@ -57,6 +58,24 @@ const WriteReviewDialog = ({
       });
 
       if (error) throw error;
+
+      // Get reviewer name for notification
+      const { data: reviewerProfile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", user.id)
+        .single();
+
+      // Send notification to reviewee
+      sendNotification({
+        type: "review",
+        recipientUserId: revieweeUserId,
+        data: {
+          reviewerName: [reviewerProfile?.first_name, reviewerProfile?.last_name].filter(Boolean).join(" ") || "Someone",
+          rating: rating.toString(),
+          text: text.trim() || "",
+        },
+      });
 
       toast({
         title: "Review submitted!",

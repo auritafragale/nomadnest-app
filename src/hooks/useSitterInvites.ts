@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { sendNotification } from "@/lib/notifications";
+import { format, parseISO } from "date-fns";
 
 export interface SitterInvite {
   id: string;
@@ -110,6 +112,7 @@ export const useUpdateInviteStatus = () => {
 
 export const useCreateInvite = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (invite: {
@@ -118,14 +121,39 @@ export const useCreateInvite = () => {
       owner_user_id: string;
       sitter_user_id: string;
       message?: string;
+      listingTitle?: string;
+      startDate?: string;
+      endDate?: string;
     }) => {
+      const { listingTitle, startDate, endDate, ...inviteData } = invite;
+      
       const { data, error } = await supabase
         .from("sitter_invites")
-        .insert(invite)
+        .insert(inviteData)
         .select()
         .single();
 
       if (error) throw error;
+
+      // Get owner profile for notification
+      const { data: ownerProfile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", invite.owner_user_id)
+        .single();
+
+      // Send notification to invited sitter
+      sendNotification({
+        type: "invite",
+        recipientUserId: invite.sitter_user_id,
+        data: {
+          ownerName: [ownerProfile?.first_name, ownerProfile?.last_name].filter(Boolean).join(" ") || "A pet owner",
+          listingTitle: listingTitle || "a listing",
+          startDate: startDate || "",
+          endDate: endDate || "",
+        },
+      });
+
       return data;
     },
     onSuccess: () => {
