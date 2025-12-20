@@ -131,9 +131,11 @@ const Dashboard = () => {
               <Button variant="outline" size="icon">
                 <Bell className="w-4 h-4" />
               </Button>
-              <Button variant="outline" size="icon">
-                <Settings className="w-4 h-4" />
-              </Button>
+              <Link to="/settings">
+                <Button variant="outline" size="icon">
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </Link>
               <Button variant="outline" onClick={handleSignOut}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign out
