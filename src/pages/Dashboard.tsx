@@ -23,6 +23,7 @@ import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
 import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection";
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
+import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompletenessCard";
 
 interface Profile {
   first_name: string | null;
@@ -214,6 +215,13 @@ const SitterDashboard = ({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left Column - Profile & Stats */}
       <div className="space-y-6">
+        {/* Profile Completeness */}
+        <ProfileCompletenessCard
+          role="sitter"
+          profile={profile}
+          sitterProfile={sitterProfile}
+        />
+
         {/* Profile Card */}
         <Card variant="elevated">
           <CardContent className="pt-6">
@@ -431,6 +439,13 @@ const OwnerDashboard = ({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left Column */}
       <div className="space-y-6">
+        {/* Profile Completeness */}
+        <ProfileCompletenessCard
+          role="owner"
+          profile={profile}
+          ownerProfile={ownerProfile}
+        />
+
         {/* Profile Card */}
         <Card variant="elevated">
           <CardContent className="pt-6">
