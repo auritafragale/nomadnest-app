@@ -19,10 +19,13 @@ import ListingDetail from "./pages/ListingDetail";
 import EditSitterProfile from "./pages/EditSitterProfile";
 import EditOwnerProfile from "./pages/EditOwnerProfile";
 import SitterDetail from "./pages/SitterDetail";
+import OwnerDetail from "./pages/OwnerDetail";
 import Inbox from "./pages/Inbox";
 import Applications from "./pages/Applications";
 import SavedListings from "./pages/SavedListings";
 import Settings from "./pages/Settings";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,10 +53,13 @@ const App = () => (
               <Route path="/edit-sitter-profile" element={<EditSitterProfile />} />
               <Route path="/edit-owner-profile" element={<EditOwnerProfile />} />
               <Route path="/sitter/:userId" element={<SitterDetail />} />
+              <Route path="/owner/:userId" element={<OwnerDetail />} />
               <Route path="/inbox" element={<Inbox />} />
               <Route path="/applications" element={<Applications />} />
               <Route path="/saved" element={<SavedListings />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
