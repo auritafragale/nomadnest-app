@@ -222,3 +222,73 @@ export const useMarkAsRead = () => {
     },
   });
 };
+
+export const useStartConversation = () => {
+  const queryClient = useQueryClient();
+  const { user, role } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      otherUserId,
+      listingId,
+      initialMessage,
+    }: {
+      otherUserId: string;
+      listingId?: string;
+      initialMessage?: string;
+    }) => {
+      if (!user) throw new Error("Not authenticated");
+
+      // Determine who is owner and who is sitter based on role
+      const isCurrentUserOwner = role === "owner" || role === "both";
+      const ownerUserId = isCurrentUserOwner ? user.id : otherUserId;
+      const sitterUserId = isCurrentUserOwner ? otherUserId : user.id;
+
+      // Check for existing conversation
+      let query = supabase
+        .from("conversations")
+        .select("id")
+        .eq("owner_user_id", ownerUserId)
+        .eq("sitter_user_id", sitterUserId);
+
+      if (listingId) {
+        query = query.eq("listing_id", listingId);
+      }
+
+      const { data: existingConvo } = await query.maybeSingle();
+
+      let conversationId = existingConvo?.id;
+
+      if (!conversationId) {
+        const { data: newConvo, error: convoError } = await supabase
+          .from("conversations")
+          .insert({
+            owner_user_id: ownerUserId,
+            sitter_user_id: sitterUserId,
+            listing_id: listingId || null,
+          })
+          .select("id")
+          .single();
+
+        if (convoError) throw convoError;
+        conversationId = newConvo.id;
+      }
+
+      // Send initial message if provided
+      if (initialMessage && initialMessage.trim()) {
+        const { error: msgError } = await supabase.from("messages").insert({
+          conversation_id: conversationId,
+          sender_user_id: user.id,
+          body: initialMessage,
+        });
+
+        if (msgError) throw msgError;
+      }
+
+      return { conversationId };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+};

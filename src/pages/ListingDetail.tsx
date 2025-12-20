@@ -25,6 +25,7 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
+  Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,6 +34,7 @@ import Navbar from "@/components/layout/Navbar";
 import { ApplyDialog } from "@/components/applications/ApplyDialog";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useStartConversation } from "@/hooks/useConversations";
 
 interface Pet {
   id: string;
@@ -100,6 +102,90 @@ const petIcons: Record<string, typeof Dog> = {
   rabbit: Rabbit,
 };
 
+// Owner Card with Message Button
+const OwnerCard = ({
+  listing,
+  ownerName,
+  isOwner,
+  user,
+  role,
+}: {
+  listing: Listing;
+  ownerName: string;
+  isOwner: boolean;
+  user: any;
+  role: string | null;
+}) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const startConversation = useStartConversation();
+  const [isStartingChat, setIsStartingChat] = useState(false);
+
+  const canMessage = user && !isOwner && (role === "sitter" || role === "both");
+
+  const handleMessage = async () => {
+    if (!user || !listing.owner_user_id) return;
+
+    setIsStartingChat(true);
+    try {
+      const { conversationId } = await startConversation.mutateAsync({
+        otherUserId: listing.owner_user_id,
+        listingId: listing.id,
+      });
+
+      navigate(`/inbox?conversation=${conversationId}`);
+    } catch (error: any) {
+      toast({
+        title: "Error starting conversation",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-center gap-4 mb-4">
+          <Avatar className="w-14 h-14">
+            <AvatarImage src={listing.profiles?.avatar_url || ""} />
+            <AvatarFallback>
+              <User className="w-6 h-6" />
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h3 className="font-semibold">{ownerName}</h3>
+            <p className="text-sm text-muted-foreground">Pet Owner</p>
+          </div>
+        </div>
+        {listing.communication_style && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+            <MessageSquare className="w-4 h-4" />
+            Prefers {listing.communication_style.replace(/_/g, " ")} updates
+          </div>
+        )}
+        {canMessage && (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleMessage}
+            disabled={isStartingChat}
+          >
+            {isStartingChat ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <MessageSquare className="w-4 h-4 mr-2" />
+            )}
+            Message Owner
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 const ListingDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -116,20 +202,42 @@ const ListingDetail = () => {
     const fetchListing = async () => {
       if (!id) return;
 
-      const { data, error } = await supabase
-        .from("listings")
-        .select(
-          `
-          *,
-          pets (*),
-          sit_dates (*),
-          profiles:owner_user_id (first_name, last_name, avatar_url, city, country)
-        `
-        )
-        .eq("id", id)
-        .maybeSingle();
+      try {
+        // Fetch listing separately due to no FK relationship with profiles
+        const { data: listingData, error: listingError } = await supabase
+          .from("listings")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
 
-      if (error) {
+        if (listingError || !listingData) {
+          toast({
+            title: "Listing not found",
+            description: "This listing doesn't exist or has been removed",
+            variant: "destructive",
+          });
+          navigate("/browse-sits");
+          return;
+        }
+
+        // Fetch pets and sit_dates
+        const [petsResult, datesResult, profileResult] = await Promise.all([
+          supabase.from("pets").select("*").eq("listing_id", id),
+          supabase.from("sit_dates").select("*").eq("listing_id", id),
+          supabase
+            .from("profiles")
+            .select("first_name, last_name, avatar_url, city, country")
+            .eq("id", listingData.owner_user_id)
+            .maybeSingle(),
+        ]);
+
+        setListing({
+          ...listingData,
+          pets: petsResult.data || [],
+          sit_dates: datesResult.data || [],
+          profiles: profileResult.data || null,
+        } as unknown as Listing);
+      } catch (error) {
         console.error("Error fetching listing:", error);
         toast({
           title: "Error loading listing",
@@ -137,21 +245,9 @@ const ListingDetail = () => {
           variant: "destructive",
         });
         navigate("/browse-sits");
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      if (!data) {
-        toast({
-          title: "Listing not found",
-          description: "This listing doesn't exist or has been removed",
-          variant: "destructive",
-        });
-        navigate("/browse-sits");
-        return;
-      }
-
-      setListing(data as unknown as Listing);
-      setLoading(false);
     };
 
     fetchListing();
@@ -543,28 +639,13 @@ const ListingDetail = () => {
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Owner Card */}
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4 mb-4">
-                    <Avatar className="w-14 h-14">
-                      <AvatarImage src={listing.profiles?.avatar_url || ""} />
-                      <AvatarFallback>
-                        <User className="w-6 h-6" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-semibold">{ownerName}</h3>
-                      <p className="text-sm text-muted-foreground">Pet Owner</p>
-                    </div>
-                  </div>
-                  {listing.communication_style && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MessageSquare className="w-4 h-4" />
-                      Prefers {listing.communication_style.replace(/_/g, " ")} updates
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <OwnerCard 
+                listing={listing}
+                ownerName={ownerName}
+                isOwner={isOwner}
+                user={user}
+                role={role}
+              />
 
               {/* Available Dates */}
               <Card>
