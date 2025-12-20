@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, isToday, isYesterday } from "date-fns";
-import { Send, ArrowLeft } from "lucide-react";
+import { Send, ArrowLeft, Check, CheckCheck } from "lucide-react";
 import type { Message, Conversation } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
 
@@ -142,6 +142,7 @@ export const MessageThread = ({
           <div className="space-y-4">
             {messages.map((message) => {
               const isOwn = message.sender_user_id === user?.id;
+              const isRead = !!message.read_at;
               return (
                 <div
                   key={message.id}
@@ -156,14 +157,23 @@ export const MessageThread = ({
                     )}
                   >
                     <p className="text-sm whitespace-pre-wrap break-words">{message.body}</p>
-                    <p
+                    <div
                       className={cn(
-                        "text-xs mt-1",
+                        "flex items-center justify-end gap-1 mt-1",
                         isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
                       )}
                     >
-                      {formatMessageDate(message.created_at)}
-                    </p>
+                      <span className="text-xs">
+                        {formatMessageDate(message.created_at)}
+                      </span>
+                      {isOwn && (
+                        isRead ? (
+                          <CheckCheck className="h-3.5 w-3.5 text-primary-foreground/90" />
+                        ) : (
+                          <Check className="h-3.5 w-3.5" />
+                        )
+                      )}
+                    </div>
                   </div>
                 </div>
               );

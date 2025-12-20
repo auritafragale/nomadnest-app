@@ -107,7 +107,7 @@ export const useMessages = (conversationId: string | null) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Subscribe to realtime messages
+  // Subscribe to realtime messages (INSERT and UPDATE for read receipts)
   useEffect(() => {
     if (!conversationId || !user) return;
 
@@ -137,6 +137,30 @@ export const useMessages = (conversationId: string | null) => {
           );
           // Refresh conversations list for updated counts
           queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          console.log("Message updated (read receipt):", payload);
+          // Update message in cache with read_at
+          queryClient.setQueryData<Message[]>(
+            ["messages", conversationId],
+            (old) => {
+              if (!old) return [];
+              return old.map((m) =>
+                m.id === (payload.new as Message).id
+                  ? { ...m, read_at: (payload.new as Message).read_at }
+                  : m
+              );
+            }
+          );
         }
       )
       .subscribe();
