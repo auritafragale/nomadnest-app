@@ -24,6 +24,13 @@ const Inbox = () => {
   const markAsRead = useMarkAsRead();
 
   const selectedConversation = conversations.find((c) => c.id === selectedId) || null;
+  
+  // Determine if the other user is a sitter or owner based on current user's role in this conversation
+  const getOtherUserRole = (): "sitter" | "owner" => {
+    if (!selectedConversation || !user) return "sitter";
+    // If current user is the owner in this conversation, other user is the sitter
+    return selectedConversation.owner_user_id === user.id ? "sitter" : "owner";
+  };
 
   // Update selected ID when URL param changes
   useEffect(() => {
@@ -105,6 +112,7 @@ const Inbox = () => {
                 onSend={handleSend}
                 isSending={sendMessage.isPending}
                 onBack={() => handleSelect(null)}
+                otherUserRole={getOtherUserRole()}
               />
             </div>
           </div>

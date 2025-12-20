@@ -174,12 +174,12 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={(e) => e.preventDefault()}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
                   Message
                 </Button>
-                <Button size="sm" onClick={(e) => e.preventDefault()}>
+                <Button size="sm">
                   View Profile
                 </Button>
               </div>
@@ -192,12 +192,12 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
             <Button
               variant="outline"
               className="flex-1"
-              onClick={(e) => e.preventDefault()}
+              onClick={(e) => e.stopPropagation()}
             >
               <MessageSquare className="w-4 h-4 mr-2" />
               Message
             </Button>
-            <Button className="flex-1" onClick={(e) => e.preventDefault()}>
+            <Button className="flex-1">
               View
             </Button>
           </div>

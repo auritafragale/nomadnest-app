@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Home, Search, Plus, MessageSquare, Calendar, Settings, 
   LogOut, User, Briefcase, ArrowRight, MapPin, Clock,
-  FileText, Star, ClipboardList, Heart
+  FileText, Star, ClipboardList, Heart, Eye
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
@@ -173,14 +173,16 @@ const Dashboard = () => {
           {(activeRole === "sitter" && (role === "sitter" || role === "both")) && (
             <SitterDashboard 
               profile={profile} 
-              sitterProfile={sitterProfile} 
+              sitterProfile={sitterProfile}
+              userId={user?.id || ""}
             />
           )}
 
           {(activeRole === "owner" && (role === "owner" || role === "both")) && (
             <OwnerDashboard 
               profile={profile} 
-              ownerProfile={ownerProfile} 
+              ownerProfile={ownerProfile}
+              userId={user?.id || ""}
             />
           )}
         </div>
@@ -191,10 +193,12 @@ const Dashboard = () => {
 
 const SitterDashboard = ({ 
   profile, 
-  sitterProfile 
+  sitterProfile,
+  userId
 }: { 
   profile: Profile | null; 
-  sitterProfile: SitterProfile | null; 
+  sitterProfile: SitterProfile | null;
+  userId: string;
 }) => {
   const profileCompletion = calculateSitterProfileCompletion(profile, sitterProfile);
   const { data: applications = [], isLoading: applicationsLoading } = useSitterApplications();
@@ -249,12 +253,19 @@ const SitterDashboard = ({
               </div>
             </div>
 
-            <Link to="/edit-sitter-profile">
-              <Button className="w-full" variant="outline">
-                <User className="w-4 h-4 mr-2" />
-                Edit Profile
-              </Button>
-            </Link>
+            <div className="flex gap-2">
+              <Link to="/edit-sitter-profile" className="flex-1">
+                <Button className="w-full" variant="outline">
+                  <User className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </Button>
+              </Link>
+              <Link to={`/sitter/${userId}`}>
+                <Button variant="ghost" size="icon" title="View as others see it">
+                  <Eye className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 
@@ -399,12 +410,15 @@ const SitterDashboard = ({
 
 const OwnerDashboard = ({ 
   profile, 
-  ownerProfile 
+  ownerProfile,
+  userId
 }: { 
   profile: Profile | null; 
-  ownerProfile: OwnerProfile | null; 
+  ownerProfile: OwnerProfile | null;
+  userId: string;
 }) => {
   const { data: listings = [], isLoading: listingsLoading } = useOwnerListings();
+  const profileCompletion = calculateOwnerProfileCompletion(profile, ownerProfile);
 
   const listingStats = {
     total: listings.length,
@@ -440,12 +454,33 @@ const OwnerDashboard = ({
               </div>
             </div>
 
-            <Link to="/edit-owner-profile">
-              <Button className="w-full" variant="outline">
-                <User className="w-4 h-4 mr-2" />
-                Edit Profile
-              </Button>
-            </Link>
+            {/* Profile completion */}
+            <div className="mb-4">
+              <div className="flex justify-between text-sm mb-1">
+                <span>Profile completion</span>
+                <span className="font-medium">{profileCompletion}%</span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all" 
+                  style={{ width: `${profileCompletion}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Link to="/edit-owner-profile" className="flex-1">
+                <Button className="w-full" variant="outline">
+                  <User className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </Button>
+              </Link>
+              <Link to={`/owner/${userId}`}>
+                <Button variant="ghost" size="icon" title="View as others see it">
+                  <Eye className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 
@@ -600,6 +635,23 @@ function calculateSitterProfileCompletion(
   if (sitterProfile?.headline) completed++;
   if (sitterProfile?.bio) completed++;
   if (sitterProfile?.pet_types && sitterProfile.pet_types.length > 0) completed++;
+
+  return Math.round((completed / total) * 100);
+}
+
+function calculateOwnerProfileCompletion(
+  profile: Profile | null, 
+  ownerProfile: OwnerProfile | null
+): number {
+  let completed = 0;
+  const total = 6;
+
+  if (profile?.first_name) completed++;
+  if (profile?.last_name) completed++;
+  if (profile?.avatar_url) completed++;
+  if (profile?.city) completed++;
+  if (profile?.country) completed++;
+  if (ownerProfile?.bio) completed++;
 
   return Math.round((completed / total) * 100);
 }
