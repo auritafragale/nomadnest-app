@@ -11,6 +11,7 @@ import { Send, ArrowLeft, Check, CheckCheck, Flag } from "lucide-react";
 import type { Message, Conversation } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
 import ReportDialog from "@/components/reports/ReportDialog";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 
 interface MessageThreadProps {
   conversation: Conversation | null;
@@ -41,18 +42,52 @@ export const MessageThread = ({
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const otherUser = conversation?.other_user;
+  const userName = user?.user_metadata?.first_name || "User";
+  
+  const { isOtherTyping, typingUserName, sendTypingIndicator } = useTypingIndicator(
+    conversation?.id || null,
+    user?.id || null,
+    userName
+  );
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isOtherTyping]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+    
+    // Send typing indicator when user starts typing
+    if (value.length > 0) {
+      sendTypingIndicator(true);
+      
+      // Clear previous timeout and set a new one to stop typing after 2 seconds of no input
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTypingIndicator(false);
+      }, 2000);
+    } else {
+      sendTypingIndicator(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim() && !isSending) {
       onSend(newMessage.trim());
       setNewMessage("");
+      sendTypingIndicator(false);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     }
   };
 
@@ -64,7 +99,6 @@ export const MessageThread = ({
     );
   }
 
-  const otherUser = conversation.other_user;
   const initials = otherUser
     ? `${otherUser.first_name?.[0] || ""}${otherUser.last_name?.[0] || ""}`
     : "?";
@@ -197,12 +231,26 @@ export const MessageThread = ({
         )}
       </ScrollArea>
 
+      {/* Typing Indicator */}
+      {isOtherTyping && (
+        <div className="px-4 py-2 border-t border-border bg-muted/30">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
+            </div>
+            <span>{typingUserName || otherUser?.first_name || "User"} is typing...</span>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <form onSubmit={handleSubmit} className="p-4 border-t border-border">
         <div className="flex gap-2">
           <Input
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={handleInputChange}
             placeholder="Type a message..."
             disabled={isSending}
             className="flex-1"
