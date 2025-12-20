@@ -1,9 +1,15 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Bell, BellOff, BellRing, Smartphone } from "lucide-react";
+import { Loader2, Bell, BellOff, BellRing, Smartphone, Send } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const PushNotificationSettings = () => {
+  const { user } = useAuth();
+  const [isSendingTest, setIsSendingTest] = useState(false);
   const {
     isSupported,
     isSubscribed,
@@ -12,6 +18,34 @@ const PushNotificationSettings = () => {
     subscribe,
     unsubscribe,
   } = usePushNotifications();
+
+  const sendTestNotification = async () => {
+    if (!user) return;
+    
+    setIsSendingTest(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-push-notification", {
+        body: {
+          user_id: user.id,
+          payload: {
+            title: "🎉 Test Notification",
+            body: "Push notifications are working! You'll receive alerts for messages, applications, and more.",
+            url: "/settings",
+            tag: "test",
+          },
+        },
+      });
+
+      if (error) throw error;
+      
+      toast.success("Test notification sent! Check your device.");
+    } catch (error) {
+      console.error("Failed to send test notification:", error);
+      toast.error("Failed to send test notification");
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
 
   if (!isSupported) {
     return (
@@ -130,11 +164,28 @@ const PushNotificationSettings = () => {
       )}
 
       {isSubscribed && (
-        <div className="bg-muted/50 rounded-lg p-3">
-          <p className="text-sm text-muted-foreground">
-            You'll receive push notifications for new messages, application updates, 
-            and other important events even when this tab is closed.
-          </p>
+        <div className="space-y-3">
+          <div className="bg-muted/50 rounded-lg p-3">
+            <p className="text-sm text-muted-foreground">
+              You'll receive push notifications for new messages, application updates, 
+              and other important events even when this tab is closed.
+            </p>
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={sendTestNotification}
+            disabled={isSendingTest}
+            className="w-full"
+          >
+            {isSendingTest ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4 mr-2" />
+            )}
+            Send Test Notification
+          </Button>
         </div>
       )}
     </div>
