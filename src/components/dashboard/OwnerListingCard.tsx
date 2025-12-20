@@ -20,11 +20,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Calendar, Edit, Eye, Users, MoreVertical, Pause, Play, Trash2, Copy } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { MapPin, Calendar, Edit, Eye, Users, MoreVertical, Pause, Play, Trash2, Copy, ChevronDown, RotateCcw, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { OwnerListing } from "@/hooks/useOwnerListings";
 import { useUpdateListingStatus, useDeleteListing } from "@/hooks/useOwnerListingActions";
 import { useDuplicateListing } from "@/hooks/useDuplicateListing";
+import { useReopenSitDate } from "@/hooks/useReopenSitDate";
 
 interface OwnerListingCardProps {
   listing: OwnerListing;
@@ -38,11 +44,14 @@ const statusColors = {
 
 export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDatesOpen, setShowDatesOpen] = useState(false);
   const updateStatus = useUpdateListingStatus();
   const deleteListing = useDeleteListing();
   const duplicateListing = useDuplicateListing();
+  const reopenSitDate = useReopenSitDate();
 
   const nextDate = listing.sit_dates.find((d) => d.status === "open");
+  const closedDates = listing.sit_dates.filter((d) => d.status === "closed" || d.status === "booked");
   const petNames = listing.pets.map((p) => p.name || p.type).join(", ");
 
   const handlePause = () => {
@@ -174,6 +183,46 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                   </Link>
                 )}
               </div>
+
+              {/* Closed/Booked Dates - Reopen Option */}
+              {closedDates.length > 0 && (
+                <Collapsible open={showDatesOpen} onOpenChange={setShowDatesOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="w-full mt-2 text-muted-foreground">
+                      <ChevronDown className={`w-3 h-3 mr-1 transition-transform ${showDatesOpen ? 'rotate-180' : ''}`} />
+                      {closedDates.length} closed date{closedDates.length !== 1 ? 's' : ''}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2 space-y-2">
+                    {closedDates.map((date) => (
+                      <div key={date.id} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-3 h-3 text-muted-foreground" />
+                          <span>
+                            {format(new Date(date.start_date), "MMM d")} - {format(new Date(date.end_date), "MMM d, yyyy")}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {date.status}
+                          </Badge>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => reopenSitDate.mutate(date.id)}
+                          disabled={reopenSitDate.isPending}
+                        >
+                          {reopenSitDate.isPending ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <RotateCcw className="w-3 h-3 mr-1" />
+                          )}
+                          Reopen
+                        </Button>
+                      </div>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
             </div>
           </div>
         </CardContent>

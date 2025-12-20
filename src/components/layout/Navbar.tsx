@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useNewApplicationsCount } from "@/hooks/useNewApplicationsCount";
 import { Badge } from "@/components/ui/badge";
-
+import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
@@ -85,6 +85,7 @@ const Navbar = () => {
                     )}
                   </Button>
                 </Link>
+                <NotificationsDropdown />
                 <Link to="/dashboard">
                   <Button>
                     <LayoutDashboard className="w-4 h-4 mr-2" />

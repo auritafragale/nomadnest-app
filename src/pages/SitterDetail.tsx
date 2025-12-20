@@ -187,7 +187,38 @@ const SitterDetail = () => {
 
     setSending(true);
     try {
-      // Create a conversation if one doesn't exist
+      // Check if an invite already exists for this listing/date combo
+      const { data: existingInvite } = await supabase
+        .from("sitter_invites")
+        .select("id")
+        .eq("listing_id", selectedListing)
+        .eq("sit_dates_id", selectedDateId)
+        .eq("sitter_user_id", userId)
+        .maybeSingle();
+
+      if (existingInvite) {
+        toast({
+          variant: "destructive",
+          title: "Already invited",
+          description: "You've already invited this sitter for these dates.",
+        });
+        return;
+      }
+
+      // Create the sitter invite
+      const { error: inviteError } = await supabase
+        .from("sitter_invites")
+        .insert({
+          listing_id: selectedListing,
+          sit_dates_id: selectedDateId,
+          owner_user_id: user.id,
+          sitter_user_id: userId,
+          message: inviteMessage || null,
+        });
+
+      if (inviteError) throw inviteError;
+
+      // Also create a conversation and send a message
       const { data: existingConvo } = await supabase
         .from("conversations")
         .select("id")
@@ -219,17 +250,15 @@ const SitterDetail = () => {
       
       const messageBody = `Hi! I'd love to invite you to sit for my listing "${listing?.title}" from ${format(new Date(sitDate!.start_date), "MMM d, yyyy")} to ${format(new Date(sitDate!.end_date), "MMM d, yyyy")}.\n\n${inviteMessage}`;
 
-      const { error: msgError } = await supabase.from("messages").insert({
+      await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_user_id: user.id,
         body: messageBody,
       });
 
-      if (msgError) throw msgError;
-
       toast({
         title: "Invitation sent!",
-        description: "The sitter will receive your message.",
+        description: "The sitter will see this in their invitations.",
       });
 
       setShowInviteDialog(false);
