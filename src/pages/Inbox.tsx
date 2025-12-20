@@ -44,10 +44,10 @@ const Inbox = () => {
 
   // Mark messages as read when conversation is selected
   useEffect(() => {
-    if (selectedId && selectedConversation?.unread_count) {
+    if (selectedId) {
       markAsRead.mutate(selectedId);
     }
-  }, [selectedId, selectedConversation?.unread_count]);
+  }, [selectedId]);
 
   if (loading) {
     return (
