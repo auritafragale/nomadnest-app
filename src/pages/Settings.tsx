@@ -37,6 +37,8 @@ import {
   AlertTriangle,
   Mail,
   Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +48,7 @@ import ImageUpload from "@/components/listing/ImageUpload";
 import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
 import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { useDeleteAccount } from "@/hooks/useDeleteAccount";
+import { useProfileVisibility, useUpdateProfileVisibility } from "@/hooks/useProfileVisibility";
 
 interface Profile {
   first_name: string;
@@ -87,6 +90,10 @@ const Settings = () => {
   const { data: notifications, isLoading: notificationsLoading } = useNotificationPreferences();
   const updateNotifications = useUpdateNotificationPreferences();
   const deleteAccount = useDeleteAccount();
+  
+  // Profile visibility
+  const { data: profileVisibility, isLoading: visibilityLoading } = useProfileVisibility();
+  const updateVisibility = useUpdateProfileVisibility();
 
   useEffect(() => {
     if (!user) {
@@ -629,6 +636,117 @@ const Settings = () => {
                     )}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Profile Visibility */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="w-5 h-5" />
+                  Profile Visibility
+                </CardTitle>
+                <CardDescription>
+                  Control whether your profiles are visible to others
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {visibilityLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : (
+                  <>
+                    {profileVisibility?.hasSitterProfile && (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Briefcase className="w-5 h-5 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">Sitter Profile</p>
+                              <p className="text-sm text-muted-foreground">
+                                {profileVisibility.sitterProfileActive
+                                  ? "Your sitter profile is visible to pet owners"
+                                  : "Your sitter profile is hidden from search results"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {profileVisibility.sitterProfileActive ? (
+                              <Badge variant="secondary" className="gap-1">
+                                <Eye className="w-3 h-3" />
+                                Visible
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="gap-1 text-muted-foreground">
+                                <EyeOff className="w-3 h-3" />
+                                Hidden
+                              </Badge>
+                            )}
+                            <Switch
+                              checked={profileVisibility.sitterProfileActive ?? false}
+                              onCheckedChange={(checked) =>
+                                updateVisibility.mutate({ profileType: "sitter", isActive: checked })
+                              }
+                              disabled={updateVisibility.isPending}
+                            />
+                          </div>
+                        </div>
+                        {profileVisibility?.hasOwnerProfile && <Separator />}
+                      </>
+                    )}
+
+                    {profileVisibility?.hasOwnerProfile && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Home className="w-5 h-5 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">Owner Profile & Listings</p>
+                            <p className="text-sm text-muted-foreground">
+                              {profileVisibility.ownerProfileActive
+                                ? "Your listings are visible to pet sitters"
+                                : "Your listings are hidden from search results"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {profileVisibility.ownerProfileActive ? (
+                            <Badge variant="secondary" className="gap-1">
+                              <Eye className="w-3 h-3" />
+                              Visible
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="gap-1 text-muted-foreground">
+                              <EyeOff className="w-3 h-3" />
+                              Hidden
+                            </Badge>
+                          )}
+                          <Switch
+                            checked={profileVisibility.ownerProfileActive ?? false}
+                            onCheckedChange={(checked) =>
+                              updateVisibility.mutate({ profileType: "owner", isActive: checked })
+                            }
+                            disabled={updateVisibility.isPending}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {!profileVisibility?.hasSitterProfile && !profileVisibility?.hasOwnerProfile && (
+                      <div className="text-center py-4 text-muted-foreground">
+                        <p>No profiles found. Complete your profile setup first.</p>
+                      </div>
+                    )}
+
+                    <div className="bg-muted/50 rounded-lg p-4 mt-4">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Note:</strong> Pausing your profile will hide it from search results and browse pages.
+                        Existing conversations and confirmed sits will not be affected.
+                      </p>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 

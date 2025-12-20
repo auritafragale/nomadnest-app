@@ -322,6 +322,7 @@ export type Database = {
           bio: string | null
           created_at: string
           id: string
+          is_active: boolean
           phone: string | null
           updated_at: string
           user_id: string
@@ -330,6 +331,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           id?: string
+          is_active?: boolean
           phone?: string | null
           updated_at?: string
           user_id: string
@@ -338,6 +340,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           id?: string
+          is_active?: boolean
           phone?: string | null
           updated_at?: string
           user_id?: string
@@ -683,6 +686,7 @@ export type Database = {
           house_rules_compatibility: string[] | null
           id: string
           id_verified: boolean | null
+          is_active: boolean
           languages: string[] | null
           pet_types: string[] | null
           phone: string | null
@@ -712,6 +716,7 @@ export type Database = {
           house_rules_compatibility?: string[] | null
           id?: string
           id_verified?: boolean | null
+          is_active?: boolean
           languages?: string[] | null
           pet_types?: string[] | null
           phone?: string | null
@@ -741,6 +746,7 @@ export type Database = {
           house_rules_compatibility?: string[] | null
           id?: string
           id_verified?: boolean | null
+          is_active?: boolean
           languages?: string[] | null
           pet_types?: string[] | null
           phone?: string | null
