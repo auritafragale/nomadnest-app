@@ -3,11 +3,22 @@ import { format, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, isSam
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ChevronLeft, ChevronRight, MapPin, User } from "lucide-react";
-import { useSits, Sit } from "@/hooks/useSits";
+import { Calendar, ChevronLeft, ChevronRight, MapPin, User, Play, CheckCircle } from "lucide-react";
+import { useSits, Sit, useUpdateSitStatus } from "@/hooks/useSits";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SitsCalendarProps {
   viewAs: "sitter" | "owner";
@@ -24,6 +35,10 @@ const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | "owner"
   const isOwner = sit.owner_user_id === userId;
   const otherParty = isOwner ? sit.sitter_profile : sit.owner_profile;
   const otherPartyLabel = isOwner ? "Sitter" : "Owner";
+  const { mutate: updateStatus, isPending } = useUpdateSitStatus();
+
+  const canStartSit = isOwner && sit.status === "confirmed";
+  const canCompleteSit = isOwner && sit.status === "in_progress";
 
   return (
     <div className="p-3 rounded-lg border bg-card hover:shadow-md transition-shadow">
@@ -63,6 +78,60 @@ const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | "owner"
           {otherPartyLabel}: {otherParty?.first_name || "Unknown"}
         </span>
       </div>
+
+      {/* Owner Actions */}
+      {(canStartSit || canCompleteSit) && (
+        <div className="mt-3 pt-2 border-t flex gap-2">
+          {canStartSit && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" className="flex-1" disabled={isPending}>
+                  <Play className="w-3 h-3 mr-1" />
+                  Start Sit
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Start this sit?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will mark the sit as "in progress". The sitter has arrived and the sit has begun.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => updateStatus({ sitId: sit.id, status: "in_progress" })}>
+                    Start Sit
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          {canCompleteSit && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="secondary" className="flex-1" disabled={isPending}>
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Complete Sit
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Complete this sit?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will mark the sit as "completed". The sitter has finished and the sit has ended successfully.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => updateStatus({ sitId: sit.id, status: "completed" })}>
+                    Complete Sit
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+      )}
     </div>
   );
 };
