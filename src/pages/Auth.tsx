@@ -1,17 +1,108 @@
-import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Home, Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Home, Mail, Lock, User, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const emailSchema = z.string().email("Please enter a valid email address");
+const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
   const isSignup = searchParams.get("signup") === "true";
   const [mode, setMode] = useState<"login" | "signup">(isSignup ? "signup" : "login");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  
+  const { signUp, signIn, user, onboardingCompleted } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      if (onboardingCompleted) {
+        navigate("/dashboard");
+      } else {
+        navigate("/onboarding");
+      }
+    }
+  }, [user, onboardingCompleted, navigate]);
+
+  const validateForm = () => {
+    const newErrors: { email?: string; password?: string } = {};
+    
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      newErrors.email = emailResult.error.errors[0].message;
+    }
+    
+    const passwordResult = passwordSchema.safeParse(password);
+    if (!passwordResult.success) {
+      newErrors.password = passwordResult.error.errors[0].message;
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+    
+    setIsLoading(true);
+    
+    try {
+      if (mode === "signup") {
+        const { error } = await signUp(email, password, firstName, lastName);
+        if (error) {
+          if (error.message.includes("already registered")) {
+            toast({
+              variant: "destructive",
+              title: "Account exists",
+              description: "This email is already registered. Please log in instead.",
+            });
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Sign up failed",
+              description: error.message,
+            });
+          }
+        } else {
+          toast({
+            title: "Welcome to NomadNest!",
+            description: "Your account has been created. Let's set up your profile.",
+          });
+          navigate("/onboarding");
+        }
+      } else {
+        const { error } = await signIn(email, password);
+        if (error) {
+          toast({
+            variant: "destructive",
+            title: "Login failed",
+            description: "Invalid email or password. Please try again.",
+          });
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-warm flex items-center justify-center p-4">
@@ -47,8 +138,8 @@ const Auth = () => {
           </CardHeader>
 
           <CardContent className="space-y-6 pt-4">
-            {/* Social Login */}
-            <Button variant="outline" className="w-full h-12">
+            {/* Social Login - placeholder for now */}
+            <Button variant="outline" className="w-full h-12" disabled>
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
@@ -67,7 +158,7 @@ const Auth = () => {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Continue with Google
+              Continue with Google (coming soon)
             </Button>
 
             <div className="relative">
@@ -78,19 +169,30 @@ const Auth = () => {
             </div>
 
             {/* Email Form */}
-            <form className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {mode === "signup" && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First name</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input id="firstName" placeholder="Emma" className="pl-10" />
+                      <Input 
+                        id="firstName" 
+                        placeholder="Emma" 
+                        className="pl-10"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last name</Label>
-                    <Input id="lastName" placeholder="Thompson" />
+                    <Input 
+                      id="lastName" 
+                      placeholder="Thompson"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
                   </div>
                 </div>
               )}
@@ -103,9 +205,17 @@ const Auth = () => {
                     id="email" 
                     type="email" 
                     placeholder="you@example.com" 
-                    className="pl-10" 
+                    className="pl-10"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+                    }}
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -116,7 +226,12 @@ const Auth = () => {
                     id="password" 
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••" 
-                    className="pl-10 pr-10" 
+                    className="pl-10 pr-10"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
+                    }}
                   />
                   <button
                     type="button"
@@ -126,6 +241,9 @@ const Auth = () => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password}</p>
+                )}
               </div>
 
               {mode === "login" && (
@@ -136,9 +254,15 @@ const Auth = () => {
                 </div>
               )}
 
-              <Button type="submit" className="w-full h-12 group">
-                {mode === "login" ? "Log in" : "Create account"}
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              <Button type="submit" className="w-full h-12 group" disabled={isLoading}>
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    {mode === "login" ? "Log in" : "Create account"}
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
               </Button>
             </form>
 
