@@ -20,6 +20,7 @@ import SitterDetail from "./pages/SitterDetail";
 import Inbox from "./pages/Inbox";
 import Applications from "./pages/Applications";
 import SavedListings from "./pages/SavedListings";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/inbox" element={<Inbox />} />
               <Route path="/applications" element={<Applications />} />
               <Route path="/saved" element={<SavedListings />} />
+              <Route path="/settings" element={<Settings />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
