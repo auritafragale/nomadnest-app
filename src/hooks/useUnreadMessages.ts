@@ -8,6 +8,7 @@ export const useUnreadMessages = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const previousCountRef = useRef<number>(0);
+  const isInitialMount = useRef(true);
 
   const { data: unreadCount = 0, isLoading } = useQuery({
     queryKey: ["unread-messages", user?.id],
@@ -35,12 +36,18 @@ export const useUnreadMessages = () => {
       return count || 0;
     },
     enabled: !!user,
-    refetchInterval: 30000, // Refetch every 30 seconds as fallback
+    refetchInterval: 30000,
   });
 
-  // Play sound when unread count increases
+  // Play sound when unread count increases (skip initial mount)
   useEffect(() => {
-    if (unreadCount > previousCountRef.current && previousCountRef.current !== 0) {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      previousCountRef.current = unreadCount;
+      return;
+    }
+
+    if (unreadCount > previousCountRef.current) {
       playNotificationSound();
     }
     previousCountRef.current = unreadCount;
@@ -60,11 +67,10 @@ export const useUnreadMessages = () => {
           table: "messages",
         },
         (payload) => {
-          // Only play sound if message is from someone else
+          // Play sound if message is from someone else
           if (payload.new && payload.new.sender_user_id !== user.id) {
             playNotificationSound();
           }
-          // Invalidate query to refetch count
           queryClient.invalidateQueries({ queryKey: ["unread-messages", user.id] });
         }
       )
