@@ -134,6 +134,7 @@ const CreateListing = () => {
           wifi_quality: formData.wifi_quality || null,
           sleeping_arrangement: formData.sleeping_arrangement || null,
           amenities: formData.amenities,
+          photos: formData.photos,
           requirements: formData.requirements,
           requirements_other: formData.requirements_other || null,
           house_rules: formData.house_rules,
@@ -161,6 +162,7 @@ const CreateListing = () => {
         has_medication: pet.has_medication,
         medication_instructions: pet.medication_instructions || null,
         vet_info: pet.vet_info || null,
+        photos: pet.photos,
       }));
 
       const { error: petsError } = await supabase

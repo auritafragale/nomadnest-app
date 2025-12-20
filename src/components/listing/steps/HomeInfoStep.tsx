@@ -1,6 +1,5 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ListingFormData } from "@/hooks/useListingForm";
 import { cn } from "@/lib/utils";
@@ -8,6 +7,7 @@ import {
   Home, Building2, Building, TreePine, 
   Wifi, WifiOff, Bed, Sofa 
 } from "lucide-react";
+import ImageUpload from "@/components/listing/ImageUpload";
 
 interface HomeInfoStepProps {
   formData: ListingFormData;
@@ -207,6 +207,21 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Home Photos */}
+        <div className="space-y-3">
+          <Label className="text-base font-semibold">Home Photos</Label>
+          <p className="text-sm text-muted-foreground">
+            Add photos of your home to attract sitters
+          </p>
+          <ImageUpload
+            images={formData.photos}
+            onImagesChange={(photos) => updateFormData({ photos })}
+            maxImages={8}
+            folder="home"
+            label="Home Photos"
+          />
         </div>
       </div>
     </div>
