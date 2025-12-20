@@ -35,6 +35,9 @@ import { ApplyDialog } from "@/components/applications/ApplyDialog";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useStartConversation } from "@/hooks/useConversations";
+import OwnerReviewsSection from "@/components/reviews/OwnerReviewsSection";
+import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
+import { Star } from "lucide-react";
 
 interface Pet {
   id: string;
@@ -120,6 +123,7 @@ const OwnerCard = ({
   const { toast } = useToast();
   const startConversation = useStartConversation();
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const { averageRating, reviewCount } = useOwnerAverageRating(listing.owner_user_id);
 
   const canMessage = user && !isOwner && (role === "sitter" || role === "both");
 
@@ -158,6 +162,13 @@ const OwnerCard = ({
           <div>
             <h3 className="font-semibold">{ownerName}</h3>
             <p className="text-sm text-muted-foreground">Pet Owner</p>
+            {reviewCount > 0 && (
+              <div className="flex items-center gap-1 mt-1">
+                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                <span className="text-sm font-medium">{averageRating}</span>
+                <span className="text-xs text-muted-foreground">({reviewCount} reviews)</span>
+              </div>
+            )}
           </div>
         </div>
         {listing.communication_style && (
@@ -647,7 +658,8 @@ const ListingDetail = () => {
                 role={role}
               />
 
-              {/* Available Dates */}
+              {/* Owner Reviews */}
+              <OwnerReviewsSection ownerUserId={listing.owner_user_id} />
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
