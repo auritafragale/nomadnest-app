@@ -14,6 +14,7 @@ import CreateListing from "./pages/CreateListing";
 import EditListing from "./pages/EditListing";
 import ListingDetail from "./pages/ListingDetail";
 import EditSitterProfile from "./pages/EditSitterProfile";
+import EditOwnerProfile from "./pages/EditOwnerProfile";
 import SitterDetail from "./pages/SitterDetail";
 import Inbox from "./pages/Inbox";
 import Applications from "./pages/Applications";
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/edit-listing/:id" element={<EditListing />} />
             <Route path="/listing/:id" element={<ListingDetail />} />
             <Route path="/edit-sitter-profile" element={<EditSitterProfile />} />
+            <Route path="/edit-owner-profile" element={<EditOwnerProfile />} />
             <Route path="/sitter/:userId" element={<SitterDetail />} />
             <Route path="/inbox" element={<Inbox />} />
             <Route path="/applications" element={<Applications />} />

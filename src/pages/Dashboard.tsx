@@ -411,10 +411,12 @@ const OwnerDashboard = ({
               </div>
             </div>
 
-            <Button className="w-full" variant="outline">
-              <User className="w-4 h-4 mr-2" />
-              Edit Profile
-            </Button>
+            <Link to="/edit-owner-profile">
+              <Button className="w-full" variant="outline">
+                <User className="w-4 h-4 mr-2" />
+                Edit Profile
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 
