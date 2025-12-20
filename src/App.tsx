@@ -9,6 +9,8 @@ import Index from "./pages/Index";
 import BrowseSits from "./pages/BrowseSits";
 import BrowseSitters from "./pages/BrowseSitters";
 import Auth from "./pages/Auth";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import CreateListing from "./pages/CreateListing";
@@ -38,6 +40,8 @@ const App = () => (
               <Route path="/browse-sits" element={<BrowseSits />} />
               <Route path="/browse-sitters" element={<BrowseSitters />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/create-listing" element={<CreateListing />} />

@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
   Home, ArrowRight, ArrowLeft, User, Users, Briefcase, 
-  Cat, Dog, Rabbit, MapPin, Calendar, Check, Loader2, Upload
+  Cat, Dog, Rabbit, MapPin, Calendar, Check, Loader2
 } from "lucide-react";
+import { AvatarUpload } from "@/components/onboarding/AvatarUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -347,14 +348,13 @@ const Onboarding = () => {
               <CardDescription>Clear, friendly photos build trust quickly.</CardDescription>
             </div>
             
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-border">
-                <Upload className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <Button variant="outline" disabled>
-                Upload photo (coming soon)
-              </Button>
-            </div>
+            {user && (
+              <AvatarUpload
+                userId={user.id}
+                firstName={firstName}
+                onUploadComplete={() => {}}
+              />
+            )}
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={handleBack} className="flex-1 h-12">
@@ -362,7 +362,7 @@ const Onboarding = () => {
                 Back
               </Button>
               <Button onClick={handleNext} className="flex-1 h-12">
-                {roleChoice === "owner" ? "Next" : "Skip for now"}
+                Next
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
