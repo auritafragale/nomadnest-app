@@ -248,6 +248,75 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_application_status: boolean
+          email_messages: boolean
+          email_new_applications: boolean
+          email_reviews: boolean
+          email_sit_updates: boolean
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_application_status?: boolean
+          email_messages?: boolean
+          email_new_applications?: boolean
+          email_reviews?: boolean
+          email_sit_updates?: boolean
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_application_status?: boolean
+          email_messages?: boolean
+          email_new_applications?: boolean
+          email_reviews?: boolean
+          email_sit_updates?: boolean
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          message: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       owner_profiles: {
         Row: {
           bio: string | null
@@ -538,6 +607,57 @@ export type Database = {
           },
           {
             foreignKeyName: "sits_sit_dates_id_fkey"
+            columns: ["sit_dates_id"]
+            isOneToOne: false
+            referencedRelation: "sit_dates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sitter_invites: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          message: string | null
+          owner_user_id: string
+          sit_dates_id: string
+          sitter_user_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          message?: string | null
+          owner_user_id: string
+          sit_dates_id: string
+          sitter_user_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          message?: string | null
+          owner_user_id?: string
+          sit_dates_id?: string
+          sitter_user_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sitter_invites_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sitter_invites_sit_dates_id_fkey"
             columns: ["sit_dates_id"]
             isOneToOne: false
             referencedRelation: "sit_dates"
