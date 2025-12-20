@@ -84,9 +84,11 @@ export const useUpdateSitStatus = () => {
   return useMutation({
     mutationFn: async ({
       sitId,
+      sitDatesId,
       status,
     }: {
       sitId: string;
+      sitDatesId?: string;
       status: "in_progress" | "completed" | "cancelled";
     }) => {
       const updateData: { 
@@ -104,6 +106,18 @@ export const useUpdateSitStatus = () => {
         .eq("id", sitId);
 
       if (error) throw error;
+
+      // Re-open sit dates when cancelled
+      if (status === "cancelled" && sitDatesId) {
+        const { error: sitDatesError } = await supabase
+          .from("sit_dates")
+          .update({ status: "open" as const })
+          .eq("id", sitDatesId);
+
+        if (sitDatesError) {
+          console.error("Error re-opening sit dates:", sitDatesError);
+        }
+      }
     },
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ["sits", user?.id] });
