@@ -48,11 +48,13 @@ import {
   Award,
   Loader2,
   Star,
+  Flag,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
 import { SitterReviewsSection } from "@/components/reviews/SitterReviewsSection";
 import { useSitterAverageRating } from "@/hooks/useSitterReviews";
+import ReportDialog from "@/components/reports/ReportDialog";
 
 interface SitterProfile {
   id: string;
@@ -491,6 +493,18 @@ const SitterDetail = () => {
                       <Send className="w-4 h-4 mr-2" />
                       Invite to Sit
                     </Button>
+                  )}
+                  {user && user.id !== userId && (
+                    <ReportDialog
+                      targetType="user"
+                      targetId={userId!}
+                      targetLabel="sitter"
+                      trigger={
+                        <Button variant="ghost" size="icon" className="text-muted-foreground">
+                          <Flag className="w-4 h-4" />
+                        </Button>
+                      }
+                    />
                   )}
                 </div>
 
