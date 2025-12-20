@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
+import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import { ApplicationCard } from "@/components/applications/ApplicationCard";
 import {
   useOwnerApplications,
@@ -93,6 +94,7 @@ const Applications = () => {
 
       <main className="pt-20">
         <div className="container max-w-4xl mx-auto px-4 py-8">
+          <Breadcrumbs />
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

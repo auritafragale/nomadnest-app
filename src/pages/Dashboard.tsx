@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
+import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import { useSitterApplications } from "@/hooks/useSitterApplications";
 import { SitterApplicationCard } from "@/components/applications/SitterApplicationCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -117,7 +118,7 @@ const Dashboard = () => {
       
       <main className="pt-20 pb-12">
         <div className="container mx-auto px-4">
-          {/* Header */}
+          <Breadcrumbs />
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-display font-bold text-foreground">

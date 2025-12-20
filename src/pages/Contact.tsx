@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Navbar from "@/components/layout/Navbar";
+import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -157,6 +158,7 @@ const Contact = () => {
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-4xl mx-auto">
+            <Breadcrumbs />
             {/* Header */}
             <div className="text-center mb-12">
               <h1 className="text-4xl font-display font-bold mb-4">
