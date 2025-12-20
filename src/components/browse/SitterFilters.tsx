@@ -18,12 +18,20 @@ interface SitterFiltersProps {
   onPetTypesChange: (types: string[]) => void;
   selectedLanguages: string[];
   onLanguagesChange: (languages: string[]) => void;
+  selectedExperienceLevels: string[];
+  onExperienceLevelsChange: (levels: string[]) => void;
   viewMode: "grid" | "list";
   onViewModeChange: (mode: "grid" | "list") => void;
 }
 
 const petTypeOptions = ["Dog", "Cat", "Bird", "Fish", "Rabbit", "Other"];
 const languageOptions = ["English", "Spanish", "French", "German", "Portuguese", "Italian", "Japanese", "Mandarin"];
+const experienceLevelOptions = [
+  { value: "beginner", label: "Beginner" },
+  { value: "intermediate", label: "Intermediate" },
+  { value: "experienced", label: "Experienced" },
+  { value: "professional", label: "Professional" },
+];
 
 const SitterFilters = ({
   searchQuery,
@@ -32,6 +40,8 @@ const SitterFilters = ({
   onPetTypesChange,
   selectedLanguages,
   onLanguagesChange,
+  selectedExperienceLevels,
+  onExperienceLevelsChange,
   viewMode,
   onViewModeChange,
 }: SitterFiltersProps) => {
@@ -53,12 +63,21 @@ const SitterFilters = ({
     }
   };
 
+  const toggleExperienceLevel = (level: string) => {
+    if (selectedExperienceLevels.includes(level)) {
+      onExperienceLevelsChange(selectedExperienceLevels.filter((l) => l !== level));
+    } else {
+      onExperienceLevelsChange([...selectedExperienceLevels, level]);
+    }
+  };
+
   const clearFilters = () => {
     onPetTypesChange([]);
     onLanguagesChange([]);
+    onExperienceLevelsChange([]);
   };
 
-  const activeFilterCount = selectedPetTypes.length + selectedLanguages.length;
+  const activeFilterCount = selectedPetTypes.length + selectedLanguages.length + selectedExperienceLevels.length;
 
   return (
     <div className="bg-surface border-b border-border sticky top-16 z-40">
@@ -127,6 +146,30 @@ const SitterFilters = ({
                   </div>
 
                   <div className="space-y-2">
+                    <Label>Experience Level</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {experienceLevelOptions.map((level) => (
+                        <div
+                          key={level.value}
+                          className={cn(
+                            "flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all",
+                            selectedExperienceLevels.includes(level.value)
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:border-primary/50"
+                          )}
+                          onClick={() => toggleExperienceLevel(level.value)}
+                        >
+                          <Checkbox
+                            checked={selectedExperienceLevels.includes(level.value)}
+                            onCheckedChange={() => toggleExperienceLevel(level.value)}
+                          />
+                          <span className="text-sm">{level.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label>Languages</Label>
                     <div className="grid grid-cols-2 gap-2">
                       {languageOptions.map((lang) => (
@@ -189,6 +232,21 @@ const SitterFilters = ({
                 <X className="w-3 h-3" />
               </Button>
             ))}
+            {selectedExperienceLevels.map((level) => {
+              const label = experienceLevelOptions.find(l => l.value === level)?.label || level;
+              return (
+                <Button
+                  key={level}
+                  variant="secondary"
+                  size="sm"
+                  className="h-7 gap-1"
+                  onClick={() => toggleExperienceLevel(level)}
+                >
+                  {label}
+                  <X className="w-3 h-3" />
+                </Button>
+              );
+            })}
             {selectedLanguages.map((lang) => (
               <Button
                 key={lang}

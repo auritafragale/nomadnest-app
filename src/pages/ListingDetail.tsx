@@ -152,7 +152,7 @@ const OwnerCard = ({
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="flex items-center gap-4 mb-4">
+        <Link to={`/owner/${listing.owner_user_id}`} className="flex items-center gap-4 mb-4 group">
           <Avatar className="w-14 h-14">
             <AvatarImage src={listing.profiles?.avatar_url || ""} />
             <AvatarFallback>
@@ -160,7 +160,7 @@ const OwnerCard = ({
             </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-semibold">{ownerName}</h3>
+            <h3 className="font-semibold group-hover:text-primary transition-colors">{ownerName}</h3>
             <p className="text-sm text-muted-foreground">Pet Owner</p>
             {reviewCount > 0 && (
               <div className="flex items-center gap-1 mt-1">
@@ -170,28 +170,40 @@ const OwnerCard = ({
               </div>
             )}
           </div>
-        </div>
+        </Link>
         {listing.communication_style && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
             <MessageSquare className="w-4 h-4" />
             Prefers {listing.communication_style.replace(/_/g, " ")} updates
           </div>
         )}
-        {canMessage && (
+        <div className="space-y-2">
           <Button
             variant="outline"
             className="w-full"
-            onClick={handleMessage}
-            disabled={isStartingChat}
+            asChild
           >
-            {isStartingChat ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <MessageSquare className="w-4 h-4 mr-2" />
-            )}
-            Message Owner
+            <Link to={`/owner/${listing.owner_user_id}`}>
+              <User className="w-4 h-4 mr-2" />
+              View Profile
+            </Link>
           </Button>
-        )}
+          {canMessage && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleMessage}
+              disabled={isStartingChat}
+            >
+              {isStartingChat ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <MessageSquare className="w-4 h-4 mr-2" />
+              )}
+              Message Owner
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

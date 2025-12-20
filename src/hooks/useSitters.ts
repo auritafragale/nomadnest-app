@@ -37,6 +37,7 @@ interface UseSittersOptions {
   searchQuery?: string;
   petTypes?: string[];
   languages?: string[];
+  experienceLevels?: string[];
   availableOnly?: boolean;
 }
 
@@ -116,6 +117,12 @@ export const useSitters = (options: UseSittersOptions = {}) => {
           );
         }
 
+        if (options.experienceLevels && options.experienceLevels.length > 0) {
+          filteredData = filteredData.filter((sitter) =>
+            sitter.experience_level && options.experienceLevels!.includes(sitter.experience_level)
+          );
+        }
+
         if (options.availableOnly) {
           const today = new Date().toISOString().split("T")[0];
           filteredData = filteredData.filter((sitter) => {
@@ -134,7 +141,7 @@ export const useSitters = (options: UseSittersOptions = {}) => {
     };
 
     fetchSitters();
-  }, [options.searchQuery, options.petTypes?.join(","), options.languages?.join(","), options.availableOnly]);
+  }, [options.searchQuery, options.petTypes?.join(","), options.languages?.join(","), options.experienceLevels?.join(","), options.availableOnly]);
 
   return { sitters, loading, error };
 };

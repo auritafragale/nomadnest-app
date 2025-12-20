@@ -3,7 +3,14 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, SlidersHorizontal, Grid, List, CalendarIcon, X, MapPin, Heart } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, SlidersHorizontal, Grid, List, CalendarIcon, X, MapPin, Heart, ArrowUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { ListingFilters as FilterType } from "@/hooks/useListings";
 import { DateRange } from "react-day-picker";
@@ -88,7 +95,7 @@ const ListingFilters = ({
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
-              placeholder="Search by location or title..."
+              placeholder="Search by location, title, or description..."
               className="pl-10 h-12"
               value={filters.search || ""}
               onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
@@ -152,6 +159,23 @@ const ListingFilters = ({
                 </div>
               </PopoverContent>
             </Popover>
+
+            {/* Sort By */}
+            <Select
+              value={filters.sortBy || "newest"}
+              onValueChange={(value) => 
+                onFiltersChange({ ...filters, sortBy: value as "newest" | "soonest" })
+              }
+            >
+              <SelectTrigger className="w-[140px]">
+                <ArrowUpDown className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="soonest">Soonest</SelectItem>
+              </SelectContent>
+            </Select>
 
             {/* My Locations Filter - for sitters */}
             {user && (role === "sitter" || role === "both") && hasPreferredLocations && (
