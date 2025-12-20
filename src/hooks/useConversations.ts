@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { sendNotification } from "@/lib/notifications";
 
 export interface Conversation {
   id: string;
@@ -213,6 +214,36 @@ export const useSendMessage = () => {
         .from("conversations")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", conversationId);
+
+      // Get conversation to find recipient and sender name
+      const { data: conversation } = await supabase
+        .from("conversations")
+        .select("owner_user_id, sitter_user_id")
+        .eq("id", conversationId)
+        .single();
+
+      const { data: senderProfile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", user.id)
+        .single();
+
+      if (conversation) {
+        const recipientId = conversation.owner_user_id === user.id 
+          ? conversation.sitter_user_id 
+          : conversation.owner_user_id;
+
+        // Send push/email notification to recipient
+        sendNotification({
+          type: "new_message",
+          recipientUserId: recipientId,
+          data: {
+            senderName: [senderProfile?.first_name, senderProfile?.last_name].filter(Boolean).join(" ") || "Someone",
+            messagePreview: body.substring(0, 150),
+            conversationId,
+          },
+        });
+      }
 
       return data;
     },

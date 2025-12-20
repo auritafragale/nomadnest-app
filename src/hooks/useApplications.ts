@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Database } from "@/integrations/supabase/types";
+import { sendNotification } from "@/lib/notifications";
+import { format } from "date-fns";
 
 type ApplicationStatus = Database["public"]["Enums"]["application_status"];
 
@@ -180,6 +182,16 @@ export const useAcceptApplication = () => {
         .eq("sit_dates_id", application.sit_dates_id)
         .neq("id", application.id)
         .in("status", ["applied", "shortlisted"]);
+
+      // Send notification to accepted sitter
+      sendNotification({
+        type: "application_status",
+        recipientUserId: application.sitter_user_id,
+        data: {
+          listingTitle: application.listing?.title || "a listing",
+          status: "accepted",
+        },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-applications"] });
