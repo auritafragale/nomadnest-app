@@ -409,20 +409,22 @@ const OwnerDashboard = ({
       <div className="lg:col-span-2 space-y-6">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-primary" />
+          <Link to="/create-listing">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Plus className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Create Listing</h3>
+                    <p className="text-sm text-muted-foreground">Post a new sit opportunity</p>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
                 </div>
-                <div>
-                  <h3 className="font-semibold">Create Listing</h3>
-                  <p className="text-sm text-muted-foreground">Post a new sit opportunity</p>
-                </div>
-                <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
 
           <Link to="/browse-sitters">
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
@@ -456,10 +458,12 @@ const OwnerDashboard = ({
               <Home className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p className="font-medium">No listings yet</p>
               <p className="text-sm mt-1">Create your first listing to find a sitter!</p>
-              <Button className="mt-4">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Listing
-              </Button>
+              <Link to="/create-listing">
+                <Button className="mt-4">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Listing
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
