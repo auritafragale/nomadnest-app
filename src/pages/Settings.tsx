@@ -45,6 +45,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import ImageUpload from "@/components/listing/ImageUpload";
+import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
 import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { useDeleteAccount } from "@/hooks/useDeleteAccount";
@@ -318,7 +319,7 @@ const Settings = () => {
 
       <main className="pt-20 pb-12">
         <div className="container mx-auto px-4 max-w-3xl">
-          {/* Header */}
+          <Breadcrumbs />
           <div className="flex items-center justify-between mb-8">
             <div>
               <Button

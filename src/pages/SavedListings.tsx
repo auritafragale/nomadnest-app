@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
+import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import Footer from "@/components/layout/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFavoritedListings } from "@/hooks/useFavorites";
@@ -44,6 +45,7 @@ const SavedListings = () => {
         {/* Header */}
         <div className="bg-surface border-b border-border">
           <div className="container py-8">
+            <Breadcrumbs />
             <div className="flex items-center gap-3 mb-2">
               <Heart className="w-8 h-8 text-primary" />
               <h1 className="text-3xl md:text-4xl font-display">Saved Listings</h1>

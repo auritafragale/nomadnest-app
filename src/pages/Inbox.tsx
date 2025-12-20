@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
+import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import { ConversationList } from "@/components/inbox/ConversationList";
 import { MessageThread } from "@/components/inbox/MessageThread";
 import {
@@ -80,6 +81,7 @@ const Inbox = () => {
 
       <main className="flex-1 pt-20">
         <div className="container max-w-6xl mx-auto px-4 py-6 h-[calc(100vh-5rem)]">
+          <Breadcrumbs />
           <h1 className="text-2xl font-bold text-foreground mb-6">Messages</h1>
 
           <div className="flex h-[calc(100%-4rem)] border border-border rounded-lg overflow-hidden bg-card">
