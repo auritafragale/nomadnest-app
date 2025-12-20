@@ -12,6 +12,7 @@ export interface Pet {
   has_medication: boolean;
   medication_instructions: string;
   vet_info: string;
+  photos: string[];
 }
 
 export interface SitDate {
@@ -41,6 +42,7 @@ export interface ListingFormData {
   wifi_quality: string;
   sleeping_arrangement: string;
   amenities: string[];
+  photos: string[];
   
   // Step 5: Requirements
   requirements: string[];
@@ -65,6 +67,7 @@ const initialPet: Pet = {
   has_medication: false,
   medication_instructions: "",
   vet_info: "",
+  photos: [],
 };
 
 const initialSitDate: SitDate = {
@@ -87,6 +90,7 @@ const initialFormData: ListingFormData = {
   wifi_quality: "",
   sleeping_arrangement: "",
   amenities: [],
+  photos: [],
   requirements: [],
   requirements_other: "",
   house_rules: [],

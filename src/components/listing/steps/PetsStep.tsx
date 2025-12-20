@@ -4,10 +4,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Dog, Cat, Bird, Fish, Rabbit } from "lucide-react";
 import { Pet, ListingFormData } from "@/hooks/useListingForm";
 import { cn } from "@/lib/utils";
+import ImageUpload from "@/components/listing/ImageUpload";
 
 interface PetsStepProps {
   formData: ListingFormData;
@@ -186,6 +186,15 @@ const PetsStep = ({ formData, addPet, updatePet, removePet }: PetsStepProps) => 
                   rows={2}
                 />
               </div>
+
+              {/* Pet Photos */}
+              <ImageUpload
+                images={pet.photos}
+                onImagesChange={(photos) => updatePet(pet.id, { photos })}
+                maxImages={4}
+                folder={`pets/${pet.id}`}
+                label="Pet Photos"
+              />
             </CardContent>
           </Card>
         ))}
