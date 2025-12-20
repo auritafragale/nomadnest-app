@@ -1,0 +1,210 @@
+import { Link } from "react-router-dom";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { MapPin, Star, Cat, Dog, Bird, Rabbit, MessageSquare, Languages, Shield, CheckCircle } from "lucide-react";
+import { SitterWithProfile } from "@/hooks/useSitters";
+
+interface SitterCardProps {
+  sitter: SitterWithProfile;
+  viewMode: "grid" | "list";
+}
+
+const petIcons: Record<string, typeof Dog> = {
+  dog: Dog,
+  cat: Cat,
+  bird: Bird,
+  rabbit: Rabbit,
+};
+
+const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
+  const name = sitter.profile
+    ? `${sitter.profile.first_name || ""} ${sitter.profile.last_name || ""}`.trim() || "Sitter"
+    : "Sitter";
+  
+  const initials = name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const location = sitter.profile
+    ? [sitter.profile.city, sitter.profile.country].filter(Boolean).join(", ")
+    : null;
+
+  const isAvailable = () => {
+    if (!sitter.available_from || !sitter.available_to) return true;
+    const today = new Date().toISOString().split("T")[0];
+    return sitter.available_from <= today;
+  };
+
+  return (
+    <Link to={`/sitter/${sitter.user_id}`}>
+      <Card
+        variant="interactive"
+        className={`overflow-hidden group ${viewMode === "list" ? "flex flex-row" : ""}`}
+      >
+        <div className={`p-6 ${viewMode === "list" ? "flex gap-6 items-start" : ""}`}>
+          <div
+            className={`${
+              viewMode === "list"
+                ? "flex-shrink-0"
+                : "flex flex-col items-center text-center mb-4"
+            }`}
+          >
+            <div className="relative">
+              <Avatar
+                className={`${viewMode === "list" ? "w-20 h-20" : "w-24 h-24 mb-3"}`}
+              >
+                <AvatarImage
+                  src={sitter.profile?.avatar_url || ""}
+                  alt={name}
+                />
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+              {sitter.id_verified && (
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-primary-foreground" />
+                </div>
+              )}
+            </div>
+            {viewMode !== "list" && (
+              <>
+                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+                  {name}
+                </h3>
+                {sitter.experience_level && (
+                  <span className="text-sm text-muted-foreground">
+                    {sitter.experience_level}
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className={`${viewMode === "list" ? "flex-1" : ""}`}>
+            {viewMode === "list" && (
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+                    {name}
+                  </h3>
+                  {sitter.experience_level && (
+                    <span className="text-sm text-muted-foreground">
+                      {sitter.experience_level}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {sitter.id_verified && (
+                    <Badge variant="outline" className="gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      Verified
+                    </Badge>
+                  )}
+                  {sitter.background_check && (
+                    <Badge variant="outline" className="gap-1">
+                      <Shield className="w-3 h-3" />
+                      Background Check
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {sitter.headline && (
+              <p
+                className={`text-sm text-muted-foreground ${
+                  viewMode === "list" ? "mb-2" : "mb-3 text-center"
+                }`}
+              >
+                {sitter.headline}
+              </p>
+            )}
+
+            <div
+              className={`space-y-2 ${viewMode === "list" ? "" : "text-center"}`}
+            >
+              {location && (
+                <div
+                  className={`flex items-center gap-2 text-sm text-muted-foreground ${
+                    viewMode === "list" ? "" : "justify-center"
+                  }`}
+                >
+                  <MapPin className="w-4 h-4 flex-shrink-0" />
+                  {location}
+                </div>
+              )}
+              {sitter.languages && sitter.languages.length > 0 && (
+                <div
+                  className={`flex items-center gap-2 text-sm text-muted-foreground ${
+                    viewMode === "list" ? "" : "justify-center"
+                  }`}
+                >
+                  <Languages className="w-4 h-4 flex-shrink-0" />
+                  {sitter.languages.slice(0, 3).join(", ")}
+                  {sitter.languages.length > 3 && ` +${sitter.languages.length - 3}`}
+                </div>
+              )}
+            </div>
+
+            <div
+              className={`flex flex-wrap gap-2 mt-4 ${
+                viewMode === "list" ? "" : "justify-center"
+              }`}
+            >
+              {(sitter.pet_types || []).slice(0, 3).map((petType) => {
+                const Icon = petIcons[petType.toLowerCase()] || Dog;
+                return (
+                  <Badge key={petType} variant="muted" className="gap-1 capitalize">
+                    <Icon className="w-3 h-3" />
+                    {petType}
+                  </Badge>
+                );
+              })}
+              <Badge variant={isAvailable() ? "success" : "muted"}>
+                {isAvailable() ? "Available" : "Booked"}
+              </Badge>
+            </div>
+
+            {viewMode === "list" && (
+              <div className="flex gap-3 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Message
+                </Button>
+                <Button size="sm" onClick={(e) => e.preventDefault()}>
+                  View Profile
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {viewMode !== "list" && (
+          <div className="px-6 pb-6 flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={(e) => e.preventDefault()}
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Message
+            </Button>
+            <Button className="flex-1" onClick={(e) => e.preventDefault()}>
+              View
+            </Button>
+          </div>
+        )}
+      </Card>
+    </Link>
+  );
+};
+
+export default SitterCard;
