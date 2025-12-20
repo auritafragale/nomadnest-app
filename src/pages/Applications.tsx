@@ -54,11 +54,16 @@ const Applications = () => {
   }
 
   const handleStatusChange = async (
-    applicationId: string,
+    application: (typeof applications)[0],
     status: "shortlisted" | "declined"
   ) => {
     try {
-      await updateStatus.mutateAsync({ applicationId, status });
+      await updateStatus.mutateAsync({ 
+        applicationId: application.id, 
+        status,
+        sitterUserId: application.sitter_user_id,
+        listingTitle: application.listing?.title,
+      });
       toast({
         title: status === "shortlisted" ? "Shortlisted" : "Declined",
         description: `Application has been ${status}.`,
@@ -145,7 +150,7 @@ const Applications = () => {
                 <ApplicationCard
                   key={application.id}
                   application={application}
-                  onStatusChange={(status) => handleStatusChange(application.id, status)}
+                  onStatusChange={(status) => handleStatusChange(application, status)}
                   onAccept={() => handleAccept(application)}
                   isUpdating={updateStatus.isPending || acceptApplication.isPending}
                 />
