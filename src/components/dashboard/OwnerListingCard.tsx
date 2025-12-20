@@ -20,10 +20,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Calendar, Edit, Eye, Users, MoreVertical, Pause, Play, Trash2 } from "lucide-react";
+import { MapPin, Calendar, Edit, Eye, Users, MoreVertical, Pause, Play, Trash2, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { OwnerListing } from "@/hooks/useOwnerListings";
 import { useUpdateListingStatus, useDeleteListing } from "@/hooks/useOwnerListingActions";
+import { useDuplicateListing } from "@/hooks/useDuplicateListing";
 
 interface OwnerListingCardProps {
   listing: OwnerListing;
@@ -39,6 +40,7 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const updateStatus = useUpdateListingStatus();
   const deleteListing = useDeleteListing();
+  const duplicateListing = useDuplicateListing();
 
   const nextDate = listing.sit_dates.find((d) => d.status === "open");
   const petNames = listing.pets.map((p) => p.name || p.type).join(", ");
@@ -54,6 +56,10 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
   const handleDelete = () => {
     deleteListing.mutate(listing.id);
     setShowDeleteDialog(false);
+  };
+
+  const handleDuplicate = () => {
+    duplicateListing.mutate(listing.id);
   };
 
   return (
@@ -113,6 +119,10 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                           Unpause Listing
                         </DropdownMenuItem>
                       )}
+                      <DropdownMenuItem onClick={handleDuplicate}>
+                        <Copy className="w-4 h-4 mr-2" />
+                        Duplicate Listing
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => setShowDeleteDialog(true)}

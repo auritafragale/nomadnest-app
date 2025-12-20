@@ -30,11 +30,11 @@ import {
   LogOut,
   Briefcase,
   Home,
-  Mail,
   MessageSquare,
   FileText,
   Star,
-  Camera,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +42,8 @@ import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import ImageUpload from "@/components/listing/ImageUpload";
 import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
+import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useNotificationPreferences";
+import { useDeleteAccount } from "@/hooks/useDeleteAccount";
 
 interface Profile {
   first_name: string;
@@ -50,13 +52,6 @@ interface Profile {
   city: string;
   country: string;
   email: string;
-}
-
-interface NotificationPreferences {
-  email_new_applications: boolean;
-  email_messages: boolean;
-  email_sit_updates: boolean;
-  email_reviews: boolean;
 }
 
 const Settings = () => {
@@ -74,23 +69,19 @@ const Settings = () => {
     country: "",
     email: "",
   });
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
-  // Notification preferences (stored in localStorage for now)
-  const [notifications, setNotifications] = useState<NotificationPreferences>({
-    email_new_applications: true,
-    email_messages: true,
-    email_sit_updates: true,
-    email_reviews: true,
-  });
+  // Use DB-based notification preferences
+  const { data: notifications, isLoading: notificationsLoading } = useNotificationPreferences();
+  const updateNotifications = useUpdateNotificationPreferences();
+  const deleteAccount = useDeleteAccount();
 
   useEffect(() => {
     if (!user) {
       navigate("/auth");
       return;
     }
-
     fetchProfile();
-    loadNotificationPreferences();
   }, [user, navigate]);
 
   const fetchProfile = async () => {
@@ -118,20 +109,6 @@ const Settings = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const loadNotificationPreferences = () => {
-    if (!user) return;
-    const stored = localStorage.getItem(`notifications_${user.id}`);
-    if (stored) {
-      setNotifications(JSON.parse(stored));
-    }
-  };
-
-  const saveNotificationPreferences = (prefs: NotificationPreferences) => {
-    if (!user) return;
-    localStorage.setItem(`notifications_${user.id}`, JSON.stringify(prefs));
-    setNotifications(prefs);
   };
 
   const handleSaveProfile = async () => {
@@ -171,6 +148,10 @@ const Settings = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
+  };
+
+  const handleNotificationChange = (key: string, value: boolean) => {
+    updateNotifications.mutate({ [key]: value });
   };
 
   const getRoleLabel = () => {
@@ -469,116 +450,137 @@ const Settings = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">New Applications</p>
-                      <p className="text-sm text-muted-foreground">
-                        When someone applies to your listing
-                      </p>
-                    </div>
+                {notificationsLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
                   </div>
-                  <Switch
-                    checked={notifications.email_new_applications}
-                    onCheckedChange={(checked) =>
-                      saveNotificationPreferences({
-                        ...notifications,
-                        email_new_applications: checked,
-                      })
-                    }
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <MessageSquare className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">Messages</p>
-                      <p className="text-sm text-muted-foreground">
-                        When you receive a new message
-                      </p>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">New Applications</p>
+                          <p className="text-sm text-muted-foreground">
+                            When someone applies to your listing
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notifications?.email_new_applications ?? true}
+                        onCheckedChange={(checked) =>
+                          handleNotificationChange("email_new_applications", checked)
+                        }
+                        disabled={updateNotifications.isPending}
+                      />
                     </div>
-                  </div>
-                  <Switch
-                    checked={notifications.email_messages}
-                    onCheckedChange={(checked) =>
-                      saveNotificationPreferences({
-                        ...notifications,
-                        email_messages: checked,
-                      })
-                    }
-                  />
-                </div>
 
-                <Separator />
+                    <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Home className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">Sit Updates</p>
-                      <p className="text-sm text-muted-foreground">
-                        Status changes for your sits
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <MessageSquare className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">Messages</p>
+                          <p className="text-sm text-muted-foreground">
+                            When you receive a new message
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notifications?.email_messages ?? true}
+                        onCheckedChange={(checked) =>
+                          handleNotificationChange("email_messages", checked)
+                        }
+                        disabled={updateNotifications.isPending}
+                      />
                     </div>
-                  </div>
-                  <Switch
-                    checked={notifications.email_sit_updates}
-                    onCheckedChange={(checked) =>
-                      saveNotificationPreferences({
-                        ...notifications,
-                        email_sit_updates: checked,
-                      })
-                    }
-                  />
-                </div>
 
-                <Separator />
+                    <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Star className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">Reviews</p>
-                      <p className="text-sm text-muted-foreground">
-                        When someone leaves you a review
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Home className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">Sit Updates</p>
+                          <p className="text-sm text-muted-foreground">
+                            Status changes for your sits
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notifications?.email_sit_updates ?? true}
+                        onCheckedChange={(checked) =>
+                          handleNotificationChange("email_sit_updates", checked)
+                        }
+                        disabled={updateNotifications.isPending}
+                      />
                     </div>
-                  </div>
-                  <Switch
-                    checked={notifications.email_reviews}
-                    onCheckedChange={(checked) =>
-                      saveNotificationPreferences({
-                        ...notifications,
-                        email_reviews: checked,
-                      })
-                    }
-                  />
-                </div>
+
+                    <Separator />
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Star className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">Reviews</p>
+                          <p className="text-sm text-muted-foreground">
+                            When someone leaves you a review
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notifications?.email_reviews ?? true}
+                        onCheckedChange={(checked) =>
+                          handleNotificationChange("email_reviews", checked)
+                        }
+                        disabled={updateNotifications.isPending}
+                      />
+                    </div>
+
+                    <Separator />
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Bell className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">Application Status</p>
+                          <p className="text-sm text-muted-foreground">
+                            When your applications are accepted or declined
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notifications?.email_application_status ?? true}
+                        onCheckedChange={(checked) =>
+                          handleNotificationChange("email_application_status", checked)
+                        }
+                        disabled={updateNotifications.isPending}
+                      />
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
-            {/* Danger Zone */}
-            <Card className="border-destructive/50">
+            {/* Sign Out */}
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-destructive">
+                <CardTitle className="flex items-center gap-2">
                   <LogOut className="w-5 h-5" />
                   Sign Out
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Sign out of your account on this device
-                    </p>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Sign out of your account on this device
+                  </p>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
+                      <Button variant="outline">
                         <LogOut className="w-4 h-4 mr-2" />
                         Sign Out
                       </Button>
@@ -594,6 +596,79 @@ const Settings = () => {
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleSignOut}>
                           Sign Out
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Danger Zone - Delete Account */}
+            <Card className="border-destructive/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="w-5 h-5" />
+                  Danger Zone
+                </CardTitle>
+                <CardDescription>
+                  Irreversible and destructive actions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium">Delete Account</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently delete your account and all associated data. This action
+                      cannot be undone.
+                    </p>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive">
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Account
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-4">
+                          <p>
+                            This will permanently delete your account and all data including:
+                          </p>
+                          <ul className="list-disc list-inside text-sm space-y-1">
+                            <li>All your listings and applications</li>
+                            <li>All your messages and conversations</li>
+                            <li>All your reviews and favorites</li>
+                            <li>Your sitter and owner profiles</li>
+                          </ul>
+                          <p className="font-medium">
+                            Type "DELETE" to confirm:
+                          </p>
+                          <Input
+                            value={deleteConfirmText}
+                            onChange={(e) => setDeleteConfirmText(e.target.value)}
+                            placeholder="Type DELETE"
+                          />
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteAccount.mutate()}
+                          disabled={deleteConfirmText !== "DELETE" || deleteAccount.isPending}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {deleteAccount.isPending ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 mr-2" />
+                          )}
+                          Delete Account
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
