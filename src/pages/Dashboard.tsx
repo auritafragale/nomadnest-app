@@ -22,6 +22,7 @@ import { useOwnerListings } from "@/hooks/useOwnerListings";
 import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
 import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection";
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
+import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
 
 interface Profile {
   first_name: string | null;
@@ -385,6 +386,9 @@ const SitterDashboard = ({
 
         {/* Sitter Invites */}
         <SitterInvitesSection />
+
+        {/* Availability Calendar */}
+        <SitterAvailabilityCalendar />
 
         {/* Sits Calendar */}
         <SitsCalendar viewAs="sitter" />
