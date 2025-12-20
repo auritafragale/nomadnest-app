@@ -7,9 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Home, Search, Plus, MessageSquare, Calendar, Settings, 
   LogOut, User, Briefcase, ArrowRight, MapPin, Clock,
-  FileText, Star, Bell, ClipboardList
+  FileText, Star, Bell, ClipboardList, Heart
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import { useSitterApplications } from "@/hooks/useSitterApplications";
@@ -18,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SitsCalendar } from "@/components/dashboard/SitsCalendar";
 import { OwnerListingCard } from "@/components/dashboard/OwnerListingCard";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
+import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
 
 interface Profile {
   first_name: string | null;
@@ -39,25 +41,17 @@ interface OwnerProfile {
 
 const Dashboard = () => {
   const { user, role, signOut, loading } = useAuth();
+  const { activeRole, setActiveRole } = useActiveRole();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
-  const [activeRole, setActiveRole] = useState<"sitter" | "owner">("sitter");
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
-
-  useEffect(() => {
-    if (role === "owner") {
-      setActiveRole("owner");
-    } else {
-      setActiveRole("sitter");
-    }
-  }, [role]);
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -162,6 +156,13 @@ const Dashboard = () => {
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
+            </div>
+          )}
+
+          {/* Upgrade role option for single-role users */}
+          {(role === "sitter" || role === "owner") && (
+            <div className="mb-8">
+              <UpgradeRoleDialog currentRole={role} />
             </div>
           )}
 
@@ -279,7 +280,7 @@ const SitterDashboard = ({
       {/* Middle Column - Actions & Applications */}
       <div className="lg:col-span-2 space-y-6">
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Link to="/browse-sits">
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
               <CardContent className="pt-6">
@@ -297,20 +298,39 @@ const SitterDashboard = ({
             </Card>
           </Link>
 
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
-                  <MessageSquare className="w-6 h-6 text-secondary" />
+          <Link to="/saved">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-destructive/10 flex items-center justify-center">
+                    <Heart className="w-6 h-6 text-destructive" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Saved Sits</h3>
+                    <p className="text-sm text-muted-foreground">Your favorites</p>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
                 </div>
-                <div>
-                  <h3 className="font-semibold">Messages</h3>
-                  <p className="text-sm text-muted-foreground">0 unread</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to="/inbox">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
+                    <MessageSquare className="w-6 h-6 text-secondary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Messages</h3>
+                    <p className="text-sm text-muted-foreground">View inbox</p>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
                 </div>
-                <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* My Applications */}
