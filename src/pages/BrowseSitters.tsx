@@ -12,11 +12,13 @@ const BrowseSitters = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPetTypes, setSelectedPetTypes] = useState<string[]>([]);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [selectedExperienceLevels, setSelectedExperienceLevels] = useState<string[]>([]);
 
   const { sitters, loading, error } = useSitters({
     searchQuery,
     petTypes: selectedPetTypes,
     languages: selectedLanguages,
+    experienceLevels: selectedExperienceLevels,
   });
 
   return (
@@ -44,6 +46,8 @@ const BrowseSitters = () => {
           onPetTypesChange={setSelectedPetTypes}
           selectedLanguages={selectedLanguages}
           onLanguagesChange={setSelectedLanguages}
+          selectedExperienceLevels={selectedExperienceLevels}
+          onExperienceLevelsChange={setSelectedExperienceLevels}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
         />
@@ -77,7 +81,7 @@ const BrowseSitters = () => {
               <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
               <h3 className="text-xl font-semibold mb-2">No sitters found</h3>
               <p className="text-muted-foreground">
-                {searchQuery || selectedPetTypes.length > 0 || selectedLanguages.length > 0
+                {searchQuery || selectedPetTypes.length > 0 || selectedLanguages.length > 0 || selectedExperienceLevels.length > 0
                   ? "Try adjusting your filters to find more sitters"
                   : "Be the first to create a sitter profile!"}
               </p>

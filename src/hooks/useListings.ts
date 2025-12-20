@@ -8,6 +8,7 @@ export interface ListingFilters {
   endDate?: string;
   countries?: string[];
   cities?: string[];
+  sortBy?: "newest" | "soonest";
 }
 
 export interface ListingWithDetails {
@@ -20,6 +21,7 @@ export interface ListingWithDetails {
   photos: string[];
   amenities: string[];
   status: string;
+  created_at: string;
   pets: {
     id: string;
     name: string | null;
@@ -49,6 +51,7 @@ export const useListings = (filters: ListingFilters = {}) => {
           photos,
           amenities,
           status,
+          created_at,
           pets (
             id,
             name,
@@ -66,7 +69,7 @@ export const useListings = (filters: ListingFilters = {}) => {
       // Apply location/title search
       if (filters.search) {
         const searchTerm = `%${filters.search}%`;
-        query = query.or(`title.ilike.${searchTerm},city.ilike.${searchTerm},country.ilike.${searchTerm},area.ilike.${searchTerm}`);
+        query = query.or(`title.ilike.${searchTerm},city.ilike.${searchTerm},country.ilike.${searchTerm},area.ilike.${searchTerm},description.ilike.${searchTerm}`);
       }
 
       const { data, error } = await query.order("created_at", { ascending: false });
@@ -128,6 +131,26 @@ export const useListings = (filters: ListingFilters = {}) => {
       results = results.filter((listing) =>
         listing.sit_dates.some((sitDate) => sitDate.status === "open")
       );
+
+      // Sort results
+      if (filters.sortBy === "soonest") {
+        results.sort((a, b) => {
+          const aOpenDates = a.sit_dates.filter(d => d.status === "open");
+          const bOpenDates = b.sit_dates.filter(d => d.status === "open");
+          const aEarliest = aOpenDates.length > 0 
+            ? Math.min(...aOpenDates.map(d => new Date(d.start_date).getTime()))
+            : Infinity;
+          const bEarliest = bOpenDates.length > 0 
+            ? Math.min(...bOpenDates.map(d => new Date(d.start_date).getTime()))
+            : Infinity;
+          return aEarliest - bEarliest;
+        });
+      } else {
+        // Default: newest first (by created_at)
+        results.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      }
 
       return results;
     },
