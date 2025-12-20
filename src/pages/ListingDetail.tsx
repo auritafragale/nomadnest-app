@@ -1,0 +1,757 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  ArrowLeft,
+  MapPin,
+  Calendar,
+  Wifi,
+  Home,
+  Bed,
+  Dog,
+  Cat,
+  Bird,
+  Fish,
+  Rabbit,
+  Pill,
+  Check,
+  MessageSquare,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  Loader2,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import Navbar from "@/components/layout/Navbar";
+import { format, parseISO, differenceInDays } from "date-fns";
+import { cn } from "@/lib/utils";
+
+interface Pet {
+  id: string;
+  name: string;
+  type: string;
+  age: string | null;
+  personality: string | null;
+  feeding_details: string | null;
+  daily_routine: string | null;
+  walks_exercise: string | null;
+  has_medication: boolean;
+  medication_instructions: string | null;
+  vet_info: string | null;
+  photos: string[];
+}
+
+interface SitDate {
+  id: string;
+  start_date: string;
+  end_date: string;
+  flexibility: string | null;
+  handover_preference: string | null;
+  status: string;
+}
+
+interface Profile {
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  city: string | null;
+  country: string | null;
+}
+
+interface Listing {
+  id: string;
+  title: string;
+  description: string | null;
+  city: string;
+  country: string;
+  area: string | null;
+  home_type: string | null;
+  wifi_quality: string | null;
+  sleeping_arrangement: string | null;
+  amenities: string[];
+  photos: string[];
+  requirements: string[];
+  requirements_other: string | null;
+  house_rules: string[];
+  house_rules_other: string | null;
+  home_care_tasks: string[];
+  home_care_tasks_other: string | null;
+  ideal_sitter_description: string | null;
+  communication_style: string | null;
+  owner_user_id: string;
+  pets: Pet[];
+  sit_dates: SitDate[];
+  profiles: Profile;
+}
+
+const petIcons: Record<string, typeof Dog> = {
+  dog: Dog,
+  cat: Cat,
+  bird: Bird,
+  fish: Fish,
+  rabbit: Rabbit,
+};
+
+const ListingDetail = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user, role } = useAuth();
+  const { toast } = useToast();
+
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [applyDialogOpen, setApplyDialogOpen] = useState(false);
+  const [selectedDateId, setSelectedDateId] = useState<string | null>(null);
+  const [applicationMessage, setApplicationMessage] = useState("");
+  const [isApplying, setIsApplying] = useState(false);
+
+  useEffect(() => {
+    const fetchListing = async () => {
+      if (!id) return;
+
+      const { data, error } = await supabase
+        .from("listings")
+        .select(
+          `
+          *,
+          pets (*),
+          sit_dates (*),
+          profiles:owner_user_id (first_name, last_name, avatar_url, city, country)
+        `
+        )
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching listing:", error);
+        toast({
+          title: "Error loading listing",
+          description: "This listing could not be found",
+          variant: "destructive",
+        });
+        navigate("/browse-sits");
+        return;
+      }
+
+      if (!data) {
+        toast({
+          title: "Listing not found",
+          description: "This listing doesn't exist or has been removed",
+          variant: "destructive",
+        });
+        navigate("/browse-sits");
+        return;
+      }
+
+      setListing(data as unknown as Listing);
+      setLoading(false);
+    };
+
+    fetchListing();
+  }, [id, navigate, toast]);
+
+  const allPhotos = listing
+    ? [
+        ...listing.photos,
+        ...listing.pets.flatMap((pet) => pet.photos || []),
+      ]
+    : [];
+
+  const nextPhoto = () => {
+    setCurrentPhotoIndex((prev) =>
+      prev === allPhotos.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const prevPhoto = () => {
+    setCurrentPhotoIndex((prev) =>
+      prev === 0 ? allPhotos.length - 1 : prev - 1
+    );
+  };
+
+  const handleApply = async () => {
+    if (!user || !selectedDateId || !listing) return;
+
+    setIsApplying(true);
+
+    try {
+      const { error } = await supabase.from("applications").insert({
+        listing_id: listing.id,
+        sit_dates_id: selectedDateId,
+        sitter_user_id: user.id,
+        message: applicationMessage || null,
+        status: "applied",
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Application sent!",
+        description: "The owner will review your application soon",
+      });
+
+      setApplyDialogOpen(false);
+      setApplicationMessage("");
+      setSelectedDateId(null);
+    } catch (error: any) {
+      console.error("Error applying:", error);
+      toast({
+        title: "Failed to apply",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  const openDates = listing?.sit_dates.filter((d) => d.status === "open") || [];
+  const isOwner = user?.id === listing?.owner_user_id;
+  const canApply = user && !isOwner && (role === "sitter" || role === "both");
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="pt-20 pb-12">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <Skeleton className="h-8 w-48 mb-6" />
+            <Skeleton className="aspect-video w-full rounded-xl mb-6" />
+            <Skeleton className="h-10 w-3/4 mb-4" />
+            <Skeleton className="h-6 w-1/2 mb-8" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-48 w-full" />
+              </div>
+              <Skeleton className="h-64 w-full" />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!listing) return null;
+
+  const ownerName = listing.profiles?.first_name
+    ? `${listing.profiles.first_name} ${listing.profiles.last_name || ""}`.trim()
+    : "Pet Owner";
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+
+      <main className="pt-20 pb-12">
+        <div className="container mx-auto px-4 max-w-5xl">
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="mb-6"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+
+          {/* Photo Gallery */}
+          {allPhotos.length > 0 ? (
+            <div className="relative aspect-video rounded-xl overflow-hidden bg-muted mb-6">
+              <img
+                src={allPhotos[currentPhotoIndex]}
+                alt={`Photo ${currentPhotoIndex + 1}`}
+                className="w-full h-full object-cover"
+              />
+              {allPhotos.length > 1 && (
+                <>
+                  <button
+                    onClick={prevPhoto}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-background/80 rounded-full hover:bg-background transition-colors"
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                  <button
+                    onClick={nextPhoto}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-background/80 rounded-full hover:bg-background transition-colors"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {allPhotos.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentPhotoIndex(idx)}
+                        className={cn(
+                          "w-2 h-2 rounded-full transition-colors",
+                          idx === currentPhotoIndex
+                            ? "bg-primary"
+                            : "bg-background/60"
+                        )}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="aspect-video rounded-xl bg-muted flex items-center justify-center mb-6">
+              <Home className="w-16 h-16 text-muted-foreground/50" />
+            </div>
+          )}
+
+          {/* Title & Location */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-display font-bold text-foreground mb-2">
+              {listing.title}
+            </h1>
+            <div className="flex items-center gap-4 text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                {listing.city}, {listing.country}
+              </span>
+              {listing.area && (
+                <span className="text-sm">• {listing.area}</span>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Description */}
+              {listing.description && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>About this sit</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground whitespace-pre-wrap">
+                      {listing.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Pets */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Dog className="w-5 h-5" />
+                    Meet the Pets ({listing.pets.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {listing.pets.map((pet, index) => {
+                    const PetIcon = petIcons[pet.type] || Dog;
+                    return (
+                      <div key={pet.id}>
+                        {index > 0 && <Separator className="mb-6" />}
+                        <div className="flex items-start gap-4">
+                          {pet.photos?.[0] ? (
+                            <img
+                              src={pet.photos[0]}
+                              alt={pet.name}
+                              className="w-20 h-20 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center">
+                              <PetIcon className="w-8 h-8 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-lg">
+                                {pet.name}
+                              </h3>
+                              <Badge variant="secondary" className="capitalize">
+                                {pet.type}
+                              </Badge>
+                              {pet.age && (
+                                <span className="text-sm text-muted-foreground">
+                                  • {pet.age}
+                                </span>
+                              )}
+                              {pet.has_medication && (
+                                <Badge variant="outline" className="gap-1">
+                                  <Pill className="w-3 h-3" />
+                                  Medication
+                                </Badge>
+                              )}
+                            </div>
+                            {pet.personality && (
+                              <p className="text-muted-foreground text-sm mb-2">
+                                {pet.personality}
+                              </p>
+                            )}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                              {pet.feeding_details && (
+                                <div>
+                                  <span className="font-medium">Feeding:</span>{" "}
+                                  <span className="text-muted-foreground">
+                                    {pet.feeding_details}
+                                  </span>
+                                </div>
+                              )}
+                              {pet.daily_routine && (
+                                <div>
+                                  <span className="font-medium">Routine:</span>{" "}
+                                  <span className="text-muted-foreground">
+                                    {pet.daily_routine}
+                                  </span>
+                                </div>
+                              )}
+                              {pet.walks_exercise && (
+                                <div>
+                                  <span className="font-medium">Exercise:</span>{" "}
+                                  <span className="text-muted-foreground">
+                                    {pet.walks_exercise}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+
+              {/* Home Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Home className="w-5 h-5" />
+                    Home Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {listing.home_type && (
+                      <div className="flex items-center gap-2">
+                        <Home className="w-4 h-4 text-muted-foreground" />
+                        <span className="capitalize">{listing.home_type}</span>
+                      </div>
+                    )}
+                    {listing.wifi_quality && (
+                      <div className="flex items-center gap-2">
+                        <Wifi className="w-4 h-4 text-muted-foreground" />
+                        <span className="capitalize">
+                          {listing.wifi_quality.replace("_", " ")} WiFi
+                        </span>
+                      </div>
+                    )}
+                    {listing.sleeping_arrangement && (
+                      <div className="flex items-center gap-2">
+                        <Bed className="w-4 h-4 text-muted-foreground" />
+                        <span className="capitalize">
+                          {listing.sleeping_arrangement.replace(/_/g, " ")}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {listing.amenities.length > 0 && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h4 className="font-medium mb-2">Amenities</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {listing.amenities.map((amenity) => (
+                            <Badge key={amenity} variant="secondary">
+                              {amenity}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Requirements & Rules */}
+              {(listing.requirements.length > 0 ||
+                listing.house_rules.length > 0 ||
+                listing.home_care_tasks.length > 0) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Requirements & House Rules</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {listing.requirements.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2">Sitter Requirements</h4>
+                        <ul className="space-y-1">
+                          {listing.requirements.map((req) => (
+                            <li
+                              key={req}
+                              className="flex items-center gap-2 text-sm"
+                            >
+                              <Check className="w-4 h-4 text-primary" />
+                              {req}
+                            </li>
+                          ))}
+                        </ul>
+                        {listing.requirements_other && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            {listing.requirements_other}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {listing.house_rules.length > 0 && (
+                      <>
+                        <Separator />
+                        <div>
+                          <h4 className="font-medium mb-2">House Rules</h4>
+                          <ul className="space-y-1">
+                            {listing.house_rules.map((rule) => (
+                              <li
+                                key={rule}
+                                className="flex items-center gap-2 text-sm"
+                              >
+                                <Check className="w-4 h-4 text-primary" />
+                                {rule}
+                              </li>
+                            ))}
+                          </ul>
+                          {listing.house_rules_other && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {listing.house_rules_other}
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {listing.home_care_tasks.length > 0 && (
+                      <>
+                        <Separator />
+                        <div>
+                          <h4 className="font-medium mb-2">Home Care Tasks</h4>
+                          <ul className="space-y-1">
+                            {listing.home_care_tasks.map((task) => (
+                              <li
+                                key={task}
+                                className="flex items-center gap-2 text-sm"
+                              >
+                                <Check className="w-4 h-4 text-secondary" />
+                                {task}
+                              </li>
+                            ))}
+                          </ul>
+                          {listing.home_care_tasks_other && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {listing.home_care_tasks_other}
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Ideal Sitter */}
+              {listing.ideal_sitter_description && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ideal Sitter</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground whitespace-pre-wrap">
+                      {listing.ideal_sitter_description}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Owner Card */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-4 mb-4">
+                    <Avatar className="w-14 h-14">
+                      <AvatarImage src={listing.profiles?.avatar_url || ""} />
+                      <AvatarFallback>
+                        <User className="w-6 h-6" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-semibold">{ownerName}</h3>
+                      <p className="text-sm text-muted-foreground">Pet Owner</p>
+                    </div>
+                  </div>
+                  {listing.communication_style && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MessageSquare className="w-4 h-4" />
+                      Prefers {listing.communication_style.replace(/_/g, " ")} updates
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Available Dates */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5" />
+                    Available Dates
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {openDates.length > 0 ? (
+                    openDates.map((sitDate) => {
+                      const days = differenceInDays(
+                        parseISO(sitDate.end_date),
+                        parseISO(sitDate.start_date)
+                      );
+                      return (
+                        <div
+                          key={sitDate.id}
+                          className={cn(
+                            "p-3 rounded-lg border cursor-pointer transition-all",
+                            selectedDateId === sitDate.id
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:border-primary/50"
+                          )}
+                          onClick={() => setSelectedDateId(sitDate.id)}
+                        >
+                          <div className="font-medium">
+                            {format(parseISO(sitDate.start_date), "MMM d")} -{" "}
+                            {format(parseISO(sitDate.end_date), "MMM d, yyyy")}
+                          </div>
+                          <div className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {days} {days === 1 ? "night" : "nights"}
+                          </div>
+                          {sitDate.flexibility && (
+                            <Badge variant="outline" className="mt-2 text-xs">
+                              {sitDate.flexibility.replace(/_/g, " ")}
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No available dates at the moment
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Apply Button */}
+              {canApply && openDates.length > 0 && (
+                <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full" size="lg">
+                      Apply for this Sit
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Apply for this sit</DialogTitle>
+                      <DialogDescription>
+                        Send a message to the owner explaining why you'd be a
+                        great fit
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      <div className="space-y-2">
+                        <Label>Selected dates</Label>
+                        {selectedDateId ? (
+                          <div className="p-3 bg-muted rounded-lg">
+                            {(() => {
+                              const date = openDates.find(
+                                (d) => d.id === selectedDateId
+                              );
+                              if (!date) return null;
+                              return (
+                                <span>
+                                  {format(parseISO(date.start_date), "MMM d")} -{" "}
+                                  {format(
+                                    parseISO(date.end_date),
+                                    "MMM d, yyyy"
+                                  )}
+                                </span>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-destructive">
+                            Please select dates from the sidebar first
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="message">Your message</Label>
+                        <Textarea
+                          id="message"
+                          placeholder="Introduce yourself and explain why you'd be a great sitter for these pets..."
+                          value={applicationMessage}
+                          onChange={(e) =>
+                            setApplicationMessage(e.target.value)
+                          }
+                          rows={5}
+                        />
+                      </div>
+                      <Button
+                        className="w-full"
+                        onClick={handleApply}
+                        disabled={!selectedDateId || isApplying}
+                      >
+                        {isApplying ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : null}
+                        Send Application
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+
+              {!user && (
+                <Link to="/auth">
+                  <Button className="w-full" size="lg" variant="outline">
+                    Sign in to Apply
+                  </Button>
+                </Link>
+              )}
+
+              {isOwner && (
+                <Button className="w-full" size="lg" variant="outline" disabled>
+                  This is your listing
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default ListingDetail;
