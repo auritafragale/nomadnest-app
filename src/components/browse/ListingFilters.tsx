@@ -3,10 +3,14 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, SlidersHorizontal, Grid, List, CalendarIcon, X } from "lucide-react";
+import { Search, SlidersHorizontal, Grid, List, CalendarIcon, X, MapPin, Heart } from "lucide-react";
 import { format } from "date-fns";
 import { ListingFilters as FilterType } from "@/hooks/useListings";
 import { DateRange } from "react-day-picker";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSitterPreferredLocations } from "@/hooks/useSitterPreferences";
+import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 
 interface ListingFiltersProps {
   filters: FilterType;
@@ -30,6 +34,9 @@ const ListingFilters = ({
   viewMode,
   onViewModeChange,
 }: ListingFiltersProps) => {
+  const { user, role } = useAuth();
+  const { data: preferredLocations } = useSitterPreferredLocations();
+
   const dateRange: DateRange | undefined =
     filters.startDate || filters.endDate
       ? {
@@ -54,11 +61,25 @@ const ListingFilters = ({
     onFiltersChange({ ...filters, petTypes: newTypes.length > 0 ? newTypes : undefined });
   };
 
+  const applyPreferredLocations = () => {
+    if (!preferredLocations) return;
+    onFiltersChange({
+      ...filters,
+      countries: preferredLocations.preferred_countries || undefined,
+      cities: preferredLocations.preferred_cities || undefined,
+    });
+  };
+
   const clearFilters = () => {
     onFiltersChange({ search: filters.search });
   };
 
-  const hasActiveFilters = filters.petTypes?.length || filters.startDate || filters.endDate;
+  const hasActiveFilters = filters.petTypes?.length || filters.startDate || filters.endDate || filters.countries?.length || filters.cities?.length;
+  const hasPreferredLocations = preferredLocations && (
+    (preferredLocations.preferred_countries?.length || 0) > 0 ||
+    (preferredLocations.preferred_cities?.length || 0) > 0
+  );
+  const isPreferredLocationsActive = filters.countries?.length || filters.cities?.length;
 
   return (
     <div className="bg-surface border-b border-border sticky top-16 z-40">
@@ -132,6 +153,28 @@ const ListingFilters = ({
               </PopoverContent>
             </Popover>
 
+            {/* My Locations Filter - for sitters */}
+            {user && (role === "sitter" || role === "both") && hasPreferredLocations && (
+              <Button
+                variant={isPreferredLocationsActive ? "default" : "outline"}
+                className="flex-1 md:flex-none"
+                onClick={applyPreferredLocations}
+              >
+                <MapPin className="w-4 h-4 mr-2" />
+                My Locations
+              </Button>
+            )}
+
+            {/* Saved Listings Link */}
+            {user && (
+              <Link to="/saved">
+                <Button variant="ghost" className="flex-1 md:flex-none">
+                  <Heart className="w-4 h-4 mr-2" />
+                  Saved
+                </Button>
+              </Link>
+            )}
+
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 <X className="w-4 h-4 mr-1" />
@@ -156,6 +199,46 @@ const ListingFilters = ({
             </div>
           </div>
         </div>
+
+        {/* Active location filters display */}
+        {(filters.countries?.length || filters.cities?.length) && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {filters.countries?.map((country) => (
+              <Badge key={country} variant="secondary" className="gap-1">
+                <MapPin className="w-3 h-3" />
+                {country}
+                <button
+                  onClick={() =>
+                    onFiltersChange({
+                      ...filters,
+                      countries: filters.countries?.filter((c) => c !== country),
+                    })
+                  }
+                  className="ml-1 hover:text-destructive"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            ))}
+            {filters.cities?.map((city) => (
+              <Badge key={city} variant="secondary" className="gap-1">
+                <MapPin className="w-3 h-3" />
+                {city}
+                <button
+                  onClick={() =>
+                    onFiltersChange({
+                      ...filters,
+                      cities: filters.cities?.filter((c) => c !== city),
+                    })
+                  }
+                  className="ml-1 hover:text-destructive"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

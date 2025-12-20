@@ -6,6 +6,8 @@ export interface ListingFilters {
   petTypes?: string[];
   startDate?: string;
   endDate?: string;
+  countries?: string[];
+  cities?: string[];
 }
 
 export interface ListingWithDetails {
@@ -72,6 +74,25 @@ export const useListings = (filters: ListingFilters = {}) => {
       if (error) throw error;
 
       let results = (data || []) as ListingWithDetails[];
+
+      // Filter by countries (client-side)
+      if (filters.countries && filters.countries.length > 0) {
+        results = results.filter((listing) =>
+          listing.country && filters.countries!.some(
+            (c) => c.toLowerCase() === listing.country!.toLowerCase()
+          )
+        );
+      }
+
+      // Filter by cities (client-side)
+      if (filters.cities && filters.cities.length > 0) {
+        results = results.filter((listing) =>
+          listing.city && filters.cities!.some(
+            (c) => c.toLowerCase() === listing.city!.toLowerCase()
+          )
+        );
+      }
+
 
       // Filter by pet types (client-side since it's a nested relation)
       if (filters.petTypes && filters.petTypes.length > 0) {

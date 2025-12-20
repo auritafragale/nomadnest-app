@@ -1,9 +1,12 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Cat, Dog, Wifi, Heart } from "lucide-react";
+import { MapPin, Calendar, Cat, Dog, Wifi, Heart, Loader2 } from "lucide-react";
 import { ListingWithDetails } from "@/hooks/useListings";
 import { format } from "date-fns";
+import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 interface ListingCardProps {
   listing: ListingWithDetails;
@@ -11,6 +14,11 @@ interface ListingCardProps {
 }
 
 const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
+  const { user } = useAuth();
+  const { data: favoriteIds = [] } = useFavorites();
+  const toggleFavorite = useToggleFavorite();
+  
+  const isFavorited = favoriteIds.includes(listing.id);
   const openSitDate = listing.sit_dates.find((d) => d.status === "open");
   const dateRange = openSitDate
     ? `${format(new Date(openSitDate.start_date), "MMM d")} - ${format(new Date(openSitDate.end_date), "MMM d, yyyy")}`
@@ -18,6 +26,13 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
 
   const location = [listing.city, listing.country].filter(Boolean).join(", ") || "Location TBD";
   const imageUrl = listing.photos?.[0] || "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&h=400&fit=crop";
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) return;
+    toggleFavorite.mutate({ listingId: listing.id, isFavorited });
+  };
 
   return (
     <Link to={`/listing/${listing.id}`}>
@@ -35,12 +50,24 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
             alt={listing.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
-          <button 
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-surface/90 flex items-center justify-center hover:bg-surface transition-colors"
-            onClick={(e) => e.preventDefault()}
-          >
-            <Heart className="w-5 h-5 text-muted-foreground hover:text-primary" />
-          </button>
+          {user && (
+            <button 
+              className={cn(
+                "absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors",
+                isFavorited 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-surface/90 hover:bg-surface text-muted-foreground hover:text-primary"
+              )}
+              onClick={handleFavoriteClick}
+              disabled={toggleFavorite.isPending}
+            >
+              {toggleFavorite.isPending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Heart className={cn("w-5 h-5", isFavorited && "fill-current")} />
+              )}
+            </button>
+          )}
           <div className="absolute bottom-3 left-3">
             <Badge variant="published">Open</Badge>
           </div>
