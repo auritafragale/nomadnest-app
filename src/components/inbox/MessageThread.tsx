@@ -1,0 +1,160 @@
+import { useEffect, useRef, useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
+import { format, isToday, isYesterday } from "date-fns";
+import { Send, ArrowLeft } from "lucide-react";
+import type { Message, Conversation } from "@/hooks/useConversations";
+import { cn } from "@/lib/utils";
+
+interface MessageThreadProps {
+  conversation: Conversation | null;
+  messages: Message[];
+  isLoading?: boolean;
+  onSend: (body: string) => void;
+  isSending?: boolean;
+  onBack?: () => void;
+}
+
+const formatMessageDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  if (isToday(date)) return format(date, "h:mm a");
+  if (isYesterday(date)) return `Yesterday ${format(date, "h:mm a")}`;
+  return format(date, "MMM d, h:mm a");
+};
+
+export const MessageThread = ({
+  conversation,
+  messages,
+  isLoading,
+  onSend,
+  isSending,
+  onBack,
+}: MessageThreadProps) => {
+  const { user } = useAuth();
+  const [newMessage, setNewMessage] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newMessage.trim() && !isSending) {
+      onSend(newMessage.trim());
+      setNewMessage("");
+    }
+  };
+
+  if (!conversation) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center p-6">
+        <p className="text-muted-foreground">Select a conversation to view messages</p>
+      </div>
+    );
+  }
+
+  const otherUser = conversation.other_user;
+  const initials = otherUser
+    ? `${otherUser.first_name?.[0] || ""}${otherUser.last_name?.[0] || ""}`
+    : "?";
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center gap-3 p-4 border-b border-border">
+        {onBack && (
+          <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        )}
+        <Avatar className="h-10 w-10">
+          <AvatarImage src={otherUser?.avatar_url || undefined} />
+          <AvatarFallback className="bg-primary/10 text-primary">
+            {initials.toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <h3 className="font-medium text-foreground">
+            {otherUser?.first_name} {otherUser?.last_name}
+          </h3>
+          {conversation.listing && (
+            <p className="text-xs text-muted-foreground">
+              Re: {conversation.listing.title}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Messages */}
+      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className={cn("flex", i % 2 === 0 ? "justify-end" : "justify-start")}>
+                <Skeleton className="h-16 w-48 rounded-lg" />
+              </div>
+            ))}
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8">
+            No messages yet. Start the conversation!
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {messages.map((message) => {
+              const isOwn = message.sender_user_id === user?.id;
+              return (
+                <div
+                  key={message.id}
+                  className={cn("flex", isOwn ? "justify-end" : "justify-start")}
+                >
+                  <div
+                    className={cn(
+                      "max-w-[80%] rounded-lg px-4 py-2",
+                      isOwn
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-foreground"
+                    )}
+                  >
+                    <p className="text-sm whitespace-pre-wrap break-words">{message.body}</p>
+                    <p
+                      className={cn(
+                        "text-xs mt-1",
+                        isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                      )}
+                    >
+                      {formatMessageDate(message.created_at)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </ScrollArea>
+
+      {/* Input */}
+      <form onSubmit={handleSubmit} className="p-4 border-t border-border">
+        <div className="flex gap-2">
+          <Input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type a message..."
+            disabled={isSending}
+            className="flex-1"
+          />
+          <Button type="submit" disabled={!newMessage.trim() || isSending}>
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+};
