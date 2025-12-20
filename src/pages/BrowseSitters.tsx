@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSitters } from "@/hooks/useSitters";
 import SitterCard from "@/components/browse/SitterCard";
 import SitterFilters from "@/components/browse/SitterFilters";
+import BackToTopButton from "@/components/ui/BackToTopButton";
 import { Users } from "lucide-react";
 
 const BrowseSitters = () => {
@@ -113,6 +114,7 @@ const BrowseSitters = () => {
       </main>
 
       <Footer />
+      <BackToTopButton />
     </div>
   );
 };

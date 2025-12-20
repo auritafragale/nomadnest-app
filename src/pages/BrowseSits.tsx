@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useListings, ListingFilters } from "@/hooks/useListings";
 import ListingCard from "@/components/browse/ListingCard";
 import ListingFiltersComponent from "@/components/browse/ListingFilters";
+import BackToTopButton from "@/components/ui/BackToTopButton";
 
 const BrowseSits = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -79,6 +80,7 @@ const BrowseSits = () => {
       </main>
 
       <Footer />
+      <BackToTopButton />
     </div>
   );
 };
