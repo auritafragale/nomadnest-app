@@ -25,6 +25,8 @@ import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection"
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
 import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompletenessCard";
+import { useOwnerApplications } from "@/hooks/useApplications";
+import { OwnerApplicationPreviewCard } from "@/components/dashboard/OwnerApplicationPreviewCard";
 
 interface Profile {
   first_name: string | null;
@@ -427,6 +429,7 @@ const OwnerDashboard = ({
   userId: string;
 }) => {
   const { data: listings = [], isLoading: listingsLoading } = useOwnerListings();
+  const { data: applications = [], isLoading: applicationsLoading } = useOwnerApplications();
   const profileCompletion = calculateOwnerProfileCompletion(profile, ownerProfile);
 
   const listingStats = {
@@ -435,6 +438,10 @@ const OwnerDashboard = ({
     draft: listings.filter((l) => l.status === "draft").length,
     applications: listings.reduce((acc, l) => acc + l._count.applications, 0),
   };
+
+  const pendingApplications = applications.filter(
+    (a) => a.status === "applied" || a.status === "shortlisted"
+  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -611,6 +618,11 @@ const OwnerDashboard = ({
               <CardTitle className="flex items-center gap-2">
                 <ClipboardList className="w-5 h-5" />
                 Applications Received
+                {pendingApplications.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {pendingApplications.length} pending
+                  </Badge>
+                )}
               </CardTitle>
             </div>
             <Link to="/applications">
@@ -621,11 +633,32 @@ const OwnerDashboard = ({
             </Link>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p className="font-medium">No applications yet</p>
-              <p className="text-sm mt-1">Applications for your listings will appear here</p>
-            </div>
+            {applicationsLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-20 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : applications.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">No applications yet</p>
+                <p className="text-sm mt-1">Applications for your listings will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {applications.slice(0, 5).map((application) => (
+                  <OwnerApplicationPreviewCard key={application.id} application={application} />
+                ))}
+                {applications.length > 5 && (
+                  <Link to="/applications" className="block">
+                    <p className="text-sm text-primary text-center pt-2 hover:underline">
+                      View {applications.length - 5} more applications
+                    </p>
+                  </Link>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
