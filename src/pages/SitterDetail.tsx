@@ -47,9 +47,12 @@ import {
   Clock,
   Award,
   Loader2,
+  Star,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
+import { SitterReviewsSection } from "@/components/reviews/SitterReviewsSection";
+import { useSitterAverageRating } from "@/hooks/useSitterReviews";
 
 interface SitterProfile {
   id: string;
@@ -117,6 +120,7 @@ const SitterDetail = () => {
   const [isStartingChat, setIsStartingChat] = useState(false);
   
   const startConversation = useStartConversation();
+  const { data: ratingData } = useSitterAverageRating(userId);
 
   useEffect(() => {
     const fetchSitterData = async () => {
@@ -401,6 +405,12 @@ const SitterDetail = () => {
                       {location}
                     </div>
                   )}
+                  {ratingData && ratingData.count > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      {ratingData.average.toFixed(1)} ({ratingData.count} review{ratingData.count !== 1 ? "s" : ""})
+                    </div>
+                  )}
                   {sitter.experience_level && (
                     <div className="flex items-center gap-2">
                       <Award className="w-4 h-4" />
@@ -629,6 +639,12 @@ const SitterDetail = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Reviews Section */}
+            <SitterReviewsSection
+              sitterUserId={userId!}
+              sitterFirstName={profile.first_name}
+            />
           </div>
         </div>
       </main>

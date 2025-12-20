@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Search, User, Menu, X, LayoutDashboard, MessageCircle } from "lucide-react";
+import { Home, Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useNewApplicationsCount } from "@/hooks/useNewApplicationsCount";
 import { Badge } from "@/components/ui/badge";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { unreadCount } = useUnreadMessages();
-  const { user, loading } = useAuth();
+  const { newApplicationsCount } = useNewApplicationsCount();
+  const { user, loading, role } = useAuth();
 
   const navLinks = [
     { href: "/browse-sits", label: "Browse Sits", icon: Search },
@@ -59,6 +61,19 @@ const Navbar = () => {
               <div className="w-24 h-9 bg-muted animate-pulse rounded-md" />
             ) : user ? (
               <>
+                {(role === "owner" || role === "both") && (
+                  <Link to="/applications">
+                    <Button variant="ghost" className={cn("relative", isActive("/applications") && "text-primary bg-terracotta-light")}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Applications
+                      {newApplicationsCount > 0 && (
+                        <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
+                          {newApplicationsCount > 99 ? "99+" : newApplicationsCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/inbox">
                   <Button variant="ghost" className={cn("relative", isActive("/inbox") && "text-primary bg-terracotta-light")}>
                     <MessageCircle className="w-4 h-4 mr-2" />
@@ -125,6 +140,19 @@ const Navbar = () => {
             <div className="pt-4 space-y-2 border-t border-border">
               {user ? (
                 <>
+                  {(role === "owner" || role === "both") && (
+                    <Link to="/applications" onClick={() => setIsOpen(false)}>
+                      <Button variant="ghost" className={cn("w-full justify-start relative", isActive("/applications") && "text-primary bg-terracotta-light")}>
+                        <FileText className="w-4 h-4 mr-2" />
+                        Applications
+                        {newApplicationsCount > 0 && (
+                          <Badge variant="destructive" className="ml-auto h-5 min-w-5 flex items-center justify-center p-0 text-xs">
+                            {newApplicationsCount > 99 ? "99+" : newApplicationsCount}
+                          </Badge>
+                        )}
+                      </Button>
+                    </Link>
+                  )}
                   <Link to="/inbox" onClick={() => setIsOpen(false)}>
                     <Button variant="ghost" className={cn("w-full justify-start relative", isActive("/inbox") && "text-primary bg-terracotta-light")}>
                       <MessageCircle className="w-4 h-4 mr-2" />
