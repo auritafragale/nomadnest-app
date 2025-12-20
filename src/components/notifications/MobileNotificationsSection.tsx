@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, ChevronDown, ChevronUp, CheckCheck, Loader2 } from "lucide-react";
+import { Bell, ChevronDown, ChevronUp, CheckCheck, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,6 +11,8 @@ import {
 } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface MobileNotificationsSectionProps {
   onNavigate?: () => void;
@@ -19,11 +21,22 @@ interface MobileNotificationsSectionProps {
 export const MobileNotificationsSection = ({ onNavigate }: MobileNotificationsSectionProps) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  const queryClient = useQueryClient();
   
   const { data: notifications = [], isLoading } = useNotifications();
   const { data: unreadCount = 0 } = useUnreadNotificationsCount();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    await queryClient.invalidateQueries({ queryKey: ["unread-notifications-count"] });
+  };
+
+  const { pullDistance, isRefreshing, isPullable, handlers } = usePullToRefresh({
+    onRefresh: handleRefresh,
+    threshold: 50,
+  });
 
   const handleNotificationClick = (notification: typeof notifications[0]) => {
     if (!notification.read_at) {
@@ -70,7 +83,33 @@ export const MobileNotificationsSection = ({ onNavigate }: MobileNotificationsSe
       </Button>
 
       {expanded && (
-        <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
+        <div 
+          className="mt-2 space-y-1 max-h-64 overflow-y-auto relative"
+          {...handlers}
+        >
+          {/* Pull to refresh indicator */}
+          <div 
+            className={cn(
+              "flex items-center justify-center transition-all duration-200 overflow-hidden",
+              pullDistance > 0 || isRefreshing ? "opacity-100" : "opacity-0"
+            )}
+            style={{ height: pullDistance > 0 ? pullDistance : isRefreshing ? 40 : 0 }}
+          >
+            <RefreshCw 
+              className={cn(
+                "h-5 w-5 text-primary transition-transform",
+                isRefreshing && "animate-spin",
+                isPullable && !isRefreshing && "text-primary"
+              )}
+              style={{ 
+                transform: `rotate(${Math.min(pullDistance * 4, 360)}deg)`,
+              }}
+            />
+            {isPullable && !isRefreshing && (
+              <span className="text-xs text-primary ml-2">Release to refresh</span>
+            )}
+          </div>
+
           {unreadCount > 0 && (
             <div className="px-3 pb-2">
               <Button
@@ -90,7 +129,7 @@ export const MobileNotificationsSection = ({ onNavigate }: MobileNotificationsSe
             </div>
           )}
 
-          {isLoading ? (
+          {isLoading || isRefreshing ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
