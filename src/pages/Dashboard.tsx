@@ -15,6 +15,7 @@ import Navbar from "@/components/layout/Navbar";
 import { useSitterApplications } from "@/hooks/useSitterApplications";
 import { SitterApplicationCard } from "@/components/applications/SitterApplicationCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SitsCalendar } from "@/components/dashboard/SitsCalendar";
 
 interface Profile {
   first_name: string | null;
@@ -358,22 +359,8 @@ const SitterDashboard = ({
           </CardContent>
         </Card>
 
-        {/* Upcoming Sits */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Upcoming Sits
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p className="font-medium">No upcoming sits</p>
-              <p className="text-sm mt-1">Your confirmed sits will appear here</p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Sits Calendar */}
+        <SitsCalendar viewAs="sitter" />
       </div>
     </div>
   );
@@ -529,6 +516,9 @@ const OwnerDashboard = ({
             </div>
           </CardContent>
         </Card>
+
+        {/* Sits Calendar */}
+        <SitsCalendar viewAs="owner" />
       </div>
     </div>
   );
