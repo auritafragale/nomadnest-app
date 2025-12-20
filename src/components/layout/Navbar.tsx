@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Home, Search, User, Menu, X, LayoutDashboard, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { Badge } from "@/components/ui/badge";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { unreadCount } = useUnreadMessages();
   const { user, loading } = useAuth();
 
   const navLinks = [
@@ -57,9 +60,14 @@ const Navbar = () => {
             ) : user ? (
               <>
                 <Link to="/inbox">
-                  <Button variant="ghost" className={cn(isActive("/inbox") && "text-primary bg-terracotta-light")}>
+                  <Button variant="ghost" className={cn("relative", isActive("/inbox") && "text-primary bg-terracotta-light")}>
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Messages
+                    {unreadCount > 0 && (
+                      <Badge className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </Badge>
+                    )}
                   </Button>
                 </Link>
                 <Link to="/dashboard">
@@ -118,9 +126,14 @@ const Navbar = () => {
               {user ? (
                 <>
                   <Link to="/inbox" onClick={() => setIsOpen(false)}>
-                    <Button variant="ghost" className={cn("w-full justify-start", isActive("/inbox") && "text-primary bg-terracotta-light")}>
+                    <Button variant="ghost" className={cn("w-full justify-start relative", isActive("/inbox") && "text-primary bg-terracotta-light")}>
                       <MessageCircle className="w-4 h-4 mr-2" />
                       Messages
+                      {unreadCount > 0 && (
+                        <Badge className="ml-auto h-5 min-w-5 flex items-center justify-center p-0 text-xs">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </Badge>
+                      )}
                     </Button>
                   </Link>
                   <Link to="/dashboard" onClick={() => setIsOpen(false)}>
