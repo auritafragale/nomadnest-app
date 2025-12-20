@@ -6,7 +6,11 @@ import { useSitters } from "@/hooks/useSitters";
 import SitterCard from "@/components/browse/SitterCard";
 import SitterFilters from "@/components/browse/SitterFilters";
 import BackToTopButton from "@/components/ui/BackToTopButton";
+import Pagination from "@/components/browse/Pagination";
+import { usePagination } from "@/hooks/usePagination";
 import { Users } from "lucide-react";
+
+const ITEMS_PER_PAGE = 12;
 
 const BrowseSitters = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -21,6 +25,24 @@ const BrowseSitters = () => {
     languages: selectedLanguages,
     experienceLevels: selectedExperienceLevels,
   });
+
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems,
+    setCurrentPage,
+    startIndex,
+    endIndex,
+    totalItems,
+  } = usePagination({
+    items: sitters,
+    itemsPerPage: ITEMS_PER_PAGE,
+  });
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -90,7 +112,7 @@ const BrowseSitters = () => {
           ) : (
             <>
               <p className="text-sm text-muted-foreground mb-6">
-                Showing {sitters.length} sitter{sitters.length !== 1 ? "s" : ""}
+                Showing {startIndex}-{endIndex} of {totalItems} sitter{totalItems !== 1 ? "s" : ""}
               </p>
 
               <div
@@ -100,7 +122,7 @@ const BrowseSitters = () => {
                     : "grid-cols-1"
                 }`}
               >
-                {sitters.map((sitter) => (
+                {paginatedItems.map((sitter) => (
                   <SitterCard
                     key={sitter.id}
                     sitter={sitter}
@@ -108,6 +130,13 @@ const BrowseSitters = () => {
                   />
                 ))}
               </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                className="mt-8"
+              />
             </>
           )}
         </div>
