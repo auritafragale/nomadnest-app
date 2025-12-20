@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Home, Search, Plus, MessageSquare, Calendar, Settings, 
   LogOut, User, Briefcase, ArrowRight, MapPin, Clock,
-  FileText, Star, Bell
+  FileText, Star, Bell, ClipboardList
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -472,15 +472,23 @@ const OwnerDashboard = ({
 
         {/* Applications Received */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Applications Received
-            </CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="w-5 h-5" />
+                Applications Received
+              </CardTitle>
+            </div>
+            <Link to="/applications">
+              <Button variant="outline" size="sm">
+                View All
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
           </CardHeader>
           <CardContent>
             <div className="text-center py-8 text-muted-foreground">
-              <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p className="font-medium">No applications yet</p>
               <p className="text-sm mt-1">Applications for your listings will appear here</p>
             </div>

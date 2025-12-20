@@ -15,6 +15,7 @@ import ListingDetail from "./pages/ListingDetail";
 import EditSitterProfile from "./pages/EditSitterProfile";
 import SitterDetail from "./pages/SitterDetail";
 import Inbox from "./pages/Inbox";
+import Applications from "./pages/Applications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/edit-sitter-profile" element={<EditSitterProfile />} />
             <Route path="/sitter/:userId" element={<SitterDetail />} />
             <Route path="/inbox" element={<Inbox />} />
+            <Route path="/applications" element={<Applications />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
