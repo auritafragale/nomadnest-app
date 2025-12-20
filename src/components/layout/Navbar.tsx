@@ -8,6 +8,8 @@ import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useNewApplicationsCount } from "@/hooks/useNewApplicationsCount";
 import { Badge } from "@/components/ui/badge";
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
+import { MobileNotificationsSection } from "@/components/notifications/MobileNotificationsSection";
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
@@ -165,6 +167,7 @@ const Navbar = () => {
                       )}
                     </Button>
                   </Link>
+                  <MobileNotificationsSection onNavigate={() => setIsOpen(false)} />
                   <Link to="/dashboard" onClick={() => setIsOpen(false)}>
                     <Button className="w-full">
                       <LayoutDashboard className="w-4 h-4 mr-2" />
