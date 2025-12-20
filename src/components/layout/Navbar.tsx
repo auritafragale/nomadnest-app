@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Search, User, Menu, X, LayoutDashboard } from "lucide-react";
+import { Home, Search, User, Menu, X, LayoutDashboard, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -55,12 +55,20 @@ const Navbar = () => {
             {loading ? (
               <div className="w-24 h-9 bg-muted animate-pulse rounded-md" />
             ) : user ? (
-              <Link to="/dashboard">
-                <Button>
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Dashboard
-                </Button>
-              </Link>
+              <>
+                <Link to="/inbox">
+                  <Button variant="ghost" className={cn(isActive("/inbox") && "text-primary bg-terracotta-light")}>
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Messages
+                  </Button>
+                </Link>
+                <Link to="/dashboard">
+                  <Button>
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </Button>
+                </Link>
+              </>
             ) : (
               <>
                 <Link to="/auth">
@@ -108,12 +116,20 @@ const Navbar = () => {
             ))}
             <div className="pt-4 space-y-2 border-t border-border">
               {user ? (
-                <Link to="/dashboard" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full">
-                    <LayoutDashboard className="w-4 h-4 mr-2" />
-                    Dashboard
-                  </Button>
-                </Link>
+                <>
+                  <Link to="/inbox" onClick={() => setIsOpen(false)}>
+                    <Button variant="ghost" className={cn("w-full justify-start", isActive("/inbox") && "text-primary bg-terracotta-light")}>
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Messages
+                    </Button>
+                  </Link>
+                  <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                    <Button className="w-full">
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                </>
               ) : (
                 <>
                   <Link to="/auth" onClick={() => setIsOpen(false)}>
