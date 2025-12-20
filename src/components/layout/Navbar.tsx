@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Search, User, Menu, X } from "lucide-react";
+import { Home, Search, User, Menu, X, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user, loading } = useAuth();
 
   const navLinks = [
     { href: "/browse-sits", label: "Browse Sits", icon: Search },
@@ -50,12 +52,25 @@ const Navbar = () => {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/auth">
-              <Button variant="ghost">Log in</Button>
-            </Link>
-            <Link to="/auth?signup=true">
-              <Button>Create profile</Button>
-            </Link>
+            {loading ? (
+              <div className="w-24 h-9 bg-muted animate-pulse rounded-md" />
+            ) : user ? (
+              <Link to="/dashboard">
+                <Button>
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button variant="ghost">Log in</Button>
+                </Link>
+                <Link to="/auth?signup=true">
+                  <Button>Create profile</Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -92,14 +107,25 @@ const Navbar = () => {
               </Link>
             ))}
             <div className="pt-4 space-y-2 border-t border-border">
-              <Link to="/auth" onClick={() => setIsOpen(false)}>
-                <Button variant="outline" className="w-full">
-                  Log in
-                </Button>
-              </Link>
-              <Link to="/auth?signup=true" onClick={() => setIsOpen(false)}>
-                <Button className="w-full">Create profile</Button>
-              </Link>
+              {user ? (
+                <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                  <Button className="w-full">
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/auth" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" className="w-full">
+                      Log in
+                    </Button>
+                  </Link>
+                  <Link to="/auth?signup=true" onClick={() => setIsOpen(false)}>
+                    <Button className="w-full">Create profile</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
