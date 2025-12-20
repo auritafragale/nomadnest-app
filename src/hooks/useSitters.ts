@@ -78,10 +78,12 @@ export const useSitters = (options: UseSittersOptions = {}) => {
           (profilesData || []).map((p) => [p.id, p])
         );
 
-        let filteredData: SitterWithProfile[] = sitterData.map((sitter) => ({
-          ...sitter,
-          profile: profilesMap.get(sitter.user_id) || null,
-        })) as SitterWithProfile[];
+        let filteredData: SitterWithProfile[] = sitterData
+          .filter((sitter) => sitter.is_active !== false) // Only show active sitters
+          .map((sitter) => ({
+            ...sitter,
+            profile: profilesMap.get(sitter.user_id) || null,
+          })) as SitterWithProfile[];
 
         // Client-side filtering
         if (options.searchQuery) {
