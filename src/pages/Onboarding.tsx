@@ -101,7 +101,7 @@ const Onboarding = () => {
           user_id: user.id,
           role: roleChoice,
           onboarding_completed: true,
-        });
+        }, { onConflict: 'user_id' });
 
       // Create sitter profile if applicable
       if (roleChoice === "sitter" || roleChoice === "both") {
@@ -114,7 +114,7 @@ const Onboarding = () => {
             availability_type: availabilityType,
             available_from: availableFrom || null,
             available_to: availableTo || null,
-          });
+          }, { onConflict: 'user_id' });
       }
 
       // Create owner profile if applicable
@@ -123,7 +123,7 @@ const Onboarding = () => {
           .from("owner_profiles")
           .upsert({
             user_id: user.id,
-          });
+          }, { onConflict: 'user_id' });
       }
 
       await refreshRole();
