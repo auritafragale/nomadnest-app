@@ -24,6 +24,7 @@ import { useStartConversation } from "@/hooks/useConversations";
 import OwnerReviewsSection from "@/components/reviews/OwnerReviewsSection";
 import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
 import ReportDialog from "@/components/reports/ReportDialog";
+import { ShareDialog } from "@/components/share/ShareDialog";
 
 interface OwnerProfile {
   id: string;
@@ -268,6 +269,10 @@ const OwnerDetail = () => {
                       Message
                     </Button>
                   )}
+                  <ShareDialog 
+                    title={`${name} - Pet Owner`}
+                    description={`Check out ${name}'s pet owner profile`}
+                  />
                   {user && user.id !== userId && (
                     <ReportDialog
                       targetType="user"
