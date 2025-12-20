@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Database } from "@/integrations/supabase/types";
@@ -100,5 +100,23 @@ export const useSitterApplications = (statusFilter?: ApplicationStatus | "all") 
       return enrichedApplications;
     },
     enabled: !!user,
+  });
+};
+
+export const useWithdrawApplication = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (applicationId: string) => {
+      const { error } = await supabase
+        .from("applications")
+        .update({ status: "withdrawn" })
+        .eq("id", applicationId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sitter-applications"] });
+    },
   });
 };
