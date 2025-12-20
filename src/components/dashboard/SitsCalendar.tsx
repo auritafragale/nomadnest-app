@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { format, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, isAfter, isBefore, startOfToday } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ChevronLeft, ChevronRight, MapPin, User, Play, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, MapPin, User, Play, CheckCircle, XCircle, Star } from "lucide-react";
 import { useSits, Sit, useUpdateSitStatus } from "@/hooks/useSits";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import WriteReviewDialog from "@/components/reviews/WriteReviewDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SitsCalendarProps {
   viewAs: "sitter" | "owner";
@@ -33,13 +35,34 @@ const statusColors: Record<string, string> = {
 
 const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | "owner"; userId: string }) => {
   const isOwner = sit.owner_user_id === userId;
+  const isSitter = sit.sitter_user_id === userId;
   const otherParty = isOwner ? sit.sitter_profile : sit.owner_profile;
   const otherPartyLabel = isOwner ? "Sitter" : "Owner";
   const { mutate: updateStatus, isPending } = useUpdateSitStatus();
+  const [hasReviewed, setHasReviewed] = useState(false);
 
   const canStartSit = isOwner && sit.status === "confirmed";
   const canCompleteSit = isOwner && sit.status === "in_progress";
   const canCancelSit = isOwner && sit.status === "confirmed";
+  const canReview = sit.status === "completed" && !hasReviewed;
+
+  // Check if user has already reviewed for this sit
+  useEffect(() => {
+    const checkReview = async () => {
+      if (sit.status !== "completed") return;
+      
+      const { data } = await supabase
+        .from("reviews")
+        .select("id")
+        .eq("sit_id", sit.id)
+        .eq("reviewer_user_id", userId)
+        .maybeSingle();
+      
+      setHasReviewed(!!data);
+    };
+    
+    checkReview();
+  }, [sit.id, sit.status, userId]);
 
   return (
     <div className="p-3 rounded-lg border bg-card hover:shadow-md transition-shadow">
@@ -158,6 +181,34 @@ const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | "owner"
               </AlertDialogContent>
             </AlertDialog>
           )}
+        </div>
+      )}
+
+      {/* Review Button for Completed Sits */}
+      {canReview && (
+        <div className="mt-3 pt-2 border-t">
+          <WriteReviewDialog
+            sitId={sit.id}
+            revieweeUserId={isOwner ? sit.sitter_user_id : sit.owner_user_id}
+            revieweeName={otherParty?.first_name || "Unknown"}
+            reviewType={isOwner ? "sitter" : "owner"}
+            onReviewSubmitted={() => setHasReviewed(true)}
+            trigger={
+              <Button size="sm" variant="outline" className="w-full gap-2">
+                <Star className="w-3 h-3" />
+                Review {otherPartyLabel}
+              </Button>
+            }
+          />
+        </div>
+      )}
+
+      {sit.status === "completed" && hasReviewed && (
+        <div className="mt-3 pt-2 border-t">
+          <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+            You reviewed this {otherPartyLabel.toLowerCase()}
+          </p>
         </div>
       )}
     </div>
