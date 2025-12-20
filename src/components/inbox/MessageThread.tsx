@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ interface MessageThreadProps {
   onSend: (body: string) => void;
   isSending?: boolean;
   onBack?: () => void;
+  otherUserRole?: "sitter" | "owner";
 }
 
 const formatMessageDate = (dateStr: string) => {
@@ -33,6 +35,7 @@ export const MessageThread = ({
   onSend,
   isSending,
   onBack,
+  otherUserRole = "sitter",
 }: MessageThreadProps) => {
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState("");
@@ -65,6 +68,12 @@ export const MessageThread = ({
     ? `${otherUser.first_name?.[0] || ""}${otherUser.last_name?.[0] || ""}`
     : "?";
 
+  const profileLink = otherUser?.id
+    ? otherUserRole === "sitter"
+      ? `/sitter/${otherUser.id}`
+      : `/owner/${otherUser.id}`
+    : null;
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -74,22 +83,45 @@ export const MessageThread = ({
             <ArrowLeft className="h-5 w-5" />
           </Button>
         )}
-        <Avatar className="h-10 w-10">
-          <AvatarImage src={otherUser?.avatar_url || undefined} />
-          <AvatarFallback className="bg-primary/10 text-primary">
-            {initials.toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <h3 className="font-medium text-foreground">
-            {otherUser?.first_name} {otherUser?.last_name}
-          </h3>
-          {conversation.listing && (
-            <p className="text-xs text-muted-foreground">
-              Re: {conversation.listing.title}
-            </p>
-          )}
-        </div>
+        {profileLink ? (
+          <Link to={profileLink} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={otherUser?.avatar_url || undefined} />
+              <AvatarFallback className="bg-primary/10 text-primary">
+                {initials.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-medium text-foreground hover:text-primary transition-colors">
+                {otherUser?.first_name} {otherUser?.last_name}
+              </h3>
+              {conversation.listing && (
+                <p className="text-xs text-muted-foreground">
+                  Re: {conversation.listing.title}
+                </p>
+              )}
+            </div>
+          </Link>
+        ) : (
+          <>
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={otherUser?.avatar_url || undefined} />
+              <AvatarFallback className="bg-primary/10 text-primary">
+                {initials.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-medium text-foreground">
+                {otherUser?.first_name} {otherUser?.last_name}
+              </h3>
+              {conversation.listing && (
+                <p className="text-xs text-muted-foreground">
+                  Re: {conversation.listing.title}
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Messages */}
