@@ -26,12 +26,14 @@ const Auth = () => {
   const [lastName, setLastName] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   
-  const { signUp, signIn, signInWithGoogle, user, onboardingCompleted } = useAuth();
+  const { signUp, signIn, signInWithGoogle, user, onboardingCompleted, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Redirect if already logged in
+  // Redirect if already logged in - wait for loading to complete first
   useEffect(() => {
+    if (loading) return; // Wait for auth state to be determined
+    
     if (user) {
       if (onboardingCompleted) {
         navigate("/dashboard");
@@ -39,7 +41,7 @@ const Auth = () => {
         navigate("/onboarding");
       }
     }
-  }, [user, onboardingCompleted, navigate]);
+  }, [user, onboardingCompleted, loading, navigate]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
