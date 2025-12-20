@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import CreateListing from "./pages/CreateListing";
+import EditListing from "./pages/EditListing";
 import ListingDetail from "./pages/ListingDetail";
 import EditSitterProfile from "./pages/EditSitterProfile";
 import SitterDetail from "./pages/SitterDetail";
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create-listing" element={<CreateListing />} />
+            <Route path="/edit-listing/:id" element={<EditListing />} />
             <Route path="/listing/:id" element={<ListingDetail />} />
             <Route path="/edit-sitter-profile" element={<EditSitterProfile />} />
             <Route path="/sitter/:userId" element={<SitterDetail />} />

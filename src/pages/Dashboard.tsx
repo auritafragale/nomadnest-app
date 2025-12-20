@@ -16,6 +16,8 @@ import { useSitterApplications } from "@/hooks/useSitterApplications";
 import { SitterApplicationCard } from "@/components/applications/SitterApplicationCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SitsCalendar } from "@/components/dashboard/SitsCalendar";
+import { OwnerListingCard } from "@/components/dashboard/OwnerListingCard";
+import { useOwnerListings } from "@/hooks/useOwnerListings";
 
 interface Profile {
   first_name: string | null;
@@ -373,6 +375,15 @@ const OwnerDashboard = ({
   profile: Profile | null; 
   ownerProfile: OwnerProfile | null; 
 }) => {
+  const { data: listings = [], isLoading: listingsLoading } = useOwnerListings();
+
+  const listingStats = {
+    total: listings.length,
+    published: listings.filter((l) => l.status === "published").length,
+    draft: listings.filter((l) => l.status === "draft").length,
+    applications: listings.reduce((acc, l) => acc + l._count.applications, 0),
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left Column */}
@@ -415,15 +426,15 @@ const OwnerDashboard = ({
           <CardContent className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Active listings</span>
-              <Badge variant="secondary">0</Badge>
+              <Badge variant="secondary">{listingStats.published}</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Draft listings</span>
+              <Badge variant="secondary">{listingStats.draft}</Badge>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Applications received</span>
-              <Badge variant="secondary">0</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Sits completed</span>
-              <Badge variant="secondary">0</Badge>
+              <Badge variant="secondary">{listingStats.applications}</Badge>
             </div>
           </CardContent>
         </Card>
@@ -474,21 +485,40 @@ const OwnerDashboard = ({
             <CardTitle className="flex items-center gap-2">
               <Home className="w-5 h-5" />
               My Listings
+              {listingStats.total > 0 && (
+                <Badge variant="secondary" className="ml-auto">
+                  {listingStats.total} total
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription>Manage your sit opportunities</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              <Home className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p className="font-medium">No listings yet</p>
-              <p className="text-sm mt-1">Create your first listing to find a sitter!</p>
-              <Link to="/create-listing">
-                <Button className="mt-4">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Listing
-                </Button>
-              </Link>
-            </div>
+            {listingsLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <Skeleton key={i} className="h-28 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : listings.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Home className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">No listings yet</p>
+                <p className="text-sm mt-1">Create your first listing to find a sitter!</p>
+                <Link to="/create-listing">
+                  <Button className="mt-4">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Listing
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {listings.map((listing) => (
+                  <OwnerListingCard key={listing.id} listing={listing} />
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
