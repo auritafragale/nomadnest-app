@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { playNotificationSound } from "@/lib/notificationSound";
 
 export const useUnreadMessages = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const previousCountRef = useRef<number>(0);
 
   const { data: unreadCount = 0, isLoading } = useQuery({
     queryKey: ["unread-messages", user?.id],
@@ -36,6 +38,14 @@ export const useUnreadMessages = () => {
     refetchInterval: 30000, // Refetch every 30 seconds as fallback
   });
 
+  // Play sound when unread count increases
+  useEffect(() => {
+    if (unreadCount > previousCountRef.current && previousCountRef.current !== 0) {
+      playNotificationSound();
+    }
+    previousCountRef.current = unreadCount;
+  }, [unreadCount]);
+
   // Subscribe to real-time message changes
   useEffect(() => {
     if (!user) return;
@@ -45,12 +55,27 @@ export const useUnreadMessages = () => {
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          // Only play sound if message is from someone else
+          if (payload.new && payload.new.sender_user_id !== user.id) {
+            playNotificationSound();
+          }
+          // Invalidate query to refetch count
+          queryClient.invalidateQueries({ queryKey: ["unread-messages", user.id] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
           schema: "public",
           table: "messages",
         },
         () => {
-          // Invalidate query to refetch count
           queryClient.invalidateQueries({ queryKey: ["unread-messages", user.id] });
         }
       )
