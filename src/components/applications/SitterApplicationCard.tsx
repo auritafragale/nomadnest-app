@@ -1,11 +1,25 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { format, parseISO } from "date-fns";
-import { Calendar, MapPin, ArrowRight, Home } from "lucide-react";
+import { Calendar, MapPin, ArrowRight, Home, X, Loader2 } from "lucide-react";
 import type { SitterApplication } from "@/hooks/useSitterApplications";
+import { useWithdrawApplication } from "@/hooks/useSitterApplications";
+import { useToast } from "@/hooks/use-toast";
 
 interface SitterApplicationCardProps {
   application: SitterApplication;
@@ -37,6 +51,28 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 export const SitterApplicationCard = ({ application }: SitterApplicationCardProps) => {
   const { listing, sit_dates, owner, status } = application;
   const statusInfo = statusConfig[status] || statusConfig.applied;
+  const { toast } = useToast();
+  const withdrawMutation = useWithdrawApplication();
+  const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
+
+  const canWithdraw = status === "applied" || status === "shortlisted";
+
+  const handleWithdraw = async () => {
+    try {
+      await withdrawMutation.mutateAsync(application.id);
+      toast({
+        title: "Application withdrawn",
+        description: "Your application has been withdrawn.",
+      });
+      setWithdrawDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to withdraw application.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const ownerInitials = owner
     ? `${owner.first_name?.[0] || ""}${owner.last_name?.[0] || ""}`
@@ -102,12 +138,45 @@ export const SitterApplicationCard = ({ application }: SitterApplicationCardProp
                 </span>
               </div>
 
-              <Button variant="ghost" size="sm" asChild>
-                <Link to={`/listing/${application.listing_id}`}>
-                  View
-                  <ArrowRight className="h-3 w-3 ml-1" />
-                </Link>
-              </Button>
+              <div className="flex items-center gap-1">
+                {canWithdraw && (
+                  <AlertDialog open={withdrawDialogOpen} onOpenChange={setWithdrawDialogOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                        <X className="h-3 w-3 mr-1" />
+                        Withdraw
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Withdraw application?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to withdraw your application for "{listing?.title}"? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleWithdraw}
+                          disabled={withdrawMutation.isPending}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {withdrawMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : null}
+                          Withdraw
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to={`/listing/${application.listing_id}`}>
+                    View
+                    <ArrowRight className="h-3 w-3 ml-1" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
