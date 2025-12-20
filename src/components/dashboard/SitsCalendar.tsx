@@ -3,7 +3,7 @@ import { format, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, isSam
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ChevronLeft, ChevronRight, MapPin, User, Play, CheckCircle } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, MapPin, User, Play, CheckCircle, XCircle } from "lucide-react";
 import { useSits, Sit, useUpdateSitStatus } from "@/hooks/useSits";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,7 @@ const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | "owner"
 
   const canStartSit = isOwner && sit.status === "confirmed";
   const canCompleteSit = isOwner && sit.status === "in_progress";
+  const canCancelSit = isOwner && sit.status === "confirmed";
 
   return (
     <div className="p-3 rounded-lg border bg-card hover:shadow-md transition-shadow">
@@ -80,7 +81,7 @@ const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | "owner"
       </div>
 
       {/* Owner Actions */}
-      {(canStartSit || canCompleteSit) && (
+      {(canStartSit || canCompleteSit || canCancelSit) && (
         <div className="mt-3 pt-2 border-t flex gap-2">
           {canStartSit && (
             <AlertDialog>
@@ -125,6 +126,33 @@ const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | "owner"
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction onClick={() => updateStatus({ sitId: sit.id, status: "completed" })}>
                     Complete Sit
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          {canCancelSit && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" disabled={isPending}>
+                  <XCircle className="w-3 h-3 mr-1" />
+                  Cancel
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cancel this sit?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will cancel the sit. The sitter will be notified and the sit dates will become available again.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep Sit</AlertDialogCancel>
+                  <AlertDialogAction 
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => updateStatus({ sitId: sit.id, status: "cancelled" })}
+                  >
+                    Cancel Sit
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
