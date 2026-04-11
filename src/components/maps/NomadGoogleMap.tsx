@@ -117,6 +117,7 @@ const ClusteredNomadMarkers = ({
 
 const MapContent = ({ nomads }: NomadGoogleMapProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { nomadMapId } = useGoogleMapsConfig();
   const selected = nomads.find((n) => n.user_id === selectedId);
 
   return (
@@ -126,7 +127,7 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
         defaultZoom={2}
         gestureHandling="greedy"
         disableDefaultUI={false}
-        mapId="nomad-map"
+        mapId={nomadMapId || "nomad-map"}
         className="w-full h-full"
       >
         <FitBoundsInner nomads={nomads} />

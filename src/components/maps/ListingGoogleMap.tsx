@@ -155,6 +155,7 @@ const ClusteredMarkers = ({
 
 const MapContent = ({ listings }: ListingGoogleMapProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { listingMapId } = useGoogleMapsConfig();
   const listingsWithCoords = listings.filter((l) => l.latitude && l.longitude);
   const selected = listingsWithCoords.find((l) => l.id === selectedId);
 
@@ -165,7 +166,7 @@ const MapContent = ({ listings }: ListingGoogleMapProps) => {
         defaultZoom={2}
         gestureHandling="greedy"
         disableDefaultUI={false}
-        mapId="listing-map"
+        mapId={listingMapId || "listing-map"}
         className="w-full h-full"
       >
         <MapSearchBox />
