@@ -61,35 +61,39 @@ const FindNomads = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("sitter_profiles")
-        .select(`
-          user_id,
-          latitude,
-          longitude,
-          headline,
-          experience_level,
-          pet_types,
-          profiles!sitter_profiles_user_id_fkey (
-            first_name,
-            last_name,
-            avatar_url,
-            city,
-            country
-          )
-        `)
+        .select("user_id, latitude, longitude, headline, experience_level, pet_types")
         .eq("is_active", true)
         .not("latitude", "is", null)
         .not("longitude", "is", null);
 
-      if (!error && data) {
-        const mapped = data.map((item: any) => ({
-          user_id: item.user_id,
-          latitude: item.latitude,
-          longitude: item.longitude,
-          headline: item.headline,
-          experience_level: item.experience_level,
-          pet_types: item.pet_types,
-          profile: item.profiles,
-        }));
+      if (!error && data && data.length > 0) {
+        // Fetch profiles separately (no FK)
+        const userIds = data.map((d) => d.user_id);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name, avatar_url, city, country")
+          .in("id", userIds);
+
+        const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+
+        const mapped = data.map((item) => {
+          const profile = profileMap.get(item.user_id) || null;
+          return {
+            user_id: item.user_id,
+            latitude: item.latitude!,
+            longitude: item.longitude!,
+            headline: item.headline,
+            experience_level: item.experience_level,
+            pet_types: item.pet_types,
+            profile: profile ? {
+              first_name: profile.first_name,
+              last_name: profile.last_name,
+              avatar_url: profile.avatar_url,
+              city: profile.city,
+              country: profile.country,
+            } : null,
+          };
+        });
         setNomads(mapped);
       }
       setLoading(false);
