@@ -67,6 +67,7 @@ const App = () => (
               <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
               <Route path="/saved" element={<ProtectedRoute><SavedListings /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/membership" element={<Membership />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/contact" element={<Contact />} />
