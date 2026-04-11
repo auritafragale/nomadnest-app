@@ -30,13 +30,14 @@ const AutocompleteInner = ({
   types = ["(cities)"],
 }: PlacesAutocompleteInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const autocompleteRef = useRef<any>(null);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    if (!inputRef.current || initialized || !window.google?.maps?.places) return;
+    if (!inputRef.current || initialized || !(window as any).google?.maps?.places) return;
 
-    autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
+    const gm = (window as any).google.maps;
+    autocompleteRef.current = new gm.places.Autocomplete(inputRef.current, {
       types,
       fields: ["geometry", "address_components", "formatted_address", "name"],
     });
@@ -47,7 +48,7 @@ const AutocompleteInner = ({
 
       let city = "";
       let country = "";
-      place.address_components?.forEach((comp) => {
+      place.address_components?.forEach((comp: any) => {
         if (comp.types.includes("locality")) city = comp.long_name;
         if (comp.types.includes("administrative_area_level_1") && !city) city = comp.long_name;
         if (comp.types.includes("country")) country = comp.long_name;

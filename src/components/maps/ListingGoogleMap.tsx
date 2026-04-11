@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Map, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
 import { ListingWithDetails } from "@/hooks/useListings";
 import { format } from "date-fns";
@@ -7,10 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import GoogleMapsProvider from "./GoogleMapsProvider";
-
-interface ListingGoogleMapProps {
-  listings: ListingWithDetails[];
-}
 
 const CoralPin = () => (
   <div className="flex flex-col items-center">
@@ -28,12 +24,13 @@ const CoralPin = () => (
 const MapSearchBox = () => {
   const map = useMap();
   const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const autocompleteRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!inputRef.current || !map || !window.google?.maps?.places) return;
+    if (!inputRef.current || !map || !(window as any).google?.maps?.places) return;
 
-    autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
+    const gm = (window as any).google.maps;
+    autocompleteRef.current = new gm.places.Autocomplete(inputRef.current, {
       types: ["(cities)"],
       fields: ["geometry", "name"],
     });
@@ -65,21 +62,26 @@ const FitBoundsInner = ({ listings }: { listings: ListingWithDetails[] }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (!map || listings.length === 0) return;
-    const bounds = new google.maps.LatLngBounds();
+    if (!map || listings.length === 0 || !(window as any).google?.maps) return;
+    const gm = (window as any).google.maps;
+    const bounds = new gm.LatLngBounds();
     listings.forEach((l) => {
       if (l.latitude && l.longitude) bounds.extend({ lat: l.latitude, lng: l.longitude });
     });
     map.fitBounds(bounds, 50);
-    const listener = google.maps.event.addListenerOnce(map, "idle", () => {
+    const listener = gm.event.addListenerOnce(map, "idle", () => {
       const z = map.getZoom();
       if (z && z > 12) map.setZoom(12);
     });
-    return () => google.maps.event.removeListener(listener);
+    return () => gm.event.removeListener(listener);
   }, [listings, map]);
 
   return null;
 };
+
+interface ListingGoogleMapProps {
+  listings: ListingWithDetails[];
+}
 
 const MapContent = ({ listings }: ListingGoogleMapProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -122,11 +124,11 @@ const MapContent = ({ listings }: ListingGoogleMapProps) => {
               )}
               <p className="font-semibold text-sm mb-1">{selected.title}</p>
               {(selected.city || selected.country) && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {[selected.city, selected.country].filter(Boolean).join(", ")}
                 </p>
               )}
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {(() => {
                   const openDate = selected.sit_dates.find((d) => d.status === "open");
                   return openDate
