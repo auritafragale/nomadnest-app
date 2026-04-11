@@ -24,26 +24,22 @@ const HeroSection = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Text content */}
           <div className="space-y-8 text-center lg:text-left">
-            {/* Main headline */}
             <h1 
               className="text-4xl md:text-5xl lg:text-6xl font-display leading-tight animate-fade-up"
               style={{ animationDelay: "0.1s" }}
             >
-              Free pet sitting. Free stays.{" "}
-              <span className="text-gradient-primary">Trusted connections</span>{" "}
-              worldwide.
+              Find Your Perfect House Sit.{" "}
+              <span className="text-gradient-primary">Build Real Connections.</span>
             </h1>
 
-            {/* Subheadline */}
             <p 
               className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 animate-fade-up"
               style={{ animationDelay: "0.2s" }}
             >
-              NomadNest matches pet parents who need loving care with nomad sitters 
-              who travel — exchanging pet care for accommodation, no money involved.
+              NomadNest connects adventurous Nomads with Pet Parents who need trusted 
+              home and pet care — no money, just community.
             </p>
 
-            {/* CTA Buttons */}
             <div 
               className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 animate-fade-up"
               style={{ animationDelay: "0.3s" }}
@@ -60,7 +56,6 @@ const HeroSection = () => {
               </Link>
             </div>
 
-            {/* Trust features */}
             <div 
               className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4 animate-fade-up"
               style={{ animationDelay: "0.4s" }}
@@ -90,7 +85,6 @@ const HeroSection = () => {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-foreground/20 to-transparent" />
             </div>
-            {/* Floating badge */}
             <div className="absolute -bottom-4 -left-4 bg-surface rounded-xl p-4 shadow-xl animate-float">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center">

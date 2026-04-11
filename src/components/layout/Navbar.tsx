@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin } from "lucide-react";
+import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
@@ -9,6 +9,7 @@ import { useNewApplicationsCount } from "@/hooks/useNewApplicationsCount";
 import { Badge } from "@/components/ui/badge";
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 import { MobileNotificationsSection } from "@/components/notifications/MobileNotificationsSection";
+import blackLogo from "@/assets/Black_Logo.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,12 +32,9 @@ const Navbar = () => {
           {/* Logo */}
           <Link 
             to="/" 
-            className="flex items-center gap-2 text-xl font-display text-foreground hover:text-primary transition-colors"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Home className="w-4 h-4 text-primary-foreground" />
-            </div>
-            NomadNest
+            <img src={blackLogo} alt="NomadNest" className="h-10 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
@@ -145,11 +143,7 @@ const Navbar = () => {
         <div className="md:hidden bg-surface border-b border-border animate-fade-in">
           <div className="container py-4 space-y-2">
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                onClick={() => setIsOpen(false)}
-              >
+              <Link key={link.href} to={link.href} onClick={() => setIsOpen(false)}>
                 <Button
                   variant="ghost"
                   className={cn(

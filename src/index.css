@@ -6,27 +6,27 @@
 
 @layer base {
   :root {
-    /* NomadNest Design System - Warm & Inviting */
-    --background: 30 100% 96%;
-    --foreground: 217 33% 17%;
+    /* NomadNest Brand Design System */
+    --background: 34 33% 96%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 217 33% 17%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 217 33% 17%;
+    --popover-foreground: 0 0% 10%;
 
-    /* Terracotta - Primary */
-    --primary: 14 75% 61%;
+    /* Primary Coral #E8735A */
+    --primary: 10 75% 63%;
     --primary-foreground: 0 0% 100%;
 
-    /* Ocean Teal - Secondary */
+    /* Secondary Ocean Teal */
     --secondary: 171 58% 39%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Sand - Accent */
-    --accent: 43 74% 66%;
-    --accent-foreground: 217 33% 17%;
+    /* Gold Accent #F5C842 */
+    --accent: 43 90% 61%;
+    --accent-foreground: 0 0% 10%;
 
     --muted: 220 13% 91%;
     --muted-foreground: 220 9% 46%;
@@ -42,77 +42,77 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 14 75% 61%;
+    --ring: 10 75% 63%;
 
     --radius: 0.875rem;
 
     /* Custom tokens */
     --surface: 0 0% 100%;
-    --cream: 30 100% 96%;
-    --terracotta-light: 14 75% 95%;
+    --cream: 34 33% 96%;
+    --terracotta-light: 10 75% 95%;
     --ocean-light: 171 58% 95%;
-    --sand-light: 43 74% 95%;
+    --sand-light: 43 90% 95%;
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(217 33% 17% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(217 33% 17% / 0.08), 0 2px 4px -2px hsl(217 33% 17% / 0.05);
-    --shadow-lg: 0 10px 15px -3px hsl(217 33% 17% / 0.08), 0 4px 6px -4px hsl(217 33% 17% / 0.05);
-    --shadow-xl: 0 20px 25px -5px hsl(217 33% 17% / 0.1), 0 8px 10px -6px hsl(217 33% 17% / 0.05);
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 10% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 10% / 0.08), 0 2px 4px -2px hsl(0 0% 10% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 10% / 0.08), 0 4px 6px -4px hsl(0 0% 10% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 10% / 0.1), 0 8px 10px -6px hsl(0 0% 10% / 0.05);
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 217 33% 17%;
-    --sidebar-primary: 14 75% 61%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 10 75% 63%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 171 58% 95%;
-    --sidebar-accent-foreground: 217 33% 17%;
+    --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 14 75% 61%;
+    --sidebar-ring: 10 75% 63%;
   }
 
   .dark {
-    --background: 217 33% 10%;
-    --foreground: 30 100% 96%;
+    --background: 0 0% 8%;
+    --foreground: 34 33% 96%;
 
-    --card: 217 33% 14%;
-    --card-foreground: 30 100% 96%;
+    --card: 0 0% 12%;
+    --card-foreground: 34 33% 96%;
 
-    --popover: 217 33% 14%;
-    --popover-foreground: 30 100% 96%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 34 33% 96%;
 
-    --primary: 14 75% 61%;
+    --primary: 10 75% 63%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 171 58% 39%;
     --secondary-foreground: 0 0% 100%;
 
-    --accent: 43 74% 66%;
-    --accent-foreground: 217 33% 17%;
+    --accent: 43 90% 61%;
+    --accent-foreground: 0 0% 10%;
 
-    --muted: 217 33% 20%;
+    --muted: 0 0% 18%;
     --muted-foreground: 220 9% 60%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 20%;
-    --input: 217 33% 20%;
-    --ring: 14 75% 61%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 10 75% 63%;
 
-    --surface: 217 33% 14%;
-    --cream: 217 33% 10%;
-    --terracotta-light: 14 75% 20%;
-    --ocean-light: 171 58% 20%;
-    --sand-light: 43 74% 20%;
+    --surface: 0 0% 12%;
+    --cream: 0 0% 8%;
+    --terracotta-light: 10 75% 18%;
+    --ocean-light: 171 58% 18%;
+    --sand-light: 43 90% 18%;
 
-    --sidebar-background: 217 33% 12%;
-    --sidebar-foreground: 30 100% 96%;
-    --sidebar-primary: 14 75% 61%;
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 34 33% 96%;
+    --sidebar-primary: 10 75% 63%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 171 58% 20%;
-    --sidebar-accent-foreground: 30 100% 96%;
-    --sidebar-border: 217 33% 20%;
-    --sidebar-ring: 14 75% 61%;
+    --sidebar-accent: 171 58% 18%;
+    --sidebar-accent-foreground: 34 33% 96%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 10 75% 63%;
   }
 }
 
@@ -173,43 +173,23 @@
 }
 
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 @keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 /* Custom scrollbar */
