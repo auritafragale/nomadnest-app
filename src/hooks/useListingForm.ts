@@ -39,6 +39,9 @@ export interface ListingFormData {
   city: string;
   country: string;
   area: string;
+  address_private: string;
+  latitude: number | null;
+  longitude: number | null;
   wifi_quality: string;
   sleeping_arrangement: string;
   amenities: string[];
