@@ -18,7 +18,10 @@ serve(async (req) => {
     });
   }
 
-  return new Response(JSON.stringify({ key }), {
+  const listingMapId = Deno.env.get("GOOGLE_MAPS_LISTING_MAP_ID") || "";
+  const nomadMapId = Deno.env.get("GOOGLE_MAPS_NOMAD_MAP_ID") || "";
+
+  return new Response(JSON.stringify({ key, listingMapId, nomadMapId }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });

@@ -4,7 +4,7 @@ import { MarkerClusterer, type Marker } from "@googlemaps/markerclusterer";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
-import GoogleMapsProvider from "./GoogleMapsProvider";
+import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 import type { NomadOnMap } from "@/pages/FindNomads";
 
 const NomadPin = ({ avatarUrl, initials }: { avatarUrl?: string | null; initials: string }) => (
@@ -117,6 +117,7 @@ const ClusteredNomadMarkers = ({
 
 const MapContent = ({ nomads }: NomadGoogleMapProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { nomadMapId } = useGoogleMapsConfig();
   const selected = nomads.find((n) => n.user_id === selectedId);
 
   return (
@@ -126,7 +127,7 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
         defaultZoom={2}
         gestureHandling="greedy"
         disableDefaultUI={false}
-        mapId="nomad-map"
+        mapId={nomadMapId || "nomad-map"}
         className="w-full h-full"
       >
         <FitBoundsInner nomads={nomads} />

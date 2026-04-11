@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import GoogleMapsProvider from "./GoogleMapsProvider";
+import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 
 const CoralPin = () => (
   <div className="flex flex-col items-center">
@@ -155,6 +155,7 @@ const ClusteredMarkers = ({
 
 const MapContent = ({ listings }: ListingGoogleMapProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { listingMapId } = useGoogleMapsConfig();
   const listingsWithCoords = listings.filter((l) => l.latitude && l.longitude);
   const selected = listingsWithCoords.find((l) => l.id === selectedId);
 
@@ -165,7 +166,7 @@ const MapContent = ({ listings }: ListingGoogleMapProps) => {
         defaultZoom={2}
         gestureHandling="greedy"
         disableDefaultUI={false}
-        mapId="listing-map"
+        mapId={listingMapId || "listing-map"}
         className="w-full h-full"
       >
         <MapSearchBox />

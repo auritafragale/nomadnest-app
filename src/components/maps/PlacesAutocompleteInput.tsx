@@ -83,9 +83,9 @@ const AutocompleteInner = ({
 };
 
 const PlacesAutocompleteInput = (props: PlacesAutocompleteInputProps) => {
-  const { data: apiKey, isLoading } = useGoogleMapsKey();
+  const { data: config, isLoading } = useGoogleMapsKey();
 
-  if (isLoading || !apiKey) {
+  if (isLoading || !config) {
     return (
       <div className="relative">
         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -100,7 +100,7 @@ const PlacesAutocompleteInput = (props: PlacesAutocompleteInputProps) => {
   }
 
   return (
-    <APIProvider apiKey={apiKey} libraries={["places"]}>
+    <APIProvider apiKey={config.key} libraries={["places"]}>
       <AutocompleteInner {...props} />
     </APIProvider>
   );
