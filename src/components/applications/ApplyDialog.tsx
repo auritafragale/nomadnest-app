@@ -16,8 +16,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
-import { Calendar, Loader2, Star, User, Sparkles } from "lucide-react";
+import { Calendar, Loader2, Star, User, Sparkles, Lock } from "lucide-react";
 import { sendNotification } from "@/lib/notifications";
+import { useMembership } from "@/hooks/useMembership";
+import { useNavigate } from "react-router-dom";
 
 interface SitDate {
   id: string;
