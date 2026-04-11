@@ -81,6 +81,8 @@ interface SitterProfile {
   background_check: boolean;
   gallery: string[];
   age_range: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface Profile {
