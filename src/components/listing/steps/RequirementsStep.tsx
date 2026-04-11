@@ -62,13 +62,13 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
           Requirements & Preferences
         </h2>
         <p className="text-muted-foreground mt-2">
-          Set expectations for your ideal sitter
+          Set expectations for your ideal nomad
         </p>
       </div>
 
-      {/* Sitter Requirements */}
+      {/* Nomad Requirements */}
       <div className="space-y-3">
-        <Label className="text-base font-semibold">Sitter Requirements</Label>
+        <Label className="text-base font-semibold">Nomad Requirements</Label>
         <p className="text-sm text-muted-foreground">
           Select any must-have qualifications
         </p>
@@ -104,7 +104,7 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
       <div className="space-y-3">
         <Label className="text-base font-semibold">House Rules</Label>
         <p className="text-sm text-muted-foreground">
-          Important rules sitters should follow
+          Important rules nomads should follow
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {houseRulesList.map((rule) => (
@@ -168,10 +168,10 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
         />
       </div>
 
-      {/* Ideal Sitter */}
+      {/* Ideal Nomad */}
       <div className="space-y-2">
         <Label htmlFor="ideal-sitter" className="text-base font-semibold">
-          Describe Your Ideal Sitter
+          Describe Your Ideal Nomad
         </Label>
         <Textarea
           id="ideal-sitter"
