@@ -1,0 +1,164 @@
+import { useState, useCallback, useEffect, useRef } from "react";
+import { Map, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
+import { ListingWithDetails } from "@/hooks/useListings";
+import { format } from "date-fns";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
+import GoogleMapsProvider from "./GoogleMapsProvider";
+
+interface ListingGoogleMapProps {
+  listings: ListingWithDetails[];
+}
+
+const CoralPin = () => (
+  <div className="flex flex-col items-center">
+    <div
+      className="w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center"
+      style={{ backgroundColor: "#E8735A" }}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+      </svg>
+    </div>
+  </div>
+);
+
+const MapSearchBox = () => {
+  const map = useMap();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  useEffect(() => {
+    if (!inputRef.current || !map || !window.google?.maps?.places) return;
+
+    autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
+      types: ["(cities)"],
+      fields: ["geometry", "name"],
+    });
+
+    autocompleteRef.current.addListener("place_changed", () => {
+      const place = autocompleteRef.current?.getPlace();
+      if (place?.geometry?.location) {
+        map.panTo(place.geometry.location);
+        map.setZoom(10);
+      }
+    });
+  }, [map]);
+
+  return (
+    <div className="absolute top-3 left-3 z-10 w-72">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          ref={inputRef}
+          placeholder="Search city or country..."
+          className="pl-9 h-10 bg-background shadow-md border-border"
+        />
+      </div>
+    </div>
+  );
+};
+
+const FitBoundsInner = ({ listings }: { listings: ListingWithDetails[] }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || listings.length === 0) return;
+    const bounds = new google.maps.LatLngBounds();
+    listings.forEach((l) => {
+      if (l.latitude && l.longitude) bounds.extend({ lat: l.latitude, lng: l.longitude });
+    });
+    map.fitBounds(bounds, 50);
+    const listener = google.maps.event.addListenerOnce(map, "idle", () => {
+      const z = map.getZoom();
+      if (z && z > 12) map.setZoom(12);
+    });
+    return () => google.maps.event.removeListener(listener);
+  }, [listings, map]);
+
+  return null;
+};
+
+const MapContent = ({ listings }: ListingGoogleMapProps) => {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const listingsWithCoords = listings.filter((l) => l.latitude && l.longitude);
+  const selected = listingsWithCoords.find((l) => l.id === selectedId);
+
+  return (
+    <div className="w-full h-[600px] rounded-lg overflow-hidden border border-border relative">
+      <Map
+        defaultCenter={{ lat: 30, lng: 0 }}
+        defaultZoom={2}
+        gestureHandling="greedy"
+        disableDefaultUI={false}
+        mapId="listing-map"
+        className="w-full h-full"
+      >
+        <MapSearchBox />
+        <FitBoundsInner listings={listingsWithCoords} />
+        {listingsWithCoords.map((listing) => (
+          <AdvancedMarker
+            key={listing.id}
+            position={{ lat: listing.latitude!, lng: listing.longitude! }}
+            onClick={() => setSelectedId(listing.id)}
+          >
+            <CoralPin />
+          </AdvancedMarker>
+        ))}
+        {selected && (
+          <InfoWindow
+            position={{ lat: selected.latitude!, lng: selected.longitude! }}
+            onCloseClick={() => setSelectedId(null)}
+          >
+            <div className="min-w-[200px] max-w-[260px]">
+              {selected.photos?.[0] && (
+                <img
+                  src={selected.photos[0]}
+                  alt={selected.title}
+                  className="w-full h-28 object-cover rounded-md mb-2"
+                />
+              )}
+              <p className="font-semibold text-sm mb-1">{selected.title}</p>
+              {(selected.city || selected.country) && (
+                <p className="text-xs text-gray-500">
+                  {[selected.city, selected.country].filter(Boolean).join(", ")}
+                </p>
+              )}
+              <p className="text-xs text-gray-500">
+                {(() => {
+                  const openDate = selected.sit_dates.find((d) => d.status === "open");
+                  return openDate
+                    ? `${format(new Date(openDate.start_date), "MMM d")} – ${format(new Date(openDate.end_date), "MMM d, yyyy")}`
+                    : "Dates TBD";
+                })()}
+              </p>
+              <p className="text-xs mt-1">
+                {selected.pets.map((p) => p.name || p.type).join(", ")}
+              </p>
+              <Link to={`/listing/${selected.id}`}>
+                <Button size="sm" className="w-full mt-2 h-8 text-xs">
+                  View Listing
+                </Button>
+              </Link>
+            </div>
+          </InfoWindow>
+        )}
+      </Map>
+      {listingsWithCoords.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/60 pointer-events-none">
+          <p className="text-muted-foreground text-sm">No listings have location data yet.</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ListingGoogleMap = ({ listings }: ListingGoogleMapProps) => (
+  <GoogleMapsProvider>
+    <MapContent listings={listings} />
+  </GoogleMapsProvider>
+);
+
+export default ListingGoogleMap;
