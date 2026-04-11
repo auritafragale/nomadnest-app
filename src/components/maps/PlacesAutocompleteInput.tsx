@@ -100,7 +100,7 @@ const PlacesAutocompleteInput = (props: PlacesAutocompleteInputProps) => {
   }
 
   return (
-    <APIProvider apiKey={apiKey} libraries={["places"]}>
+    <APIProvider apiKey={config.key} libraries={["places"]}>
       <AutocompleteInner {...props} />
     </APIProvider>
   );
