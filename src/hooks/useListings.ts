@@ -22,6 +22,8 @@ export interface ListingWithDetails {
   amenities: string[];
   status: string;
   created_at: string;
+  latitude: number | null;
+  longitude: number | null;
   pets: {
     id: string;
     name: string | null;
@@ -52,7 +54,20 @@ export const useListings = (filters: ListingFilters = {}) => {
           amenities,
           status,
           created_at,
+          latitude,
+          longitude,
           pets (
+            id,
+            name,
+            type
+          ),
+          sit_dates (
+            id,
+            start_date,
+            end_date,
+            status
+          )
+        `)
             id,
             name,
             type
