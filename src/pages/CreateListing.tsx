@@ -30,6 +30,7 @@ const CreateListing = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { hasAccess, loading: membershipLoading } = useMembership();
 
   const {
     formData,
