@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart } from "lucide-react";
+import { Home, Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
@@ -55,6 +55,20 @@ const Navbar = () => {
                 </Button>
               </Link>
             ))}
+            {user && (role === "sitter" || role === "both") && (
+              <Link to="/find-nomads">
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "text-muted-foreground hover:text-foreground",
+                    isActive("/find-nomads") && "text-primary bg-terracotta-light"
+                  )}
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Find Nomads
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Desktop Auth Buttons */}
@@ -148,6 +162,20 @@ const Navbar = () => {
                 </Button>
               </Link>
             ))}
+            {user && (role === "sitter" || role === "both") && (
+              <Link to="/find-nomads" onClick={() => setIsOpen(false)}>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start text-muted-foreground",
+                    isActive("/find-nomads") && "text-primary bg-terracotta-light"
+                  )}
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Find Nomads
+                </Button>
+              </Link>
+            )}
             <div className="pt-4 space-y-2 border-t border-border">
               {user ? (
                 <>
