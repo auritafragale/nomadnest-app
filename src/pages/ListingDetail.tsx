@@ -42,6 +42,7 @@ import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
 import { Star } from "lucide-react";
 import ReportDialog from "@/components/reports/ReportDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
+import ListingLocationMap from "@/components/maps/ListingLocationMap";
 
 interface Pet {
   id: string;
@@ -98,6 +99,8 @@ interface Listing {
   ideal_sitter_description: string | null;
   communication_style: string | null;
   owner_user_id: string;
+  latitude: number | null;
+  longitude: number | null;
   pets: Pet[];
   sit_dates: SitDate[];
   profiles: Profile;
@@ -670,6 +673,28 @@ const ListingDetail = () => {
                   <CardContent>
                     <p className="text-muted-foreground whitespace-pre-wrap">
                       {listing.ideal_sitter_description}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Location Map */}
+              {listing.latitude && listing.longitude && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5" />
+                      Location
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ListingLocationMap
+                      latitude={listing.latitude}
+                      longitude={listing.longitude}
+                      title={listing.title}
+                    />
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {[listing.area, listing.city, listing.country].filter(Boolean).join(", ")}
                     </p>
                   </CardContent>
                 </Card>
