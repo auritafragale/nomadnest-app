@@ -27,6 +27,7 @@ import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailab
 import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompletenessCard";
 import { useOwnerApplications } from "@/hooks/useApplications";
 import { OwnerApplicationPreviewCard } from "@/components/dashboard/OwnerApplicationPreviewCard";
+import MembershipStatusCard from "@/components/dashboard/MembershipStatusCard";
 
 interface Profile {
   first_name: string | null;
@@ -235,6 +236,9 @@ const SitterDashboard = ({
           profile={profile}
           sitterProfile={sitterProfile}
         />
+
+        {/* Membership Status */}
+        <MembershipStatusCard />
 
         {/* Profile Card */}
         <Card variant="elevated">
@@ -464,6 +468,9 @@ const OwnerDashboard = ({
           profile={profile}
           ownerProfile={ownerProfile}
         />
+
+        {/* Membership Status */}
+        <MembershipStatusCard />
 
         {/* Profile Card */}
         <Card variant="elevated">
