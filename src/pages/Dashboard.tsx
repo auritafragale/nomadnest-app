@@ -237,6 +237,9 @@ const SitterDashboard = ({
           sitterProfile={sitterProfile}
         />
 
+        {/* Membership Status */}
+        <MembershipStatusCard />
+
         {/* Profile Card */}
         <Card variant="elevated">
           <CardContent className="pt-6">
