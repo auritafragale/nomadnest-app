@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import GoogleMapsProvider from "./GoogleMapsProvider";
+import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 
 const CoralPin = () => (
   <div className="flex flex-col items-center">

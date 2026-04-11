@@ -4,7 +4,7 @@ import { MarkerClusterer, type Marker } from "@googlemaps/markerclusterer";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
-import GoogleMapsProvider from "./GoogleMapsProvider";
+import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 import type { NomadOnMap } from "@/pages/FindNomads";
 
 const NomadPin = ({ avatarUrl, initials }: { avatarUrl?: string | null; initials: string }) => (
