@@ -294,6 +294,7 @@ const CreateListing = () => {
             </p>
           </div>
 
+          <MembershipGate type="owner" hasAccess={!membershipLoading && hasAccess("owner")}>
           {/* Step Indicator */}
           <div className="mb-8">
             <StepIndicator
@@ -303,6 +304,52 @@ const CreateListing = () => {
             />
           </div>
 
+          {/* Form Content */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">{renderStep()}</CardContent>
+          </Card>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between">
+            <Button
+              variant="outline"
+              onClick={prevStep}
+              disabled={currentStep === 1}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Previous
+            </Button>
+
+            <div className="flex gap-3">
+              {currentStep === totalSteps ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSubmit("draft")}
+                    disabled={isSubmitting}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Draft
+                  </Button>
+                  <Button
+                    onClick={() => handleSubmit("published")}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : null}
+                    Publish Listing
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={handleNext}>
+                  Next
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              )}
+            </div>
+          </div>
+          </MembershipGate>
           {/* Form Content */}
           <Card className="mb-6">
             <CardContent className="pt-6">{renderStep()}</CardContent>
