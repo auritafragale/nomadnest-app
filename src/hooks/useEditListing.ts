@@ -37,6 +37,9 @@ export interface ListingWithDetails {
   city: string | null;
   country: string | null;
   area: string | null;
+  address_private: string | null;
+  latitude: number | null;
+  longitude: number | null;
   wifi_quality: string | null;
   sleeping_arrangement: string | null;
   amenities: string[] | null;
