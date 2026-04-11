@@ -42,6 +42,7 @@ import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
 import { Star } from "lucide-react";
 import ReportDialog from "@/components/reports/ReportDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
+import ListingLocationMap from "@/components/maps/ListingLocationMap";
 
 interface Pet {
   id: string;
@@ -98,6 +99,8 @@ interface Listing {
   ideal_sitter_description: string | null;
   communication_style: string | null;
   owner_user_id: string;
+  latitude: number | null;
+  longitude: number | null;
   pets: Pet[];
   sit_dates: SitDate[];
   profiles: Profile;
