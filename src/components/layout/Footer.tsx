@@ -26,7 +26,6 @@ const Footer = () => {
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
               <img src={blackLogo} alt="NomadNest" className="h-10 w-auto" />
-              NomadNest
             </Link>
             <p className="text-sm text-muted-foreground">
               Free pet sitting. Free stays. Trusted connections worldwide.
