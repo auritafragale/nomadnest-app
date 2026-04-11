@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { ListingFormData } from "@/hooks/useListingForm";
 import { cn } from "@/lib/utils";
 import { 
   Home, Building2, Building, TreePine, 
-  Wifi, WifiOff, Bed, Sofa 
+  Wifi, WifiOff, Bed, Sofa, MapPin, Loader2, Navigation
 } from "lucide-react";
 import ImageUpload from "@/components/listing/ImageUpload";
 
