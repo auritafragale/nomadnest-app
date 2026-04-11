@@ -68,17 +68,6 @@ export const useListings = (filters: ListingFilters = {}) => {
             status
           )
         `)
-            id,
-            name,
-            type
-          ),
-          sit_dates (
-            id,
-            start_date,
-            end_date,
-            status
-          )
-        `)
         .eq("status", "published");
 
       // Apply location/title search
