@@ -39,14 +39,14 @@ const BasicInfoStep = ({ formData, updateFormData }: BasicInfoStepProps) => {
           <Label htmlFor="description">Description *</Label>
           <Textarea
             id="description"
-            placeholder="Tell sitters about your home, your pets, and what makes this sit special..."
+            placeholder="Tell nomads about your home, your pets, and what makes this sit special..."
             value={formData.description}
             onChange={(e) => updateFormData({ description: e.target.value })}
             rows={6}
             className="resize-none"
           />
           <p className="text-sm text-muted-foreground">
-            Include details about your neighborhood, nearby amenities, and what sitters can expect
+            Include details about your neighborhood, nearby amenities, and what nomads can expect
           </p>
         </div>
       </div>

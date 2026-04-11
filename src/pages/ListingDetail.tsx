@@ -588,7 +588,7 @@ const ListingDetail = () => {
                   <CardContent className="space-y-4">
                     {listing.requirements.length > 0 && (
                       <div>
-                        <h4 className="font-medium mb-2">Sitter Requirements</h4>
+                        <h4 className="font-medium mb-2">Nomad Requirements</h4>
                         <ul className="space-y-1">
                           {listing.requirements.map((req) => (
                             <li
@@ -665,7 +665,7 @@ const ListingDetail = () => {
               {listing.ideal_sitter_description && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Ideal Sitter</CardTitle>
+                    <CardTitle>Ideal Nomad</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground whitespace-pre-wrap">
