@@ -172,7 +172,40 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
           />
         </div>
 
-        {/* WiFi */}
+        {/* Private Address */}
+        <div className="space-y-2">
+          <Label htmlFor="address">Full Address (private — only shared with confirmed nomads)</Label>
+          <Input
+            id="address"
+            placeholder="e.g., Carrer de Mallorca 401, 08013 Barcelona"
+            value={formData.address_private}
+            onChange={(e) => updateFormData({ address_private: e.target.value })}
+          />
+        </div>
+
+        {/* Geolocation */}
+        <div className="space-y-2">
+          <Label>Map Pin Location</Label>
+          <p className="text-sm text-muted-foreground">
+            Used to show your listing on the map. Only the approximate area is shown publicly.
+          </p>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={handleGeolocate} disabled={isGeolocating}>
+              {isGeolocating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Navigation className="w-4 h-4 mr-2" />}
+              Use my location
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={geocodeFromCity} disabled={isGeolocating || (!formData.city && !formData.country)}>
+              <MapPin className="w-4 h-4 mr-2" />
+              Set from city
+            </Button>
+          </div>
+          {formData.latitude && formData.longitude && (
+            <p className="text-xs text-muted-foreground">
+              📍 Coordinates set ({formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)})
+            </p>
+          )}
+        </div>
+
         <div className="space-y-2">
           <Label>WiFi Quality</Label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
