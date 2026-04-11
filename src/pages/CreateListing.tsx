@@ -14,6 +14,8 @@ import DatesStep from "@/components/listing/steps/DatesStep";
 import HomeInfoStep from "@/components/listing/steps/HomeInfoStep";
 import RequirementsStep from "@/components/listing/steps/RequirementsStep";
 import { useListingForm } from "@/hooks/useListingForm";
+import { useMembership } from "@/hooks/useMembership";
+import MembershipGate from "@/components/membership/MembershipGate";
 
 const steps = [
   { number: 1, title: "Basics" },
@@ -28,6 +30,7 @@ const CreateListing = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { hasAccess, loading: membershipLoading } = useMembership();
 
   const {
     formData,
@@ -291,6 +294,7 @@ const CreateListing = () => {
             </p>
           </div>
 
+          <MembershipGate type="owner" hasAccess={!membershipLoading && hasAccess("owner")}>
           {/* Step Indicator */}
           <div className="mb-8">
             <StepIndicator
@@ -324,12 +328,8 @@ const CreateListing = () => {
                     onClick={() => handleSubmit("draft")}
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4 mr-2" />
-                    )}
-                    Save as Draft
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Draft
                   </Button>
                   <Button
                     onClick={() => handleSubmit("published")}
@@ -349,6 +349,7 @@ const CreateListing = () => {
               )}
             </div>
           </div>
+          </MembershipGate>
         </div>
       </main>
     </div>

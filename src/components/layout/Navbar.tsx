@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin, Moon, Sun } from "lucide-react";
+import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin, Moon, Sun, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
@@ -25,6 +25,7 @@ const Navbar = () => {
   const navLinks = [
     { href: "/browse-sits", label: "Browse Sits", icon: Search },
     { href: "/browse-sitters", label: "Browse Nomads", icon: User },
+    { href: "/membership", label: "Membership", icon: Crown },
   ];
 
   const isActive = (path: string) => location.pathname === path;
