@@ -41,6 +41,7 @@ import OwnerReviewsSection from "@/components/reviews/OwnerReviewsSection";
 import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
 import { Star } from "lucide-react";
 import ReportDialog from "@/components/reports/ReportDialog";
+import { FoundingMemberBadge } from "@/components/ui/FoundingMemberBadge";
 
 interface Pet {
   id: string;
@@ -72,6 +73,8 @@ interface Profile {
   avatar_url: string | null;
   city: string | null;
   country: string | null;
+  founding_member: boolean | null;
+  full_name: string | null;
 }
 
 interface Listing {
@@ -164,7 +167,10 @@ const OwnerCard = ({
           </Avatar>
           <div>
             <h3 className="font-semibold group-hover:text-primary transition-colors">{ownerName}</h3>
-            <p className="text-sm text-muted-foreground">Pet Owner</p>
+            <p className="text-sm text-muted-foreground">Pet Parent</p>
+            {listing.profiles?.founding_member && (
+              <FoundingMemberBadge className="mt-1" />
+            )}
             {reviewCount > 0 && (
               <div className="flex items-center gap-1 mt-1">
                 <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
@@ -252,7 +258,7 @@ const ListingDetail = () => {
           supabase.from("sit_dates").select("*").eq("listing_id", id),
           supabase
             .from("profiles")
-            .select("first_name, last_name, avatar_url, city, country")
+            .select("first_name, last_name, avatar_url, city, country, founding_member, full_name")
             .eq("id", listingData.owner_user_id)
             .maybeSingle(),
         ]);
