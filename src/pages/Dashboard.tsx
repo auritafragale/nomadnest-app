@@ -50,6 +50,7 @@ const Dashboard = () => {
   const { user, role, signOut, loading } = useAuth();
   const { activeRole, setActiveRole } = useActiveRole();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
@@ -59,6 +60,16 @@ const Dashboard = () => {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (searchParams.get("membership") === "success") {
+      import("sonner").then(({ toast }) => {
+        toast.success("Membership activated! 🎉", { description: "Welcome to NomadNest. You now have full access." });
+      });
+      searchParams.delete("membership");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     const fetchProfiles = async () => {
