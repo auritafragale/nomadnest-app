@@ -149,6 +149,8 @@ export type Database = {
           house_rules_other: string | null
           id: string
           ideal_sitter_description: string | null
+          latitude: number | null
+          longitude: number | null
           owner_user_id: string
           photos: string[] | null
           requirements: string[] | null
@@ -175,6 +177,8 @@ export type Database = {
           house_rules_other?: string | null
           id?: string
           ideal_sitter_description?: string | null
+          latitude?: number | null
+          longitude?: number | null
           owner_user_id: string
           photos?: string[] | null
           requirements?: string[] | null
@@ -201,6 +205,8 @@ export type Database = {
           house_rules_other?: string | null
           id?: string
           ideal_sitter_description?: string | null
+          latitude?: number | null
+          longitude?: number | null
           owner_user_id?: string
           photos?: string[] | null
           requirements?: string[] | null
@@ -412,35 +418,50 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           city: string | null
           country: string | null
           created_at: string
           email: string
           first_name: string | null
+          founding_member: boolean | null
+          full_name: string | null
           id: string
           last_name: string | null
+          location: string | null
+          membership_type: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
           email: string
           first_name?: string | null
+          founding_member?: boolean | null
+          full_name?: string | null
           id: string
           last_name?: string | null
+          location?: string | null
+          membership_type?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
           email?: string
           first_name?: string | null
+          founding_member?: boolean | null
+          full_name?: string | null
           id?: string
           last_name?: string | null
+          location?: string | null
+          membership_type?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -718,6 +739,8 @@ export type Database = {
           id_verified: boolean | null
           is_active: boolean
           languages: string[] | null
+          latitude: number | null
+          longitude: number | null
           pet_types: string[] | null
           phone: string | null
           preferred_cities: string[] | null
@@ -748,6 +771,8 @@ export type Database = {
           id_verified?: boolean | null
           is_active?: boolean
           languages?: string[] | null
+          latitude?: number | null
+          longitude?: number | null
           pet_types?: string[] | null
           phone?: string | null
           preferred_cities?: string[] | null
@@ -778,6 +803,8 @@ export type Database = {
           id_verified?: boolean | null
           is_active?: boolean
           languages?: string[] | null
+          latitude?: number | null
+          longitude?: number | null
           pet_types?: string[] | null
           phone?: string | null
           preferred_cities?: string[] | null
