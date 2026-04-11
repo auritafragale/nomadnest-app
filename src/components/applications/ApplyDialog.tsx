@@ -333,6 +333,8 @@ export const ApplyDialog = ({
             </Button>
           </div>
         )}
+          </>
+          )}
       </DialogContent>
     </Dialog>
   );
