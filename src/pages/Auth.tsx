@@ -88,7 +88,6 @@ const Auth = () => {
             title: "Welcome to NomadNest!",
             description: "Your account has been created. Let's set up your profile.",
           });
-          navigate("/onboarding");
         }
       } else {
         const { error } = await signIn(email, password);
