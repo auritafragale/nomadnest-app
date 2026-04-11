@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Cat, Dog, Wifi, Heart, Loader2 } from "lucide-react";
+import { MapPin, Calendar, Cat, Dog, Wifi, Heart, Loader2, Star } from "lucide-react";
 import { ListingWithDetails } from "@/hooks/useListings";
 import { format } from "date-fns";
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
@@ -86,6 +86,13 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
               {dateRange}
             </div>
           </div>
+          {listing.owner_rating && listing.owner_rating.count > 0 && (
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+              <span className="font-medium">{listing.owner_rating.average.toFixed(1)}</span>
+              <span>({listing.owner_rating.count})</span>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2">
             {listing.pets.map((pet) => (
               <Badge key={pet.id} variant="muted" className="gap-1">

@@ -56,6 +56,7 @@ import { SitterReviewsSection } from "@/components/reviews/SitterReviewsSection"
 import { useSitterAverageRating } from "@/hooks/useSitterReviews";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
+import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 
 interface SitterProfile {
   id: string;
@@ -88,6 +89,7 @@ interface Profile {
   avatar_url: string | null;
   city: string | null;
   country: string | null;
+  founding_member: boolean | null;
 }
 
 interface Listing {
@@ -138,7 +140,7 @@ const SitterDetail = () => {
             .maybeSingle(),
           supabase
             .from("profiles")
-            .select("first_name, last_name, avatar_url, city, country")
+            .select("first_name, last_name, avatar_url, city, country, founding_member")
             .eq("id", userId)
             .maybeSingle(),
         ]);
@@ -412,6 +414,9 @@ const SitterDetail = () => {
                       <p className="text-lg text-muted-foreground">
                         {sitter.headline}
                       </p>
+                    )}
+                    {profile.founding_member && (
+                      <FoundingMemberBadge className="mt-2" />
                     )}
                   </div>
                   <div className="flex gap-2">
