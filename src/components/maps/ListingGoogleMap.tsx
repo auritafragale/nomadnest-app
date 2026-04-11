@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Map, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
+import { MarkerClusterer, type Marker } from "@googlemaps/markerclusterer";
 import { ListingWithDetails } from "@/hooks/useListings";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
@@ -83,6 +84,75 @@ interface ListingGoogleMapProps {
   listings: ListingWithDetails[];
 }
 
+const ClusteredMarkers = ({
+  listings,
+  onSelect,
+}: {
+  listings: ListingWithDetails[];
+  onSelect: (id: string) => void;
+}) => {
+  const map = useMap();
+  const clusterer = useRef<MarkerClusterer | null>(null);
+  const markersRef = useRef<{ [key: string]: Marker }>({});
+
+  useEffect(() => {
+    if (!map) return;
+    if (!clusterer.current) {
+      clusterer.current = new MarkerClusterer({
+        map,
+        renderer: {
+          render: ({ count, position }) => {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+              <circle cx="20" cy="20" r="18" fill="#E8735A" stroke="white" stroke-width="2"/>
+              <text x="20" y="25" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${count}</text>
+            </svg>`;
+            return new google.maps.marker.AdvancedMarkerElement({
+              position,
+              content: (() => {
+                const div = document.createElement("div");
+                div.innerHTML = svg;
+                return div;
+              })(),
+              zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
+            });
+          },
+        },
+      });
+    }
+  }, [map]);
+
+  useEffect(() => {
+    clusterer.current?.clearMarkers();
+    clusterer.current?.addMarkers(Object.values(markersRef.current));
+  }, [listings]);
+
+  const setMarkerRef = useCallback((marker: Marker | null, key: string) => {
+    if (marker && markersRef.current[key]) return;
+    if (!marker && !markersRef.current[key]) return;
+
+    if (marker) {
+      markersRef.current[key] = marker;
+    } else {
+      delete markersRef.current[key];
+    }
+  }, []);
+
+  return (
+    <>
+      {listings.map((listing) => (
+        <AdvancedMarker
+          key={listing.id}
+          position={{ lat: listing.latitude!, lng: listing.longitude! }}
+          onClick={() => onSelect(listing.id)}
+          ref={(marker) => setMarkerRef(marker as unknown as Marker, listing.id)}
+        >
+          <CoralPin />
+        </AdvancedMarker>
+      ))}
+    </>
+  );
+};
+
 const MapContent = ({ listings }: ListingGoogleMapProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const listingsWithCoords = listings.filter((l) => l.latitude && l.longitude);
@@ -100,15 +170,7 @@ const MapContent = ({ listings }: ListingGoogleMapProps) => {
       >
         <MapSearchBox />
         <FitBoundsInner listings={listingsWithCoords} />
-        {listingsWithCoords.map((listing) => (
-          <AdvancedMarker
-            key={listing.id}
-            position={{ lat: listing.latitude!, lng: listing.longitude! }}
-            onClick={() => setSelectedId(listing.id)}
-          >
-            <CoralPin />
-          </AdvancedMarker>
-        ))}
+        <ClusteredMarkers listings={listingsWithCoords} onSelect={setSelectedId} />
         {selected && (
           <InfoWindow
             position={{ lat: selected.latitude!, lng: selected.longitude! }}
