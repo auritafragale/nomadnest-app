@@ -205,8 +205,8 @@ const Onboarding = () => {
                     <Briefcase className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-medium">I'm a Nomad Sitter</p>
-                    <p className="text-sm text-muted-foreground">I travel and pet sit</p>
+                    <p className="font-medium">Nomad</p>
+                    <p className="text-sm text-muted-foreground">I travel and offer pet sitting</p>
                   </div>
                   {roleChoice === "sitter" && <Check className="w-5 h-5 text-primary ml-auto" />}
                 </div>
@@ -229,8 +229,8 @@ const Onboarding = () => {
                     <User className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-medium">I'm a Pet Owner</p>
-                    <p className="text-sm text-muted-foreground">I need a sitter</p>
+                    <p className="font-medium">Pet Parent</p>
+                    <p className="text-sm text-muted-foreground">I need a sitter for my pets</p>
                   </div>
                   {roleChoice === "owner" && <Check className="w-5 h-5 text-primary ml-auto" />}
                 </div>
@@ -253,8 +253,8 @@ const Onboarding = () => {
                     <Users className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-medium">Both</p>
-                    <p className="text-sm text-muted-foreground">I'll do both</p>
+                    <p className="font-medium">Combined</p>
+                    <p className="text-sm text-muted-foreground">I do both — sit and need sitters</p>
                   </div>
                   {roleChoice === "both" && <Check className="w-5 h-5 text-primary ml-auto" />}
                 </div>
