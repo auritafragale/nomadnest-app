@@ -30,8 +30,8 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
   const [isStartingChat, setIsStartingChat] = useState(false);
 
   const name = sitter.profile
-    ? `${sitter.profile.first_name || ""} ${sitter.profile.last_name || ""}`.trim() || "Sitter"
-    : "Sitter";
+    ? `${sitter.profile.first_name || ""} ${sitter.profile.last_name || ""}`.trim() || "Nomad"
+    : "Nomad";
   
   const initials = name
     .split(" ")
@@ -58,7 +58,7 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
       toast({
         variant: "destructive",
         title: "Sign in required",
-        description: "Please sign in to message sitters.",
+        description: "Please sign in to message nomads.",
       });
       navigate("/auth");
       return;

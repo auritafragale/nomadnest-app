@@ -39,7 +39,7 @@ const HeroSection = () => {
               className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 animate-fade-up"
               style={{ animationDelay: "0.2s" }}
             >
-              NomadNest matches pet owners who need loving care with nomad sitters 
+              NomadNest matches pet parents who need loving care with nomad sitters 
               who travel — exchanging pet care for accommodation, no money involved.
             </p>
 

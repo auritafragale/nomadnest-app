@@ -155,11 +155,11 @@ const Dashboard = () => {
                 <TabsList className="grid w-full max-w-md grid-cols-2">
                   <TabsTrigger value="sitter" className="gap-2">
                     <Briefcase className="w-4 h-4" />
-                    Sitter Mode
+                    Nomad Mode
                   </TabsTrigger>
                   <TabsTrigger value="owner" className="gap-2">
                     <Home className="w-4 h-4" />
-                    Owner Mode
+                    Pet Parent Mode
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -473,7 +473,7 @@ const OwnerDashboard = ({
                 <h3 className="font-semibold">
                   {profile?.first_name} {profile?.last_name}
                 </h3>
-                <p className="text-sm text-muted-foreground">Pet Owner</p>
+                <p className="text-sm text-muted-foreground">Pet Parent</p>
               </div>
             </div>
 
@@ -558,8 +558,8 @@ const OwnerDashboard = ({
                     <Search className="w-6 h-6 text-secondary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Browse Sitters</h3>
-                    <p className="text-sm text-muted-foreground">Find trusted sitters</p>
+                    <h3 className="font-semibold">Browse Nomads</h3>
+                    <p className="text-sm text-muted-foreground">Find trusted nomads</p>
                   </div>
                   <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
                 </div>
@@ -593,7 +593,7 @@ const OwnerDashboard = ({
               <div className="text-center py-8 text-muted-foreground">
                 <Home className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p className="font-medium">No listings yet</p>
-                <p className="text-sm mt-1">Create your first listing to find a sitter!</p>
+                <p className="text-sm mt-1">Create your first listing to find a nomad!</p>
                 <Link to="/create-listing">
                   <Button className="mt-4">
                     <Plus className="w-4 h-4 mr-2" />

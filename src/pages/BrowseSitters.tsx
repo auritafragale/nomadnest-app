@@ -53,10 +53,10 @@ const BrowseSitters = () => {
         <div className="bg-surface border-b border-border">
           <div className="container py-8">
             <h1 className="text-3xl md:text-4xl font-display mb-2">
-              Browse Sitters
+              Browse Nomads
             </h1>
             <p className="text-muted-foreground">
-              Find trusted pet sitters ready to care for your home and pets
+              Find trusted nomads ready to care for your home and pets
             </p>
           </div>
         </div>
@@ -102,17 +102,17 @@ const BrowseSitters = () => {
           ) : sitters.length === 0 ? (
             <div className="text-center py-16">
               <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No sitters found</h3>
+              <h3 className="text-xl font-semibold mb-2">No nomads found</h3>
               <p className="text-muted-foreground">
                 {searchQuery || selectedPetTypes.length > 0 || selectedLanguages.length > 0 || selectedExperienceLevels.length > 0
-                  ? "Try adjusting your filters to find more sitters"
-                  : "Be the first to create a sitter profile!"}
+                  ? "Try adjusting your filters to find more nomads"
+                  : "Be the first to create a nomad profile!"}
               </p>
             </div>
           ) : (
             <>
               <p className="text-sm text-muted-foreground mb-6">
-                Showing {startIndex}-{endIndex} of {totalItems} sitter{totalItems !== 1 ? "s" : ""}
+                Showing {startIndex}-{endIndex} of {totalItems} nomad{totalItems !== 1 ? "s" : ""}
               </p>
 
               <div
