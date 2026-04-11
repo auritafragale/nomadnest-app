@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin } from "lucide-react";
+import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
@@ -9,7 +9,9 @@ import { useNewApplicationsCount } from "@/hooks/useNewApplicationsCount";
 import { Badge } from "@/components/ui/badge";
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 import { MobileNotificationsSection } from "@/components/notifications/MobileNotificationsSection";
+import { useTheme } from "@/contexts/ThemeContext";
 import blackLogo from "@/assets/Black_Logo.png";
+import whiteLogo from "@/assets/White_Logo.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,6 +19,8 @@ const Navbar = () => {
   const { unreadCount } = useUnreadMessages();
   const { newApplicationsCount } = useNewApplicationsCount();
   const { user, loading, role } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const logo = theme === "dark" ? whiteLogo : blackLogo;
 
   const navLinks = [
     { href: "/browse-sits", label: "Browse Sits", icon: Search },
@@ -34,7 +38,7 @@ const Navbar = () => {
             to="/" 
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <img src={blackLogo} alt="NomadNest" className="h-10 w-auto" />
+            <img src={logo} alt="NomadNest" className="h-10 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
@@ -127,7 +131,15 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Menu Toggle */}
+          {/* Theme Toggle + Mobile Menu Toggle */}
+          <div className="flex items-center gap-1">
+            <button
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md"
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
           <button
             className="md:hidden p-2 text-foreground"
             onClick={() => setIsOpen(!isOpen)}
@@ -135,6 +147,7 @@ const Navbar = () => {
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
+          </div>
         </div>
       </div>
 
