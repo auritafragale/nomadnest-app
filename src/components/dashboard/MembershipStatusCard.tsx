@@ -6,7 +6,7 @@ import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { FoundingMemberBadge } from "@/components/ui/FoundingMemberBadge";
+import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 
 const MembershipStatusCard = () => {
   const navigate = useNavigate();
