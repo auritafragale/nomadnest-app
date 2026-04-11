@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Home } from "lucide-react";
+import blackLogo from "@/assets/Black_Logo.png";
 
 const Footer = () => {
   const footerLinks = {
