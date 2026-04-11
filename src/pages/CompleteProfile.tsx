@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Home, ArrowRight, MapPin, Loader2, Navigation } from "lucide-react";
+import { Home, ArrowRight, MapPin, Loader2 } from "lucide-react";
 import { AvatarUpload } from "@/components/onboarding/AvatarUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import PlacesAutocompleteInput from "@/components/maps/PlacesAutocompleteInput";
 
 const CompleteProfile = () => {
   const { user, loading: authLoading, role } = useAuth();
@@ -22,7 +23,6 @@ const CompleteProfile = () => {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGeolocating, setIsGeolocating] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -53,41 +53,7 @@ const CompleteProfile = () => {
     fetchProfile();
   }, [user, authLoading, navigate]);
 
-  const handleGeolocate = () => {
-    if (!navigator.geolocation) return;
-    setIsGeolocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLatitude(pos.coords.latitude);
-        setLongitude(pos.coords.longitude);
-        setIsGeolocating(false);
-        toast({ title: "Location captured!", description: "Your coordinates have been set." });
-      },
-      () => {
-        setIsGeolocating(false);
-        toast({ variant: "destructive", title: "Location unavailable", description: "Please allow location access or enter your city." });
-      },
-      { enableHighAccuracy: true }
-    );
-  };
-
-  const geocodeFromLocation = async () => {
-    if (!location.trim()) return;
-    setIsGeolocating(true);
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`);
-      const results = await res.json();
-      if (results?.[0]) {
-        setLatitude(parseFloat(results[0].lat));
-        setLongitude(parseFloat(results[0].lon));
-        toast({ title: "Location set!", description: "Coordinates derived from your location." });
-      }
-    } catch {
-      console.warn("Geocoding failed");
-    } finally {
-      setIsGeolocating(false);
-    }
-  };
+  // Removed old geocoding functions — now handled by PlacesAutocompleteInput
 
   const handleSubmit = async () => {
     if (!user || !fullName.trim()) return;
@@ -211,46 +177,26 @@ const CompleteProfile = () => {
               />
             </div>
 
-            {/* Location */}
+            {/* Location with Google Places */}
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="location"
-                  placeholder="London, United Kingdom"
-                  className="pl-10"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Geolocation for Nomads */}
-            {isNomad && (
-              <div className="space-y-2 p-4 rounded-lg border border-border bg-muted/30">
-                <Label>Map location (for Find Nomads)</Label>
+              <Label>Location</Label>
+              <PlacesAutocompleteInput
+                value={location}
+                onChange={setLocation}
+                onPlaceSelect={(place) => {
+                  setLocation([place.city, place.country].filter(Boolean).join(", "));
+                  setLatitude(place.latitude);
+                  setLongitude(place.longitude);
+                }}
+                placeholder="Search for your city..."
+                types={["(cities)"]}
+              />
+              {latitude && longitude && (
                 <p className="text-xs text-muted-foreground">
-                  Set your position so other nomads can find you on the map
+                  📍 Coordinates set ({latitude.toFixed(4)}, {longitude.toFixed(4)})
                 </p>
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={handleGeolocate} disabled={isGeolocating}>
-                    {isGeolocating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Navigation className="w-4 h-4 mr-2" />}
-                    Use my location
-                  </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={geocodeFromLocation} disabled={isGeolocating || !location.trim()}>
-                    <MapPin className="w-4 h-4 mr-2" />
-                    Set from city
-                  </Button>
-                </div>
-                {latitude && longitude && (
-                  <p className="text-xs text-muted-foreground">
-                    📍 Coordinates set ({latitude.toFixed(4)}, {longitude.toFixed(4)})
-                  </p>
-                )}
-              </div>
-            )}
-
+              )}
+            </div>
             <Button
               onClick={handleSubmit}
               className="w-full h-12 group"

@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,15 +9,23 @@ import BackToTopButton from "@/components/ui/BackToTopButton";
 import Pagination from "@/components/browse/Pagination";
 import { usePagination } from "@/hooks/usePagination";
 
-const ListingMap = lazy(() => import("@/components/browse/ListingMap"));
+const ListingGoogleMap = lazy(() => import("@/components/maps/ListingGoogleMap"));
 
 const ITEMS_PER_PAGE = 12;
+const VIEW_MODE_KEY = "nomadnest_browse_view";
 
 const BrowseSits = () => {
-  const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "map">(() => {
+    const saved = localStorage.getItem(VIEW_MODE_KEY);
+    return saved === "map" ? "map" : "grid";
+  });
   const [filters, setFilters] = useState<ListingFilters>({});
   
   const { data: listings, isLoading, error } = useListings(filters);
+
+  useEffect(() => {
+    localStorage.setItem(VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
 
   const {
     currentPage,
@@ -42,7 +50,6 @@ const BrowseSits = () => {
       <Navbar />
       
       <main className="flex-1 pt-20">
-        {/* Header */}
         <div className="bg-surface border-b border-border">
           <div className="container py-8">
             <h1 className="text-3xl md:text-4xl font-display mb-2">Browse Sits</h1>
@@ -52,7 +59,6 @@ const BrowseSits = () => {
           </div>
         </div>
 
-        {/* Search & Filters */}
         <ListingFiltersComponent
           filters={filters}
           onFiltersChange={setFilters}
@@ -60,7 +66,6 @@ const BrowseSits = () => {
           onViewModeChange={setViewMode}
         />
 
-        {/* Results */}
         <div className="container py-8">
           {isLoading ? (
             <>
@@ -85,26 +90,28 @@ const BrowseSits = () => {
                 Showing {viewMode === "map" ? totalItems : `${startIndex}-${endIndex} of ${totalItems}`} sit{totalItems !== 1 ? "s" : ""}
               </p>
 
-              {viewMode === "map" ? (
-                <Suspense fallback={<Skeleton className="w-full h-[600px] rounded-lg" />}>
-                  <ListingMap listings={listings} />
-                </Suspense>
-              ) : (
-                <>
-                  <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                    {paginatedItems.map((listing) => (
-                      <ListingCard key={listing.id} listing={listing} viewMode="grid" />
-                    ))}
-                  </div>
+              <div className="transition-opacity duration-300">
+                {viewMode === "map" ? (
+                  <Suspense fallback={<Skeleton className="w-full h-[600px] rounded-lg" />}>
+                    <ListingGoogleMap listings={listings} />
+                  </Suspense>
+                ) : (
+                  <>
+                    <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                      {paginatedItems.map((listing) => (
+                        <ListingCard key={listing.id} listing={listing} viewMode="grid" />
+                      ))}
+                    </div>
 
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                    className="mt-8"
-                  />
-                </>
-              )}
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                      className="mt-8"
+                    />
+                  </>
+                )}
+              </div>
             </>
           ) : (
             <div className="text-center py-12">
