@@ -55,6 +55,20 @@ const Navbar = () => {
                 </Button>
               </Link>
             ))}
+            {user && (role === "sitter" || role === "both") && (
+              <Link to="/find-nomads">
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "text-muted-foreground hover:text-foreground",
+                    isActive("/find-nomads") && "text-primary bg-terracotta-light"
+                  )}
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Find Nomads
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Desktop Auth Buttons */}
