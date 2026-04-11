@@ -14,6 +14,8 @@ import DatesStep from "@/components/listing/steps/DatesStep";
 import HomeInfoStep from "@/components/listing/steps/HomeInfoStep";
 import RequirementsStep from "@/components/listing/steps/RequirementsStep";
 import { useListingForm } from "@/hooks/useListingForm";
+import { useMembership } from "@/hooks/useMembership";
+import MembershipGate from "@/components/membership/MembershipGate";
 
 const steps = [
   { number: 1, title: "Basics" },
