@@ -42,7 +42,7 @@ export const ConversationList = ({
         <MessageCircle className="h-12 w-12 text-muted-foreground mb-4" />
         <h3 className="font-medium text-foreground">No conversations yet</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Start a conversation by contacting a sitter or owner
+          Start a conversation by contacting a Nomad or Pet Parent
         </p>
       </div>
     );

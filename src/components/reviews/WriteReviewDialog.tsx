@@ -119,7 +119,7 @@ const WriteReviewDialog = ({
         <DialogHeader>
           <DialogTitle>Review {revieweeName}</DialogTitle>
           <DialogDescription>
-            Share your experience with this {reviewType === "owner" ? "pet owner" : "sitter"}
+            Share your experience with this {reviewType === "owner" ? "Pet Parent" : "Nomad"}
           </DialogDescription>
         </DialogHeader>
 

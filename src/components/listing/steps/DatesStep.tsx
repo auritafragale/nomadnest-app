@@ -48,7 +48,7 @@ const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate }: Dates
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-display font-bold text-foreground">
-          When do you need a sitter?
+          When do you need a Nomad?
         </h2>
         <p className="text-muted-foreground mt-2">
           Add one or more date ranges for your sit

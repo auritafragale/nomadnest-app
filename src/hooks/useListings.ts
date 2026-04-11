@@ -24,6 +24,7 @@ export interface ListingWithDetails {
   created_at: string;
   latitude: number | null;
   longitude: number | null;
+  owner_user_id: string;
   pets: {
     id: string;
     name: string | null;
@@ -35,6 +36,7 @@ export interface ListingWithDetails {
     end_date: string;
     status: string;
   }[];
+  owner_rating?: { average: number; count: number };
 }
 
 export const useListings = (filters: ListingFilters = {}) => {
@@ -56,6 +58,7 @@ export const useListings = (filters: ListingFilters = {}) => {
           created_at,
           latitude,
           longitude,
+          owner_user_id,
           pets (
             id,
             name,
@@ -81,6 +84,30 @@ export const useListings = (filters: ListingFilters = {}) => {
       if (error) throw error;
 
       let results = (data || []) as ListingWithDetails[];
+
+      // Fetch owner ratings in bulk
+      const ownerIds = [...new Set(results.map((l) => l.owner_user_id))];
+      if (ownerIds.length > 0) {
+        const { data: reviewData } = await supabase
+          .from("reviews")
+          .select("reviewee_user_id, rating")
+          .in("reviewee_user_id", ownerIds);
+
+        if (reviewData && reviewData.length > 0) {
+          const ratingMap = new Map<string, { sum: number; count: number }>();
+          reviewData.forEach((r) => {
+            const existing = ratingMap.get(r.reviewee_user_id) || { sum: 0, count: 0 };
+            ratingMap.set(r.reviewee_user_id, { sum: existing.sum + r.rating, count: existing.count + 1 });
+          });
+          results = results.map((listing) => {
+            const rating = ratingMap.get(listing.owner_user_id);
+            return {
+              ...listing,
+              owner_rating: rating ? { average: rating.sum / rating.count, count: rating.count } : undefined,
+            };
+          });
+        }
+      }
 
       // Filter by countries (client-side)
       if (filters.countries && filters.countries.length > 0) {

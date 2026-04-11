@@ -25,6 +25,7 @@ import OwnerReviewsSection from "@/components/reviews/OwnerReviewsSection";
 import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
+import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 
 interface OwnerProfile {
   id: string;
@@ -39,6 +40,7 @@ interface Profile {
   avatar_url: string | null;
   city: string | null;
   country: string | null;
+  founding_member: boolean | null;
 }
 
 interface Listing {
@@ -78,7 +80,7 @@ const OwnerDetail = () => {
             .maybeSingle(),
           supabase
             .from("profiles")
-            .select("first_name, last_name, avatar_url, city, country")
+            .select("first_name, last_name, avatar_url, city, country, founding_member")
             .eq("id", userId)
             .maybeSingle(),
           supabase
@@ -214,7 +216,10 @@ const OwnerDetail = () => {
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div>
                     <h1 className="text-3xl font-bold mb-2">{name}</h1>
-                    <p className="text-lg text-muted-foreground">Pet Owner</p>
+                    <p className="text-lg text-muted-foreground">Pet Parent</p>
+                    {profile.founding_member && (
+                      <FoundingMemberBadge className="mt-2" />
+                    )}
                   </div>
                 </div>
 
