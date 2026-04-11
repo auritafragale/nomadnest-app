@@ -19,7 +19,7 @@ const Navbar = () => {
 
   const navLinks = [
     { href: "/browse-sits", label: "Browse Sits", icon: Search },
-    { href: "/browse-sitters", label: "Browse Sitters", icon: User },
+    { href: "/browse-sitters", label: "Browse Nomads", icon: User },
   ];
 
   const isActive = (path: string) => location.pathname === path;

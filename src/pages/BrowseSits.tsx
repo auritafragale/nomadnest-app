@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,10 +9,12 @@ import BackToTopButton from "@/components/ui/BackToTopButton";
 import Pagination from "@/components/browse/Pagination";
 import { usePagination } from "@/hooks/usePagination";
 
+const ListingMap = lazy(() => import("@/components/browse/ListingMap"));
+
 const ITEMS_PER_PAGE = 12;
 
 const BrowseSits = () => {
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
   const [filters, setFilters] = useState<ListingFilters>({});
   
   const { data: listings, isLoading, error } = useListings(filters);
@@ -63,15 +65,15 @@ const BrowseSits = () => {
           {isLoading ? (
             <>
               <Skeleton className="h-5 w-32 mb-6" />
-              <div className={`grid gap-6 ${
-                viewMode === "grid" 
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" 
-                  : "grid-cols-1"
-              }`}>
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Skeleton key={i} className="h-80 rounded-lg" />
-                ))}
-              </div>
+              {viewMode === "map" ? (
+                <Skeleton className="w-full h-[600px] rounded-lg" />
+              ) : (
+                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <Skeleton key={i} className="h-80 rounded-lg" />
+                  ))}
+                </div>
+              )}
             </>
           ) : error ? (
             <div className="text-center py-12">
@@ -80,24 +82,29 @@ const BrowseSits = () => {
           ) : listings && listings.length > 0 ? (
             <>
               <p className="text-sm text-muted-foreground mb-6">
-                Showing {startIndex}-{endIndex} of {totalItems} sit{totalItems !== 1 ? "s" : ""}
+                Showing {viewMode === "map" ? totalItems : `${startIndex}-${endIndex} of ${totalItems}`} sit{totalItems !== 1 ? "s" : ""}
               </p>
-              <div className={`grid gap-6 ${
-                viewMode === "grid" 
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" 
-                  : "grid-cols-1"
-              }`}>
-                {paginatedItems.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} viewMode={viewMode} />
-                ))}
-              </div>
 
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                className="mt-8"
-              />
+              {viewMode === "map" ? (
+                <Suspense fallback={<Skeleton className="w-full h-[600px] rounded-lg" />}>
+                  <ListingMap listings={listings} />
+                </Suspense>
+              ) : (
+                <>
+                  <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    {paginatedItems.map((listing) => (
+                      <ListingCard key={listing.id} listing={listing} viewMode="grid" />
+                    ))}
+                  </div>
+
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                    className="mt-8"
+                  />
+                </>
+              )}
             </>
           ) : (
             <div className="text-center py-12">

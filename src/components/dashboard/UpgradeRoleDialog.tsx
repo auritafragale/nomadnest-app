@@ -24,7 +24,7 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
   const { user, refreshRole } = useAuth();
   const { toast } = useToast();
 
-  const newRoleLabel = currentRole === "sitter" ? "Pet Owner" : "Sitter";
+  const newRoleLabel = currentRole === "sitter" ? "Pet Parent" : "Nomad";
   const newRoleIcon = currentRole === "sitter" ? Home : Briefcase;
   const NewRoleIcon = newRoleIcon;
 
@@ -60,7 +60,7 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
 
       toast({
         title: "Role upgraded!",
-        description: `You can now use NomadNest as both a sitter and owner.`,
+        description: `You can now use NomadNest as both a Nomad and Pet Parent.`,
       });
 
       setOpen(false);
@@ -93,8 +93,8 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
           </DialogTitle>
           <DialogDescription>
             {currentRole === "sitter"
-              ? "Add pet owner capabilities to your account. You'll be able to create listings for your pets and find sitters when you travel."
-              : "Add sitter capabilities to your account. You'll be able to browse sits and apply to take care of pets while traveling."}
+              ? "Add Pet Parent capabilities to your account. You'll be able to create listings for your pets and find nomads when you travel."
+              : "Add Nomad capabilities to your account. You'll be able to browse sits and apply to take care of pets while traveling."}
           </DialogDescription>
         </DialogHeader>
 
@@ -105,8 +105,8 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
               {currentRole === "sitter" ? (
                 <>
                   <li>• Create listings for your home and pets</li>
-                  <li>• Receive applications from sitters</li>
-                  <li>• Browse and invite sitters</li>
+                  <li>• Receive applications from nomads</li>
+                  <li>• Browse and invite nomads</li>
                 </>
               ) : (
                 <>
