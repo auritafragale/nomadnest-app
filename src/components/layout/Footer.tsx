@@ -24,10 +24,8 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
-            <Link to="/" className="flex items-center gap-2 text-xl font-display">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Home className="w-4 h-4 text-primary-foreground" />
-              </div>
+            <Link to="/" className="flex items-center gap-2">
+              <img src={blackLogo} alt="NomadNest" className="h-10 w-auto" />
               NomadNest
             </Link>
             <p className="text-sm text-muted-foreground">
