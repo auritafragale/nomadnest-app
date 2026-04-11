@@ -56,12 +56,50 @@ const amenitiesList = [
 ];
 
 const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
+  const [isGeolocating, setIsGeolocating] = useState(false);
+
   const toggleAmenity = (amenity: string) => {
     const current = formData.amenities;
     const updated = current.includes(amenity)
       ? current.filter((a) => a !== amenity)
       : [...current, amenity];
     updateFormData({ amenities: updated });
+  };
+
+  const handleGeolocate = () => {
+    if (!navigator.geolocation) return;
+    setIsGeolocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        updateFormData({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+        setIsGeolocating(false);
+      },
+      () => setIsGeolocating(false),
+      { enableHighAccuracy: true }
+    );
+  };
+
+  const geocodeFromCity = async () => {
+    const query = [formData.city, formData.country].filter(Boolean).join(", ");
+    if (!query) return;
+    setIsGeolocating(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+      const results = await res.json();
+      if (results?.[0]) {
+        updateFormData({
+          latitude: parseFloat(results[0].lat),
+          longitude: parseFloat(results[0].lon),
+        });
+      }
+    } catch (e) {
+      console.warn("Geocoding failed");
+    } finally {
+      setIsGeolocating(false);
+    }
   };
 
   return (
@@ -71,7 +109,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
           About your home
         </h2>
         <p className="text-muted-foreground mt-2">
-          Help sitters understand your living space
+          Help nomads understand your living space
         </p>
       </div>
 
