@@ -469,6 +469,9 @@ const OwnerDashboard = ({
           ownerProfile={ownerProfile}
         />
 
+        {/* Membership Status */}
+        <MembershipStatusCard />
+
         {/* Profile Card */}
         <Card variant="elevated">
           <CardContent className="pt-6">
