@@ -429,6 +429,8 @@ export type Database = {
           id: string
           last_name: string | null
           location: string | null
+          membership_expiry: string | null
+          membership_status: string | null
           membership_type: string | null
           updated_at: string
         }
@@ -445,6 +447,8 @@ export type Database = {
           id: string
           last_name?: string | null
           location?: string | null
+          membership_expiry?: string | null
+          membership_status?: string | null
           membership_type?: string | null
           updated_at?: string
         }
@@ -461,6 +465,8 @@ export type Database = {
           id?: string
           last_name?: string | null
           location?: string | null
+          membership_expiry?: string | null
+          membership_status?: string | null
           membership_type?: string | null
           updated_at?: string
         }
