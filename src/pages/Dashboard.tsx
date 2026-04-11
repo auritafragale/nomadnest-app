@@ -27,6 +27,7 @@ import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailab
 import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompletenessCard";
 import { useOwnerApplications } from "@/hooks/useApplications";
 import { OwnerApplicationPreviewCard } from "@/components/dashboard/OwnerApplicationPreviewCard";
+import MembershipStatusCard from "@/components/dashboard/MembershipStatusCard";
 
 interface Profile {
   first_name: string | null;
