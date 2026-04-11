@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,6 +10,7 @@ import {
   Wifi, WifiOff, Bed, Sofa, MapPin, Loader2, Navigation
 } from "lucide-react";
 import ImageUpload from "@/components/listing/ImageUpload";
+import PlacesAutocompleteInput from "@/components/maps/PlacesAutocompleteInput";
 
 interface HomeInfoStepProps {
   formData: ListingFormData;
@@ -140,26 +141,29 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
           </div>
         </div>
 
-        {/* Location */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="city">City *</Label>
-            <Input
-              id="city"
-              placeholder="e.g., Barcelona"
-              value={formData.city}
-              onChange={(e) => updateFormData({ city: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="country">Country *</Label>
-            <Input
-              id="country"
-              placeholder="e.g., Spain"
-              value={formData.country}
-              onChange={(e) => updateFormData({ country: e.target.value })}
-            />
-          </div>
+        {/* Location with Places Autocomplete */}
+        <div className="space-y-2">
+          <Label>Location *</Label>
+          <PlacesAutocompleteInput
+            value={[formData.city, formData.country].filter(Boolean).join(", ")}
+            onChange={() => {}}
+            onPlaceSelect={(place) => {
+              updateFormData({
+                city: place.city,
+                country: place.country,
+                latitude: place.latitude,
+                longitude: place.longitude,
+              });
+            }}
+            placeholder="Search for your city..."
+            types={["(cities)"]}
+          />
+          {formData.city && (
+            <p className="text-xs text-muted-foreground">
+              📍 {[formData.city, formData.country].filter(Boolean).join(", ")}
+              {formData.latitude && formData.longitude && ` (${formData.latitude.toFixed(4)}, ${formData.longitude.toFixed(4)})`}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -172,38 +176,24 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
           />
         </div>
 
-        {/* Private Address */}
+        {/* Private Address with Places Autocomplete */}
         <div className="space-y-2">
-          <Label htmlFor="address">Full Address (private — only shared with confirmed nomads)</Label>
-          <Input
-            id="address"
-            placeholder="e.g., Carrer de Mallorca 401, 08013 Barcelona"
+          <Label>Full Address (private — only shared with confirmed nomads)</Label>
+          <PlacesAutocompleteInput
             value={formData.address_private}
-            onChange={(e) => updateFormData({ address_private: e.target.value })}
+            onChange={(v) => updateFormData({ address_private: v })}
+            onPlaceSelect={(place) => {
+              updateFormData({
+                address_private: place.address,
+                latitude: place.latitude,
+                longitude: place.longitude,
+                city: place.city || formData.city,
+                country: place.country || formData.country,
+              });
+            }}
+            placeholder="e.g., Carrer de Mallorca 401, 08013 Barcelona"
+            types={["address"]}
           />
-        </div>
-
-        {/* Geolocation */}
-        <div className="space-y-2">
-          <Label>Map Pin Location</Label>
-          <p className="text-sm text-muted-foreground">
-            Used to show your listing on the map. Only the approximate area is shown publicly.
-          </p>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={handleGeolocate} disabled={isGeolocating}>
-              {isGeolocating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Navigation className="w-4 h-4 mr-2" />}
-              Use my location
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={geocodeFromCity} disabled={isGeolocating || (!formData.city && !formData.country)}>
-              <MapPin className="w-4 h-4 mr-2" />
-              Set from city
-            </Button>
-          </div>
-          {formData.latitude && formData.longitude && (
-            <p className="text-xs text-muted-foreground">
-              📍 Coordinates set ({formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)})
-            </p>
-          )}
         </div>
 
         <div className="space-y-2">
