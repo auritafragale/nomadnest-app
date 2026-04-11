@@ -119,6 +119,23 @@ const CreateListing = () => {
     setIsSubmitting(true);
 
     try {
+      // Geocode coordinates from city/country if not already set
+      let latitude = formData.latitude;
+      let longitude = formData.longitude;
+      if (!latitude || !longitude) {
+        try {
+          const geocodeQuery = [formData.city, formData.country].filter(Boolean).join(", ");
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(geocodeQuery)}&format=json&limit=1`);
+          const results = await res.json();
+          if (results?.[0]) {
+            latitude = parseFloat(results[0].lat);
+            longitude = parseFloat(results[0].lon);
+          }
+        } catch (e) {
+          console.warn("Geocoding failed, listing will be saved without coordinates");
+        }
+      }
+
       // Create the listing
       const { data: listing, error: listingError } = await supabase
         .from("listings")
@@ -131,6 +148,9 @@ const CreateListing = () => {
           city: formData.city,
           country: formData.country,
           area: formData.area || null,
+          address_private: formData.address_private || null,
+          latitude,
+          longitude,
           wifi_quality: formData.wifi_quality || null,
           sleeping_arrangement: formData.sleeping_arrangement || null,
           amenities: formData.amenities,
@@ -190,7 +210,7 @@ const CreateListing = () => {
         title: status === "published" ? "Listing published!" : "Draft saved!",
         description:
           status === "published"
-            ? "Your listing is now visible to sitters"
+            ? "Your listing is now visible to nomads"
             : "You can continue editing later",
       });
 
@@ -267,7 +287,7 @@ const CreateListing = () => {
               Create a Listing
             </h1>
             <p className="text-muted-foreground mt-2">
-              Find the perfect sitter for your furry friends
+              Find the perfect nomad for your furry friends
             </p>
           </div>
 

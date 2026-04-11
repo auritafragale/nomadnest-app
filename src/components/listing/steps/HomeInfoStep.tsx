@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { ListingFormData } from "@/hooks/useListingForm";
 import { cn } from "@/lib/utils";
 import { 
   Home, Building2, Building, TreePine, 
-  Wifi, WifiOff, Bed, Sofa 
+  Wifi, WifiOff, Bed, Sofa, MapPin, Loader2, Navigation
 } from "lucide-react";
 import ImageUpload from "@/components/listing/ImageUpload";
 
@@ -54,12 +56,50 @@ const amenitiesList = [
 ];
 
 const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
+  const [isGeolocating, setIsGeolocating] = useState(false);
+
   const toggleAmenity = (amenity: string) => {
     const current = formData.amenities;
     const updated = current.includes(amenity)
       ? current.filter((a) => a !== amenity)
       : [...current, amenity];
     updateFormData({ amenities: updated });
+  };
+
+  const handleGeolocate = () => {
+    if (!navigator.geolocation) return;
+    setIsGeolocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        updateFormData({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+        setIsGeolocating(false);
+      },
+      () => setIsGeolocating(false),
+      { enableHighAccuracy: true }
+    );
+  };
+
+  const geocodeFromCity = async () => {
+    const query = [formData.city, formData.country].filter(Boolean).join(", ");
+    if (!query) return;
+    setIsGeolocating(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+      const results = await res.json();
+      if (results?.[0]) {
+        updateFormData({
+          latitude: parseFloat(results[0].lat),
+          longitude: parseFloat(results[0].lon),
+        });
+      }
+    } catch (e) {
+      console.warn("Geocoding failed");
+    } finally {
+      setIsGeolocating(false);
+    }
   };
 
   return (
@@ -69,7 +109,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
           About your home
         </h2>
         <p className="text-muted-foreground mt-2">
-          Help sitters understand your living space
+          Help nomads understand your living space
         </p>
       </div>
 
@@ -132,7 +172,40 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
           />
         </div>
 
-        {/* WiFi */}
+        {/* Private Address */}
+        <div className="space-y-2">
+          <Label htmlFor="address">Full Address (private — only shared with confirmed nomads)</Label>
+          <Input
+            id="address"
+            placeholder="e.g., Carrer de Mallorca 401, 08013 Barcelona"
+            value={formData.address_private}
+            onChange={(e) => updateFormData({ address_private: e.target.value })}
+          />
+        </div>
+
+        {/* Geolocation */}
+        <div className="space-y-2">
+          <Label>Map Pin Location</Label>
+          <p className="text-sm text-muted-foreground">
+            Used to show your listing on the map. Only the approximate area is shown publicly.
+          </p>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={handleGeolocate} disabled={isGeolocating}>
+              {isGeolocating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Navigation className="w-4 h-4 mr-2" />}
+              Use my location
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={geocodeFromCity} disabled={isGeolocating || (!formData.city && !formData.country)}>
+              <MapPin className="w-4 h-4 mr-2" />
+              Set from city
+            </Button>
+          </div>
+          {formData.latitude && formData.longitude && (
+            <p className="text-xs text-muted-foreground">
+              📍 Coordinates set ({formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)})
+            </p>
+          )}
+        </div>
+
         <div className="space-y-2">
           <Label>WiFi Quality</Label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -213,7 +286,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
         <div className="space-y-3">
           <Label className="text-base font-semibold">Home Photos</Label>
           <p className="text-sm text-muted-foreground">
-            Add photos of your home to attract sitters
+            Add photos of your home to attract nomads
           </p>
           <ImageUpload
             images={formData.photos}

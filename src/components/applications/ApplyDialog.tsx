@@ -139,7 +139,7 @@ export const ApplyDialog = ({
           recipientUserId: listing.owner_user_id,
           data: {
             listingTitle,
-            sitterName: [sitterProfile?.first_name, sitterProfile?.last_name].filter(Boolean).join(" ") || "A sitter",
+            sitterName: [sitterProfile?.first_name, sitterProfile?.last_name].filter(Boolean).join(" ") || "A nomad",
             startDate: format(parseISO(sitDate.start_date), "MMM d, yyyy"),
             endDate: format(parseISO(sitDate.end_date), "MMM d, yyyy"),
           },

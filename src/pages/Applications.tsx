@@ -107,7 +107,7 @@ const Applications = () => {
                 Applications
               </h1>
               <p className="text-muted-foreground mt-1">
-                Review and manage sitter applications for your listings
+                Review and manage nomad applications for your listings
               </p>
             </div>
           </div>
@@ -140,7 +140,7 @@ const Applications = () => {
               <h3 className="text-lg font-medium text-foreground">No applications yet</h3>
               <p className="text-muted-foreground mt-1 max-w-md">
                 {statusFilter === "all"
-                  ? "When sitters apply to your listings, they'll appear here."
+                  ? "When nomads apply to your listings, they'll appear here."
                   : `No ${statusFilter} applications found.`}
               </p>
             </div>

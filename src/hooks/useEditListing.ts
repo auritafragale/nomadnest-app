@@ -37,6 +37,9 @@ export interface ListingWithDetails {
   city: string | null;
   country: string | null;
   area: string | null;
+  address_private: string | null;
+  latitude: number | null;
+  longitude: number | null;
   wifi_quality: string | null;
   sleeping_arrangement: string | null;
   amenities: string[] | null;
@@ -130,6 +133,9 @@ export const useUpdateListing = () => {
           city: formData.city,
           country: formData.country,
           area: formData.area || null,
+          address_private: formData.address_private || null,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
           wifi_quality: formData.wifi_quality || null,
           sleeping_arrangement: formData.sleeping_arrangement || null,
           amenities: formData.amenities,
@@ -297,6 +303,9 @@ export const convertToFormData = (listing: ListingWithDetails): ListingFormData 
     city: listing.city || "",
     country: listing.country || "",
     area: listing.area || "",
+    address_private: listing.address_private || "",
+    latitude: listing.latitude || null,
+    longitude: listing.longitude || null,
     wifi_quality: listing.wifi_quality || "",
     sleeping_arrangement: listing.sleeping_arrangement || "",
     amenities: listing.amenities || [],

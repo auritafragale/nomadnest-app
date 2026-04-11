@@ -39,6 +39,9 @@ export interface ListingFormData {
   city: string;
   country: string;
   area: string;
+  address_private: string;
+  latitude: number | null;
+  longitude: number | null;
   wifi_quality: string;
   sleeping_arrangement: string;
   amenities: string[];
@@ -87,6 +90,9 @@ const initialFormData: ListingFormData = {
   city: "",
   country: "",
   area: "",
+  address_private: "",
+  latitude: null,
+  longitude: null,
   wifi_quality: "",
   sleeping_arrangement: "",
   amenities: [],
