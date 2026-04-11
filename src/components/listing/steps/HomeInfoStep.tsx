@@ -286,7 +286,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
         <div className="space-y-3">
           <Label className="text-base font-semibold">Home Photos</Label>
           <p className="text-sm text-muted-foreground">
-            Add photos of your home to attract sitters
+            Add photos of your home to attract nomads
           </p>
           <ImageUpload
             images={formData.photos}
