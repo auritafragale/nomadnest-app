@@ -10,7 +10,7 @@ interface TypingState {
 export const useTypingIndicator = (conversationId: string | null, userId: string | null, userName: string) => {
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [typingUserName, setTypingUserName] = useState("");
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingRef = useRef<number>(0);
 
   useEffect(() => {

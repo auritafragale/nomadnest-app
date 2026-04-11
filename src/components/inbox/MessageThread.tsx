@@ -42,7 +42,7 @@ export const MessageThread = ({
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const otherUser = conversation?.other_user;
   const userName = user?.user_metadata?.first_name || "User";
