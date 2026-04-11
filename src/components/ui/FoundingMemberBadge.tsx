@@ -9,9 +9,9 @@ const FoundingMemberBadge = ({ className }: FoundingMemberBadgeProps) => {
   return (
     <Badge
       variant="outline"
-      className={`gap-1 border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-600 ${className || ""}`}
+      className={`gap-1 border-accent bg-accent/10 text-accent-foreground dark:bg-accent/20 dark:text-accent dark:border-accent ${className || ""}`}
     >
-      <Star className="w-3 h-3 fill-current" />
+      <Star className="w-3 h-3 fill-accent text-accent" />
       Founding Member
     </Badge>
   );
