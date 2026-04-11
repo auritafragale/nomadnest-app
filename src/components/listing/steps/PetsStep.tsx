@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, Dog, Cat, Bird, Fish, Rabbit } from "lucide-react";
+import { Plus, Trash2, Dog, Cat, Bird, Fish, Rabbit, Bug, Tractor, HelpCircle } from "lucide-react";
 import { Pet, ListingFormData } from "@/hooks/useListingForm";
 import { cn } from "@/lib/utils";
 import ImageUpload from "@/components/listing/ImageUpload";
@@ -22,7 +22,9 @@ const petTypes = [
   { value: "bird", label: "Bird", icon: Bird },
   { value: "fish", label: "Fish", icon: Fish },
   { value: "rabbit", label: "Rabbit", icon: Rabbit },
-  { value: "other", label: "Other", icon: null },
+  { value: "reptile", label: "Reptile", icon: Bug },
+  { value: "farm_animal", label: "Farm Animal", icon: Tractor },
+  { value: "other", label: "Other", icon: HelpCircle },
 ];
 
 const PetsStep = ({ formData, addPet, updatePet, removePet }: PetsStepProps) => {
@@ -59,7 +61,7 @@ const PetsStep = ({ formData, addPet, updatePet, removePet }: PetsStepProps) => 
               {/* Pet Type Selection */}
               <div className="space-y-2">
                 <Label>Pet Type *</Label>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {petTypes.map((type) => {
                     const Icon = type.icon;
                     return (

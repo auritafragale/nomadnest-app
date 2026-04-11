@@ -35,7 +35,7 @@ const OwnerReviewsSection = ({ ownerUserId }: OwnerReviewsSectionProps) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Star className="w-5 h-5" />
-            Reviews from Sitters
+            Reviews from Nomads
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -53,7 +53,7 @@ const OwnerReviewsSection = ({ ownerUserId }: OwnerReviewsSectionProps) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Star className="w-5 h-5" />
-            Reviews from Sitters
+            Reviews from Nomads
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -70,7 +70,7 @@ const OwnerReviewsSection = ({ ownerUserId }: OwnerReviewsSectionProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Star className="w-5 h-5" />
-          Reviews from Sitters ({reviews.length})
+          Reviews from Nomads ({reviews.length})
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
