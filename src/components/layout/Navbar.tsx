@@ -162,6 +162,20 @@ const Navbar = () => {
                 </Button>
               </Link>
             ))}
+            {user && (role === "sitter" || role === "both") && (
+              <Link to="/find-nomads" onClick={() => setIsOpen(false)}>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start text-muted-foreground",
+                    isActive("/find-nomads") && "text-primary bg-terracotta-light"
+                  )}
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Find Nomads
+                </Button>
+              </Link>
+            )}
             <div className="pt-4 space-y-2 border-t border-border">
               {user ? (
                 <>
