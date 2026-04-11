@@ -175,7 +175,16 @@ export const ApplyDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          {!membershipLoading && !hasAccess("sitter") ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Lock className="w-10 h-10 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">Nomad Membership Required</h3>
+              <p className="text-muted-foreground mb-6">You need an active Nomad or Combined membership to apply for sits.</p>
+              <Button onClick={() => { onOpenChange(false); navigate("/membership"); }}>View Membership Plans</Button>
+            </div>
+          ) : (
+          <>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
