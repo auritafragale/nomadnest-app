@@ -57,6 +57,7 @@ import { useSitterAverageRating } from "@/hooks/useSitterReviews";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
+import SitterLocationMap from "@/components/maps/SitterLocationMap";
 
 interface SitterProfile {
   id: string;
@@ -81,6 +82,8 @@ interface SitterProfile {
   background_check: boolean;
   gallery: string[];
   age_range: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface Profile {
@@ -689,6 +692,28 @@ const SitterDetail = () => {
                       </Badge>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Location Map */}
+            {sitter.latitude && sitter.longitude && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5" />
+                    Location
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SitterLocationMap
+                    latitude={sitter.latitude}
+                    longitude={sitter.longitude}
+                    name={profile.first_name || "Sitter"}
+                  />
+                  {location && (
+                    <p className="text-sm text-muted-foreground mt-2">{location}</p>
+                  )}
                 </CardContent>
               </Card>
             )}
