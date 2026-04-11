@@ -677,6 +677,28 @@ const ListingDetail = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Location Map */}
+              {listing.latitude && listing.longitude && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5" />
+                      Location
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ListingLocationMap
+                      latitude={listing.latitude}
+                      longitude={listing.longitude}
+                      title={listing.title}
+                    />
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {[listing.area, listing.city, listing.country].filter(Boolean).join(", ")}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Sidebar */}
