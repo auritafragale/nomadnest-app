@@ -1,27 +1,16 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import L from "leaflet";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, Users } from "lucide-react";
+import { Search, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import "leaflet/dist/leaflet.css";
+import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
+import NomadGoogleMap from "@/components/maps/NomadGoogleMap";
 
-// Fix default marker icon
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
-
-interface NomadOnMap {
+export interface NomadOnMap {
   user_id: string;
   latitude: number;
   longitude: number;
@@ -34,22 +23,9 @@ interface NomadOnMap {
     avatar_url: string | null;
     city: string | null;
     country: string | null;
+    founding_member: boolean | null;
   } | null;
 }
-
-const FitBounds = ({ nomads }: { nomads: NomadOnMap[] }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    const coords = nomads.map((n) => [n.latitude, n.longitude] as [number, number]);
-    if (coords.length > 0) {
-      const bounds = L.latLngBounds(coords);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 });
-    }
-  }, [nomads, map]);
-
-  return null;
-};
 
 const FindNomads = () => {
   const [nomads, setNomads] = useState<NomadOnMap[]>([]);
@@ -67,11 +43,10 @@ const FindNomads = () => {
         .not("longitude", "is", null);
 
       if (!error && data && data.length > 0) {
-        // Fetch profiles separately (no FK)
         const userIds = data.map((d) => d.user_id);
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, first_name, last_name, avatar_url, city, country")
+          .select("id, first_name, last_name, avatar_url, city, country, founding_member")
           .in("id", userIds);
 
         const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
@@ -85,13 +60,16 @@ const FindNomads = () => {
             headline: item.headline,
             experience_level: item.experience_level,
             pet_types: item.pet_types,
-            profile: profile ? {
-              first_name: profile.first_name,
-              last_name: profile.last_name,
-              avatar_url: profile.avatar_url,
-              city: profile.city,
-              country: profile.country,
-            } : null,
+            profile: profile
+              ? {
+                  first_name: profile.first_name,
+                  last_name: profile.last_name,
+                  avatar_url: profile.avatar_url,
+                  city: profile.city,
+                  country: profile.country,
+                  founding_member: profile.founding_member,
+                }
+              : null,
           };
         });
         setNomads(mapped);
@@ -116,7 +94,6 @@ const FindNomads = () => {
       <Navbar />
 
       <main className="flex-1 pt-20">
-        {/* Header */}
         <div className="bg-surface border-b border-border">
           <div className="container py-8">
             <h1 className="text-3xl md:text-4xl font-display mb-2">Find Nomads</h1>
@@ -126,7 +103,6 @@ const FindNomads = () => {
           </div>
         </div>
 
-        {/* Search */}
         <div className="bg-surface border-b border-border sticky top-16 z-40">
           <div className="container py-4">
             <div className="relative max-w-md">
@@ -141,7 +117,6 @@ const FindNomads = () => {
           </div>
         </div>
 
-        {/* Map */}
         <div className="container py-8">
           {loading ? (
             <Skeleton className="w-full h-[600px] rounded-lg" />
@@ -158,69 +133,7 @@ const FindNomads = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 {filteredNomads.length} nomad{filteredNomads.length !== 1 ? "s" : ""} on the map
               </p>
-              <div className="w-full h-[600px] rounded-lg overflow-hidden border border-border">
-                <MapContainer
-                  center={[30, 0]}
-                  zoom={2}
-                  className="w-full h-full"
-                  scrollWheelZoom
-                >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-                  <FitBounds nomads={filteredNomads} />
-                  {filteredNomads.map((nomad) => {
-                    const name = `${nomad.profile?.first_name || ""} ${nomad.profile?.last_name || ""}`.trim() || "Nomad";
-                    const initials = name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase()
-                      .slice(0, 2);
-                    const location = [nomad.profile?.city, nomad.profile?.country].filter(Boolean).join(", ");
-
-                    return (
-                      <Marker key={nomad.user_id} position={[nomad.latitude, nomad.longitude]}>
-                        <Popup>
-                          <div className="min-w-[180px] text-center">
-                            <div className="flex justify-center mb-2">
-                              <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
-                                {nomad.profile?.avatar_url ? (
-                                  <img
-                                    src={nomad.profile.avatar_url}
-                                    alt={name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-sm font-medium">
-                                    {initials}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <Link
-                              to={`/sitter/${nomad.user_id}`}
-                              className="font-semibold text-sm hover:text-primary block"
-                            >
-                              {name}
-                            </Link>
-                            {nomad.headline && (
-                              <p className="text-xs text-muted-foreground mt-1">{nomad.headline}</p>
-                            )}
-                            {location && (
-                              <p className="text-xs text-muted-foreground mt-1">📍 {location}</p>
-                            )}
-                            {nomad.pet_types && nomad.pet_types.length > 0 && (
-                              <p className="text-xs mt-1">{nomad.pet_types.join(", ")}</p>
-                            )}
-                          </div>
-                        </Popup>
-                      </Marker>
-                    );
-                  })}
-                </MapContainer>
-              </div>
+              <NomadGoogleMap nomads={filteredNomads} />
             </>
           )}
         </div>
