@@ -58,6 +58,8 @@ export const ApplyDialog = ({
 }: ApplyDialogProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { hasAccess, loading: membershipLoading } = useMembership();
 
   const [message, setMessage] = useState("");
   const [whoApplying, setWhoApplying] = useState("");
