@@ -8,6 +8,8 @@ import { ActiveRoleProvider } from "@/contexts/ActiveRoleContext";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
 import Index from "./pages/Index";
 import BrowseSits from "./pages/BrowseSits";
+import FindNomads from "./pages/FindNomads";
+import CompleteProfile from "./pages/CompleteProfile";
 import BrowseSitters from "./pages/BrowseSitters";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -44,6 +46,8 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/browse-sits" element={<BrowseSits />} />
               <Route path="/browse-sitters" element={<BrowseSitters />} />
+              <Route path="/find-nomads" element={<ProtectedRoute><FindNomads /></ProtectedRoute>} />
+              <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />

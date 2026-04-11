@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, SlidersHorizontal, Grid, List, CalendarIcon, X, MapPin, Heart, ArrowUpDown } from "lucide-react";
+import { Search, SlidersHorizontal, Grid, Map, CalendarIcon, X, MapPin, Heart, ArrowUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { ListingFilters as FilterType } from "@/hooks/useListings";
 import { DateRange } from "react-day-picker";
@@ -22,8 +22,8 @@ import { Link } from "react-router-dom";
 interface ListingFiltersProps {
   filters: FilterType;
   onFiltersChange: (filters: FilterType) => void;
-  viewMode: "grid" | "list";
-  onViewModeChange: (mode: "grid" | "list") => void;
+  viewMode: "grid" | "map";
+  onViewModeChange: (mode: "grid" | "map") => void;
 }
 
 const petTypeOptions = [
@@ -177,7 +177,7 @@ const ListingFilters = ({
               </SelectContent>
             </Select>
 
-            {/* My Locations Filter - for sitters */}
+            {/* My Locations Filter - for nomads */}
             {user && (role === "sitter" || role === "both") && hasPreferredLocations && (
               <Button
                 variant={isPreferredLocationsActive ? "default" : "outline"}
@@ -206,19 +206,21 @@ const ListingFilters = ({
               </Button>
             )}
 
-            {/* View Mode Toggle */}
+            {/* View Mode Toggle: Grid / Map */}
             <div className="flex items-center border border-border rounded-lg overflow-hidden">
               <button
                 onClick={() => onViewModeChange("grid")}
                 className={`p-2.5 ${viewMode === "grid" ? "bg-muted" : "bg-surface hover:bg-muted/50"}`}
+                title="Grid view"
               >
                 <Grid className="w-5 h-5" />
               </button>
               <button
-                onClick={() => onViewModeChange("list")}
-                className={`p-2.5 ${viewMode === "list" ? "bg-muted" : "bg-surface hover:bg-muted/50"}`}
+                onClick={() => onViewModeChange("map")}
+                className={`p-2.5 ${viewMode === "map" ? "bg-muted" : "bg-surface hover:bg-muted/50"}`}
+                title="Map view"
               >
-                <List className="w-5 h-5" />
+                <Map className="w-5 h-5" />
               </button>
             </div>
           </div>
