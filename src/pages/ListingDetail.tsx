@@ -41,7 +41,7 @@ import OwnerReviewsSection from "@/components/reviews/OwnerReviewsSection";
 import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
 import { Star } from "lucide-react";
 import ReportDialog from "@/components/reports/ReportDialog";
-import { FoundingMemberBadge } from "@/components/ui/FoundingMemberBadge";
+import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 
 interface Pet {
   id: string;
