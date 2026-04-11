@@ -5,21 +5,24 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Home, ArrowRight, MapPin, Loader2 } from "lucide-react";
+import { Home, ArrowRight, MapPin, Loader2, Navigation } from "lucide-react";
 import { AvatarUpload } from "@/components/onboarding/AvatarUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const CompleteProfile = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, role } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeolocating, setIsGeolocating] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -28,7 +31,6 @@ const CompleteProfile = () => {
       return;
     }
 
-    // Pre-fill from existing profile
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("profiles")
@@ -51,6 +53,42 @@ const CompleteProfile = () => {
     fetchProfile();
   }, [user, authLoading, navigate]);
 
+  const handleGeolocate = () => {
+    if (!navigator.geolocation) return;
+    setIsGeolocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLatitude(pos.coords.latitude);
+        setLongitude(pos.coords.longitude);
+        setIsGeolocating(false);
+        toast({ title: "Location captured!", description: "Your coordinates have been set." });
+      },
+      () => {
+        setIsGeolocating(false);
+        toast({ variant: "destructive", title: "Location unavailable", description: "Please allow location access or enter your city." });
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
+  const geocodeFromLocation = async () => {
+    if (!location.trim()) return;
+    setIsGeolocating(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`);
+      const results = await res.json();
+      if (results?.[0]) {
+        setLatitude(parseFloat(results[0].lat));
+        setLongitude(parseFloat(results[0].lon));
+        toast({ title: "Location set!", description: "Coordinates derived from your location." });
+      }
+    } catch {
+      console.warn("Geocoding failed");
+    } finally {
+      setIsGeolocating(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!user || !fullName.trim()) return;
 
@@ -70,6 +108,22 @@ const CompleteProfile = () => {
           location,
         })
         .eq("id", user.id);
+
+      // If user is a nomad, update sitter_profiles with coordinates
+      if ((role === "sitter" || role === "both") && latitude && longitude) {
+        const { data: existing } = await supabase
+          .from("sitter_profiles")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase
+            .from("sitter_profiles")
+            .update({ latitude, longitude })
+            .eq("user_id", user.id);
+        }
+      }
 
       toast({
         title: "Profile complete! 🎉",
@@ -95,6 +149,8 @@ const CompleteProfile = () => {
       </div>
     );
   }
+
+  const isNomad = role === "sitter" || role === "both";
 
   return (
     <div className="min-h-screen bg-gradient-warm flex items-center justify-center p-4">
@@ -169,6 +225,31 @@ const CompleteProfile = () => {
                 />
               </div>
             </div>
+
+            {/* Geolocation for Nomads */}
+            {isNomad && (
+              <div className="space-y-2 p-4 rounded-lg border border-border bg-muted/30">
+                <Label>Map location (for Find Nomads)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Set your position so other nomads can find you on the map
+                </p>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={handleGeolocate} disabled={isGeolocating}>
+                    {isGeolocating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Navigation className="w-4 h-4 mr-2" />}
+                    Use my location
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={geocodeFromLocation} disabled={isGeolocating || !location.trim()}>
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Set from city
+                  </Button>
+                </div>
+                {latitude && longitude && (
+                  <p className="text-xs text-muted-foreground">
+                    📍 Coordinates set ({latitude.toFixed(4)}, {longitude.toFixed(4)})
+                  </p>
+                )}
+              </div>
+            )}
 
             <Button
               onClick={handleSubmit}
