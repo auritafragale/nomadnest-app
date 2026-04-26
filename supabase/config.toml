@@ -14,3 +14,9 @@ verify_jwt = true
 
 [functions.get-vapid-key]
 verify_jwt = false
+
+[functions.onfido-create-applicant]
+verify_jwt = true
+
+[functions.onfido-webhook]
+verify_jwt = false
