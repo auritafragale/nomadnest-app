@@ -42,7 +42,7 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
       >
         <div
           className={`relative overflow-hidden ${
-            viewMode === "list" ? "w-64 flex-shrink-0" : "aspect-[4/3]"
+            viewMode === "list" ? "w-28 sm:w-48 md:w-64 flex-shrink-0" : "aspect-[4/3]"
           }`}
         >
           <img
@@ -51,11 +51,11 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
           {user && (
-            <button 
+            <button
               className={cn(
                 "absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors",
-                isFavorited 
-                  ? "bg-primary text-primary-foreground" 
+                isFavorited
+                  ? "bg-primary text-primary-foreground"
                   : "bg-surface/90 hover:bg-surface text-muted-foreground hover:text-primary"
               )}
               onClick={handleFavoriteClick}
@@ -68,9 +68,11 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
               )}
             </button>
           )}
-          <div className="absolute bottom-3 left-3">
-            <Badge variant="published">Open</Badge>
-          </div>
+          {openSitDate && (
+            <div className="absolute bottom-3 left-3">
+              <Badge variant="published">Open</Badge>
+            </div>
+          )}
         </div>
         <div className="p-5 flex-1">
           <h3 className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">

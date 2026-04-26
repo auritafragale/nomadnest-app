@@ -404,14 +404,14 @@ const ListingDetail = () => {
 
           {/* Title & Location */}
           <div className="mb-8">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-display font-bold text-foreground mb-2">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-2">
                   {listing.title}
                 </h1>
-                <div className="flex items-center gap-4 text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
+                    <MapPin className="w-4 h-4 flex-shrink-0" />
                     {listing.city}, {listing.country}
                   </span>
                   {listing.area && (
@@ -419,7 +419,7 @@ const ListingDetail = () => {
                   )}
                 </div>
               </div>
-              <ShareDialog 
+              <ShareDialog
                 title={listing.title}
                 description={`Check out this pet sitting opportunity in ${listing.city}, ${listing.country}`}
               />

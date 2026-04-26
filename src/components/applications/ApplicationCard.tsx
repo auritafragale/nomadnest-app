@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,11 @@ import {
   Bookmark,
   MessageCircle,
   User,
+  Loader2,
 } from "lucide-react";
 import type { Application } from "@/hooks/useApplications";
+import { useStartConversation } from "@/hooks/useConversations";
+import { useToast } from "@/hooks/use-toast";
 
 interface ApplicationCardProps {
   application: Application;
@@ -44,8 +48,30 @@ export const ApplicationCard = ({
   onAccept,
   isUpdating,
 }: ApplicationCardProps) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const startConversation = useStartConversation();
+  const [isStartingChat, setIsStartingChat] = useState(false);
+
   const sitter = application.sitter_user;
   const sitterProfile = application.sitter_profile;
+
+  const handleMessageSitter = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!application.sitter_user_id) return;
+    setIsStartingChat(true);
+    try {
+      const { conversationId } = await startConversation.mutateAsync({
+        otherUserId: application.sitter_user_id,
+        listingId: application.listing_id,
+      });
+      navigate(`/inbox?conversation=${conversationId}`);
+    } catch {
+      toast({ title: "Error", description: "Could not open conversation.", variant: "destructive" });
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
   const initials = sitter
     ? `${sitter.first_name?.[0] || ""}${sitter.last_name?.[0] || ""}`
     : "?";
@@ -176,10 +202,17 @@ export const ApplicationCard = ({
                 View Profile
               </Link>
             </Button>
-            <Button variant="outline" size="icon" asChild>
-              <Link to="/inbox">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleMessageSitter}
+              disabled={isStartingChat}
+            >
+              {isStartingChat ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
                 <MessageCircle className="h-4 w-4" />
-              </Link>
+              )}
             </Button>
           </div>
         )}

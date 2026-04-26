@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Home, Mail, Lock, User, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/contexts/ThemeContext";
+import blackLogo from "@/assets/Black_Logo.png";
+import whiteLogo from "@/assets/White_Logo.png";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Please enter a valid email address");
@@ -28,6 +31,8 @@ const Auth = () => {
   const { signUp, signIn, user, onboardingCompleted, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme } = useTheme();
+  const logo = theme === "dark" ? whiteLogo : blackLogo;
 
   // Redirect if already logged in - wait for loading to complete first
   useEffect(() => {
@@ -114,14 +119,11 @@ const Auth = () => {
 
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
-        <Link 
-          to="/" 
-          className="flex items-center justify-center gap-2 text-2xl font-display mb-8 text-foreground hover:text-primary transition-colors"
+        <Link
+          to="/"
+          className="flex items-center justify-center mb-8 hover:opacity-80 transition-opacity"
         >
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <Home className="w-5 h-5 text-primary-foreground" />
-          </div>
-          NomadNest
+          <img src={logo} alt="NomadNest" className="h-10 w-auto" />
         </Link>
 
         <Card variant="elevated" className="animate-scale-in">

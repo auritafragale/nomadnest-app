@@ -82,8 +82,8 @@ const SitterFilters = ({
   return (
     <div className="bg-surface border-b border-border sticky top-16 z-40">
       <div className="container py-4">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-          <div className="relative flex-1 w-full">
+        <div className="flex flex-col gap-3">
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               placeholder="Search by name, location, or languages..."
@@ -92,10 +92,10 @@ const SitterFilters = ({
               onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-hide">
             <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="flex-1 md:flex-none relative">
+                <Button variant="outline" className="flex-shrink-0 relative">
                   <SlidersHorizontal className="w-4 h-4 mr-2" />
                   Filters
                   {activeFilterCount > 0 && (
@@ -196,7 +196,7 @@ const SitterFilters = ({
               </PopoverContent>
             </Popover>
 
-            <div className="flex items-center border border-border rounded-lg overflow-hidden">
+            <div className="flex items-center border border-border rounded-lg overflow-hidden flex-shrink-0 ml-auto">
               <button
                 onClick={() => onViewModeChange("grid")}
                 className={`p-2.5 ${

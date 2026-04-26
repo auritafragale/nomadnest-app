@@ -22,7 +22,6 @@ import { OwnerListingCard } from "@/components/dashboard/OwnerListingCard";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
 import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
 import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection";
-import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
 import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompletenessCard";
 import { useOwnerApplications } from "@/hooks/useApplications";
@@ -147,7 +146,6 @@ const Dashboard = () => {
             </div>
             
             <div className="flex items-center gap-3">
-              <NotificationsDropdown />
               <Link to="/settings">
                 <Button variant="outline" size="icon">
                   <Settings className="w-4 h-4" />
@@ -227,7 +225,7 @@ const SitterDashboard = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {/* Left Column - Profile & Stats */}
       <div className="space-y-6">
         {/* Profile Completeness */}
@@ -246,9 +244,9 @@ const SitterDashboard = ({
             <div className="flex items-center gap-4 mb-4">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
                 {profile?.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt="Avatar" 
+                  <img
+                    src={profile.avatar_url}
+                    alt="Avatar"
                     className="w-full h-full rounded-full object-cover"
                   />
                 ) : (
@@ -262,20 +260,6 @@ const SitterDashboard = ({
                 <p className="text-sm text-muted-foreground">
                   {sitterProfile?.headline || "Add a headline to stand out"}
                 </p>
-              </div>
-            </div>
-
-            {/* Profile completion */}
-            <div className="mb-4">
-              <div className="flex justify-between text-sm mb-1">
-                <span>Profile completion</span>
-                <span className="font-medium">{profileCompletion}%</span>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary transition-all" 
-                  style={{ width: `${profileCompletion}%` }}
-                />
               </div>
             </div>
 
@@ -318,7 +302,7 @@ const SitterDashboard = ({
       </div>
 
       {/* Middle Column - Actions & Applications */}
-      <div className="lg:col-span-2 space-y-6">
+      <div className="md:col-span-1 lg:col-span-2 space-y-6">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Link to="/browse-sits">
@@ -459,7 +443,7 @@ const OwnerDashboard = ({
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {/* Left Column */}
       <div className="space-y-6">
         {/* Profile Completeness */}
@@ -478,9 +462,9 @@ const OwnerDashboard = ({
             <div className="flex items-center gap-4 mb-4">
               <div className="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center">
                 {profile?.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt="Avatar" 
+                  <img
+                    src={profile.avatar_url}
+                    alt="Avatar"
                     className="w-full h-full rounded-full object-cover"
                   />
                 ) : (
@@ -492,20 +476,6 @@ const OwnerDashboard = ({
                   {profile?.first_name} {profile?.last_name}
                 </h3>
                 <p className="text-sm text-muted-foreground">Pet Parent</p>
-              </div>
-            </div>
-
-            {/* Profile completion */}
-            <div className="mb-4">
-              <div className="flex justify-between text-sm mb-1">
-                <span>Profile completion</span>
-                <span className="font-medium">{profileCompletion}%</span>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary transition-all" 
-                  style={{ width: `${profileCompletion}%` }}
-                />
               </div>
             </div>
 
@@ -548,7 +518,7 @@ const OwnerDashboard = ({
       </div>
 
       {/* Middle Column */}
-      <div className="lg:col-span-2 space-y-6">
+      <div className="md:col-span-1 lg:col-span-2 space-y-6">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Link to="/create-listing">

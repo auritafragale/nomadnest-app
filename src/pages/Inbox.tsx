@@ -80,7 +80,7 @@ const Inbox = () => {
       <Navbar />
 
       <main className="flex-1 pt-20">
-        <div className="container max-w-6xl mx-auto px-4 py-6 h-[calc(100vh-5rem)]">
+        <div className="container max-w-6xl mx-auto px-4 py-6 h-[calc(100svh-5rem)]">
           <Breadcrumbs />
           <h1 className="text-2xl font-bold text-foreground mb-6">Messages</h1>
 

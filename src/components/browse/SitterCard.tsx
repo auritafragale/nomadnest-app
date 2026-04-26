@@ -258,7 +258,7 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
               Message
             </Button>
             <Button className="flex-1">
-              View
+              View Profile
             </Button>
           </div>
         )}

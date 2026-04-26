@@ -1,7 +1,11 @@
 import { Link } from "react-router-dom";
 import blackLogo from "@/assets/Black_Logo.png";
+import whiteLogo from "@/assets/White_Logo.png";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const Footer = () => {
+  const { theme } = useTheme();
+  const logo = theme === "dark" ? whiteLogo : blackLogo;
   const footerLinks = {
     company: [
       { label: "About", href: "/about" },
@@ -25,7 +29,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <img src={blackLogo} alt="NomadNest" className="h-10 w-auto" />
+              <img src={logo} alt="NomadNest" className="h-10 w-auto" />
             </Link>
             <p className="text-sm text-muted-foreground">
               Free pet sitting. Free stays. Trusted connections worldwide.

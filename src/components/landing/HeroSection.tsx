@@ -73,8 +73,8 @@ const HeroSection = () => {
           </div>
 
           {/* Hero Image */}
-          <div 
-            className="relative hidden lg:block animate-fade-up"
+          <div
+            className="relative hidden md:block animate-fade-up"
             style={{ animationDelay: "0.3s" }}
           >
             <div className="relative rounded-2xl overflow-hidden shadow-2xl">

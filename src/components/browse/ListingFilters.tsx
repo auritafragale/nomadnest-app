@@ -91,8 +91,8 @@ const ListingFilters = ({
   return (
     <div className="bg-surface border-b border-border sticky top-16 z-40">
       <div className="container py-4">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-          <div className="relative flex-1 w-full">
+        <div className="flex flex-col gap-3">
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               placeholder="Search by location, title, or description..."
@@ -101,11 +101,11 @@ const ListingFilters = ({
               onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
             />
           </div>
-          <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {/* Date Filter */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="flex-1 md:flex-none">
+                <Button variant="outline" className="flex-shrink-0">
                   <CalendarIcon className="w-4 h-4 mr-2" />
                   {dateRange?.from ? (
                     dateRange.to ? (
@@ -132,7 +132,7 @@ const ListingFilters = ({
             {/* Pet Type Filter */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="flex-1 md:flex-none">
+                <Button variant="outline" className="flex-shrink-0">
                   <SlidersHorizontal className="w-4 h-4 mr-2" />
                   Pet Types
                   {filters.petTypes?.length ? ` (${filters.petTypes.length})` : ""}
@@ -163,11 +163,11 @@ const ListingFilters = ({
             {/* Sort By */}
             <Select
               value={filters.sortBy || "newest"}
-              onValueChange={(value) => 
+              onValueChange={(value) =>
                 onFiltersChange({ ...filters, sortBy: value as "newest" | "soonest" })
               }
             >
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-32 flex-shrink-0">
                 <ArrowUpDown className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -181,7 +181,7 @@ const ListingFilters = ({
             {user && (role === "sitter" || role === "both") && hasPreferredLocations && (
               <Button
                 variant={isPreferredLocationsActive ? "default" : "outline"}
-                className="flex-1 md:flex-none"
+                className="flex-shrink-0"
                 onClick={applyPreferredLocations}
               >
                 <MapPin className="w-4 h-4 mr-2" />
@@ -191,8 +191,8 @@ const ListingFilters = ({
 
             {/* Saved Listings Link */}
             {user && (
-              <Link to="/saved">
-                <Button variant="ghost" className="flex-1 md:flex-none">
+              <Link to="/saved" className="flex-shrink-0">
+                <Button variant="ghost">
                   <Heart className="w-4 h-4 mr-2" />
                   Saved
                 </Button>
@@ -200,14 +200,14 @@ const ListingFilters = ({
             )}
 
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="flex-shrink-0">
                 <X className="w-4 h-4 mr-1" />
                 Clear
               </Button>
             )}
 
             {/* View Mode Toggle: Grid / Map */}
-            <div className="flex items-center border border-border rounded-lg overflow-hidden">
+            <div className="flex items-center border border-border rounded-lg overflow-hidden flex-shrink-0 ml-auto">
               <button
                 onClick={() => onViewModeChange("grid")}
                 className={`p-2.5 ${viewMode === "grid" ? "bg-muted" : "bg-surface hover:bg-muted/50"}`}
