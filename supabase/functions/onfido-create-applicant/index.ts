@@ -27,7 +27,14 @@ serve(async (req) => {
     );
     if (authError || !user) throw new Error("Unauthorized");
 
-    const { mode } = await req.json();
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch (e) {
+      throw new Error("Invalid JSON body");
+    }
+    const { mode, applicant_id: bodyApplicantId } = body as { mode: string; applicant_id?: string };
+    console.log("[onfido-create-applicant] mode:", mode, "user:", user.id);
 
     if (mode === "create") {
       // Get user profile
@@ -39,6 +46,8 @@ serve(async (req) => {
 
       // Reuse existing applicant if present
       let applicantId = profile?.onfido_applicant_id;
+
+      console.log("[onfido-create-applicant] existing applicant_id:", applicantId);
 
       if (!applicantId) {
         const applicantRes = await fetch(`${ONFIDO_API_URL}/applicants`, {
@@ -56,11 +65,13 @@ serve(async (req) => {
 
         if (!applicantRes.ok) {
           const err = await applicantRes.text();
-          throw new Error(`Onfido applicant creation failed: ${err}`);
+          console.error("[onfido-create-applicant] applicant error:", applicantRes.status, err);
+          throw new Error(`Onfido applicant creation failed (${applicantRes.status}): ${err}`);
         }
 
         const applicant = await applicantRes.json();
         applicantId = applicant.id;
+        console.log("[onfido-create-applicant] created applicant:", applicantId);
 
         await supabase
           .from("profiles")
@@ -83,10 +94,13 @@ serve(async (req) => {
 
       if (!tokenRes.ok) {
         const err = await tokenRes.text();
-        throw new Error(`SDK token creation failed: ${err}`);
+        console.error("[onfido-create-applicant] sdk_token error:", tokenRes.status, err);
+        throw new Error(`SDK token creation failed (${tokenRes.status}): ${err}`);
       }
 
-      const { token } = await tokenRes.json();
+      const tokenBody = await tokenRes.json();
+      console.log("[onfido-create-applicant] sdk_token keys:", Object.keys(tokenBody));
+      const token = tokenBody.token;
 
       return new Response(
         JSON.stringify({ sdk_token: token, applicant_id: applicantId }),
@@ -95,15 +109,14 @@ serve(async (req) => {
     }
 
     if (mode === "submit") {
-      const { applicant_id } = await req.json().catch(() => ({}));
-
       const { data: profile } = await supabase
         .from("profiles")
         .select("onfido_applicant_id")
         .eq("id", user.id)
         .single();
 
-      const aid = applicant_id || profile?.onfido_applicant_id;
+      const aid = bodyApplicantId || profile?.onfido_applicant_id;
+      console.log("[onfido-create-applicant] submit aid:", aid);
       if (!aid) throw new Error("No applicant ID found");
 
       const checkRes = await fetch(`${ONFIDO_API_URL}/checks`, {
@@ -120,7 +133,8 @@ serve(async (req) => {
 
       if (!checkRes.ok) {
         const err = await checkRes.text();
-        throw new Error(`Check creation failed: ${err}`);
+        console.error("[onfido-create-applicant] check error:", checkRes.status, err);
+        throw new Error(`Check creation failed (${checkRes.status}): ${err}`);
       }
 
       const check = await checkRes.json();
