@@ -48,14 +48,14 @@ const BrowseSitters = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
 
-      <main className="flex-1 pt-20">
+      <main className="flex-1 pt-16">
         {/* Header */}
         <div className="bg-surface border-b border-border">
-          <div className="container py-8">
-            <h1 className="text-3xl md:text-4xl font-display mb-2">
+          <div className="container py-6 md:py-8">
+            <h1 className="text-2xl md:text-4xl font-display mb-1">
               Browse Nomads
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               Find trusted nomads ready to care for your home and pets
             </p>
           </div>

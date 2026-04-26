@@ -24,6 +24,8 @@ interface ListingFiltersProps {
   onFiltersChange: (filters: FilterType) => void;
   viewMode: "grid" | "map";
   onViewModeChange: (mode: "grid" | "map") => void;
+  onMobileFiltersOpen?: () => void;
+  mobileFilterActive?: boolean;
 }
 
 const petTypeOptions = [
@@ -40,6 +42,8 @@ const ListingFilters = ({
   onFiltersChange,
   viewMode,
   onViewModeChange,
+  onMobileFiltersOpen,
+  mobileFilterActive,
 }: ListingFiltersProps) => {
   const { user, role } = useAuth();
   const { data: preferredLocations } = useSitterPreferredLocations();
@@ -101,7 +105,41 @@ const ListingFilters = ({
               onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
             />
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {/* Mobile: single filter button + view toggle */}
+          {onMobileFiltersOpen && (
+            <div className="md:hidden flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="flex-1 relative"
+                onClick={onMobileFiltersOpen}
+              >
+                <SlidersHorizontal className="w-4 h-4 mr-2" />
+                Filters
+                {mobileFilterActive && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#E8735A]" />
+                )}
+              </Button>
+              <div className="flex items-center border border-border rounded-lg overflow-hidden flex-shrink-0">
+                <button
+                  onClick={() => onViewModeChange("grid")}
+                  className={`p-2.5 ${viewMode === "grid" ? "bg-muted" : "bg-surface hover:bg-muted/50"}`}
+                  title="Grid view"
+                >
+                  <Grid className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => onViewModeChange("map")}
+                  className={`p-2.5 ${viewMode === "map" ? "bg-muted" : "bg-surface hover:bg-muted/50"}`}
+                  title="Map view"
+                >
+                  <Map className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop: full filter button row */}
+          <div className="hidden md:flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {/* Date Filter */}
             <Popover>
               <PopoverTrigger asChild>

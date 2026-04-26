@@ -9,8 +9,6 @@ import BackToTopButton from "@/components/ui/BackToTopButton";
 import Pagination from "@/components/browse/Pagination";
 import { usePagination } from "@/hooks/usePagination";
 import FilterBottomSheet, { MobileFilters } from "@/components/mobile/FilterBottomSheet";
-import { SlidersHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const ListingGoogleMap = lazy(() => import("@/components/maps/ListingGoogleMap"));
 
@@ -35,12 +33,12 @@ const BrowseSits = () => {
     setFilters((prev) => ({
       ...prev,
       lastMinute: mf.lastMinute || undefined,
-      petTypes: mf.petTypes.length > 0 ? mf.petTypes : prev.petTypes,
-      startDate: mf.dateRange?.from ? mf.dateRange.from.toISOString().split("T")[0] : prev.startDate,
-      endDate: mf.dateRange?.to ? mf.dateRange.to.toISOString().split("T")[0] : prev.endDate,
+      petTypes: mf.petTypes.length > 0 ? mf.petTypes : undefined,
+      startDate: mf.dateRange?.from ? mf.dateRange.from.toISOString().split("T")[0] : undefined,
+      endDate: mf.dateRange?.to ? mf.dateRange.to.toISOString().split("T")[0] : undefined,
     }));
   };
-  
+
   const { data: listings, isLoading, error } = useListings(filters);
 
   useEffect(() => {
@@ -65,15 +63,21 @@ const BrowseSits = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const mobileFilterActive =
+    mobileFilters.lastMinute ||
+    mobileFilters.reasons.length > 0 ||
+    mobileFilters.petTypes.length > 0 ||
+    !!mobileFilters.dateRange?.from;
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      
-      <main className="flex-1 pt-20">
+
+      <main className="flex-1 pt-16">
         <div className="bg-surface border-b border-border">
-          <div className="container py-8">
-            <h1 className="text-3xl md:text-4xl font-display mb-2">Browse Sits</h1>
-            <p className="text-muted-foreground">
+          <div className="container py-6 md:py-8">
+            <h1 className="text-2xl md:text-4xl font-display mb-1">Browse Sits</h1>
+            <p className="text-sm md:text-base text-muted-foreground">
               Find your perfect pet sitting opportunity worldwide
             </p>
           </div>
@@ -84,22 +88,9 @@ const BrowseSits = () => {
           onFiltersChange={setFilters}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          onMobileFiltersOpen={() => setMobileFilterOpen(true)}
+          mobileFilterActive={mobileFilterActive}
         />
-
-        {/* Mobile filter button */}
-        <div className="md:hidden sticky top-16 z-30 bg-surface border-b border-border px-4 py-2">
-          <Button
-            variant="outline"
-            className="w-full relative"
-            onClick={() => setMobileFilterOpen(true)}
-          >
-            <SlidersHorizontal className="w-4 h-4 mr-2" />
-            Filters
-            {(mobileFilters.lastMinute || mobileFilters.reasons.length > 0 || mobileFilters.petTypes.length > 0 || mobileFilters.dateRange?.from) && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#E8735A]" />
-            )}
-          </Button>
-        </div>
 
         <FilterBottomSheet
           open={mobileFilterOpen}
@@ -108,14 +99,14 @@ const BrowseSits = () => {
           onApply={handleMobileFiltersApply}
         />
 
-        <div className="container py-8">
+        <div className="container py-6 md:py-8">
           {isLoading ? (
             <>
               <Skeleton className="h-5 w-32 mb-6" />
               {viewMode === "map" ? (
                 <Skeleton className="w-full h-[600px] rounded-lg" />
               ) : (
-                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <Skeleton key={i} className="h-80 rounded-lg" />
                   ))}
@@ -128,7 +119,7 @@ const BrowseSits = () => {
             </div>
           ) : listings && listings.length > 0 ? (
             <>
-              <p className="text-sm text-muted-foreground mb-6">
+              <p className="text-sm text-muted-foreground mb-4 md:mb-6">
                 Showing {viewMode === "map" ? totalItems : `${startIndex}-${endIndex} of ${totalItems}`} sit{totalItems !== 1 ? "s" : ""}
               </p>
 
@@ -139,7 +130,7 @@ const BrowseSits = () => {
                   </Suspense>
                 ) : (
                   <>
-                    <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                       {paginatedItems.map((listing) => (
                         <ListingCard key={listing.id} listing={listing} viewMode="grid" />
                       ))}

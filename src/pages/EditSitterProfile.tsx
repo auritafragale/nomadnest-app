@@ -311,7 +311,7 @@ const EditSitterProfile = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <main className="pt-20 pb-12">
+        <main className="pt-16 pb-8">
           <div className="container mx-auto px-4 max-w-4xl">
             <Skeleton className="h-8 w-48 mb-6" />
             <Skeleton className="h-96 w-full" />
@@ -325,27 +325,27 @@ const EditSitterProfile = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <main className="pt-20 pb-12">
+      <main className="pt-16 pb-8 md:pb-12">
         <div className="container mx-auto px-4 max-w-4xl">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-6 md:mb-8 pt-4">
             <div>
               <Button
                 variant="ghost"
                 onClick={() => navigate("/dashboard")}
-                className="mb-2"
+                className="mb-2 -ml-3"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
+                Back
               </Button>
-              <h1 className="text-3xl font-display font-bold text-foreground">
+              <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
                 Edit Sitter Profile
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-sm md:text-base text-muted-foreground mt-1">
                 Make your profile stand out to attract pet owners
               </p>
             </div>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving} className="flex-shrink-0">
               {saving ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
@@ -356,11 +356,11 @@ const EditSitterProfile = () => {
           </div>
 
           <Tabs defaultValue="basics" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="basics">Basics</TabsTrigger>
-              <TabsTrigger value="experience">Experience</TabsTrigger>
-              <TabsTrigger value="availability">Availability</TabsTrigger>
-              <TabsTrigger value="preferences">Preferences</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 text-xs sm:text-sm">
+              <TabsTrigger value="basics" className="px-1 sm:px-3">Basics</TabsTrigger>
+              <TabsTrigger value="experience" className="px-1 sm:px-3">Experience</TabsTrigger>
+              <TabsTrigger value="availability" className="px-1 sm:px-3">Availability</TabsTrigger>
+              <TabsTrigger value="preferences" className="px-1 sm:px-3">Prefs</TabsTrigger>
             </TabsList>
 
             {/* Basics Tab */}

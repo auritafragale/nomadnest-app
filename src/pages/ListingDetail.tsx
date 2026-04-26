@@ -316,7 +316,7 @@ const ListingDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <main className="pt-20 pb-12">
+        <main className="pt-16 pb-8">
           <div className="container mx-auto px-4 max-w-5xl">
             <Skeleton className="h-8 w-48 mb-6" />
             <Skeleton className="aspect-video w-full rounded-xl mb-6" />
@@ -345,13 +345,13 @@ const ListingDetail = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <main className="pt-20 pb-12">
+      <main className="pt-16 pb-8 md:pb-12">
         <div className="container mx-auto px-4 max-w-5xl">
           {/* Back Button */}
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}
-            className="mb-6"
+            className="mb-4 md:mb-6"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back

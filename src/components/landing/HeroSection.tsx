@@ -12,7 +12,7 @@ const HeroSection = () => {
   ];
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-hero pt-16">
+    <section className="relative min-h-[100svh] flex items-center overflow-hidden bg-gradient-hero pt-16">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
@@ -20,44 +20,44 @@ const HeroSection = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-accent/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="container relative z-10 py-16 md:py-24">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <div className="container relative z-10 py-10 md:py-24">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Text content */}
-          <div className="space-y-8 text-center lg:text-left">
-            <h1 
-              className="text-4xl md:text-5xl lg:text-6xl font-display leading-tight animate-fade-up"
+          <div className="space-y-6 md:space-y-8 text-center lg:text-left">
+            <h1
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display leading-tight animate-fade-up"
               style={{ animationDelay: "0.1s" }}
             >
               Find Your Perfect House Sit.{" "}
               <span className="text-gradient-primary">Build Real Connections.</span>
             </h1>
 
-            <p 
-              className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 animate-fade-up"
+            <p
+              className="text-base md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 animate-fade-up"
               style={{ animationDelay: "0.2s" }}
             >
-              NomadNest connects adventurous Nomads with Pet Parents who need trusted 
+              NomadNest connects adventurous Nomads with Pet Parents who need trusted
               home and pet care — no money, just community.
             </p>
 
-            <div 
-              className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 animate-fade-up"
+            <div
+              className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 animate-fade-up"
               style={{ animationDelay: "0.3s" }}
             >
-              <Link to="/auth?signup=true">
-                <Button variant="hero" size="xl">
+              <Link to="/auth?signup=true" className="w-full sm:w-auto">
+                <Button variant="hero" size="xl" className="w-full sm:w-auto">
                   Create your profile
                 </Button>
               </Link>
-              <Link to="/browse-sits">
-                <Button variant="hero-secondary" size="xl">
+              <Link to="/browse-sits" className="w-full sm:w-auto">
+                <Button variant="hero-secondary" size="xl" className="w-full sm:w-auto">
                   Browse sits
                 </Button>
               </Link>
             </div>
 
-            <div 
-              className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4 animate-fade-up"
+            <div
+              className="flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-6 pt-2 animate-fade-up"
               style={{ animationDelay: "0.4s" }}
             >
               {trustFeatures.map((feature) => (

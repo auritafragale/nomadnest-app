@@ -105,7 +105,13 @@ const AppShell = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
 
-      {showBottomNav && <BottomNav />}
+      {showBottomNav && (
+        <>
+          {/* Spacer so page content isn't hidden behind the fixed bottom nav */}
+          <div className="h-16 md:hidden" aria-hidden="true" />
+          <BottomNav />
+        </>
+      )}
     </>
   );
 };

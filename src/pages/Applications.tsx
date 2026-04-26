@@ -100,16 +100,14 @@ const Applications = () => {
       <main className="pt-20">
         <div className="container max-w-4xl mx-auto px-4 py-8">
           <Breadcrumbs />
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                <ClipboardList className="h-6 w-6" />
-                Applications
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Review and manage nomad applications for your listings
-              </p>
-            </div>
+          <div className="mb-6">
+            <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 md:h-6 md:w-6 flex-shrink-0" />
+              Applications
+            </h1>
+            <p className="text-sm md:text-base text-muted-foreground mt-1">
+              Review and manage nomad applications for your listings
+            </p>
           </div>
 
           {/* Status Filter Tabs */}
