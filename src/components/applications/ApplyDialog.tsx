@@ -19,6 +19,7 @@ import { format, parseISO } from "date-fns";
 import { Calendar, Loader2, Star, User, Sparkles, Lock } from "lucide-react";
 import { sendNotification } from "@/lib/notifications";
 import { useMembership } from "@/hooks/useMembership";
+import { useVerification } from "@/hooks/useVerification";
 import { useNavigate } from "react-router-dom";
 
 interface SitDate {
@@ -60,6 +61,7 @@ export const ApplyDialog = ({
   const { toast } = useToast();
   const navigate = useNavigate();
   const { hasAccess, loading: membershipLoading } = useMembership();
+  const { data: verificationData, isLoading: verificationLoading } = useVerification();
 
   const [message, setMessage] = useState("");
   const [whoApplying, setWhoApplying] = useState("");
@@ -182,6 +184,13 @@ export const ApplyDialog = ({
               <h3 className="text-lg font-semibold text-foreground mb-2">Nomad Membership Required</h3>
               <p className="text-muted-foreground mb-6">You need an active Nomad or Combined membership to apply for sits.</p>
               <Button onClick={() => { onOpenChange(false); navigate("/membership"); }}>View Membership Plans</Button>
+            </div>
+          ) : !verificationLoading && !verificationData?.id_verified ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Lock className="w-10 h-10 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">Identity Verification Required</h3>
+              <p className="text-muted-foreground mb-6">You need to verify your identity before applying for sits. It only takes 5 minutes.</p>
+              <Button onClick={() => { onOpenChange(false); navigate("/verify-identity"); }}>Verify My Identity</Button>
             </div>
           ) : (
           <>

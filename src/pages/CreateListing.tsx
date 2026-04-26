@@ -16,6 +16,8 @@ import RequirementsStep from "@/components/listing/steps/RequirementsStep";
 import { useListingForm } from "@/hooks/useListingForm";
 import { useMembership } from "@/hooks/useMembership";
 import MembershipGate from "@/components/membership/MembershipGate";
+import { useVerification } from "@/hooks/useVerification";
+import { ShieldCheck } from "lucide-react";
 
 const steps = [
   { number: 1, title: "Basics" },
@@ -31,6 +33,7 @@ const CreateListing = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { hasAccess, loading: membershipLoading } = useMembership();
+  const { data: verificationData, isLoading: verificationLoading } = useVerification();
 
   const {
     formData,
@@ -295,6 +298,22 @@ const CreateListing = () => {
           </div>
 
           <MembershipGate type="owner" hasAccess={!membershipLoading && hasAccess("owner")}>
+          {!verificationLoading && !verificationData?.id_verified && (
+            <Card className="border-2 border-dashed border-muted-foreground/30 mb-6">
+              <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                <ShieldCheck className="w-10 h-10 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">Identity Verification Required</h3>
+                <p className="text-muted-foreground mb-6 max-w-sm">
+                  You need to verify your identity before creating a listing. It only takes 5 minutes.
+                </p>
+                <Button onClick={() => navigate("/verify-identity")}>
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  Verify My Identity
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {!verificationLoading && verificationData?.id_verified && (<>
           {/* Step Indicator */}
           <div className="mb-8">
             <StepIndicator
@@ -349,6 +368,7 @@ const CreateListing = () => {
               )}
             </div>
           </div>
+          </>)}
           </MembershipGate>
         </div>
       </main>

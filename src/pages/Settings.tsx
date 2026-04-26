@@ -39,6 +39,7 @@ import {
   Lock,
   Eye,
   EyeOff,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +52,7 @@ import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/
 import { useDeleteAccount } from "@/hooks/useDeleteAccount";
 import { useProfileVisibility, useUpdateProfileVisibility } from "@/hooks/useProfileVisibility";
 import PushNotificationSettings from "@/components/settings/PushNotificationSettings";
+import { useVerification } from "@/hooks/useVerification";
 
 interface Profile {
   first_name: string;
@@ -96,6 +98,9 @@ const Settings = () => {
   // Profile visibility
   const { data: profileVisibility, isLoading: visibilityLoading } = useProfileVisibility();
   const updateVisibility = useUpdateProfileVisibility();
+
+  // Identity verification
+  const { data: verificationData } = useVerification();
 
   useEffect(() => {
     if (!user) {
@@ -554,6 +559,41 @@ const Settings = () => {
                   )}
                   Update Password
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Identity Verification */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5" />
+                  Identity Verification
+                </CardTitle>
+                <CardDescription>
+                  Verify your identity to build trust with the community
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {verificationData?.id_verified ? (
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-5 h-5 text-green-500" />
+                    <div>
+                      <p className="font-medium text-green-700 dark:text-green-400">Identity Verified</p>
+                      <p className="text-sm text-muted-foreground">Your identity has been verified successfully.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-medium">Not Verified</p>
+                      <p className="text-sm text-muted-foreground">Verify your identity to apply for sits and create listings.</p>
+                    </div>
+                    <Button onClick={() => navigate("/verify-identity")} className="flex-shrink-0">
+                      <ShieldCheck className="w-4 h-4 mr-2" />
+                      Verify Now
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
