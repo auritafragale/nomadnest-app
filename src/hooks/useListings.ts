@@ -9,6 +9,8 @@ export interface ListingFilters {
   countries?: string[];
   cities?: string[];
   sortBy?: "newest" | "soonest";
+  lastMinute?: boolean;
+  reasonsForSit?: string[];
 }
 
 export interface ListingWithDetails {
@@ -37,6 +39,8 @@ export interface ListingWithDetails {
     status: string;
   }[];
   owner_rating?: { average: number; count: number };
+  owner_profile?: { first_name: string | null; last_name: string | null; avatar_url: string | null };
+  wifi_quality?: string | null;
 }
 
 export const useListings = (filters: ListingFilters = {}) => {
@@ -54,6 +58,7 @@ export const useListings = (filters: ListingFilters = {}) => {
           area,
           photos,
           amenities,
+          wifi_quality,
           status,
           created_at,
           latitude,
@@ -109,6 +114,24 @@ export const useListings = (filters: ListingFilters = {}) => {
         }
       }
 
+      // Fetch owner profiles in bulk
+      if (ownerIds.length > 0) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name, avatar_url")
+          .in("id", ownerIds);
+
+        if (profileData && profileData.length > 0) {
+          const profileMap = new Map(profileData.map((p) => [p.id, p]));
+          results = results.map((listing) => {
+            const prof = profileMap.get(listing.owner_user_id);
+            return prof
+              ? { ...listing, owner_profile: { first_name: prof.first_name, last_name: prof.last_name, avatar_url: prof.avatar_url } }
+              : listing;
+          });
+        }
+      }
+
       // Filter by countries (client-side)
       if (filters.countries && filters.countries.length > 0) {
         results = results.filter((listing) =>
@@ -156,6 +179,26 @@ export const useListings = (filters: ListingFilters = {}) => {
             return true;
           })
         );
+      }
+
+      // Filter last-minute (start_date within 14 days)
+      if (filters.lastMinute) {
+        const today = new Date();
+        const twoWeeks = new Date();
+        twoWeeks.setDate(today.getDate() + 14);
+        results = results.filter((listing) =>
+          listing.sit_dates.some((d) => {
+            if (d.status !== "open") return false;
+            const start = new Date(d.start_date);
+            return start >= today && start <= twoWeeks;
+          })
+        );
+      }
+
+      // Filter by reasons for sit (stored as comma-separated text in description or separate field — we skip DB filter and match loosely)
+      // If the DB stores why_i_sit on the listing, filter here; otherwise this filter is a no-op
+      if (filters.reasonsForSit && filters.reasonsForSit.length > 0) {
+        // No-op for now — reasons are on sitter profiles, not listings
       }
 
       // Only return listings that have open sit dates

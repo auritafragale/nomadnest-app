@@ -552,16 +552,32 @@ const EditSitterProfile = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="why_sit">Why do you pet sit?</Label>
-                    <Textarea
-                      id="why_sit"
-                      value={sitterProfile.why_i_sit}
-                      onChange={(e) =>
-                        updateSitterProfile({ why_i_sit: e.target.value })
-                      }
-                      placeholder="Share your motivation for pet sitting..."
-                      rows={3}
-                    />
+                    <Label>Why do you sit?</Label>
+                    <p className="text-xs text-muted-foreground">Select all that apply</p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {["I Love Travelling", "I Love Pets", "I Am A Digital Nomad", "Budget Travel"].map((reason) => {
+                        const selected = (sitterProfile.why_i_sit || "").split(",").map(s => s.trim()).filter(Boolean).includes(reason);
+                        return (
+                          <button
+                            key={reason}
+                            type="button"
+                            onClick={() => {
+                              const current = (sitterProfile.why_i_sit || "").split(",").map(s => s.trim()).filter(Boolean);
+                              const updated = selected ? current.filter(r => r !== reason) : [...current, reason];
+                              updateSitterProfile({ why_i_sit: updated.join(", ") });
+                            }}
+                            className="px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors"
+                            style={
+                              selected
+                                ? { backgroundColor: "#E8735A", borderColor: "#E8735A", color: "white" }
+                                : { borderColor: "var(--border)", color: "var(--foreground)" }
+                            }
+                          >
+                            {reason}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

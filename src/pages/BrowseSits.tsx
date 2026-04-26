@@ -8,6 +8,9 @@ import ListingFiltersComponent from "@/components/browse/ListingFilters";
 import BackToTopButton from "@/components/ui/BackToTopButton";
 import Pagination from "@/components/browse/Pagination";
 import { usePagination } from "@/hooks/usePagination";
+import FilterBottomSheet, { MobileFilters } from "@/components/mobile/FilterBottomSheet";
+import { SlidersHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const ListingGoogleMap = lazy(() => import("@/components/maps/ListingGoogleMap"));
 
@@ -20,6 +23,23 @@ const BrowseSits = () => {
     return saved === "map" ? "map" : "grid";
   });
   const [filters, setFilters] = useState<ListingFilters>({});
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [mobileFilters, setMobileFilters] = useState<MobileFilters>({
+    lastMinute: false,
+    reasons: [],
+    petTypes: [],
+  });
+
+  const handleMobileFiltersApply = (mf: MobileFilters) => {
+    setMobileFilters(mf);
+    setFilters((prev) => ({
+      ...prev,
+      lastMinute: mf.lastMinute || undefined,
+      petTypes: mf.petTypes.length > 0 ? mf.petTypes : prev.petTypes,
+      startDate: mf.dateRange?.from ? mf.dateRange.from.toISOString().split("T")[0] : prev.startDate,
+      endDate: mf.dateRange?.to ? mf.dateRange.to.toISOString().split("T")[0] : prev.endDate,
+    }));
+  };
   
   const { data: listings, isLoading, error } = useListings(filters);
 
@@ -64,6 +84,28 @@ const BrowseSits = () => {
           onFiltersChange={setFilters}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+        />
+
+        {/* Mobile filter button */}
+        <div className="md:hidden sticky top-16 z-30 bg-surface border-b border-border px-4 py-2">
+          <Button
+            variant="outline"
+            className="w-full relative"
+            onClick={() => setMobileFilterOpen(true)}
+          >
+            <SlidersHorizontal className="w-4 h-4 mr-2" />
+            Filters
+            {(mobileFilters.lastMinute || mobileFilters.reasons.length > 0 || mobileFilters.petTypes.length > 0 || mobileFilters.dateRange?.from) && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#E8735A]" />
+            )}
+          </Button>
+        </div>
+
+        <FilterBottomSheet
+          open={mobileFilterOpen}
+          onClose={() => setMobileFilterOpen(false)}
+          filters={mobileFilters}
+          onApply={handleMobileFiltersApply}
         />
 
         <div className="container py-8">

@@ -27,6 +27,7 @@ import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompleten
 import { useOwnerApplications } from "@/hooks/useApplications";
 import { OwnerApplicationPreviewCard } from "@/components/dashboard/OwnerApplicationPreviewCard";
 import MembershipStatusCard from "@/components/dashboard/MembershipStatusCard";
+import MobileHomeScreen from "@/components/mobile/MobileHomeScreen";
 
 interface Profile {
   first_name: string | null;
@@ -128,8 +129,13 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
-      <main className="pt-20 pb-12">
+
+      {/* Mobile home — map + role toggle + FAB */}
+      <div className="pt-16">
+        <MobileHomeScreen />
+      </div>
+
+      <main className="hidden md:block pt-20 pb-12">
         <div className="container mx-auto px-4">
           <Breadcrumbs />
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">

@@ -110,14 +110,8 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-warm flex items-center justify-center p-4">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-secondary/10 rounded-full blur-3xl" />
-      </div>
-
-      <div className="w-full max-w-md relative z-10">
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: "#FAF7F2" }}>
+      <div className="w-full max-w-sm">
         {/* Logo */}
         <Link
           to="/"
@@ -226,7 +220,7 @@ const Auth = () => {
                 </div>
               )}
 
-              <Button type="submit" className="w-full h-12 group" disabled={isLoading}>
+              <Button type="submit" className="w-full h-12 group text-white" style={{ backgroundColor: "#E8735A" }} disabled={isLoading}>
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
@@ -265,8 +259,15 @@ const Auth = () => {
           </CardContent>
         </Card>
 
+        {/* Continue as guest */}
+        <p className="text-center text-sm text-muted-foreground mt-5">
+          <Link to="/browse-sits" className="underline hover:text-foreground">
+            Continue as Guest
+          </Link>
+        </p>
+
         {/* Footer */}
-        <p className="text-center text-xs text-muted-foreground mt-8">
+        <p className="text-center text-xs text-muted-foreground mt-4">
           By continuing, you agree to our{" "}
           <Link to="/terms" className="underline hover:text-foreground">Terms</Link>
           {" "}and{" "}
