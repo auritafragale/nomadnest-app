@@ -393,7 +393,7 @@ const EditListing = () => {
             </Button>
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-display font-bold text-foreground">
+                <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
                   Edit Listing
                 </h1>
                 <p className="text-muted-foreground mt-2">

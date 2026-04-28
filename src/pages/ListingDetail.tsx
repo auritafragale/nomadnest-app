@@ -369,28 +369,30 @@ const ListingDetail = () => {
                 <>
                   <button
                     onClick={prevPhoto}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-background/80 rounded-full hover:bg-background transition-colors"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-3 bg-background/80 rounded-full hover:bg-background transition-colors"
                   >
-                    <ChevronLeft className="w-6 h-6" />
+                    <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     onClick={nextPhoto}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-background/80 rounded-full hover:bg-background transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-background/80 rounded-full hover:bg-background transition-colors"
                   >
-                    <ChevronRight className="w-6 h-6" />
+                    <ChevronRight className="w-5 h-5" />
                   </button>
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
                     {allPhotos.map((_, idx) => (
                       <button
                         key={idx}
                         onClick={() => setCurrentPhotoIndex(idx)}
-                        className={cn(
-                          "w-2 h-2 rounded-full transition-colors",
+                        className="p-1.5"
+                      >
+                        <span className={cn(
+                          "block w-2 h-2 rounded-full transition-colors",
                           idx === currentPhotoIndex
                             ? "bg-primary"
                             : "bg-background/60"
-                        )}
-                      />
+                        )} />
+                      </button>
                     ))}
                   </div>
                 </>
@@ -470,7 +472,7 @@ const ListingDetail = () => {
                             </div>
                           )}
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
                               <h3 className="font-semibold text-lg">
                                 {pet.name}
                               </h3>
@@ -479,7 +481,7 @@ const ListingDetail = () => {
                               </Badge>
                               {pet.age && (
                                 <span className="text-sm text-muted-foreground">
-                                  • {pet.age}
+                                  {pet.age}
                                 </span>
                               )}
                               {pet.has_medication && (

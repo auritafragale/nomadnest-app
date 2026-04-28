@@ -195,7 +195,7 @@ const EditOwnerProfile = () => {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard
               </Button>
-              <h1 className="text-3xl font-display font-bold text-foreground">
+              <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
                 Edit Owner Profile
               </h1>
               <p className="text-muted-foreground mt-1">

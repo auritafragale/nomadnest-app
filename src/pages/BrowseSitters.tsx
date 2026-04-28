@@ -76,7 +76,7 @@ const BrowseSitters = () => {
         />
 
         {/* Results */}
-        <div className="container py-8">
+        <div className="container py-4 md:py-8">
           {loading ? (
             <>
               <Skeleton className="h-5 w-32 mb-6" />

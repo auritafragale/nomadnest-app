@@ -81,7 +81,7 @@ const Membership = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="max-w-6xl mx-auto px-4 pt-20 pb-12">
         {/* No Booking Fees Banner */}
         <div className="bg-primary text-primary-foreground rounded-2xl p-6 mb-12 text-center">
           <h2 className="text-2xl md:text-3xl font-bold">No booking fees. Ever.</h2>

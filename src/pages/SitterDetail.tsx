@@ -314,7 +314,7 @@ const SitterDetail = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
-        <main className="flex-1 container mx-auto px-4 py-8">
+        <main className="flex-1 container mx-auto px-4 pt-20 pb-8">
           <div className="max-w-4xl mx-auto space-y-6">
             <Skeleton className="h-10 w-48" />
             <div className="grid md:grid-cols-3 gap-6">
@@ -336,7 +336,7 @@ const SitterDetail = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
-        <main className="flex-1 container mx-auto px-4 py-8">
+        <main className="flex-1 container mx-auto px-4 pt-20 pb-8">
           <div className="max-w-4xl mx-auto text-center py-12">
             <h2 className="text-2xl font-bold mb-4">Sitter not found</h2>
             <p className="text-muted-foreground mb-6">
@@ -355,8 +355,8 @@ const SitterDetail = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <main className="flex-1">
-        <div className="container mx-auto px-4 py-8">
+      <main className="flex-1 pt-16">
+        <div className="container mx-auto px-4 pt-6 pb-8">
           <div className="max-w-4xl mx-auto">
             {/* Back button */}
             <Button variant="ghost" asChild className="mb-6">
@@ -367,7 +367,7 @@ const SitterDetail = () => {
             </Button>
 
             {/* Header Section */}
-            <div className="grid md:grid-cols-3 gap-8 mb-8">
+            <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">
               {/* Photo Gallery */}
               <div className="space-y-4">
                 <div className="aspect-square rounded-xl overflow-hidden bg-muted">
@@ -410,32 +410,32 @@ const SitterDetail = () => {
 
               {/* Profile Info */}
               <div className="md:col-span-2">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div>
-                    <h1 className="text-3xl font-bold mb-2">{name}</h1>
-                    {sitter.headline && (
-                      <p className="text-lg text-muted-foreground">
-                        {sitter.headline}
-                      </p>
-                    )}
-                    {profile.founding_member && (
-                      <FoundingMemberBadge className="mt-2" />
-                    )}
+                <div className="mb-4">
+                  <div className="flex flex-wrap items-start gap-2 mb-2">
+                    <h1 className="text-2xl md:text-3xl font-bold flex-1 min-w-0">{name}</h1>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {sitter.id_verified && (
+                        <Badge variant="outline" className="gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Verified
+                        </Badge>
+                      )}
+                      {sitter.background_check && (
+                        <Badge variant="outline" className="gap-1">
+                          <Shield className="w-3 h-3" />
+                          Check
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    {sitter.id_verified && (
-                      <Badge variant="outline" className="gap-1">
-                        <CheckCircle className="w-3 h-3" />
-                        Verified
-                      </Badge>
-                    )}
-                    {sitter.background_check && (
-                      <Badge variant="outline" className="gap-1">
-                        <Shield className="w-3 h-3" />
-                        Background Check
-                      </Badge>
-                    )}
-                  </div>
+                  {sitter.headline && (
+                    <p className="text-base md:text-lg text-muted-foreground">
+                      {sitter.headline}
+                    </p>
+                  )}
+                  {profile.founding_member && (
+                    <FoundingMemberBadge className="mt-2" />
+                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-4 mb-6 text-sm text-muted-foreground">
@@ -466,7 +466,7 @@ const SitterDetail = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 mb-6">
+                <div className="flex flex-wrap gap-2 mb-6">
                   {user && user.id !== userId && (role === "owner" || role === "both") && (
                     <Button
                       variant="outline"

@@ -96,7 +96,7 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
         variant="interactive"
         className={`overflow-hidden group ${viewMode === "list" ? "flex flex-row" : ""}`}
       >
-        <div className={`p-6 ${viewMode === "list" ? "flex gap-6 items-start" : ""}`}>
+        <div className={`p-4 md:p-6 ${viewMode === "list" ? "flex gap-4 md:gap-6 items-start" : ""}`}>
           <div
             className={`${
               viewMode === "list"
@@ -243,7 +243,7 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
         </div>
 
         {viewMode !== "list" && (
-          <div className="px-6 pb-6 flex gap-3">
+          <div className="px-4 pb-4 md:px-6 md:pb-6 flex gap-2 md:gap-3">
             <Button
               variant="outline"
               className="flex-1"

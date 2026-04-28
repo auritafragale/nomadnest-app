@@ -6,8 +6,8 @@ const Privacy = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1">
-        <div className="container py-12 max-w-4xl">
-          <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
+        <div className="container pt-20 pb-12 max-w-4xl">
+          <h1 className="text-2xl md:text-4xl font-bold mb-8">Privacy Policy</h1>
           <p className="text-muted-foreground mb-8">
             Last updated: {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           </p>

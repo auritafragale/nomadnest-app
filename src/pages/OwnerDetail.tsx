@@ -140,7 +140,7 @@ const OwnerDetail = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
-        <main className="flex-1 container mx-auto px-4 py-8">
+        <main className="flex-1 container mx-auto px-4 pt-20 pb-8">
           <div className="max-w-4xl mx-auto space-y-6">
             <Skeleton className="h-10 w-48" />
             <div className="grid md:grid-cols-3 gap-6">
@@ -162,7 +162,7 @@ const OwnerDetail = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
-        <main className="flex-1 container mx-auto px-4 py-8">
+        <main className="flex-1 container mx-auto px-4 pt-20 pb-8">
           <div className="max-w-4xl mx-auto text-center py-12">
             <h2 className="text-2xl font-bold mb-4">Owner not found</h2>
             <p className="text-muted-foreground mb-6">
@@ -181,8 +181,8 @@ const OwnerDetail = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <main className="flex-1">
-        <div className="container mx-auto px-4 py-8">
+      <main className="flex-1 pt-16">
+        <div className="container mx-auto px-4 pt-6 pb-8">
           <div className="max-w-4xl mx-auto">
             {/* Back button */}
             <Button variant="ghost" asChild className="mb-6">
@@ -215,8 +215,8 @@ const OwnerDetail = () => {
               <div className="md:col-span-2">
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div>
-                    <h1 className="text-3xl font-bold mb-2">{name}</h1>
-                    <p className="text-lg text-muted-foreground">Pet Parent</p>
+                    <h1 className="text-2xl md:text-3xl font-bold mb-2">{name}</h1>
+                    <p className="text-base md:text-lg text-muted-foreground">Pet Parent</p>
                     {profile.founding_member && (
                       <FoundingMemberBadge className="mt-2" />
                     )}
@@ -243,7 +243,7 @@ const OwnerDetail = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 mb-6">
+                <div className="flex flex-wrap gap-2 mb-6">
                   {user && user.id !== userId && (role === "sitter" || role === "both") && (
                     <Button
                       variant="outline"
