@@ -24,13 +24,17 @@ export interface SitterWithProfile {
   background_check: boolean;
   gallery: string[];
   age_range: string | null;
+  latitude: number | null;
+  longitude: number | null;
   profile: {
     first_name: string | null;
     last_name: string | null;
     avatar_url: string | null;
     city: string | null;
     country: string | null;
+    founding_member: boolean | null;
   } | null;
+  rating: { average: number; count: number };
 }
 
 interface UseSittersOptions {
@@ -52,7 +56,6 @@ export const useSitters = (options: UseSittersOptions = {}) => {
       setError(null);
 
       try {
-        // Fetch sitter profiles first
         const { data: sitterData, error: sitterError } = await supabase
           .from("sitter_profiles")
           .select("*");
@@ -64,28 +67,45 @@ export const useSitters = (options: UseSittersOptions = {}) => {
           return;
         }
 
-        // Fetch profiles for all sitters
         const userIds = sitterData.map((s) => s.user_id);
-        const { data: profilesData, error: profilesError } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name, avatar_url, city, country")
-          .in("id", userIds);
 
-        if (profilesError) throw profilesError;
+        const [profilesResult, ratingsResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id, first_name, last_name, avatar_url, city, country, founding_member")
+            .in("id", userIds),
+          supabase
+            .from("reviews")
+            .select("reviewee_user_id, rating")
+            .in("reviewee_user_id", userIds),
+        ]);
 
-        // Map profiles to sitters
+        if (profilesResult.error) throw profilesResult.error;
+
         const profilesMap = new Map(
-          (profilesData || []).map((p) => [p.id, p])
+          (profilesResult.data || []).map((p) => [p.id, p])
         );
 
-        let filteredData: SitterWithProfile[] = sitterData
-          .filter((sitter) => sitter.is_active !== false) // Only show active sitters
-          .map((sitter) => ({
-            ...sitter,
-            profile: profilesMap.get(sitter.user_id) || null,
-          })) as SitterWithProfile[];
+        // Compute per-sitter average ratings
+        const ratingsMap = new Map<string, { sum: number; count: number }>();
+        (ratingsResult.data || []).forEach((r) => {
+          const cur = ratingsMap.get(r.reviewee_user_id) || { sum: 0, count: 0 };
+          ratingsMap.set(r.reviewee_user_id, { sum: cur.sum + r.rating, count: cur.count + 1 });
+        });
 
-        // Client-side filtering
+        let filteredData: SitterWithProfile[] = sitterData
+          .filter((sitter) => sitter.is_active !== false)
+          .map((sitter) => {
+            const ratingData = ratingsMap.get(sitter.user_id);
+            return {
+              ...sitter,
+              profile: profilesMap.get(sitter.user_id) || null,
+              rating: ratingData
+                ? { average: ratingData.sum / ratingData.count, count: ratingData.count }
+                : { average: 0, count: 0 },
+            };
+          }) as SitterWithProfile[];
+
         if (options.searchQuery) {
           const search = options.searchQuery.toLowerCase();
           filteredData = filteredData.filter((sitter) => {
@@ -93,29 +113,19 @@ export const useSitters = (options: UseSittersOptions = {}) => {
             const location = `${sitter.profile?.city || ""} ${sitter.profile?.country || ""}`.toLowerCase();
             const headline = (sitter.headline || "").toLowerCase();
             const languages = (sitter.languages || []).join(" ").toLowerCase();
-            
-            return (
-              name.includes(search) ||
-              location.includes(search) ||
-              headline.includes(search) ||
-              languages.includes(search)
-            );
+            return name.includes(search) || location.includes(search) || headline.includes(search) || languages.includes(search);
           });
         }
 
         if (options.petTypes && options.petTypes.length > 0) {
           filteredData = filteredData.filter((sitter) =>
-            options.petTypes!.some((type) =>
-              (sitter.pet_types || []).includes(type)
-            )
+            options.petTypes!.some((type) => (sitter.pet_types || []).includes(type))
           );
         }
 
         if (options.languages && options.languages.length > 0) {
           filteredData = filteredData.filter((sitter) =>
-            options.languages!.some((lang) =>
-              (sitter.languages || []).includes(lang)
-            )
+            options.languages!.some((lang) => (sitter.languages || []).includes(lang))
           );
         }
 
@@ -143,7 +153,13 @@ export const useSitters = (options: UseSittersOptions = {}) => {
     };
 
     fetchSitters();
-  }, [options.searchQuery, options.petTypes?.join(","), options.languages?.join(","), options.experienceLevels?.join(","), options.availableOnly]);
+  }, [
+    options.searchQuery,
+    options.petTypes?.join(","),
+    options.languages?.join(","),
+    options.experienceLevels?.join(","),
+    options.availableOnly,
+  ]);
 
   return { sitters, loading, error };
 };

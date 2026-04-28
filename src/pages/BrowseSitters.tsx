@@ -1,19 +1,25 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSitters } from "@/hooks/useSitters";
-import SitterCard from "@/components/browse/SitterCard";
+import SitterGridCard from "@/components/browse/SitterGridCard";
 import SitterFilters from "@/components/browse/SitterFilters";
 import BackToTopButton from "@/components/ui/BackToTopButton";
 import Pagination from "@/components/browse/Pagination";
 import { usePagination } from "@/hooks/usePagination";
 import { Users } from "lucide-react";
 
-const ITEMS_PER_PAGE = 12;
+const SitterGoogleMap = lazy(() => import("@/components/maps/SitterGoogleMap"));
+
+const ITEMS_PER_PAGE = 24;
+const VIEW_MODE_KEY = "nomadnest_sitters_view";
 
 const BrowseSitters = () => {
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "map">(() => {
+    const saved = localStorage.getItem(VIEW_MODE_KEY);
+    return saved === "map" ? "map" : "grid";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPetTypes, setSelectedPetTypes] = useState<string[]>([]);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
@@ -44,6 +50,11 @@ const BrowseSitters = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleViewModeChange = (mode: "grid" | "map") => {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_MODE_KEY, mode);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
@@ -51,7 +62,7 @@ const BrowseSitters = () => {
       <main className="flex-1 pt-16">
         {/* Header */}
         <div className="bg-surface border-b border-border">
-          <div className="container py-6 md:py-8">
+          <div className="container py-5 md:py-8">
             <h1 className="text-2xl md:text-4xl font-display mb-1">
               Browse Nomads
             </h1>
@@ -72,7 +83,7 @@ const BrowseSitters = () => {
           selectedExperienceLevels={selectedExperienceLevels}
           onExperienceLevelsChange={setSelectedExperienceLevels}
           viewMode={viewMode}
-          onViewModeChange={setViewMode}
+          onViewModeChange={handleViewModeChange}
         />
 
         {/* Results */}
@@ -80,20 +91,15 @@ const BrowseSitters = () => {
           {loading ? (
             <>
               <Skeleton className="h-5 w-32 mb-6" />
-              <div
-                className={`grid gap-6 ${
-                  viewMode === "grid"
-                    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                    : "grid-cols-1"
-                }`}
-              >
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Skeleton
-                    key={i}
-                    className={viewMode === "grid" ? "h-80" : "h-48"}
-                  />
-                ))}
-              </div>
+              {viewMode === "map" ? (
+                <Skeleton className="w-full h-[600px] rounded-lg" />
+              ) : (
+                <div className="grid gap-3 md:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                    <Skeleton key={i} className="h-48 md:h-56 rounded-lg" />
+                  ))}
+                </div>
+              )}
             </>
           ) : error ? (
             <div className="text-center py-12">
@@ -111,32 +117,34 @@ const BrowseSitters = () => {
             </div>
           ) : (
             <>
-              <p className="text-sm text-muted-foreground mb-6">
-                Showing {startIndex}-{endIndex} of {totalItems} nomad{totalItems !== 1 ? "s" : ""}
-              </p>
+              {viewMode !== "map" && (
+                <p className="text-sm text-muted-foreground mb-4">
+                  Showing {startIndex}–{endIndex} of {totalItems} nomad{totalItems !== 1 ? "s" : ""}
+                </p>
+              )}
 
-              <div
-                className={`grid gap-6 ${
-                  viewMode === "grid"
-                    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                    : "grid-cols-1"
-                }`}
-              >
-                {paginatedItems.map((sitter) => (
-                  <SitterCard
-                    key={sitter.id}
-                    sitter={sitter}
-                    viewMode={viewMode}
-                  />
-                ))}
+              <div className="transition-opacity duration-300">
+                {viewMode === "map" ? (
+                  <Suspense fallback={<Skeleton className="w-full h-[600px] rounded-lg" />}>
+                    <SitterGoogleMap sitters={sitters} />
+                  </Suspense>
+                ) : (
+                  <>
+                    <div className="grid gap-3 md:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                      {paginatedItems.map((sitter) => (
+                        <SitterGridCard key={sitter.id} sitter={sitter} />
+                      ))}
+                    </div>
+
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                      className="mt-8"
+                    />
+                  </>
+                )}
               </div>
-
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                className="mt-8"
-              />
             </>
           )}
         </div>

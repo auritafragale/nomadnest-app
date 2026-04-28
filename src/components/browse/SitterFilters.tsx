@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Search, SlidersHorizontal, Grid, List, X } from "lucide-react";
+import { Search, SlidersHorizontal, Grid, Map, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SitterFiltersProps {
@@ -20,8 +20,8 @@ interface SitterFiltersProps {
   onLanguagesChange: (languages: string[]) => void;
   selectedExperienceLevels: string[];
   onExperienceLevelsChange: (levels: string[]) => void;
-  viewMode: "grid" | "list";
-  onViewModeChange: (mode: "grid" | "list") => void;
+  viewMode: "grid" | "map";
+  onViewModeChange: (mode: "grid" | "map") => void;
 }
 
 const petTypeOptions = ["Dog", "Cat", "Bird", "Fish", "Rabbit", "Other"];
@@ -202,16 +202,18 @@ const SitterFilters = ({
                 className={`p-2.5 ${
                   viewMode === "grid" ? "bg-muted" : "bg-surface hover:bg-muted/50"
                 }`}
+                title="Grid view"
               >
                 <Grid className="w-5 h-5" />
               </button>
               <button
-                onClick={() => onViewModeChange("list")}
+                onClick={() => onViewModeChange("map")}
                 className={`p-2.5 ${
-                  viewMode === "list" ? "bg-muted" : "bg-surface hover:bg-muted/50"
+                  viewMode === "map" ? "bg-muted" : "bg-surface hover:bg-muted/50"
                 }`}
+                title="Map view"
               >
-                <List className="w-5 h-5" />
+                <Map className="w-5 h-5" />
               </button>
             </div>
           </div>
