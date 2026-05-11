@@ -5,6 +5,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/landing/HeroSection";
 import HowItWorksSection from "@/components/landing/HowItWorksSection";
+import FeaturedStaysSection from "@/components/landing/FeaturedStaysSection";
 import ValuePropsSection from "@/components/landing/ValuePropsSection";
 import WhyDifferentSection from "@/components/landing/WhyDifferentSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
@@ -36,6 +37,7 @@ const Index = () => {
       <main className="flex-1">
         <HeroSection />
         <HowItWorksSection />
+        <FeaturedStaysSection />
         <ValuePropsSection />
         <WhyDifferentSection />
         <TestimonialsSection />
