@@ -1,63 +1,175 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, Home } from "lucide-react";
-import { useListings } from "@/hooks/useListings";
-import ListingCard from "@/components/browse/ListingCard";
+import { MapPin, Calendar, ArrowRight, Cat, Dog } from "lucide-react";
 
-const FeaturedStaysSection = () => {
-  const { data: allListings, isLoading } = useListings({});
+interface DemoListing {
+  id: number;
+  title: string;
+  city: string;
+  country: string;
+  dates: string;
+  pets: { type: "cat" | "dog"; name: string }[];
+  image: string;
+}
 
-  const featured = allListings
-    ? allListings.filter((l) => l.photos && l.photos.length > 0).slice(0, 8)
-    : [];
+const DEMO_LISTINGS: DemoListing[] = [
+  {
+    id: 1,
+    title: "Sunny terrace apartment with two friendly cats",
+    city: "Barcelona",
+    country: "Spain",
+    dates: "Jun 5 – Jun 22, 2026",
+    pets: [{ type: "cat", name: "Luna" }, { type: "cat", name: "Mochi" }],
+    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&h=400&fit=crop",
+  },
+  {
+    id: 2,
+    title: "Charming Alfama flat with a golden retriever",
+    city: "Lisbon",
+    country: "Portugal",
+    dates: "Jun 14 – Jul 2, 2026",
+    pets: [{ type: "dog", name: "Biscuit" }],
+    image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&h=400&fit=crop",
+  },
+  {
+    id: 3,
+    title: "Tropical villa surrounded by rice fields",
+    city: "Ubud",
+    country: "Indonesia",
+    dates: "Jul 1 – Jul 20, 2026",
+    pets: [{ type: "cat", name: "Kopi" }, { type: "dog", name: "Remy" }],
+    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop",
+  },
+  {
+    id: 4,
+    title: "Cosy stone cottage near Arthur's Seat",
+    city: "Edinburgh",
+    country: "UK",
+    dates: "Jul 8 – Jul 25, 2026",
+    pets: [{ type: "dog", name: "Angus" }],
+    image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&h=400&fit=crop",
+  },
+  {
+    id: 5,
+    title: "Modern home with sea views and two cats",
+    city: "Cape Town",
+    country: "South Africa",
+    dates: "Jul 18 – Aug 5, 2026",
+    pets: [{ type: "cat", name: "Atlas" }, { type: "cat", name: "Sage" }],
+    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&h=400&fit=crop",
+  },
+  {
+    id: 6,
+    title: "Haussmann apartment steps from the Marais",
+    city: "Paris",
+    country: "France",
+    dates: "Aug 2 – Aug 19, 2026",
+    pets: [{ type: "cat", name: "Brie" }],
+    image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=600&h=400&fit=crop",
+  },
+  {
+    id: 7,
+    title: "Bright South Congress bungalow with a labrador",
+    city: "Austin",
+    country: "USA",
+    dates: "Aug 10 – Aug 28, 2026",
+    pets: [{ type: "dog", name: "Tex" }],
+    image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&h=400&fit=crop",
+  },
+  {
+    id: 8,
+    title: "Fitzroy terrace house with cat and garden",
+    city: "Melbourne",
+    country: "Australia",
+    dates: "Sep 1 – Sep 18, 2026",
+    pets: [{ type: "cat", name: "Pepper" }],
+    image: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&h=400&fit=crop",
+  },
+];
 
-  return (
-    <section className="py-20 bg-background">
-      <div className="container">
-        {/* Heading */}
-        <div className="text-center mb-12">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-terracotta-light text-primary text-sm font-semibold mb-4">
-            Live Listings
-          </span>
-          <h2 className="text-3xl md:text-4xl font-display mb-4">Explore Amazing Stays</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Discover homes and pets waiting for you around the world
-          </p>
+const DemoCard = ({ listing }: { listing: DemoListing }) => (
+  <Link to="/browse-sits" className="group block">
+    <div className="rounded-xl overflow-hidden border border-border bg-surface shadow-soft hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+      {/* Image */}
+      <div className="relative aspect-[4/3] overflow-hidden">
+        <img
+          src={listing.image}
+          alt={listing.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+        />
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        <h3 className="font-semibold text-base leading-snug mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+          {listing.title}
+        </h3>
+
+        <div className="space-y-1.5 mb-3">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-primary" />
+            <span className="truncate">{listing.city}, {listing.country}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>{listing.dates}</span>
+          </div>
         </div>
 
-        {/* Grid */}
-        {isLoading ? (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-72 rounded-xl" />
+        <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-1.5">
+            {listing.pets.map((pet, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-medium"
+              >
+                {pet.type === "cat"
+                  ? <Cat className="w-3 h-3" />
+                  : <Dog className="w-3 h-3" />
+                }
+                {pet.name}
+              </span>
             ))}
           </div>
-        ) : featured.length === 0 ? (
-          <div className="text-center py-16">
-            <Home className="w-12 h-12 mx-auto text-muted-foreground/40 mb-4" />
-            <p className="text-muted-foreground">No listings available right now — check back soon!</p>
-          </div>
-        ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {featured.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} viewMode="grid" />
-            ))}
-          </div>
-        )}
-
-        {/* CTA */}
-        <div className="flex justify-center mt-10">
-          <Link to="/browse-sits">
-            <Button variant="hero" size="lg" className="group">
-              View All Sits
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </Link>
+          <span className="text-xs font-semibold text-primary group-hover:underline whitespace-nowrap">
+            View Sit
+          </span>
         </div>
       </div>
-    </section>
-  );
-};
+    </div>
+  </Link>
+);
+
+const FeaturedStaysSection = () => (
+  <section className="py-20 bg-background">
+    <div className="container">
+      <div className="text-center mb-12">
+        <span className="inline-block px-4 py-1.5 rounded-full bg-terracotta-light text-primary text-sm font-semibold mb-4">
+          Featured Stays
+        </span>
+        <h2 className="text-3xl md:text-4xl font-display mb-4">Explore Amazing Stays</h2>
+        <p className="text-muted-foreground max-w-xl mx-auto">
+          Discover homes and pets waiting for you around the world
+        </p>
+      </div>
+
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {DEMO_LISTINGS.map((listing) => (
+          <DemoCard key={listing.id} listing={listing} />
+        ))}
+      </div>
+
+      <div className="flex justify-center mt-10">
+        <Link to="/browse-sits">
+          <Button variant="hero" size="lg" className="group">
+            View All Sits
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  </section>
+);
 
 export default FeaturedStaysSection;
