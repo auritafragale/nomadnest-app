@@ -6,14 +6,14 @@ import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/landing/HeroSection";
 import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import ValuePropsSection from "@/components/landing/ValuePropsSection";
-import ExploreSection from "@/components/landing/ExploreSection";
+import WhyDifferentSection from "@/components/landing/WhyDifferentSection";
+import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import TrustSection from "@/components/landing/TrustSection";
 import CTASection from "@/components/landing/CTASection";
 
 const Index = () => {
   const { user, loading, onboardingCompleted } = useAuth();
 
-  // Show loading state while auth is being determined
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -22,12 +22,10 @@ const Index = () => {
     );
   }
 
-  // Redirect logged-in users to dashboard
   if (user && onboardingCompleted) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // If user is logged in but hasn't completed onboarding
   if (user && !onboardingCompleted) {
     return <Navigate to="/onboarding" replace />;
   }
@@ -39,7 +37,8 @@ const Index = () => {
         <HeroSection />
         <HowItWorksSection />
         <ValuePropsSection />
-        <ExploreSection />
+        <WhyDifferentSection />
+        <TestimonialsSection />
         <TrustSection />
         <CTASection />
       </main>
