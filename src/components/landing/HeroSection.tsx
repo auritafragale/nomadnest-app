@@ -1,13 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, MapPin } from "lucide-react";
-import heroImage from "@/assets/hero-pets-home.jpg";
 import whiteLogo from "@/assets/White_Logo.png";
 
+const IMAGES = ["/hero-1.jpg", "/hero-2.jpg", "/hero-3.jpg"];
+const INTERVAL = 5500;
+
 const HeroSection = () => {
+  const [current, setCurrent] = useState(0);
+  const [next, setNext] = useState<number | null>(null);
+  const [fading, setFading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const nextIndex = (current + 1) % IMAGES.length;
+      setNext(nextIndex);
+      setFading(true);
+      setTimeout(() => {
+        setCurrent(nextIndex);
+        setNext(null);
+        setFading(false);
+      }, 1000);
+    }, INTERVAL);
+
+    return () => clearInterval(timer);
+  }, [current]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,15 +36,28 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
-      {/* Background image */}
+      {/* Slideshow background */}
       <div className="absolute inset-0">
+        {/* Current image */}
         <img
-          src={heroImage}
-          alt="Happy traveller with pets"
-          className="w-full h-full object-cover object-center"
+          key={current}
+          src={IMAGES[current]}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          style={{ opacity: fading ? 0 : 1, transition: "opacity 1000ms ease-in-out" }}
         />
-        {/* Coral gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/75 via-primary/65 to-foreground/80" />
+        {/* Next image (fades in beneath) */}
+        {next !== null && (
+          <img
+            key={next}
+            src={IMAGES[next]}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            style={{ opacity: fading ? 1 : 0, transition: "opacity 1000ms ease-in-out" }}
+          />
+        )}
+        {/* Dark overlay for text legibility */}
+        <div className="absolute inset-0" style={{ backgroundColor: "rgba(0,0,0,0.45)" }} />
       </div>
 
       {/* Content */}
@@ -108,15 +141,24 @@ const HeroSection = () => {
           className="flex flex-wrap items-center justify-center gap-6 mt-10 animate-fade-up"
           style={{ animationDelay: "0.5s" }}
         >
-          {[
-            "900+ Community Members",
-            "ID Verified Members",
-            "No Booking Fees",
-          ].map((item) => (
+          {["900+ Community Members", "ID Verified Members", "No Booking Fees"].map((item) => (
             <div key={item} className="flex items-center gap-2 text-white/90 text-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />
               {item}
             </div>
+          ))}
+        </div>
+
+        {/* Slide indicators */}
+        <div className="flex gap-2 mt-8">
+          {IMAGES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => { setCurrent(i); setNext(null); setFading(false); }}
+              className="w-2 h-2 rounded-full transition-all duration-300"
+              style={{ backgroundColor: i === current ? "white" : "rgba(255,255,255,0.4)" }}
+              aria-label={`Slide ${i + 1}`}
+            />
           ))}
         </div>
       </div>
