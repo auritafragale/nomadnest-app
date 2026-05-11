@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, ArrowRight, Cat, Dog } from "lucide-react";
+import { MapPin, Calendar, ArrowRight, Cat, Dog, CheckCircle2 } from "lucide-react";
 
 interface DemoListing {
   id: number;
@@ -18,7 +18,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     title: "Sunny terrace apartment with two friendly cats",
     city: "Barcelona",
     country: "Spain",
-    dates: "Jun 5 – Jun 22, 2026",
+    dates: "Jan 8 – Jan 24, 2026",
     pets: [{ type: "cat", name: "Luna" }, { type: "cat", name: "Mochi" }],
     image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&h=400&fit=crop",
   },
@@ -27,7 +27,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     title: "Charming Alfama flat with a golden retriever",
     city: "Lisbon",
     country: "Portugal",
-    dates: "Jun 14 – Jul 2, 2026",
+    dates: "Jan 20 – Feb 6, 2026",
     pets: [{ type: "dog", name: "Biscuit" }],
     image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&h=400&fit=crop",
   },
@@ -36,7 +36,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     title: "Tropical villa surrounded by rice fields",
     city: "Ubud",
     country: "Indonesia",
-    dates: "Jul 1 – Jul 20, 2026",
+    dates: "Feb 3 – Feb 20, 2026",
     pets: [{ type: "cat", name: "Kopi" }, { type: "dog", name: "Remy" }],
     image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop",
   },
@@ -45,7 +45,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     title: "Cosy stone cottage near Arthur's Seat",
     city: "Edinburgh",
     country: "UK",
-    dates: "Jul 8 – Jul 25, 2026",
+    dates: "Feb 14 – Mar 2, 2026",
     pets: [{ type: "dog", name: "Angus" }],
     image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&h=400&fit=crop",
   },
@@ -54,7 +54,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     title: "Modern home with sea views and two cats",
     city: "Cape Town",
     country: "South Africa",
-    dates: "Jul 18 – Aug 5, 2026",
+    dates: "Feb 28 – Mar 16, 2026",
     pets: [{ type: "cat", name: "Atlas" }, { type: "cat", name: "Sage" }],
     image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&h=400&fit=crop",
   },
@@ -63,7 +63,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     title: "Haussmann apartment steps from the Marais",
     city: "Paris",
     country: "France",
-    dates: "Aug 2 – Aug 19, 2026",
+    dates: "Mar 10 – Mar 27, 2026",
     pets: [{ type: "cat", name: "Brie" }],
     image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=600&h=400&fit=crop",
   },
@@ -72,7 +72,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     title: "Bright South Congress bungalow with a labrador",
     city: "Austin",
     country: "USA",
-    dates: "Aug 10 – Aug 28, 2026",
+    dates: "Mar 22 – Apr 8, 2026",
     pets: [{ type: "dog", name: "Tex" }],
     image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&h=400&fit=crop",
   },
@@ -81,7 +81,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     title: "Fitzroy terrace house with cat and garden",
     city: "Melbourne",
     country: "Australia",
-    dates: "Sep 1 – Sep 18, 2026",
+    dates: "Apr 5 – Apr 22, 2026",
     pets: [{ type: "cat", name: "Pepper" }],
     image: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&h=400&fit=crop",
   },
@@ -98,6 +98,13 @@ const DemoCard = ({ listing }: { listing: DemoListing }) => (
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />
+        {/* Past Sit badge */}
+        <div className="absolute top-3 left-3">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/90 text-xs font-semibold text-muted-foreground backdrop-blur-sm">
+            <CheckCircle2 className="w-3 h-3 text-success" />
+            Past Sit
+          </span>
+        </div>
       </div>
 
       {/* Content */}
@@ -124,16 +131,13 @@ const DemoCard = ({ listing }: { listing: DemoListing }) => (
                 key={i}
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-medium"
               >
-                {pet.type === "cat"
-                  ? <Cat className="w-3 h-3" />
-                  : <Dog className="w-3 h-3" />
-                }
+                {pet.type === "cat" ? <Cat className="w-3 h-3" /> : <Dog className="w-3 h-3" />}
                 {pet.name}
               </span>
             ))}
           </div>
           <span className="text-xs font-semibold text-primary group-hover:underline whitespace-nowrap">
-            View Sit
+            View Sits
           </span>
         </div>
       </div>
@@ -146,11 +150,11 @@ const FeaturedStaysSection = () => (
     <div className="container">
       <div className="text-center mb-12">
         <span className="inline-block px-4 py-1.5 rounded-full bg-terracotta-light text-primary text-sm font-semibold mb-4">
-          Featured Stays
+          From Our Community
         </span>
-        <h2 className="text-3xl md:text-4xl font-display mb-4">Explore Amazing Stays</h2>
+        <h2 className="text-3xl md:text-4xl font-display mb-4">Recent Sits from Our Community</h2>
         <p className="text-muted-foreground max-w-xl mx-auto">
-          Discover homes and pets waiting for you around the world
+          A taste of the sits our members have enjoyed — new opportunities are posted every week
         </p>
       </div>
 
