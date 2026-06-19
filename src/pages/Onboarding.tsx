@@ -132,11 +132,46 @@ const Onboarding = () => {
       }
 
       await refreshRole();
-      
-      toast({
-        title: "You're in! 🎉",
-        description: "Your profile is ready. Welcome to NomadNest!",
-      });
+
+      // Redeem a pending invite code if one was stashed during signup.
+      const pendingCode = sessionStorage.getItem("pendingInviteCode");
+      if (pendingCode) {
+        sessionStorage.removeItem("pendingInviteCode");
+        const { data: codeResult, error: codeError } = await supabase.rpc(
+          "redeem_founding_member_code",
+          { p_code: pendingCode, p_user_id: user.id }
+        );
+
+        if (codeError) {
+          toast({
+            variant: "destructive",
+            title: "Invite code error",
+            description: "Your invite code could not be applied. Contact support if you need help.",
+          });
+        } else if (codeResult === "ok") {
+          toast({
+            title: "Founding Member unlocked!",
+            description: "You have free lifetime combined membership. Welcome aboard!",
+          });
+        } else if (codeResult === "exhausted") {
+          toast({
+            variant: "destructive",
+            title: "All founding spots claimed",
+            description: "The code was valid but all 900 spots are taken. You can join with a paid plan.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Invalid invite code",
+            description: "That code wasn't recognised. You can enter a valid code later in Settings.",
+          });
+        }
+      } else {
+        toast({
+          title: "You're in!",
+          description: "Your profile is ready. Welcome to NomadNest!",
+        });
+      }
 
       navigate("/dashboard");
     } catch (error) {

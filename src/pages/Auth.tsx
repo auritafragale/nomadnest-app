@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Loader2, Tag } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -26,6 +26,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   
   const { signUp, signIn, user, onboardingCompleted, loading } = useAuth();
@@ -89,6 +90,11 @@ const Auth = () => {
             });
           }
         } else {
+          // Stash the invite code so Onboarding can redeem it once the user
+          // is fully authenticated (handles email-confirmation flows too).
+          if (inviteCode.trim()) {
+            sessionStorage.setItem("pendingInviteCode", inviteCode.trim().toUpperCase());
+          }
           toast({
             title: "Welcome to NomadNest!",
             description: "Your account has been created. Let's set up your profile.",
@@ -211,6 +217,25 @@ const Auth = () => {
                   <p className="text-sm text-destructive">{errors.password}</p>
                 )}
               </div>
+
+              {mode === "signup" && (
+                <div className="space-y-2">
+                  <Label htmlFor="inviteCode">Have an invite code? (optional)</Label>
+                  <div className="relative">
+                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="inviteCode"
+                      placeholder="NOMADNEST2024"
+                      className="pl-10 uppercase"
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Founding members get free lifetime combined membership.
+                  </p>
+                </div>
+              )}
 
               {mode === "login" && (
                 <div className="text-right">

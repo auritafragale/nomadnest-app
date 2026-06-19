@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
 export const useDeleteAccount = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -27,8 +27,9 @@ export const useDeleteAccount = () => {
       // 4. Delete favorites
       await supabase.from("favorites").delete().eq("user_id", user.id);
 
-      // 5. Delete reviews (as reviewer)
+      // 5. Delete reviews (both as reviewer and reviewee)
       await supabase.from("reviews").delete().eq("reviewer_user_id", user.id);
+      await supabase.from("reviews").delete().eq("reviewee_user_id", user.id);
 
       // 6. Delete sits
       await supabase.from("sits").delete().eq("owner_user_id", user.id);
@@ -58,8 +59,11 @@ export const useDeleteAccount = () => {
       // 13. Delete user role
       await supabase.from("user_roles").delete().eq("user_id", user.id);
 
-      // Sign out
-      await signOut();
+      // 14. Delete the auth.users record via service-role edge function.
+      // This must be the final step — once complete the JWT is invalid and
+      // the user cannot log back into a ghost account (also required for GDPR).
+      const { error: deleteAuthError } = await supabase.functions.invoke("delete-account");
+      if (deleteAuthError) throw deleteAuthError;
     },
     onSuccess: () => {
       toast({
