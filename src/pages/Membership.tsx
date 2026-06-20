@@ -3,7 +3,16 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, Crown, Star, Sparkles, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
@@ -16,7 +25,7 @@ const Membership = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { subscribed, membershipType, foundingMember, loading, startCheckout, joinAsFoundingMember } = useMembership();
+  const { subscribed, membershipType, foundingMember, loading, startCheckout, redeemFoundingMemberCode } = useMembership();
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [foundingLoading, setFoundingLoading] = useState(false);
 
