@@ -132,6 +132,33 @@ export type Database = {
           },
         ]
       }
+      founding_member_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          id: string
+          max_uses: number
+          used_count: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          id?: string
+          max_uses?: number
+          used_count?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          id?: string
+          max_uses?: number
+          used_count?: number
+        }
+        Relationships: []
+      }
       listings: {
         Row: {
           address_private: string | null
@@ -427,14 +454,11 @@ export type Database = {
           founding_member: boolean | null
           full_name: string | null
           id: string
-          id_verified: boolean | null
           last_name: string | null
           location: string | null
           membership_expiry: string | null
           membership_status: string | null
           membership_type: string | null
-          onfido_applicant_id: string | null
-          onfido_check_id: string | null
           updated_at: string
         }
         Insert: {
@@ -448,14 +472,11 @@ export type Database = {
           founding_member?: boolean | null
           full_name?: string | null
           id: string
-          id_verified?: boolean | null
           last_name?: string | null
           location?: string | null
           membership_expiry?: string | null
           membership_status?: string | null
           membership_type?: string | null
-          onfido_applicant_id?: string | null
-          onfido_check_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -469,14 +490,11 @@ export type Database = {
           founding_member?: boolean | null
           full_name?: string | null
           id?: string
-          id_verified?: boolean | null
           last_name?: string | null
           location?: string | null
           membership_expiry?: string | null
           membership_status?: string | null
           membership_type?: string | null
-          onfido_applicant_id?: string | null
-          onfido_check_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -868,6 +886,10 @@ export type Database = {
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      redeem_founding_member_code: {
+        Args: { p_code: string; p_user_id: string }
+        Returns: string
       }
     }
     Enums: {
