@@ -454,11 +454,14 @@ export type Database = {
           founding_member: boolean | null
           full_name: string | null
           id: string
+          id_verified: boolean | null
           last_name: string | null
           location: string | null
           membership_expiry: string | null
           membership_status: string | null
           membership_type: string | null
+          onfido_applicant_id: string | null
+          onfido_check_id: string | null
           updated_at: string
         }
         Insert: {
@@ -472,11 +475,14 @@ export type Database = {
           founding_member?: boolean | null
           full_name?: string | null
           id: string
+          id_verified?: boolean | null
           last_name?: string | null
           location?: string | null
           membership_expiry?: string | null
           membership_status?: string | null
           membership_type?: string | null
+          onfido_applicant_id?: string | null
+          onfido_check_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -490,11 +496,14 @@ export type Database = {
           founding_member?: boolean | null
           full_name?: string | null
           id?: string
+          id_verified?: boolean | null
           last_name?: string | null
           location?: string | null
           membership_expiry?: string | null
           membership_status?: string | null
           membership_type?: string | null
+          onfido_applicant_id?: string | null
+          onfido_check_id?: string | null
           updated_at?: string
         }
         Relationships: []
