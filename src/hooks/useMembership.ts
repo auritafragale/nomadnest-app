@@ -121,18 +121,22 @@ export const useMembership = () => {
     }
   };
 
-  const joinAsFoundingMember = async () => {
-    if (!user) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        founding_member: true,
-        membership_status: "active",
-        membership_type: "combined",
-      })
-      .eq("id", user.id);
+  const redeemFoundingMemberCode = async (
+    code: string
+  ): Promise<"ok" | "invalid" | "exhausted"> => {
+    if (!user) throw new Error("You must be signed in to redeem a code.");
+    const trimmed = code.trim();
+    if (!trimmed) return "invalid";
+
+    const { data, error } = await supabase.rpc("redeem_founding_member_code", {
+      p_code: trimmed,
+      p_user_id: user.id,
+    });
     if (error) throw error;
-    await checkSubscription();
+
+    const result = (data as string) ?? "invalid";
+    if (result === "ok") await checkSubscription();
+    return result as "ok" | "invalid" | "exhausted";
   };
 
   const hasAccess = (requiredType: "sitter" | "owner") => {
