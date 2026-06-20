@@ -219,20 +219,15 @@ const Membership = () => {
                 <Crown className="w-10 h-10 text-accent mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-foreground mb-2">Join as a Founding Member</h3>
                 <p className="text-muted-foreground mb-6">
-                  Be one of the first to shape NomadNest. Founding Members get full Combined access — completely free, forever.
+                  Be one of the first to shape NomadNest. Founding Member spots are limited and require an invite code.
                 </p>
                 <Button
                   size="lg"
                   className="bg-accent text-accent-foreground hover:bg-accent/90"
-                  onClick={handleFoundingMember}
-                  disabled={foundingLoading}
+                  onClick={openFoundingDialog}
                 >
-                  {foundingLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <Crown className="w-4 h-4 mr-2" />
-                  )}
-                  Join as Founding Member — Free
+                  <Crown className="w-4 h-4 mr-2" />
+                  Redeem Invite Code
                 </Button>
               </div>
             )}
