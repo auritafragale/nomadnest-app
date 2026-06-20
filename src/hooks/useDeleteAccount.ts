@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 export const useDeleteAccount = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: async () => {
