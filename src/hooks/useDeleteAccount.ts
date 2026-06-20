@@ -63,12 +63,13 @@ export const useDeleteAccount = () => {
       const { error: deleteAuthError } = await supabase.functions.invoke("delete-account");
       if (deleteAuthError) throw deleteAuthError;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Account deleted",
         description: "Your account and all data have been removed.",
       });
-      navigate("/");
+      await supabase.auth.signOut();
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
