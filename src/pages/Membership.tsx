@@ -28,6 +28,8 @@ const Membership = () => {
   const { subscribed, membershipType, foundingMember, loading, startCheckout, redeemFoundingMemberCode } = useMembership();
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [foundingLoading, setFoundingLoading] = useState(false);
+  const [codeDialogOpen, setCodeDialogOpen] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
 
   const cancelled = searchParams.get("cancelled");
 
@@ -47,16 +49,40 @@ const Membership = () => {
     }
   };
 
-  const handleFoundingMember = async () => {
+  const openFoundingDialog = () => {
     if (!user) {
       navigate("/auth");
       return;
     }
+    setInviteCode("");
+    setCodeDialogOpen(true);
+  };
+
+  const handleRedeemCode = async () => {
+    if (!inviteCode.trim()) {
+      toast({ title: "Enter a code", description: "Please paste your Founding Member invite code.", variant: "destructive" });
+      return;
+    }
     setFoundingLoading(true);
     try {
-      await joinAsFoundingMember();
-      toast({ title: "Welcome, Founding Member! 🎉", description: "You now have full access to NomadNest." });
-      navigate("/dashboard");
+      const result = await redeemFoundingMemberCode(inviteCode);
+      if (result === "ok") {
+        toast({ title: "Welcome, Founding Member! 🎉", description: "You have free lifetime Combined access." });
+        setCodeDialogOpen(false);
+        navigate("/dashboard");
+      } else if (result === "exhausted") {
+        toast({
+          title: "All founding spots claimed",
+          description: "The code was valid but all 900 spots are taken. You can join with a paid plan.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Invalid invite code",
+          description: "That code wasn't recognised. Please check it and try again.",
+          variant: "destructive",
+        });
+      }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
