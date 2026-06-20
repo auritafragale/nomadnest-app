@@ -246,6 +246,57 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_id_verifications: {
+        Row: {
+          created_at: string
+          id: string
+          id_photo_path: string
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_path: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          id_photo_path: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_path: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          id_photo_path?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_path?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_id_verifications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_id_verifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           body: string
@@ -450,11 +501,13 @@ export type Database = {
           country: string | null
           created_at: string
           email: string
+          email_verified: boolean
           first_name: string | null
           founding_member: boolean | null
           full_name: string | null
           id: string
           id_verified: boolean | null
+          is_admin: boolean
           last_name: string | null
           location: string | null
           membership_expiry: string | null
@@ -462,6 +515,10 @@ export type Database = {
           membership_type: string | null
           onfido_applicant_id: string | null
           onfido_check_id: string | null
+          phone_line_type: string | null
+          phone_number: string | null
+          phone_verified: boolean
+          phone_verified_at: string | null
           updated_at: string
         }
         Insert: {
@@ -471,11 +528,13 @@ export type Database = {
           country?: string | null
           created_at?: string
           email: string
+          email_verified?: boolean
           first_name?: string | null
           founding_member?: boolean | null
           full_name?: string | null
           id: string
           id_verified?: boolean | null
+          is_admin?: boolean
           last_name?: string | null
           location?: string | null
           membership_expiry?: string | null
@@ -483,6 +542,10 @@ export type Database = {
           membership_type?: string | null
           onfido_applicant_id?: string | null
           onfido_check_id?: string | null
+          phone_line_type?: string | null
+          phone_number?: string | null
+          phone_verified?: boolean
+          phone_verified_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -492,11 +555,13 @@ export type Database = {
           country?: string | null
           created_at?: string
           email?: string
+          email_verified?: boolean
           first_name?: string | null
           founding_member?: boolean | null
           full_name?: string | null
           id?: string
           id_verified?: boolean | null
+          is_admin?: boolean
           last_name?: string | null
           location?: string | null
           membership_expiry?: string | null
@@ -504,6 +569,10 @@ export type Database = {
           membership_type?: string | null
           onfido_applicant_id?: string | null
           onfido_check_id?: string | null
+          phone_line_type?: string | null
+          phone_number?: string | null
+          phone_verified?: boolean
+          phone_verified_at?: string | null
           updated_at?: string
         }
         Relationships: []
