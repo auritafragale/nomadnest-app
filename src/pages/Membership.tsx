@@ -3,7 +3,16 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, Crown, Star, Sparkles, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
@@ -16,9 +25,11 @@ const Membership = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { subscribed, membershipType, foundingMember, loading, startCheckout, joinAsFoundingMember } = useMembership();
+  const { subscribed, membershipType, foundingMember, loading, startCheckout, redeemFoundingMemberCode } = useMembership();
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [foundingLoading, setFoundingLoading] = useState(false);
+  const [codeDialogOpen, setCodeDialogOpen] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
 
   const cancelled = searchParams.get("cancelled");
 
@@ -38,16 +49,40 @@ const Membership = () => {
     }
   };
 
-  const handleFoundingMember = async () => {
+  const openFoundingDialog = () => {
     if (!user) {
       navigate("/auth");
       return;
     }
+    setInviteCode("");
+    setCodeDialogOpen(true);
+  };
+
+  const handleRedeemCode = async () => {
+    if (!inviteCode.trim()) {
+      toast({ title: "Enter a code", description: "Please paste your Founding Member invite code.", variant: "destructive" });
+      return;
+    }
     setFoundingLoading(true);
     try {
-      await joinAsFoundingMember();
-      toast({ title: "Welcome, Founding Member! 🎉", description: "You now have full access to NomadNest." });
-      navigate("/dashboard");
+      const result = await redeemFoundingMemberCode(inviteCode);
+      if (result === "ok") {
+        toast({ title: "Welcome, Founding Member! 🎉", description: "You have free lifetime Combined access." });
+        setCodeDialogOpen(false);
+        navigate("/dashboard");
+      } else if (result === "exhausted") {
+        toast({
+          title: "All founding spots claimed",
+          description: "The code was valid but all 900 spots are taken. You can join with a paid plan.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Invalid invite code",
+          description: "That code wasn't recognised. Please check it and try again.",
+          variant: "destructive",
+        });
+      }
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -184,20 +219,15 @@ const Membership = () => {
                 <Crown className="w-10 h-10 text-accent mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-foreground mb-2">Join as a Founding Member</h3>
                 <p className="text-muted-foreground mb-6">
-                  Be one of the first to shape NomadNest. Founding Members get full Combined access — completely free, forever.
+                  Be one of the first to shape NomadNest. Founding Member spots are limited and require an invite code.
                 </p>
                 <Button
                   size="lg"
                   className="bg-accent text-accent-foreground hover:bg-accent/90"
-                  onClick={handleFoundingMember}
-                  disabled={foundingLoading}
+                  onClick={openFoundingDialog}
                 >
-                  {foundingLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <Crown className="w-4 h-4 mr-2" />
-                  )}
-                  Join as Founding Member — Free
+                  <Crown className="w-4 h-4 mr-2" />
+                  Redeem Invite Code
                 </Button>
               </div>
             )}
@@ -214,6 +244,41 @@ const Membership = () => {
           </>
         )}
       </div>
+
+      <Dialog open={codeDialogOpen} onOpenChange={setCodeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redeem Founding Member Code</DialogTitle>
+            <DialogDescription>
+              Enter your invite code to unlock free lifetime Combined membership. Spots are limited to 900.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="invite-code">Invite code</Label>
+            <Input
+              id="invite-code"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              placeholder="Enter your code"
+              autoFocus
+              disabled={foundingLoading}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !foundingLoading) handleRedeemCode();
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCodeDialogOpen(false)} disabled={foundingLoading}>
+              Cancel
+            </Button>
+            <Button onClick={handleRedeemCode} disabled={foundingLoading}>
+              {foundingLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Crown className="w-4 h-4 mr-2" />}
+              Redeem
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );
