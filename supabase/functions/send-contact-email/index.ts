@@ -53,8 +53,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send notification email to support
     const supportEmailResponse = await resend.emails.send({
-      from: "NomadNest Contact <onboarding@resend.dev>",
-      to: ["delivered@resend.dev"], // Replace with actual support email in production
+      from: "NomadNest Contact <noreply@nomadnest.global>",
+      to: ["support@nomadnest.global"],
       subject: `[${categoryLabel}] ${subject}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -76,7 +76,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send confirmation email to user
     const userEmailResponse = await resend.emails.send({
-      from: "NomadNest <onboarding@resend.dev>",
+      from: "NomadNest <noreply@nomadnest.global>",
       to: [email],
       subject: "We received your message!",
       html: `

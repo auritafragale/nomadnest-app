@@ -40,6 +40,7 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
+  Phone,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +54,7 @@ import { useDeleteAccount } from "@/hooks/useDeleteAccount";
 import { useProfileVisibility, useUpdateProfileVisibility } from "@/hooks/useProfileVisibility";
 import PushNotificationSettings from "@/components/settings/PushNotificationSettings";
 import { useVerification } from "@/hooks/useVerification";
+import { PhoneVerification } from "@/components/settings/PhoneVerification";
 
 interface Profile {
   first_name: string;
@@ -102,6 +104,10 @@ const Settings = () => {
   // Identity verification
   const { data: verificationData } = useVerification();
 
+  // Phone verification state (loaded alongside profile)
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+
   useEffect(() => {
     if (!user) {
       navigate("/auth");
@@ -116,7 +122,7 @@ const Settings = () => {
     try {
       const { data } = await supabase
         .from("profiles")
-        .select("first_name, last_name, avatar_url, city, country, email")
+        .select("first_name, last_name, avatar_url, city, country, email, phone_number, phone_verified")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -129,6 +135,8 @@ const Settings = () => {
           country: data.country || "",
           email: data.email || user.email || "",
         });
+        setPhoneVerified(!!(data as any).phone_verified);
+        setPhoneNumber((data as any).phone_number ?? null);
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -484,7 +492,20 @@ const Settings = () => {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Current Email</Label>
-                  <Input value={profile.email} disabled className="bg-muted" />
+                  <div className="flex items-center gap-2">
+                    <Input value={profile.email} disabled className="bg-muted flex-1" />
+                    {user?.email_confirmed_at ? (
+                      <Badge className="gap-1 bg-blue-50 text-blue-600 border border-blue-300 dark:bg-blue-950 dark:text-blue-400 whitespace-nowrap">
+                        <Mail className="w-3 h-3" />
+                        Email Verified
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="gap-1 text-muted-foreground whitespace-nowrap">
+                        <Mail className="w-3 h-3" />
+                        Not Verified
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="new_email">New Email</Label>
@@ -594,6 +615,26 @@ const Settings = () => {
                     </Button>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Phone Verification */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="w-5 h-5" />
+                  Phone Verification
+                </CardTitle>
+                <CardDescription>
+                  Verify your phone number to build additional trust with the community (optional)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PhoneVerification
+                  phoneVerified={phoneVerified}
+                  phoneNumber={phoneNumber}
+                  onVerified={() => { setPhoneVerified(true); fetchProfile(); }}
+                />
               </CardContent>
             </Card>
 

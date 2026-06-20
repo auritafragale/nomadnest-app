@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.redeem-founding-code]
 verify_jwt = true
+
+[functions.verify-phone-start]
+verify_jwt = true
+
+[functions.verify-phone-check]
+verify_jwt = true

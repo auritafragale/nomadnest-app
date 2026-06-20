@@ -49,6 +49,7 @@ import {
   Loader2,
   Star,
   Flag,
+  Phone,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
@@ -93,6 +94,8 @@ interface Profile {
   city: string | null;
   country: string | null;
   founding_member: boolean | null;
+  email_verified: boolean | null;
+  phone_verified: boolean | null;
 }
 
 interface Listing {
@@ -143,7 +146,7 @@ const SitterDetail = () => {
             .maybeSingle(),
           supabase
             .from("profiles")
-            .select("first_name, last_name, avatar_url, city, country, founding_member")
+            .select("first_name, last_name, avatar_url, city, country, founding_member, email_verified, phone_verified")
             .eq("id", userId)
             .maybeSingle(),
         ]);
@@ -415,9 +418,21 @@ const SitterDetail = () => {
                     <h1 className="text-2xl md:text-3xl font-bold flex-1 min-w-0">{name}</h1>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {sitter.id_verified && (
-                        <Badge variant="outline" className="gap-1">
+                        <Badge variant="outline" className="gap-1 border-green-500 text-green-700 dark:text-green-400">
                           <CheckCircle className="w-3 h-3" />
-                          Verified
+                          ID Verified
+                        </Badge>
+                      )}
+                      {profile?.email_verified && (
+                        <Badge variant="outline" className="gap-1 border-blue-400 text-blue-600 dark:text-blue-400">
+                          <Mail className="w-3 h-3" />
+                          Email Verified
+                        </Badge>
+                      )}
+                      {profile?.phone_verified && (
+                        <Badge variant="outline" className="gap-1 border-purple-400 text-purple-600 dark:text-purple-400">
+                          <Phone className="w-3 h-3" />
+                          Phone Verified
                         </Badge>
                       )}
                       {sitter.background_check && (

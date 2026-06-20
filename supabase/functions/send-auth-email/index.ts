@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
     }
 
     const { error } = await resend.emails.send({
-      from: 'NomadNest <onboarding@resend.dev>',
+      from: 'NomadNest <noreply@nomadnest.global>',
       to: [user.email],
       subject,
       html,

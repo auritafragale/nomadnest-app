@@ -18,7 +18,10 @@ import {
   Home,
   Calendar,
   Flag,
+  Mail,
+  CheckCircle,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
 import OwnerReviewsSection from "@/components/reviews/OwnerReviewsSection";
@@ -41,6 +44,7 @@ interface Profile {
   city: string | null;
   country: string | null;
   founding_member: boolean | null;
+  email_verified: boolean | null;
 }
 
 interface Listing {
@@ -80,7 +84,7 @@ const OwnerDetail = () => {
             .maybeSingle(),
           supabase
             .from("profiles")
-            .select("first_name, last_name, avatar_url, city, country, founding_member")
+            .select("first_name, last_name, avatar_url, city, country, founding_member, email_verified")
             .eq("id", userId)
             .maybeSingle(),
           supabase
@@ -217,9 +221,17 @@ const OwnerDetail = () => {
                   <div>
                     <h1 className="text-2xl md:text-3xl font-bold mb-2">{name}</h1>
                     <p className="text-base md:text-lg text-muted-foreground">Pet Parent</p>
-                    {profile.founding_member && (
-                      <FoundingMemberBadge className="mt-2" />
-                    )}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {profile.email_verified && (
+                        <Badge variant="outline" className="gap-1 border-blue-400 text-blue-600 dark:text-blue-400">
+                          <Mail className="w-3 h-3" />
+                          Email Verified
+                        </Badge>
+                      )}
+                      {profile.founding_member && (
+                        <FoundingMemberBadge />
+                      )}
+                    </div>
                   </div>
                 </div>
 

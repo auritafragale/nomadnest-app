@@ -5,9 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
+import { Loader2, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft, Upload, Clock } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { useVerification } from "@/hooks/useVerification";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 declare global {
   interface Window {
@@ -81,6 +83,7 @@ const VerifyIdentity = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: verificationData, isLoading: verificationLoading } = useVerification();
   const onfidoRef = useRef<{ tearDown: () => void } | null>(null);
 
@@ -88,6 +91,12 @@ const VerifyIdentity = () => {
   const [errorMsg, setErrorMsg] = useState("");
   const [sdkToken, setSdkToken] = useState("");
   const [applicantId, setApplicantId] = useState("");
+
+  // Manual ID review state
+  const [idFile, setIdFile] = useState<File | null>(null);
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const [manualUploading, setManualUploading] = useState(false);
+  const [manualSubmitted, setManualSubmitted] = useState(false);
 
   // Teardown on unmount
   useEffect(() => {
@@ -181,6 +190,42 @@ const VerifyIdentity = () => {
 
   if (!user) return <Navigate to="/auth" replace />;
 
+  const handleManualSubmit = async () => {
+    if (!idFile || !selfieFile) {
+      toast({ variant: "destructive", title: "Please upload both files" });
+      return;
+    }
+    setManualUploading(true);
+    try {
+      const uploadFile = async (file: File, name: string) => {
+        const path = `${user.id}/${name}-${Date.now()}.${file.name.split(".").pop()}`;
+        const { error } = await supabase.storage
+          .from("id-verification-documents")
+          .upload(path, file, { upsert: false });
+        if (error) throw error;
+        return path;
+      };
+
+      const [idPath, selfiePath] = await Promise.all([
+        uploadFile(idFile, "id"),
+        uploadFile(selfieFile, "selfie"),
+      ]);
+
+      const { error: insertError } = await supabase
+        .from("manual_id_verifications")
+        .insert({ user_id: user.id, id_photo_path: idPath, selfie_path: selfiePath });
+
+      if (insertError) throw insertError;
+
+      setManualSubmitted(true);
+      toast({ title: "Submitted for review", description: "We'll notify you once reviewed, usually within 24-48 hours." });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Upload failed", description: err.message });
+    } finally {
+      setManualUploading(false);
+    }
+  };
+
   const handleStart = async () => {
     setStep("loading_sdk");
     setErrorMsg("");
@@ -243,39 +288,96 @@ const VerifyIdentity = () => {
           </Button>
 
           {step === "intro" && (
-            <Card>
-              <CardHeader className="text-center">
-                <div className="flex justify-center mb-4">
-                  <ShieldCheck className="w-14 h-14 text-primary" />
-                </div>
-                <CardTitle className="text-2xl">Verify Your Identity</CardTitle>
-                <CardDescription className="text-base">
-                  Build trust with the community by verifying your identity. Verified members get more applications and bookings.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  {[
-                    "Takes about 5 minutes",
-                    "You'll need a government-issued photo ID",
-                    "A short selfie photo to match your ID",
-                    "Your data is handled securely by Onfido",
-                  ].map((item) => (
-                    <div key={item} className="flex items-center gap-3 text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <span>{item}</span>
+            <div className="space-y-6">
+              {/* Onfido (paused) */}
+              <Card className="opacity-60">
+                <CardHeader className="text-center">
+                  <div className="flex justify-center mb-4">
+                    <ShieldCheck className="w-14 h-14 text-muted-foreground" />
+                  </div>
+                  <CardTitle className="text-2xl">Automated ID Check</CardTitle>
+                  <CardDescription className="text-base">
+                    Powered by Onfido — temporarily paused.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-3">
+                    {[
+                      "Takes about 5 minutes",
+                      "You'll need a government-issued photo ID",
+                      "A short selfie photo to match your ID",
+                      "Your data is handled securely by Onfido",
+                    ].map((item) => (
+                      <div key={item} className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <Button className="w-full" disabled>
+                    Temporarily Unavailable
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Manual review (active alternative) */}
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-center mb-4">
+                    <Upload className="w-14 h-14 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl text-center">Manual Review</CardTitle>
+                  <CardDescription className="text-center">
+                    Upload a photo of your ID and a selfie. Our team reviews submissions within 24–48 hours.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  {manualSubmitted ? (
+                    <div className="flex flex-col items-center gap-3 py-6 text-center">
+                      <Clock className="w-12 h-12 text-primary" />
+                      <p className="font-semibold">Submitted — under review</p>
+                      <p className="text-sm text-muted-foreground">
+                        We'll notify you once a team member has reviewed your documents.
+                      </p>
                     </div>
-                  ))}
-                </div>
-                <Button
-                  className="w-full"
-                  style={{ backgroundColor: "#E8735A", color: "white" }}
-                  onClick={handleStart}
-                >
-                  Start Verification
-                </Button>
-              </CardContent>
-            </Card>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="id_photo">Photo ID (passport, driving licence, national ID)</Label>
+                        <input
+                          id="id_photo"
+                          type="file"
+                          accept="image/*,application/pdf"
+                          className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary/10 file:px-4 file:py-2 file:text-sm file:font-medium hover:file:bg-primary/20 cursor-pointer"
+                          onChange={(e) => setIdFile(e.target.files?.[0] ?? null)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="selfie">Selfie (holding your ID or looking at camera)</Label>
+                        <input
+                          id="selfie"
+                          type="file"
+                          accept="image/*"
+                          className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary/10 file:px-4 file:py-2 file:text-sm file:font-medium hover:file:bg-primary/20 cursor-pointer"
+                          onChange={(e) => setSelfieFile(e.target.files?.[0] ?? null)}
+                        />
+                      </div>
+                      <Button
+                        className="w-full"
+                        style={{ backgroundColor: "#E8735A", color: "white" }}
+                        onClick={handleManualSubmit}
+                        disabled={manualUploading || !idFile || !selfieFile}
+                      >
+                        {manualUploading
+                          ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Uploading…</>
+                          : <><Upload className="w-4 h-4 mr-2" />Submit for Review</>
+                        }
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {step === "loading_sdk" && (

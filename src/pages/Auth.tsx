@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Loader2, Tag } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Loader2, Tag, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -18,7 +19,7 @@ const passwordSchema = z.string().min(6, "Password must be at least 6 characters
 const Auth = () => {
   const [searchParams] = useSearchParams();
   const isSignup = searchParams.get("signup") === "true";
-  const [mode, setMode] = useState<"login" | "signup">(isSignup ? "signup" : "login");
+  const [mode, setMode] = useState<"login" | "signup" | "check_email">(isSignup ? "signup" : "login");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -95,10 +96,10 @@ const Auth = () => {
           if (inviteCode.trim()) {
             sessionStorage.setItem("pendingInviteCode", inviteCode.trim().toUpperCase());
           }
-          toast({
-            title: "Welcome to NomadNest!",
-            description: "Your account has been created. Let's set up your profile.",
-          });
+          // Switch to the "check your email" holding state.
+          // If auto-confirm is on the auth listener will fire and redirect
+          // before the user even reads this screen — that's fine.
+          setMode("check_email");
         }
       } else {
         const { error } = await signIn(email, password);
@@ -114,6 +115,57 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  const handleResendConfirmation = async () => {
+    if (!email) return;
+    setIsLoading(true);
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    setIsLoading(false);
+    if (error) {
+      toast({ variant: "destructive", title: "Could not resend", description: error.message });
+    } else {
+      toast({ title: "Email resent", description: "Check your inbox again." });
+    }
+  };
+
+  if (mode === "check_email") {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: "#FAF7F2" }}>
+        <div className="w-full max-w-sm">
+          <Link to="/" className="flex items-center justify-center mb-8 hover:opacity-80 transition-opacity">
+            <img src={logo} alt="NomadNest" className="h-10 w-auto" />
+          </Link>
+          <Card variant="elevated" className="animate-scale-in">
+            <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold mb-1">Check your email</h2>
+                <p className="text-sm text-muted-foreground">
+                  We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account, then come back here to log in.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleResendConfirmation}
+                disabled={isLoading}
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Resend confirmation email"}
+              </Button>
+              <button
+                className="text-sm text-primary hover:underline"
+                onClick={() => setMode("login")}
+              >
+                Back to login
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: "#FAF7F2" }}>
@@ -132,8 +184,8 @@ const Auth = () => {
               {mode === "login" ? "Welcome back" : "Create your profile"}
             </CardTitle>
             <CardDescription>
-              {mode === "login" 
-                ? "Log in to continue your pet sitting journey" 
+              {mode === "login"
+                ? "Log in to continue your pet sitting journey"
                 : "Join thousands of pet lovers worldwide"
               }
             </CardDescription>

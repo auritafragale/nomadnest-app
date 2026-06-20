@@ -23,7 +23,7 @@ const sendEmail = async (to: string, subject: string, html: string) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "NomadNest <notifications@resend.dev>",
+      from: "NomadNest <noreply@nomadnest.global>",
       to: [to],
       subject,
       html,
