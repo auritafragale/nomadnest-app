@@ -240,6 +240,7 @@ const Membership = () => {
                   You have full Combined access to NomadNest — forever. Thank you for being an early supporter.
                 </p>
               </div>
+            )}
           </>
         )}
       </div>
