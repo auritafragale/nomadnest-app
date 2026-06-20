@@ -151,7 +151,7 @@ export const useMembership = () => {
     checkSubscription,
     startCheckout,
     openPortal,
-    joinAsFoundingMember,
+    redeemFoundingMemberCode,
     hasAccess,
   };
 };
