@@ -240,10 +240,44 @@ const Membership = () => {
                   You have full Combined access to NomadNest — forever. Thank you for being an early supporter.
                 </p>
               </div>
-            )}
           </>
         )}
       </div>
+
+      <Dialog open={codeDialogOpen} onOpenChange={setCodeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redeem Founding Member Code</DialogTitle>
+            <DialogDescription>
+              Enter your invite code to unlock free lifetime Combined membership. Spots are limited to 900.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="invite-code">Invite code</Label>
+            <Input
+              id="invite-code"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              placeholder="Enter your code"
+              autoFocus
+              disabled={foundingLoading}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !foundingLoading) handleRedeemCode();
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCodeDialogOpen(false)} disabled={foundingLoading}>
+              Cancel
+            </Button>
+            <Button onClick={handleRedeemCode} disabled={foundingLoading}>
+              {foundingLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Crown className="w-4 h-4 mr-2" />}
+              Redeem
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );
