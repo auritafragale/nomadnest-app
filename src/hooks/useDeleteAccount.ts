@@ -2,12 +2,10 @@ import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 
 export const useDeleteAccount = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: async () => {
@@ -65,12 +63,13 @@ export const useDeleteAccount = () => {
       const { error: deleteAuthError } = await supabase.functions.invoke("delete-account");
       if (deleteAuthError) throw deleteAuthError;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Account deleted",
         description: "Your account and all data have been removed.",
       });
-      navigate("/");
+      await supabase.auth.signOut();
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
