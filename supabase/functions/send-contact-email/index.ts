@@ -58,6 +58,9 @@ const handler = async (req: Request): Promise<Response> => {
       subject: `[${categoryLabel}] ${subject}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <img src="https://nomadnest.global/logo-email.png" alt="NomadNest" style="max-width: 160px;" />
+          </div>
           <h2 style="color: #333;">New Contact Form Submission</h2>
           <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 8px 0;"><strong>From:</strong> ${name} (${email})</p>
@@ -81,6 +84,9 @@ const handler = async (req: Request): Promise<Response> => {
       subject: "We received your message!",
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <img src="https://nomadnest.global/logo-email.png" alt="NomadNest" style="max-width: 160px;" />
+          </div>
           <h1 style="color: #333;">Thank you for reaching out, ${name}!</h1>
           <p style="color: #666; font-size: 16px; line-height: 1.6;">
             We've received your message and will get back to you within 24-48 hours.
@@ -89,7 +95,11 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="margin: 8px 0;"><strong>Category:</strong> ${categoryLabel}</p>
             <p style="margin: 8px 0;"><strong>Subject:</strong> ${subject}</p>
           </div>
-          <p style="color: #666; font-size: 14px;">
+          <h3 style="color: #333;">Your message:</h3>
+          <div style="background: #fff; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <p style="white-space: pre-wrap; margin: 0;">${message}</p>
+          </div>
+          <p style="color: #666; font-size: 14px; margin-top: 24px;">
             Best regards,<br>
             The NomadNest Team
           </p>

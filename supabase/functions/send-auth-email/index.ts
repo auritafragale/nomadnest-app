@@ -1,18 +1,19 @@
 import React from "https://esm.sh/react@18.3.1"
 import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0"
 import { Resend } from "https://esm.sh/resend@4.0.0"
-import { 
-  renderAsync, 
-  Html, 
-  Head, 
-  Body, 
-  Container, 
-  Section, 
-  Heading, 
-  Text, 
-  Link, 
-  Hr, 
-  Preview 
+import {
+  renderAsync,
+  Html,
+  Head,
+  Body,
+  Container,
+  Section,
+  Heading,
+  Text,
+  Link,
+  Hr,
+  Preview,
+  Img,
 } from "https://esm.sh/@react-email/components@0.0.22"
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
@@ -103,7 +104,7 @@ const PasswordResetEmail = ({
     React.createElement(Body, { style: styles.main },
       React.createElement(Container, { style: styles.container },
         React.createElement(Section, { style: styles.logoSection },
-          React.createElement(Text, { style: { fontSize: '24px', fontWeight: 'bold', color: '#1a1a1a', margin: '0' } }, "🏠 NomadNest")
+          React.createElement(Img, { src: 'https://nomadnest.global/logo-email.png', alt: 'NomadNest', width: '160' })
         ),
         React.createElement(Heading, { style: styles.h1 }, "Reset Your Password"),
         React.createElement(Text, { style: styles.text },
@@ -180,7 +181,9 @@ Deno.serve(async (req) => {
       html = `
         <div style="font-family: sans-serif; padding: 20px; background: #fdf8f6;">
           <div style="max-width: 560px; margin: 0 auto; background: #fff; padding: 40px 20px; border-radius: 12px;">
-            <h1 style="text-align: center; color: #1a1a1a;">🏠 NomadNest</h1>
+            <div style="text-align: center; margin-bottom: 24px;">
+              <img src="https://nomadnest.global/logo-email.png" alt="NomadNest" style="max-width: 160px;" />
+            </div>
             <p style="text-align: center; color: #4a4a4a;">Click the link below to complete your action:</p>
             <p style="text-align: center;">
               <a href="${Deno.env.get('SUPABASE_URL')}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}" 

@@ -283,6 +283,9 @@ const handler = async (req: Request): Promise<Response> => {
         </style>
       </head>
       <body>
+        <div style="text-align: center; margin-bottom: 24px;">
+          <img src="https://nomadnest.global/logo-email.png" alt="NomadNest" style="max-width: 160px;" />
+        </div>
         ${emailContent.html}
         <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
         <p style="font-size: 12px; color: #888;">
