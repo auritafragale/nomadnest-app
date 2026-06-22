@@ -46,7 +46,7 @@ const AdminVerifications = () => {
 
   // Check admin status then load submissions
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || (!user && !authLoading)) return;
     if (!user) { navigate("/auth"); return; }
 
     const init = async () => {
