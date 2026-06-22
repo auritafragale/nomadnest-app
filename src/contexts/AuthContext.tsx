@@ -10,6 +10,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   role: AppRole;
+  roleLoading: boolean;
   onboardingCompleted: boolean;
   signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -32,21 +33,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<AppRole>(null);
+  const [roleLoading, setRoleLoading] = useState(true);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
 
   const fetchUserRole = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("user_roles")
-      .select("role, onboarding_completed")
-      .eq("user_id", userId)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role, onboarding_completed")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-    if (data && !error) {
-      setRole(data.role as AppRole);
-      setOnboardingCompleted(data.onboarding_completed ?? false);
-    } else {
-      setRole(null);
-      setOnboardingCompleted(false);
+      if (data && !error) {
+        setRole(data.role as AppRole);
+        setOnboardingCompleted(data.onboarding_completed ?? false);
+      } else {
+        setRole(null);
+        setOnboardingCompleted(false);
+      }
+    } finally {
+      setRoleLoading(false);
     }
   };
 
@@ -65,12 +71,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         // Defer role fetching with setTimeout to avoid deadlock
         if (session?.user) {
+          setRoleLoading(true);
           setTimeout(() => {
             fetchUserRole(session.user.id);
           }, 0);
         } else {
           setRole(null);
           setOnboardingCompleted(false);
+          setRoleLoading(false);
         }
         setLoading(false);
       }
@@ -81,13 +89,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        setRoleLoading(true);
         fetchUserRole(session.user.id);
+      } else {
+        setRoleLoading(false);
       }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -129,6 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         session,
         loading,
         role,
+        roleLoading,
         onboardingCompleted,
         signUp,
         signIn,
