@@ -46,7 +46,14 @@ const AdminVerifications = () => {
 
   // Check admin status then load submissions
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || (!user && !authLoading)) {
+      if (authLoading) return;
+      // wait one tick for session restoration before redirecting
+      const t = setTimeout(() => {
+        if (!user) navigate("/auth");
+      }, 100);
+      return () => clearTimeout(t);
+    }
     if (!user) { navigate("/auth"); return; }
 
     const init = async () => {
