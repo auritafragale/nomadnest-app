@@ -266,7 +266,7 @@ const AdminVerifications = () => {
                         sub={sub}
                         notes={notes[sub.id] ?? ""}
                         onNotesChange={(v) => setNotes(n => ({ ...n, [sub.id]: v }))}
-                        onDecision={(d) => handleDecision(sub.id, sub.user_id, d)}
+                        onDecision={(d) => d === "approved" ? handleDecision(sub.id, sub.user_id, "approved") : openRejectDialog(sub)}
                         acting={acting === sub.id}
                         getSignedUrl={getSignedUrl}
                       />
@@ -298,6 +298,54 @@ const AdminVerifications = () => {
           )}
         </div>
       </main>
+
+      <Dialog open={!!rejectingSub} onOpenChange={(open) => !open && setRejectingSub(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject ID submission</DialogTitle>
+            <DialogDescription>
+              Select a reason. The member will be notified by email and in-app with this explanation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reject-reason">Reason <span className="text-destructive">*</span></Label>
+              <Select value={rejectReason} onValueChange={setRejectReason}>
+                <SelectTrigger id="reject-reason">
+                  <SelectValue placeholder="Select a reason..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {REJECTION_REASONS.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reject-notes">Additional notes (optional)</Label>
+              <Textarea
+                id="reject-notes"
+                placeholder="Extra context for the member (optional)"
+                value={rejectNotes}
+                onChange={(e) => setRejectNotes(e.target.value.slice(0, 500))}
+                rows={3}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground text-right">{rejectNotes.length}/500</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectingSub(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={confirmReject}
+              disabled={!rejectReason || acting === rejectingSub?.id}
+            >
+              {acting === rejectingSub?.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Reject"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
