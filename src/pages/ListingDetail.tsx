@@ -262,6 +262,8 @@ const ListingDetail = () => {
           return;
         }
 
+        const listingRow = listingData as any;
+
         // Fetch pets and sit_dates
         const [petsResult, datesResult, profileResult] = await Promise.all([
           supabase.from("pets").select("*").eq("listing_id", id),
@@ -269,12 +271,12 @@ const ListingDetail = () => {
           supabase
             .from("profiles")
             .select("first_name, last_name, avatar_url, city, country, founding_member, full_name")
-            .eq("id", listingData.owner_user_id)
+            .eq("id", listingRow.owner_user_id)
             .maybeSingle(),
         ]);
 
         setListing({
-          ...listingData,
+          ...listingRow,
           pets: petsResult.data || [],
           sit_dates: datesResult.data || [],
           profiles: profileResult.data || null,
