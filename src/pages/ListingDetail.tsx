@@ -241,7 +241,14 @@ const ListingDetail = () => {
         // Fetch listing separately due to no FK relationship with profiles
         const { data: listingData, error: listingError } = await supabase
           .from("listings")
-          .select("*")
+          .select(
+            "id, owner_user_id, title, description, city, country, area, " +
+            "home_type, sleeping_arrangement, amenities, wifi_quality, " +
+            "house_rules, house_rules_other, home_care_tasks, home_care_tasks_other, " +
+            "requirements, requirements_other, communication_style, " +
+            "ideal_sitter_description, photos, status, latitude, longitude, " +
+            "created_at, updated_at"
+          )
           .eq("id", id)
           .maybeSingle();
 
