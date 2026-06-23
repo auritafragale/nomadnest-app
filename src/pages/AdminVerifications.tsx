@@ -8,8 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle2, XCircle, Clock, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+const REJECTION_REASONS = [
+  "Photo ID is blurry or unreadable",
+  "ID document appears to be expired",
+  "Name on ID does not match your profile name",
+  "Selfie does not match the ID photo",
+  "Wrong document type submitted — please upload a government-issued photo ID",
+  "ID is partially covered or cropped — please resubmit showing the full document",
+  "Other (see notes below)",
+];
 
 interface Submission {
   id: string;
@@ -43,6 +56,9 @@ const AdminVerifications = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [acting, setActing] = useState<string | null>(null);
+  const [rejectingSub, setRejectingSub] = useState<Submission | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>("");
+  const [rejectNotes, setRejectNotes] = useState<string>("");
 
   // Check admin status then load submissions
   useEffect(() => {
@@ -102,14 +118,25 @@ const AdminVerifications = () => {
     return data?.signedUrl ?? null;
   };
 
-  const handleDecision = async (submissionId: string, userId: string, decision: "approved" | "rejected") => {
+  const handleDecision = async (
+    submissionId: string,
+    userId: string,
+    decision: "approved" | "rejected",
+    rejectionReason?: string,
+    rejectionNotes?: string,
+  ) => {
     setActing(submissionId);
     try {
+      const combinedNotes =
+        decision === "rejected"
+          ? `${rejectionReason}${rejectionNotes ? `: ${rejectionNotes}` : ""}`
+          : (notes[submissionId] ?? null);
+
       const updatePayload: Record<string, unknown> = {
         status: decision,
         reviewed_by: user!.id,
         reviewed_at: new Date().toISOString(),
-        notes: notes[submissionId] ?? null,
+        notes: combinedNotes,
       };
 
       const { error: updateError } = await supabase
@@ -120,13 +147,39 @@ const AdminVerifications = () => {
       if (updateError) throw updateError;
 
       if (decision === "approved") {
-        // Also flip profiles.id_verified so the badge logic works regardless
-        // of whether Onfido or manual review was used.
+        // Flip profiles.id_verified
         const { error: profileError } = await supabase
           .from("profiles")
           .update({ id_verified: true })
           .eq("id", userId);
         if (profileError) throw profileError;
+
+        // In-app notification
+        await supabase.from("notifications").insert({
+          user_id: userId,
+          type: "id_verification_approved",
+          title: "ID Verified ✓",
+          message: "Your ID has been verified. Your profile now shows the ID Verified badge.",
+          data: {},
+        });
+
+        // Email via existing send-notification-email
+        await supabase.functions.invoke("send-notification-email", {
+          body: {
+            type: "id_verification_approved",
+            recipientUserId: userId,
+            data: { appUrl: window.location.origin },
+          },
+        });
+      } else {
+        // Rejected — call notify-id-rejected (handles email + in-app notification)
+        await supabase.functions.invoke("notify-id-rejected", {
+          body: {
+            userId,
+            reason: rejectionReason,
+            notes: rejectionNotes || undefined,
+          },
+        });
       }
 
       toast({ title: decision === "approved" ? "Approved ✓" : "Rejected", description: `Submission ${submissionId.slice(0, 8)} has been ${decision}.` });
@@ -136,6 +189,19 @@ const AdminVerifications = () => {
     } finally {
       setActing(null);
     }
+  };
+
+  const openRejectDialog = (sub: Submission) => {
+    setRejectingSub(sub);
+    setRejectReason("");
+    setRejectNotes("");
+  };
+
+  const confirmReject = async () => {
+    if (!rejectingSub || !rejectReason) return;
+    const sub = rejectingSub;
+    setRejectingSub(null);
+    await handleDecision(sub.id, sub.user_id, "rejected", rejectReason, rejectNotes);
   };
 
   if (authLoading || isAdmin === null) {
@@ -200,7 +266,7 @@ const AdminVerifications = () => {
                         sub={sub}
                         notes={notes[sub.id] ?? ""}
                         onNotesChange={(v) => setNotes(n => ({ ...n, [sub.id]: v }))}
-                        onDecision={(d) => handleDecision(sub.id, sub.user_id, d)}
+                        onDecision={(d) => d === "approved" ? handleDecision(sub.id, sub.user_id, "approved") : openRejectDialog(sub)}
                         acting={acting === sub.id}
                         getSignedUrl={getSignedUrl}
                       />
@@ -232,6 +298,54 @@ const AdminVerifications = () => {
           )}
         </div>
       </main>
+
+      <Dialog open={!!rejectingSub} onOpenChange={(open) => !open && setRejectingSub(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject ID submission</DialogTitle>
+            <DialogDescription>
+              Select a reason. The member will be notified by email and in-app with this explanation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reject-reason">Reason <span className="text-destructive">*</span></Label>
+              <Select value={rejectReason} onValueChange={setRejectReason}>
+                <SelectTrigger id="reject-reason">
+                  <SelectValue placeholder="Select a reason..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {REJECTION_REASONS.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reject-notes">Additional notes (optional)</Label>
+              <Textarea
+                id="reject-notes"
+                placeholder="Extra context for the member (optional)"
+                value={rejectNotes}
+                onChange={(e) => setRejectNotes(e.target.value.slice(0, 500))}
+                rows={3}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground text-right">{rejectNotes.length}/500</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectingSub(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={confirmReject}
+              disabled={!rejectReason || acting === rejectingSub?.id}
+            >
+              {acting === rejectingSub?.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Reject"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
