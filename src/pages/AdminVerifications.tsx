@@ -56,6 +56,9 @@ const AdminVerifications = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [acting, setActing] = useState<string | null>(null);
+  const [rejectingSub, setRejectingSub] = useState<Submission | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>("");
+  const [rejectNotes, setRejectNotes] = useState<string>("");
 
   // Check admin status then load submissions
   useEffect(() => {
@@ -115,14 +118,25 @@ const AdminVerifications = () => {
     return data?.signedUrl ?? null;
   };
 
-  const handleDecision = async (submissionId: string, userId: string, decision: "approved" | "rejected") => {
+  const handleDecision = async (
+    submissionId: string,
+    userId: string,
+    decision: "approved" | "rejected",
+    rejectionReason?: string,
+    rejectionNotes?: string,
+  ) => {
     setActing(submissionId);
     try {
+      const combinedNotes =
+        decision === "rejected"
+          ? `${rejectionReason}${rejectionNotes ? `: ${rejectionNotes}` : ""}`
+          : (notes[submissionId] ?? null);
+
       const updatePayload: Record<string, unknown> = {
         status: decision,
         reviewed_by: user!.id,
         reviewed_at: new Date().toISOString(),
-        notes: notes[submissionId] ?? null,
+        notes: combinedNotes,
       };
 
       const { error: updateError } = await supabase
@@ -133,13 +147,39 @@ const AdminVerifications = () => {
       if (updateError) throw updateError;
 
       if (decision === "approved") {
-        // Also flip profiles.id_verified so the badge logic works regardless
-        // of whether Onfido or manual review was used.
+        // Flip profiles.id_verified
         const { error: profileError } = await supabase
           .from("profiles")
           .update({ id_verified: true })
           .eq("id", userId);
         if (profileError) throw profileError;
+
+        // In-app notification
+        await supabase.from("notifications").insert({
+          user_id: userId,
+          type: "id_verification_approved",
+          title: "ID Verified ✓",
+          message: "Your ID has been verified. Your profile now shows the ID Verified badge.",
+          data: {},
+        });
+
+        // Email via existing send-notification-email
+        await supabase.functions.invoke("send-notification-email", {
+          body: {
+            type: "id_verification_approved",
+            recipientUserId: userId,
+            data: { appUrl: window.location.origin },
+          },
+        });
+      } else {
+        // Rejected — call notify-id-rejected (handles email + in-app notification)
+        await supabase.functions.invoke("notify-id-rejected", {
+          body: {
+            userId,
+            reason: rejectionReason,
+            notes: rejectionNotes || undefined,
+          },
+        });
       }
 
       toast({ title: decision === "approved" ? "Approved ✓" : "Rejected", description: `Submission ${submissionId.slice(0, 8)} has been ${decision}.` });
@@ -149,6 +189,19 @@ const AdminVerifications = () => {
     } finally {
       setActing(null);
     }
+  };
+
+  const openRejectDialog = (sub: Submission) => {
+    setRejectingSub(sub);
+    setRejectReason("");
+    setRejectNotes("");
+  };
+
+  const confirmReject = async () => {
+    if (!rejectingSub || !rejectReason) return;
+    const sub = rejectingSub;
+    setRejectingSub(null);
+    await handleDecision(sub.id, sub.user_id, "rejected", rejectReason, rejectNotes);
   };
 
   if (authLoading || isAdmin === null) {
