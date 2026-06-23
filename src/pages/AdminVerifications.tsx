@@ -8,8 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle2, XCircle, Clock, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+const REJECTION_REASONS = [
+  "Photo ID is blurry or unreadable",
+  "ID document appears to be expired",
+  "Name on ID does not match your profile name",
+  "Selfie does not match the ID photo",
+  "Wrong document type submitted — please upload a government-issued photo ID",
+  "ID is partially covered or cropped — please resubmit showing the full document",
+  "Other (see notes below)",
+];
 
 interface Submission {
   id: string;
