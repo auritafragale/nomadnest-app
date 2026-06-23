@@ -35,3 +35,6 @@ verify_jwt = true
 
 [functions.verify-phone-check]
 verify_jwt = true
+
+[functions.notify-id-rejected]
+verify_jwt = true

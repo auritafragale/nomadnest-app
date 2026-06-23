@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 interface NotificationEmailRequest {
-  type: "new_application" | "application_status" | "new_message" | "invite" | "review";
+  type: "new_application" | "application_status" | "new_message" | "invite" | "review" | "id_verification_approved";
   recipientUserId: string;
   data: Record<string, string>;
 }
@@ -191,6 +191,19 @@ const getEmailContent = (type: string, data: Record<string, string>) => {
         `,
         pushTitle: "New Review!",
         pushBody: `${data.reviewerName} left you a ${data.rating}-star review`,
+        pushUrl: "/dashboard",
+      };
+    case "id_verification_approved":
+      return {
+        subject: "Your ID has been verified ✓",
+        html: `
+          <h2>You're verified! 🎉</h2>
+          <p>Great news — your ID has been successfully verified.</p>
+          <p>Your profile now displays the <strong>ID Verified</strong> badge, helping you build trust faster with the NomadNest community.</p>
+          <p><a href="${data.appUrl}/dashboard">Go to your dashboard</a></p>
+        `,
+        pushTitle: "ID Verified ✓",
+        pushBody: "Your ID has been verified. Your profile now shows the badge.",
         pushUrl: "/dashboard",
       };
     default:
