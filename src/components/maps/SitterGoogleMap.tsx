@@ -227,7 +227,7 @@ const MapContent = ({ sitters }: SitterGoogleMapProps) => {
         className="w-full h-full"
         onClick={() => setSelectedUserId(null)}
       >
-        <MapSearchBox />
+        
         <FitBoundsInner sitters={sittersWithCoords} />
         <ClusteredSitterMarkers
           sitters={sittersWithCoords}
