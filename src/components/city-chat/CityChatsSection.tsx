@@ -54,10 +54,13 @@ const CityChatsSection = () => {
   return (
     <section className="mt-10 space-y-10">
       <div>
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-2">
           <MessageCircle className="w-5 h-5 text-primary" />
           <h2 className="text-2xl font-display font-semibold">Your City Chats</h2>
         </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Join conversations with nomads in cities around the world. Available to nomads based in the city, or with a confirmed sit there within 7 days.
+        </p>
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
