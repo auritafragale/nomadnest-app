@@ -94,7 +94,7 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         });
 
         let filteredData: SitterWithProfile[] = sitterData
-          .filter((sitter) => sitter.is_active !== false)
+          .filter((sitter) => sitter.is_active !== false && sitter.is_visible === true)
           .map((sitter) => {
             const ratingData = ratingsMap.get(sitter.user_id);
             return {
