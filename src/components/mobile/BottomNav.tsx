@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Search, MessageCircle, User, MapPin, LayoutDashboard } from "lucide-react";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { cn } from "@/lib/utils";
 
 type Tab = {
@@ -14,9 +15,24 @@ const BottomNav = () => {
   const location = useLocation();
   const { unreadCount } = useUnreadMessages();
   const { user, role } = useAuth();
+  const { activeRole } = useActiveRole();
 
   const sitsTab: Tab = { href: "/browse-sits", label: "Sits", icon: Search };
   const chatsTab: Tab = { href: "/inbox", label: "Chats", icon: MessageCircle };
+
+  const ownerTabs: Tab[] = [
+    sitsTab,
+    { href: "/browse-sitters", label: "Browse Sitters", icon: User },
+    chatsTab,
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  ];
+
+  const sitterTabs: Tab[] = [
+    sitsTab,
+    { href: "/find-nomads", label: "Nomads Near Me", icon: MapPin },
+    chatsTab,
+    { href: "/settings", label: "Profile", icon: User },
+  ];
 
   let tabs: Tab[];
   if (!user) {
@@ -27,21 +43,13 @@ const BottomNav = () => {
       { href: "/auth", label: "Profile", icon: User },
     ];
   } else if (role === "owner") {
-    tabs = [
-      sitsTab,
-      { href: "/browse-sitters", label: "Browse Sitters", icon: User },
-      chatsTab,
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    ];
+    tabs = ownerTabs;
+  } else if (role === "both") {
+    tabs = activeRole === "owner" ? ownerTabs : sitterTabs;
   } else {
-    // sitter or both
-    tabs = [
-      sitsTab,
-      { href: "/find-nomads", label: "Nomads Near Me", icon: MapPin },
-      chatsTab,
-      { href: "/settings", label: "Profile", icon: User },
-    ];
+    tabs = sitterTabs;
   }
+
 
   const isActive = (href: string) => location.pathname === href;
 
