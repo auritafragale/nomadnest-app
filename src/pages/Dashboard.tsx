@@ -552,7 +552,7 @@ const OwnerDashboard = ({
                     <Search className="w-6 h-6 text-secondary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Browse Nomads</h3>
+                    <h3 className="font-semibold">Browse Sitters</h3>
                     <p className="text-sm text-muted-foreground">Find trusted nomads</p>
                   </div>
                   <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
