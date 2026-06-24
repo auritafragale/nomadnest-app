@@ -49,32 +49,6 @@ const contactSchema = z.object({
 
 type ContactFormData = z.infer<typeof contactSchema>;
 
-const faqs = [
-  {
-    question: "How do I create a listing for my home?",
-    answer: "Sign up as a pet owner, complete your profile, then click 'Create Listing' from your dashboard. You'll be guided through adding your pets, home details, and available dates."
-  },
-  {
-    question: "Is pet sitting really free?",
-    answer: "Yes! NomadNest operates on a trust exchange model. Pet owners get free pet care while sitters get free accommodation. There are no fees for either party."
-  },
-  {
-    question: "How are sitters verified?",
-    answer: "We offer optional ID verification and background checks for sitters. Look for the verification badges on sitter profiles. We also have a review system so you can see feedback from previous sits."
-  },
-  {
-    question: "What if something goes wrong during a sit?",
-    answer: "We encourage clear communication between owners and sitters before the sit begins. Document everything, exchange emergency contacts, and discuss expectations. If issues arise, contact us and we'll help mediate."
-  },
-  {
-    question: "Can I cancel an application or booking?",
-    answer: "Yes, you can withdraw applications before they're accepted. For confirmed sits, please communicate with the other party as early as possible to give them time to find alternatives."
-  },
-  {
-    question: "How do I report a problem with a user?",
-    answer: "You can report users or listings using the flag icon on their profile or listing page. Our team reviews all reports and takes appropriate action to maintain community safety."
-  },
-];
 
 const Contact = () => {
   const { user } = useAuth();
