@@ -40,6 +40,7 @@ import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import Membership from "./pages/Membership";
 import AdminVerifications from "./pages/AdminVerifications";
+import CityChat from "./pages/CityChat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -107,6 +108,8 @@ const AppShell = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
+        <Route path="/city-chat/:roomId" element={<ProtectedRoute><CityChat /></ProtectedRoute>} />
+
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

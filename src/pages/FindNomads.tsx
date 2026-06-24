@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import NomadGoogleMap from "@/components/maps/NomadGoogleMap";
 import NomadVisibilityBanner from "@/components/browse/NomadVisibilityBanner";
+import CityChatsSection from "@/components/city-chat/CityChatsSection";
 
 export interface NomadOnMap {
   user_id: string;
@@ -140,7 +141,10 @@ const FindNomads = () => {
               <NomadGoogleMap nomads={filteredNomads} />
             </>
           )}
+
+          <CityChatsSection />
         </div>
+
       </main>
 
       <Footer />
