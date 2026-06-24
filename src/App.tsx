@@ -37,6 +37,7 @@ import VerifyIdentity from "./pages/VerifyIdentity";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Contact from "./pages/Contact";
+import FAQ from "./pages/FAQ";
 import Membership from "./pages/Membership";
 import AdminVerifications from "./pages/AdminVerifications";
 import NotFound from "./pages/NotFound";
