@@ -9,6 +9,7 @@ import BackToTopButton from "@/components/ui/BackToTopButton";
 import Pagination from "@/components/browse/Pagination";
 import { usePagination } from "@/hooks/usePagination";
 import { Users } from "lucide-react";
+import NomadVisibilityBanner from "@/components/browse/NomadVisibilityBanner";
 
 const SitterGoogleMap = lazy(() => import("@/components/maps/SitterGoogleMap"));
 
