@@ -31,6 +31,8 @@ import Navbar from "@/components/layout/Navbar";
 import ImageUpload from "@/components/listing/ImageUpload";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
+import { geocodeCityCountry } from "@/lib/geocode";
 
 interface Profile {
   first_name: string;
@@ -115,6 +117,7 @@ const EditSitterProfile = () => {
   const navigate = useNavigate();
   const { user, role } = useAuth();
   const { toast } = useToast();
+  const { data: mapsConfig } = useGoogleMapsKey();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -246,6 +249,11 @@ const EditSitterProfile = () => {
 
       if (profileError) throw profileError;
 
+      // Geocode city/country so the nomad shows up on the Browse Nomads map.
+      const coords = mapsConfig?.key
+        ? await geocodeCityCountry(mapsConfig.key, profile.city, profile.country)
+        : null;
+
       // Upsert sitter profile
       const { error: sitterError } = await supabase
         .from("sitter_profiles")
@@ -271,6 +279,7 @@ const EditSitterProfile = () => {
           phone: sitterProfile.phone || null,
           gallery: sitterProfile.gallery,
           age_range: sitterProfile.age_range || null,
+          ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
         }, { onConflict: "user_id" });
 
       if (sitterError) throw sitterError;
