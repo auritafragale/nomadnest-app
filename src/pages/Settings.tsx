@@ -787,7 +787,7 @@ const Settings = () => {
                         <div className="flex items-center gap-3">
                           <Home className="w-5 h-5 text-muted-foreground" />
                           <div>
-                            <p className="font-medium">Owner Profile & Listings</p>
+                            <p className="font-medium">Pet Parent Profile & Listings</p>
                             <p className="text-sm text-muted-foreground">
                               {profileVisibility.ownerProfileActive
                                 ? "Your listings are visible to pet sitters"
