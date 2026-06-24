@@ -135,8 +135,12 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
                 navigate("/membership?upgrade=both");
               }}
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add {newRoleLabel} Access
+              {loading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4 mr-2" />
+              )}
+              {currentRole === "sitter" ? "Add Pet Parent Access" : "Add Sitter Access"}
             </Button>
           </div>
         </div>
