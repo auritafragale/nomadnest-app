@@ -69,6 +69,7 @@ interface Profile {
 const Settings = () => {
   const navigate = useNavigate();
   const { user, role, signOut, refreshRole } = useAuth();
+  const { activeRole } = useActiveRole();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
