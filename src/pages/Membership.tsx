@@ -164,7 +164,9 @@ const Membership = () => {
                       isCombined
                         ? "border-2 border-primary shadow-xl scale-[1.02]"
                         : "border-border"
-                    } ${isCurrent ? "ring-2 ring-accent" : ""}`}
+                    } ${isCurrent ? "ring-2 ring-accent" : ""} ${
+                      upgradeBoth && isCombined ? "ring-4 ring-primary ring-offset-2" : ""
+                    }`}
                   >
                     {badge && (
                       <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-4 py-1 text-xs font-bold rounded-bl-lg">
