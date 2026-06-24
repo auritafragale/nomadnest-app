@@ -98,6 +98,8 @@ const VerifyIdentity = () => {
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [manualUploading, setManualUploading] = useState(false);
   const [manualSubmitted, setManualSubmitted] = useState(false);
+  const idInputRef = useRef<HTMLInputElement>(null);
+  const selfieInputRef = useRef<HTMLInputElement>(null);
 
   // Teardown on unmount
   useEffect(() => {
