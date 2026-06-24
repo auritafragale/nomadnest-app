@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Star, CheckCircle, MapPin } from "lucide-react";
 import { SitterWithProfile } from "@/hooks/useSitters";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
+import MessageSitterButton from "@/components/browse/MessageSitterButton";
+
 
 const AvatarPin = ({ sitter }: { sitter: SitterWithProfile }) => {
   const name = sitter.profile
