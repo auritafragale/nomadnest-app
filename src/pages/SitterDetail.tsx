@@ -216,8 +216,10 @@ const SitterDetail = () => {
         return;
       }
 
+      const listing = listings.find((l) => l.id === selectedListing);
+
       // Create the sitter invite
-      const { error: inviteError } = await supabase
+      const { data: invite, error: inviteError } = await supabase
         .from("sitter_invites")
         .insert({
           listing_id: selectedListing,
@@ -225,17 +227,48 @@ const SitterDetail = () => {
           owner_user_id: user.id,
           sitter_user_id: userId,
           message: inviteMessage || null,
-        });
+          status: "pending",
+        })
+        .select("id")
+        .single();
 
       if (inviteError) throw inviteError;
 
-      // Also create a conversation and send a message
+      // Owner display name for notification
+      const ownerName =
+        [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+        "A pet parent";
+      // Actually we need the OWNER (current user)'s name — fetch it
+      const { data: ownerProfile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      const ownerDisplayName =
+        [ownerProfile?.first_name, ownerProfile?.last_name].filter(Boolean).join(" ") ||
+        "A pet parent";
+
+      // Notification for sitter
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        type: "invite",
+        title: "New sit invitation",
+        message: `${ownerDisplayName} has invited you to sit at ${listing?.title || "their home"}`,
+        data: {
+          invite_id: invite.id,
+          listing_id: selectedListing,
+          url: "/dashboard",
+        },
+      });
+
+      // Find or create a DIRECT conversation (listing_id = null)
       const { data: existingConvo } = await supabase
         .from("conversations")
         .select("id")
         .eq("owner_user_id", user.id)
         .eq("sitter_user_id", userId)
-        .eq("listing_id", selectedListing)
+        .eq("conversation_type", "direct")
+        .is("listing_id", null)
         .maybeSingle();
 
       let conversationId = existingConvo?.id;
@@ -246,7 +279,8 @@ const SitterDetail = () => {
           .insert({
             owner_user_id: user.id,
             sitter_user_id: userId,
-            listing_id: selectedListing,
+            listing_id: null,
+            conversation_type: "direct",
           })
           .select("id")
           .single();
@@ -255,21 +289,19 @@ const SitterDetail = () => {
         conversationId = newConvo.id;
       }
 
-      // Send the invite message
-      const listing = listings.find((l) => l.id === selectedListing);
-      const sitDate = listing?.sit_dates.find((d) => d.id === selectedDateId);
-      
-      const messageBody = `Hi! I'd love to invite you to sit for my listing "${listing?.title}" from ${format(new Date(sitDate!.start_date), "MMM d, yyyy")} to ${format(new Date(sitDate!.end_date), "MMM d, yyyy")}.\n\n${inviteMessage}`;
-
       await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_user_id: user.id,
-        body: messageBody,
+        body: "Hi! I'd love to invite you to sit at my home. I've sent you a formal invitation — please check your notifications.",
       });
+
+      await supabase
+        .from("conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", conversationId);
 
       toast({
         title: "Invitation sent!",
-        description: "The sitter will see this in their invitations.",
       });
 
       setShowInviteDialog(false);
