@@ -349,22 +349,48 @@ const VerifyIdentity = () => {
                       <div className="space-y-2">
                         <Label htmlFor="id_photo">Photo ID (passport, driving licence, national ID)</Label>
                         <input
+                          ref={idInputRef}
                           id="id_photo"
                           type="file"
-                          accept="image/*,application/pdf"
-                          className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary/10 file:px-4 file:py-2 file:text-sm file:font-medium hover:file:bg-primary/20 cursor-pointer"
+                          accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                          className="hidden"
                           onChange={(e) => setIdFile(e.target.files?.[0] ?? null)}
                         />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => idInputRef.current?.click()}
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          {idFile ? "Change Photo ID" : "Choose Photo ID"}
+                        </Button>
+                        {idFile && (
+                          <p className="text-xs text-muted-foreground truncate">Selected: {idFile.name}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="selfie">Selfie (holding your ID or looking at camera)</Label>
                         <input
+                          ref={selfieInputRef}
                           id="selfie"
                           type="file"
-                          accept="image/*"
-                          className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary/10 file:px-4 file:py-2 file:text-sm file:font-medium hover:file:bg-primary/20 cursor-pointer"
+                          accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                          className="hidden"
                           onChange={(e) => setSelfieFile(e.target.files?.[0] ?? null)}
                         />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => selfieInputRef.current?.click()}
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          {selfieFile ? "Change Selfie" : "Choose Selfie"}
+                        </Button>
+                        {selfieFile && (
+                          <p className="text-xs text-muted-foreground truncate">Selected: {selfieFile.name}</p>
+                        )}
                       </div>
                       <Button
                         className="w-full"
