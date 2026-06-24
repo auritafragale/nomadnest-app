@@ -19,6 +19,7 @@ declare global {
   }
 }
 
+const ONFIDO_ENABLED = false;
 const ONFIDO_JS_URL = "https://assets.onfido.com/web-sdk-releases/8.0.0/onfido.min.js";
 const ONFIDO_CSS_URL = "https://assets.onfido.com/web-sdk-releases/8.0.0/style.css";
 
@@ -289,36 +290,37 @@ const VerifyIdentity = () => {
 
           {step === "intro" && (
             <div className="space-y-6">
-              {/* Onfido (paused) */}
-              <Card className="opacity-60">
-                <CardHeader className="text-center">
-                  <div className="flex justify-center mb-4">
-                    <ShieldCheck className="w-14 h-14 text-muted-foreground" />
-                  </div>
-                  <CardTitle className="text-2xl">Automated ID Check</CardTitle>
-                  <CardDescription className="text-base">
-                    Powered by Onfido — temporarily paused.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-3">
-                    {[
-                      "Takes about 5 minutes",
-                      "You'll need a government-issued photo ID",
-                      "A short selfie photo to match your ID",
-                      "Your data is handled securely by Onfido",
-                    ].map((item) => (
-                      <div key={item} className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                        <span>{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <Button className="w-full" disabled>
-                    Temporarily Unavailable
-                  </Button>
-                </CardContent>
-              </Card>
+              {ONFIDO_ENABLED && (
+                <Card className="opacity-60">
+                  <CardHeader className="text-center">
+                    <div className="flex justify-center mb-4">
+                      <ShieldCheck className="w-14 h-14 text-muted-foreground" />
+                    </div>
+                    <CardTitle className="text-2xl">Automated ID Check</CardTitle>
+                    <CardDescription className="text-base">
+                      Powered by Onfido — temporarily paused.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-3">
+                      {[
+                        "Takes about 5 minutes",
+                        "You'll need a government-issued photo ID",
+                        "A short selfie photo to match your ID",
+                        "Your data is handled securely by Onfido",
+                      ].map((item) => (
+                        <div key={item} className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <Button className="w-full" disabled>
+                      Temporarily Unavailable
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Manual review (active alternative) */}
               <Card>
@@ -326,9 +328,9 @@ const VerifyIdentity = () => {
                   <div className="flex justify-center mb-4">
                     <Upload className="w-14 h-14 text-primary" />
                   </div>
-                  <CardTitle className="text-xl text-center">Manual Review</CardTitle>
+                  <CardTitle className="text-xl text-center">Verify Your Identity</CardTitle>
                   <CardDescription className="text-center">
-                    Upload a photo of your ID and a selfie. Our team reviews submissions within 24–48 hours.
+                    Upload a photo ID and a selfie. Our team reviews submissions within 24–48 hours.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
