@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card";
 import { MapPin, Star, CheckCircle, Dog, Cat, Bird, Rabbit, Fish } from "lucide-react";
 import { SitterWithProfile } from "@/hooks/useSitters";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
+import MessageSitterButton from "@/components/browse/MessageSitterButton";
+
 
 const petIcons: Record<string, typeof Dog> = {
   dog: Dog,
