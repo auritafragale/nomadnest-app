@@ -186,7 +186,7 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
 };
 
 const NomadGoogleMap = ({ nomads }: NomadGoogleMapProps) => (
-  <GoogleMapsProvider>
+  <GoogleMapsProvider height="384px">
     <MapContent nomads={nomads} />
   </GoogleMapsProvider>
 );
