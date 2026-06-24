@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin, Moon, Sun, Crown, Info, BookOpen, HelpCircle, Shield, Mail, Lock, Cookie, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,23 @@ import whiteLogo from "@/assets/White_Logo.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+
+  const closeMenu = () => {
+    setIsOpen(false);
+    setShowHelp(false);
+  };
+
+  const helpItems = [
+    { href: "/about", label: "About NomadNest", icon: Info },
+    { href: "/how-it-works", label: "How It Works", icon: BookOpen },
+    { href: "/faq", label: "FAQ", icon: HelpCircle },
+    { href: "/safety", label: "Safety & Trust", icon: Shield },
+    { href: "/contact", label: "Contact", icon: Mail },
+    { href: "/terms", label: "Terms of Service", icon: FileText },
+    { href: "/privacy", label: "Privacy Policy", icon: Lock },
+    { href: "/cookies", label: "Cookie Policy", icon: Cookie },
+  ];
   const location = useLocation();
   const { unreadCount } = useUnreadMessages();
   const { newApplicationsCount } = useNewApplicationsCount();
@@ -144,7 +162,7 @@ const Navbar = () => {
             </button>
             <button
               className="md:hidden p-2.5 text-foreground"
-              onClick={() => setIsOpen(!isOpen)}
+              onClick={() => (isOpen ? closeMenu() : setIsOpen(true))}
               aria-label="Toggle menu"
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -156,54 +174,21 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden bg-surface border-b border-border animate-fade-in">
-          <div className="container py-4 space-y-2">
-            {navLinks.map((link) => (
-              <Link key={link.href} to={link.href} onClick={() => setIsOpen(false)}>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start text-muted-foreground",
-                    isActive(link.href) && "text-primary bg-terracotta-light"
-                  )}
+          {showHelp ? (
+            <div className="container py-4 space-y-2 animate-fade-in">
+              <div className="flex items-center gap-2 pb-2 border-b border-border">
+                <button
+                  onClick={() => setShowHelp(false)}
+                  className="p-2 -ml-2 text-foreground hover:text-primary transition-colors"
+                  aria-label="Back to menu"
                 >
-                  <link.icon className="w-4 h-4 mr-2" />
-                  {link.label}
-                </Button>
-              </Link>
-            ))}
-            {/* Only visible to sitters and combined members — hidden for owner-only role */}
-            {user && (role === "sitter" || role === "both") && (
-              <Link to="/find-nomads" onClick={() => setIsOpen(false)}>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start text-muted-foreground",
-                    isActive("/find-nomads") && "text-primary bg-terracotta-light"
-                  )}
-                >
-                  <MapPin className="w-4 h-4 mr-2" />
-                  Nomads Near Me
-                </Button>
-              </Link>
-            )}
-
-            {/* Help & Support */}
-            <div className="pt-4 mt-2 border-t border-border">
-              <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Help & Support
-              </p>
-              <div className="space-y-1">
-                {[
-                  { href: "/about", label: "About NomadNest", icon: Info },
-                  { href: "/how-it-works", label: "How It Works", icon: BookOpen },
-                  { href: "/faq", label: "FAQ", icon: HelpCircle },
-                  { href: "/safety", label: "Safety & Trust", icon: Shield },
-                  { href: "/contact", label: "Contact", icon: Mail },
-                  { href: "/terms", label: "Terms of Service", icon: FileText },
-                  { href: "/privacy", label: "Privacy Policy", icon: Lock },
-                  { href: "/cookies", label: "Cookie Policy", icon: Cookie },
-                ].map((item) => (
-                  <Link key={item.href} to={item.href} onClick={() => setIsOpen(false)}>
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-lg font-bold text-foreground">Help & Support</h2>
+              </div>
+              <div className="space-y-1 pt-2">
+                {helpItems.map((item) => (
+                  <Link key={item.href} to={item.href} onClick={closeMenu}>
                     <Button
                       variant="ghost"
                       className={cn(
@@ -219,12 +204,41 @@ const Navbar = () => {
                 ))}
               </div>
             </div>
+          ) : (
+            <div className="container py-4 space-y-2">
+              {navLinks.map((link) => (
+                <Link key={link.href} to={link.href} onClick={closeMenu}>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start text-muted-foreground",
+                      isActive(link.href) && "text-primary bg-terracotta-light"
+                    )}
+                  >
+                    <link.icon className="w-4 h-4 mr-2" />
+                    {link.label}
+                  </Button>
+                </Link>
+              ))}
+              {user && (role === "sitter" || role === "both") && (
+                <Link to="/find-nomads" onClick={closeMenu}>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start text-muted-foreground",
+                      isActive("/find-nomads") && "text-primary bg-terracotta-light"
+                    )}
+                  >
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Nomads Near Me
+                  </Button>
+                </Link>
+              )}
 
-            <div className="pt-4 space-y-2 border-t border-border">
-              {user ? (
-                <>
+              {user && (
+                <div className="pt-2 mt-2 border-t border-border space-y-1">
                   {(role === "sitter" || role === "both") && (
-                    <Link to="/saved" onClick={() => setIsOpen(false)}>
+                    <Link to="/saved" onClick={closeMenu}>
                       <Button variant="ghost" className={cn("w-full justify-start", isActive("/saved") && "text-primary bg-terracotta-light")}>
                         <Heart className="w-4 h-4 mr-2" />
                         Saved Listings
@@ -232,7 +246,7 @@ const Navbar = () => {
                     </Link>
                   )}
                   {(role === "owner" || role === "both") && (
-                    <Link to="/applications" onClick={() => setIsOpen(false)}>
+                    <Link to="/applications" onClick={closeMenu}>
                       <Button variant="ghost" className={cn("w-full justify-start relative", isActive("/applications") && "text-primary bg-terracotta-light")}>
                         <FileText className="w-4 h-4 mr-2" />
                         Applications
@@ -244,7 +258,7 @@ const Navbar = () => {
                       </Button>
                     </Link>
                   )}
-                  <Link to="/inbox" onClick={() => setIsOpen(false)}>
+                  <Link to="/inbox" onClick={closeMenu}>
                     <Button variant="ghost" className={cn("w-full justify-start relative", isActive("/inbox") && "text-primary bg-terracotta-light")}>
                       <MessageCircle className="w-4 h-4 mr-2" />
                       Messages
@@ -255,28 +269,46 @@ const Navbar = () => {
                       )}
                     </Button>
                   </Link>
-                  <MobileNotificationsSection onNavigate={() => setIsOpen(false)} />
-                  <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                  <MobileNotificationsSection onNavigate={closeMenu} />
+                </div>
+              )}
+
+              {/* Help & Support entry */}
+              <div className="pt-2 mt-2 border-t border-border">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowHelp(true)}
+                  className="w-full justify-start text-primary hover:bg-terracotta-light"
+                >
+                  <HelpCircle className="w-4 h-4 mr-2 text-primary" />
+                  <span className="flex-1 text-left">Help & Support</span>
+                  <ChevronRight className="w-4 h-4 ml-auto text-primary" />
+                </Button>
+              </div>
+
+              <div className="pt-4 space-y-2 border-t border-border">
+                {user ? (
+                  <Link to="/dashboard" onClick={closeMenu}>
                     <Button className="w-full">
                       <LayoutDashboard className="w-4 h-4 mr-2" />
                       Dashboard
                     </Button>
                   </Link>
-                </>
-              ) : (
-                <>
-                  <Link to="/auth" onClick={() => setIsOpen(false)}>
-                    <Button variant="outline" className="w-full">
-                      Log in
-                    </Button>
-                  </Link>
-                  <Link to="/auth?signup=true" onClick={() => setIsOpen(false)}>
-                    <Button className="w-full">Create profile</Button>
-                  </Link>
-                </>
-              )}
+                ) : (
+                  <>
+                    <Link to="/auth" onClick={closeMenu}>
+                      <Button variant="outline" className="w-full">
+                        Log in
+                      </Button>
+                    </Link>
+                    <Link to="/auth?signup=true" onClick={closeMenu}>
+                      <Button className="w-full">Create profile</Button>
+                    </Link>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </nav>
