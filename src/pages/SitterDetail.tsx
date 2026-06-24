@@ -514,7 +514,7 @@ const SitterDetail = () => {
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2 mb-6">
-                  {user && user.id !== userId && (role === "owner" || role === "both") && (
+                  {user && user.id !== userId && (
                     <Button
                       variant="outline"
                       onClick={async () => {
@@ -522,6 +522,7 @@ const SitterDetail = () => {
                         try {
                           const { conversationId } = await startConversation.mutateAsync({
                             otherUserId: userId!,
+                            conversationType: "direct",
                           });
                           navigate(`/inbox?conversation=${conversationId}`);
                         } catch (error: any) {
@@ -544,8 +545,12 @@ const SitterDetail = () => {
                       Message
                     </Button>
                   )}
-                  {user && listings.length > 0 && user.id !== userId && (
-                    <Button onClick={() => setShowInviteDialog(true)}>
+                  {user && user.id !== userId && (role === "owner" || role === "both") && (
+                    <Button
+                      onClick={() => setShowInviteDialog(true)}
+                      disabled={listings.length === 0}
+                      title={listings.length === 0 ? "You need a published listing with open dates to invite a sitter" : undefined}
+                    >
                       <Send className="w-4 h-4 mr-2" />
                       Invite to Sit
                     </Button>
