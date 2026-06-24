@@ -105,6 +105,8 @@ const FindNomads = () => {
           </div>
         </div>
 
+        <NomadVisibilityBanner />
+
         <div className="bg-surface border-b border-border sticky top-16 z-40">
           <div className="container py-4">
             <div className="relative max-w-md">
