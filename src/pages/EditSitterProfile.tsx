@@ -249,6 +249,21 @@ const EditSitterProfile = () => {
 
       if (profileError) throw profileError;
 
+      // Auto-create a city chat room for this city if one doesn't exist yet.
+      if (profile.city.trim() && profile.country.trim()) {
+        const cityKey = `${profile.city.trim().toLowerCase()}-${profile.country.trim().toLowerCase()}`;
+        await supabase
+          .from("city_chat_rooms")
+          .upsert(
+            {
+              city: profile.city.trim(),
+              country: profile.country.trim(),
+              city_key: cityKey,
+            },
+            { onConflict: "city_key", ignoreDuplicates: true },
+          );
+      }
+
       // Geocode city/country so the nomad shows up on the Browse Nomads map.
       const coords = mapsConfig?.key
         ? await geocodeCityCountry(mapsConfig.key, profile.city, profile.country)

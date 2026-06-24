@@ -68,6 +68,62 @@ export type Database = {
           },
         ]
       }
+      city_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          room_id: string
+          sender_user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          room_id: string
+          sender_user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          room_id?: string
+          sender_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "city_chat_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "city_chat_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      city_chat_rooms: {
+        Row: {
+          city: string
+          city_key: string
+          country: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          city: string
+          city_key: string
+          country: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          city?: string
+          city_key?: string
+          country?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           conversation_type: Database["public"]["Enums"]["conversation_type"]
@@ -967,6 +1023,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_city_chat: {
+        Args: { p_room_id: string; p_user_id: string }
+        Returns: boolean
+      }
       get_listing_private_address: {
         Args: { p_listing_id: string }
         Returns: string
