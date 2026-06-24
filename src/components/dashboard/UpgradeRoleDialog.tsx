@@ -136,7 +136,7 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
               }}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Upgrade to Both
+              Add Sitter Access
             </Button>
           </div>
         </div>
