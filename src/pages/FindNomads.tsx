@@ -39,6 +39,7 @@ const FindNomads = () => {
         .from("sitter_profiles")
         .select("user_id, latitude, longitude, headline, experience_level, pet_types")
         .eq("is_active", true)
+        .eq("is_visible", true)
         .not("latitude", "is", null)
         .not("longitude", "is", null);
 
