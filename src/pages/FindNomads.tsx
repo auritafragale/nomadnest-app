@@ -124,7 +124,7 @@ const FindNomads = () => {
 
         <div className="container py-8">
           {loading ? (
-            <Skeleton className="w-full h-[600px] rounded-lg" />
+            <Skeleton className="h-64 md:h-96 w-full rounded-lg" />
           ) : filteredNomads.length === 0 ? (
             <div className="text-center py-16">
               <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
