@@ -135,7 +135,7 @@ const Dashboard = () => {
         <MobileHomeScreen />
       </div>
 
-      <main className="hidden md:block pt-20 pb-12">
+      <main className="pt-4 md:pt-20 pb-12">
         <div className="container mx-auto px-4">
           <Breadcrumbs />
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
