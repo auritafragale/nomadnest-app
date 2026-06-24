@@ -43,6 +43,7 @@ import {
   Phone,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
