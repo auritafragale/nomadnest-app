@@ -631,18 +631,18 @@ const Onboarding = () => {
                 Your profile is ready to complete anytime — the more detail, the better matches.
               </CardDescription>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 pb-8">
               <Button 
                 variant="outline" 
                 onClick={handleComplete} 
-                className="flex-1 h-12"
+                className="w-full sm:flex-1 h-12"
                 disabled={isLoading}
               >
                 Go to dashboard
               </Button>
               <Button 
                 onClick={handleComplete} 
-                className="flex-1 h-12"
+                className="w-full sm:flex-1 h-12"
                 disabled={isLoading}
               >
                 {isLoading ? (
