@@ -31,7 +31,9 @@ const MapContent = ({ latitude, longitude, title }: ListingLocationMapProps) => 
         defaultZoom={13}
         gestureHandling="cooperative"
         disableDefaultUI
-        zoomControl
+        streetViewControl={false}
+        zoomControl={false}
+        mapTypeControl={false}
         mapId={listingMapId || "listing-map"}
         className="w-full h-full"
       >

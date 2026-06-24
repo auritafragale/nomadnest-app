@@ -127,6 +127,9 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
         defaultZoom={2}
         gestureHandling="greedy"
         disableDefaultUI={false}
+        streetViewControl={false}
+        zoomControl={false}
+        mapTypeControl={false}
         mapId={nomadMapId || "nomad-map"}
         className="w-full h-full"
       >
