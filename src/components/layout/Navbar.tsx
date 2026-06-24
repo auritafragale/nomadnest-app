@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin, Moon, Sun, Crown, Info, BookOpen, HelpCircle, Shield, Mail, Lock, Cookie, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,23 @@ import whiteLogo from "@/assets/White_Logo.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+
+  const closeMenu = () => {
+    setIsOpen(false);
+    setShowHelp(false);
+  };
+
+  const helpItems = [
+    { href: "/about", label: "About NomadNest", icon: Info },
+    { href: "/how-it-works", label: "How It Works", icon: BookOpen },
+    { href: "/faq", label: "FAQ", icon: HelpCircle },
+    { href: "/safety", label: "Safety & Trust", icon: Shield },
+    { href: "/contact", label: "Contact", icon: Mail },
+    { href: "/terms", label: "Terms of Service", icon: FileText },
+    { href: "/privacy", label: "Privacy Policy", icon: Lock },
+    { href: "/cookies", label: "Cookie Policy", icon: Cookie },
+  ];
   const location = useLocation();
   const { unreadCount } = useUnreadMessages();
   const { newApplicationsCount } = useNewApplicationsCount();

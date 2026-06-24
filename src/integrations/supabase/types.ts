@@ -70,6 +70,7 @@ export type Database = {
       }
       conversations: {
         Row: {
+          conversation_type: Database["public"]["Enums"]["conversation_type"]
           created_at: string
           id: string
           listing_id: string | null
@@ -78,6 +79,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          conversation_type?: Database["public"]["Enums"]["conversation_type"]
           created_at?: string
           id?: string
           listing_id?: string | null
@@ -86,6 +88,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          conversation_type?: Database["public"]["Enums"]["conversation_type"]
           created_at?: string
           id?: string
           listing_id?: string | null
@@ -985,6 +988,7 @@ export type Database = {
         | "accepted"
         | "declined"
         | "withdrawn"
+      conversation_type: "listing" | "direct" | "city_chat"
       listing_status: "draft" | "published" | "paused"
       report_status: "pending" | "reviewed" | "resolved" | "dismissed"
       report_target_type: "user" | "listing" | "message"
@@ -1125,6 +1129,7 @@ export const Constants = {
         "declined",
         "withdrawn",
       ],
+      conversation_type: ["listing", "direct", "city_chat"],
       listing_status: ["draft", "published", "paused"],
       report_status: ["pending", "reviewed", "resolved", "dismissed"],
       report_target_type: ["user", "listing", "message"],
