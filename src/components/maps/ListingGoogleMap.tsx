@@ -5,8 +5,6 @@ import { ListingWithDetails } from "@/hooks/useListings";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 
 const CoralPin = () => (
@@ -22,42 +20,6 @@ const CoralPin = () => (
   </div>
 );
 
-const MapSearchBox = () => {
-  const map = useMap();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (!inputRef.current || !map || !(window as any).google?.maps?.places) return;
-
-    const gm = (window as any).google.maps;
-    autocompleteRef.current = new gm.places.Autocomplete(inputRef.current, {
-      types: ["(cities)"],
-      fields: ["geometry", "name"],
-    });
-
-    autocompleteRef.current.addListener("place_changed", () => {
-      const place = autocompleteRef.current?.getPlace();
-      if (place?.geometry?.location) {
-        map.panTo(place.geometry.location);
-        map.setZoom(10);
-      }
-    });
-  }, [map]);
-
-  return (
-    <div className="absolute top-3 left-3 z-10 w-72">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          ref={inputRef}
-          placeholder="Search city or country..."
-          className="pl-9 h-10 bg-background shadow-md border-border"
-        />
-      </div>
-    </div>
-  );
-};
 
 const FitBoundsInner = ({ listings }: { listings: ListingWithDetails[] }) => {
   const map = useMap();
@@ -169,7 +131,7 @@ const MapContent = ({ listings }: ListingGoogleMapProps) => {
         mapId={listingMapId || "listing-map"}
         className="w-full h-full"
       >
-        <MapSearchBox />
+        
         <FitBoundsInner listings={listingsWithCoords} />
         <ClusteredMarkers listings={listingsWithCoords} onSelect={setSelectedId} />
         {selected && (
