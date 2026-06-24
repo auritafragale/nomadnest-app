@@ -128,6 +128,9 @@ const MapContent = ({ listings }: ListingGoogleMapProps) => {
         defaultZoom={2}
         gestureHandling="greedy"
         disableDefaultUI={false}
+        streetViewControl={false}
+        zoomControl={false}
+        mapTypeControl={false}
         mapId={listingMapId || "listing-map"}
         className="w-full h-full"
       >

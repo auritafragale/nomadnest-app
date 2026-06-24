@@ -30,7 +30,9 @@ const MapContent = ({ latitude, longitude, name }: SitterLocationMapProps) => {
         defaultZoom={13}
         gestureHandling="cooperative"
         disableDefaultUI
-        zoomControl
+        streetViewControl={false}
+        zoomControl={false}
+        mapTypeControl={false}
         mapId={nomadMapId || "nomad-map"}
         className="w-full h-full"
       >

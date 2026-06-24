@@ -222,6 +222,9 @@ const MapContent = ({ sitters }: SitterGoogleMapProps) => {
         defaultZoom={2}
         gestureHandling="greedy"
         disableDefaultUI={false}
+        streetViewControl={false}
+        zoomControl={false}
+        mapTypeControl={false}
         mapId={nomadMapId || "nomad-map"}
         className="w-full h-full"
         onClick={() => setSelectedUserId(null)}
