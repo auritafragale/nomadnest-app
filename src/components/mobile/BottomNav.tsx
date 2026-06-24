@@ -1,18 +1,47 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, MessageCircle, User } from "lucide-react";
+import { Search, MessageCircle, User, MapPin, LayoutDashboard } from "lucide-react";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
-const tabs = [
-  { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/browse-sits", label: "Sits", icon: Search },
-  { href: "/inbox", label: "Chats", icon: MessageCircle },
-  { href: "/settings", label: "Profile", icon: User },
-];
+type Tab = {
+  href: string;
+  label: string;
+  icon: typeof Search;
+};
 
 const BottomNav = () => {
   const location = useLocation();
   const { unreadCount } = useUnreadMessages();
+  const { user, role } = useAuth();
+
+  const sitsTab: Tab = { href: "/browse-sits", label: "Sits", icon: Search };
+  const chatsTab: Tab = { href: "/inbox", label: "Chats", icon: MessageCircle };
+
+  let tabs: Tab[];
+  if (!user) {
+    tabs = [
+      sitsTab,
+      { href: "/browse-sitters", label: "Browse Sitters", icon: User },
+      chatsTab,
+      { href: "/auth", label: "Profile", icon: User },
+    ];
+  } else if (role === "owner") {
+    tabs = [
+      sitsTab,
+      { href: "/browse-sitters", label: "Browse Sitters", icon: User },
+      chatsTab,
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    ];
+  } else {
+    // sitter or both
+    tabs = [
+      sitsTab,
+      { href: "/find-nomads", label: "Nomads Near Me", icon: MapPin },
+      chatsTab,
+      { href: "/settings", label: "Profile", icon: User },
+    ];
+  }
 
   const isActive = (href: string) => location.pathname === href;
 
@@ -39,7 +68,7 @@ const BottomNav = () => {
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-medium">{label}</span>
+              <span className="text-[10px] font-medium text-center px-1 leading-tight">{label}</span>
             </Link>
           );
         })}
