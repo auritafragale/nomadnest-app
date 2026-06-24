@@ -142,17 +142,76 @@ export const useCreateInvite = () => {
         .eq("id", invite.owner_user_id)
         .single();
 
-      // Send notification to invited sitter
+      const ownerName =
+        [ownerProfile?.first_name, ownerProfile?.last_name].filter(Boolean).join(" ") ||
+        "A pet owner";
+      const listingTitleSafe = listingTitle || "my home";
+
+      // 1) In-app notification row for the sitter
+      await supabase.from("notifications").insert({
+        user_id: invite.sitter_user_id,
+        type: "invite",
+        title: "New sit invitation",
+        message: `${ownerName} has invited you to sit at ${listingTitleSafe}`,
+        data: {
+          listing_id: invite.listing_id,
+          sit_dates_id: invite.sit_dates_id,
+          owner_user_id: invite.owner_user_id,
+          url: "/dashboard",
+        },
+      });
+
+      // 2) Find-or-create a direct conversation between owner and sitter
+      const { data: existingConvo } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("owner_user_id", invite.owner_user_id)
+        .eq("sitter_user_id", invite.sitter_user_id)
+        .eq("conversation_type", "direct")
+        .is("listing_id", null)
+        .maybeSingle();
+
+      let conversationId = existingConvo?.id;
+      if (!conversationId) {
+        const { data: newConvo, error: convoError } = await supabase
+          .from("conversations")
+          .insert({
+            owner_user_id: invite.owner_user_id,
+            sitter_user_id: invite.sitter_user_id,
+            listing_id: null,
+            conversation_type: "direct",
+          })
+          .select("id")
+          .single();
+        if (convoError) throw convoError;
+        conversationId = newConvo.id;
+      }
+
+      // 3) Send an opening message from the owner
+      if (conversationId) {
+        await supabase.from("messages").insert({
+          conversation_id: conversationId,
+          sender_user_id: invite.owner_user_id,
+          body: `Hi! I'd love to invite you to sit at my home. I've sent you a formal invitation — please check your notifications.`,
+        });
+        await supabase
+          .from("conversations")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", conversationId);
+      }
+
+      // 4) Existing push/email notification pipeline
       sendNotification({
         type: "invite",
         recipientUserId: invite.sitter_user_id,
         data: {
-          ownerName: [ownerProfile?.first_name, ownerProfile?.last_name].filter(Boolean).join(" ") || "A pet owner",
-          listingTitle: listingTitle || "a listing",
+          ownerName,
+          listingTitle: listingTitleSafe,
           startDate: startDate || "",
           endDate: endDate || "",
         },
       });
+
 
       return data;
     },

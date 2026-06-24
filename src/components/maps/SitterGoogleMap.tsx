@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Star, CheckCircle, MapPin } from "lucide-react";
 import { SitterWithProfile } from "@/hooks/useSitters";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
+import MessageSitterButton from "@/components/browse/MessageSitterButton";
+
 
 const AvatarPin = ({ sitter }: { sitter: SitterWithProfile }) => {
   const name = sitter.profile
@@ -195,10 +197,17 @@ const SitterInfoWindow = ({ sitter, onClose }: { sitter: SitterWithProfile; onCl
         )}
 
         <Link to={`/sitter/${sitter.user_id}`}>
-          <Button size="sm" className="w-full h-7 text-xs" style={{ backgroundColor: "#E8735A", color: "white" }}>
+          <Button size="sm" className="w-full h-7 text-xs mb-1" style={{ backgroundColor: "#E8735A", color: "white" }}>
             View Profile
           </Button>
         </Link>
+        <MessageSitterButton
+          sitterUserId={sitter.user_id}
+          size="sm"
+          variant="outline"
+          className="w-full h-7 text-xs"
+        />
+
       </div>
     </InfoWindow>
   );

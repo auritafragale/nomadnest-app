@@ -287,10 +287,12 @@ export const useStartConversation = () => {
       otherUserId,
       listingId,
       initialMessage,
+      conversationType = "direct",
     }: {
       otherUserId: string;
       listingId?: string;
       initialMessage?: string;
+      conversationType?: "direct" | "listing";
     }) => {
       if (!user) throw new Error("Not authenticated");
 
@@ -304,10 +306,13 @@ export const useStartConversation = () => {
         .from("conversations")
         .select("id")
         .eq("owner_user_id", ownerUserId)
-        .eq("sitter_user_id", sitterUserId);
+        .eq("sitter_user_id", sitterUserId)
+        .eq("conversation_type", conversationType);
 
       if (listingId) {
         query = query.eq("listing_id", listingId);
+      } else {
+        query = query.is("listing_id", null);
       }
 
       const { data: existingConvo } = await query.maybeSingle();
@@ -321,6 +326,7 @@ export const useStartConversation = () => {
             owner_user_id: ownerUserId,
             sitter_user_id: sitterUserId,
             listing_id: listingId || null,
+            conversation_type: conversationType,
           })
           .select("id")
           .single();
@@ -328,6 +334,7 @@ export const useStartConversation = () => {
         if (convoError) throw convoError;
         conversationId = newConvo.id;
       }
+
 
       // Send initial message if provided
       if (initialMessage && initialMessage.trim()) {
