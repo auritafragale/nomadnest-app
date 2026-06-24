@@ -24,7 +24,7 @@ const Navbar = () => {
 
   const navLinks = [
     { href: "/browse-sits", label: "Browse Sits", icon: Search },
-    { href: "/browse-sitters", label: "Browse Nomads", icon: User },
+    { href: "/browse-sitters", label: "Browse Sitters", icon: User },
     { href: "/membership", label: "Membership", icon: Crown },
   ];
 
@@ -58,6 +58,7 @@ const Navbar = () => {
                 </Button>
               </Link>
             ))}
+            {/* Only visible to sitters and combined members — hidden for owner-only role */}
             {user && (role === "sitter" || role === "both") && (
               <Link to="/find-nomads">
                 <Button
@@ -68,7 +69,7 @@ const Navbar = () => {
                   )}
                 >
                   <MapPin className="w-4 h-4 mr-2" />
-                  Find Nomads
+                  Nomads Near Me
                 </Button>
               </Link>
             )}
@@ -170,6 +171,7 @@ const Navbar = () => {
                 </Button>
               </Link>
             ))}
+            {/* Only visible to sitters and combined members — hidden for owner-only role */}
             {user && (role === "sitter" || role === "both") && (
               <Link to="/find-nomads" onClick={() => setIsOpen(false)}>
                 <Button
@@ -180,7 +182,7 @@ const Navbar = () => {
                   )}
                 >
                   <MapPin className="w-4 h-4 mr-2" />
-                  Find Nomads
+                  Nomads Near Me
                 </Button>
               </Link>
             )}
