@@ -32,6 +32,7 @@ const Membership = () => {
   const [inviteCode, setInviteCode] = useState("");
 
   const cancelled = searchParams.get("cancelled");
+  const upgradeBoth = searchParams.get("upgrade") === "both";
 
   const handleCheckout = async (planKey: string) => {
     if (!user) {
