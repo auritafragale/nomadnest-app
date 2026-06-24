@@ -5,8 +5,6 @@ import { ListingWithDetails } from "@/hooks/useListings";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 
 const CoralPin = () => (
