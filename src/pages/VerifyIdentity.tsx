@@ -19,6 +19,7 @@ declare global {
   }
 }
 
+const ONFIDO_ENABLED = false;
 const ONFIDO_JS_URL = "https://assets.onfido.com/web-sdk-releases/8.0.0/onfido.min.js";
 const ONFIDO_CSS_URL = "https://assets.onfido.com/web-sdk-releases/8.0.0/style.css";
 
