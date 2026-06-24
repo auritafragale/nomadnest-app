@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,8 +24,9 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
   const [loading, setLoading] = useState(false);
   const { user, refreshRole } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const newRoleLabel = currentRole === "sitter" ? "Pet Parent" : "Nomad";
+  const newRoleLabel = currentRole === "sitter" ? "Pet Parent" : "Sitter";
   const newRoleIcon = currentRole === "sitter" ? Home : Briefcase;
   const NewRoleIcon = newRoleIcon;
 
@@ -94,7 +96,7 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
           <DialogDescription>
             {currentRole === "sitter"
               ? "Add Pet Parent capabilities to your account. You'll be able to create listings for your pets and find nomads when you travel."
-              : "Add Nomad capabilities to your account. You'll be able to browse sits and apply to take care of pets while traveling."}
+              : "Add Sitter capabilities to your account. You'll be able to browse sits and apply to take care of pets while traveling."}
           </DialogDescription>
         </DialogHeader>
 
@@ -128,14 +130,12 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
             </Button>
             <Button
               className="flex-1"
-              onClick={handleUpgrade}
-              disabled={loading}
+              onClick={() => {
+                setOpen(false);
+                navigate("/membership?upgrade=both");
+              }}
             >
-              {loading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Plus className="w-4 h-4 mr-2" />
-              )}
+              <Plus className="w-4 h-4 mr-2" />
               Upgrade to Both
             </Button>
           </div>

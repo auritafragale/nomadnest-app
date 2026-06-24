@@ -32,6 +32,7 @@ const Membership = () => {
   const [inviteCode, setInviteCode] = useState("");
 
   const cancelled = searchParams.get("cancelled");
+  const upgradeBoth = searchParams.get("upgrade") === "both";
 
   const handleCheckout = async (planKey: string) => {
     if (!user) {
@@ -131,6 +132,12 @@ const Membership = () => {
           </div>
         )}
 
+        {upgradeBoth && (
+          <div className="bg-primary/10 border border-primary text-foreground rounded-lg p-4 mb-8 text-center">
+            Upgrade to the <strong>Combined Membership</strong> to use NomadNest as both a Nomad and Pet Parent.
+          </div>
+        )}
+
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground">Choose Your Membership</h1>
           <p className="mt-3 text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -157,7 +164,9 @@ const Membership = () => {
                       isCombined
                         ? "border-2 border-primary shadow-xl scale-[1.02]"
                         : "border-border"
-                    } ${isCurrent ? "ring-2 ring-accent" : ""}`}
+                    } ${isCurrent ? "ring-2 ring-accent" : ""} ${
+                      upgradeBoth && isCombined ? "ring-4 ring-primary ring-offset-2" : ""
+                    }`}
                   >
                     {badge && (
                       <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-4 py-1 text-xs font-bold rounded-bl-lg">
