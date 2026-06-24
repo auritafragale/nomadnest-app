@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin, Moon, Sun, Crown } from "lucide-react";
+import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin, Moon, Sun, Crown, Info, BookOpen, HelpCircle, Shield, Mail, Lock, Cookie, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
