@@ -105,9 +105,19 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
             })}
           </div>
         )}
+        {/* Message button */}
+        <div className="w-full mt-2" onClick={(e) => e.preventDefault()}>
+          <MessageSitterButton
+            sitterUserId={sitter.user_id}
+            size="sm"
+            variant="outline"
+            className="w-full h-7 text-xs"
+          />
+        </div>
       </Card>
     </Link>
   );
 };
+
 
 export default SitterGridCard;
