@@ -849,6 +849,7 @@ export type Database = {
           id: string
           id_verified: boolean | null
           is_active: boolean
+          is_visible: boolean
           languages: string[] | null
           latitude: number | null
           longitude: number | null
@@ -881,6 +882,7 @@ export type Database = {
           id?: string
           id_verified?: boolean | null
           is_active?: boolean
+          is_visible?: boolean
           languages?: string[] | null
           latitude?: number | null
           longitude?: number | null
@@ -913,6 +915,7 @@ export type Database = {
           id?: string
           id_verified?: boolean | null
           is_active?: boolean
+          is_visible?: boolean
           languages?: string[] | null
           latitude?: number | null
           longitude?: number | null

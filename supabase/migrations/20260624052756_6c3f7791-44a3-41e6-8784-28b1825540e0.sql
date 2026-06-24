@@ -1,0 +1,1 @@
+ALTER TABLE public.sitter_profiles ADD COLUMN IF NOT EXISTS is_visible boolean NOT NULL DEFAULT false;
