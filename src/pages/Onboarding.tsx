@@ -13,6 +13,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import GoogleMapsProvider from "@/components/maps/GoogleMapsProvider";
+import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 type RoleChoice = "sitter" | "owner" | "both";
