@@ -135,7 +135,7 @@ const Dashboard = () => {
         <MobileHomeScreen />
       </div>
 
-      <main className="hidden md:block pt-20 pb-12">
+      <main className="pt-4 md:pt-20 pb-12">
         <div className="container mx-auto px-4">
           <Breadcrumbs />
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
@@ -552,7 +552,7 @@ const OwnerDashboard = ({
                     <Search className="w-6 h-6 text-secondary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Browse Nomads</h3>
+                    <h3 className="font-semibold">Browse Sitters</h3>
                     <p className="text-sm text-muted-foreground">Find trusted nomads</p>
                   </div>
                   <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
