@@ -130,14 +130,12 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
             </Button>
             <Button
               className="flex-1"
-              onClick={handleUpgrade}
-              disabled={loading}
+              onClick={() => {
+                setOpen(false);
+                navigate("/membership?upgrade=both");
+              }}
             >
-              {loading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Plus className="w-4 h-4 mr-2" />
-              )}
+              <Plus className="w-4 h-4 mr-2" />
               Upgrade to Both
             </Button>
           </div>
