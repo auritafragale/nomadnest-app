@@ -121,7 +121,7 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
   const selected = nomads.find((n) => n.user_id === selectedId);
 
   return (
-    <div className="w-full h-[600px] rounded-lg overflow-hidden border border-border">
+    <div className="h-64 md:h-96 w-full rounded-lg overflow-hidden border border-border">
       <Map
         defaultCenter={{ lat: 30, lng: 0 }}
         defaultZoom={2}
@@ -131,7 +131,7 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
         zoomControl={false}
         mapTypeControl={false}
         mapId={nomadMapId || "nomad-map"}
-        className="w-full h-full"
+        style={{ width: "100%", height: "100%" }}
       >
         <FitBoundsInner nomads={nomads} />
         <ClusteredNomadMarkers nomads={nomads} onSelect={setSelectedId} />
@@ -186,7 +186,7 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
 };
 
 const NomadGoogleMap = ({ nomads }: NomadGoogleMapProps) => (
-  <GoogleMapsProvider>
+  <GoogleMapsProvider height="384px">
     <MapContent nomads={nomads} />
   </GoogleMapsProvider>
 );
