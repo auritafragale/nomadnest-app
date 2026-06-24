@@ -133,7 +133,7 @@ const MapContent = ({ listings }: ListingGoogleMapProps) => {
         mapId={listingMapId || "listing-map"}
         className="w-full h-full"
       >
-        <MapSearchBox />
+        
         <FitBoundsInner listings={listingsWithCoords} />
         <ClusteredMarkers listings={listingsWithCoords} onSelect={setSelectedId} />
         {selected && (
