@@ -699,7 +699,7 @@ const Settings = () => {
                 <div className="space-y-2">
                   <p className="font-medium text-sm">Edit Detailed Profiles</p>
                   <div className="flex flex-wrap gap-2">
-                    {(role === "sitter" || role === "both") && (
+                    {((role === "sitter") || (role === "both" && activeRole === "sitter")) && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -709,14 +709,14 @@ const Settings = () => {
                         Sitter Profile
                       </Button>
                     )}
-                    {(role === "owner" || role === "both") && (
+                    {((role === "owner") || (role === "both" && activeRole === "owner")) && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => navigate("/edit-owner-profile")}
                       >
                         <Home className="w-4 h-4 mr-2" />
-                        Owner Profile
+                        Pet Parent Profile
                       </Button>
                     )}
                   </div>
