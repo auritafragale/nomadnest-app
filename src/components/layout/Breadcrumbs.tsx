@@ -24,9 +24,9 @@ const routeLabels: Record<string, string> = {
   "edit-listing": "Edit Listing",
   listing: "Listing",
   sitter: "Sitter Profile",
-  owner: "Owner Profile",
+  owner: "Pet Parent Profile",
   "edit-sitter-profile": "Edit Sitter Profile",
-  "edit-owner-profile": "Edit Owner Profile",
+  "edit-owner-profile": "Edit Pet Parent Profile",
   terms: "Terms of Service",
   privacy: "Privacy Policy",
 };

@@ -271,9 +271,9 @@ const SitterDashboard = ({
 
             <div className="flex gap-2">
               <Link to="/edit-sitter-profile" className="flex-1">
-                <Button className="w-full" variant="outline">
+                <Button className="w-full">
                   <User className="w-4 h-4 mr-2" />
-                  Edit Profile
+                  Edit Sitter Profile
                 </Button>
               </Link>
               <Link to={`/sitter/${userId}`}>
@@ -487,9 +487,9 @@ const OwnerDashboard = ({
 
             <div className="flex gap-2">
               <Link to="/edit-owner-profile" className="flex-1">
-                <Button className="w-full" variant="outline">
+                <Button className="w-full">
                   <User className="w-4 h-4 mr-2" />
-                  Edit Profile
+                  Edit Pet Parent Profile
                 </Button>
               </Link>
               <Link to={`/owner/${userId}`}>

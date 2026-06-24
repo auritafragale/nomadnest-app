@@ -43,6 +43,7 @@ import {
   Phone,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
@@ -68,6 +69,7 @@ interface Profile {
 const Settings = () => {
   const navigate = useNavigate();
   const { user, role, signOut, refreshRole } = useAuth();
+  const { activeRole } = useActiveRole();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -697,7 +699,7 @@ const Settings = () => {
                 <div className="space-y-2">
                   <p className="font-medium text-sm">Edit Detailed Profiles</p>
                   <div className="flex flex-wrap gap-2">
-                    {(role === "sitter" || role === "both") && (
+                    {((role === "sitter") || (role === "both" && activeRole === "sitter")) && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -707,14 +709,14 @@ const Settings = () => {
                         Sitter Profile
                       </Button>
                     )}
-                    {(role === "owner" || role === "both") && (
+                    {((role === "owner") || (role === "both" && activeRole === "owner")) && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => navigate("/edit-owner-profile")}
                       >
                         <Home className="w-4 h-4 mr-2" />
-                        Owner Profile
+                        Pet Parent Profile
                       </Button>
                     )}
                   </div>
@@ -785,7 +787,7 @@ const Settings = () => {
                         <div className="flex items-center gap-3">
                           <Home className="w-5 h-5 text-muted-foreground" />
                           <div>
-                            <p className="font-medium">Owner Profile & Listings</p>
+                            <p className="font-medium">Pet Parent Profile & Listings</p>
                             <p className="text-sm text-muted-foreground">
                               {profileVisibility.ownerProfileActive
                                 ? "Your listings are visible to pet sitters"
