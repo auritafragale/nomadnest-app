@@ -166,7 +166,7 @@ const Dashboard = () => {
 
           {/* Role Toggle for combined users */}
           {role === "both" && (
-            <div className="mb-8">
+            <div className="mb-8 hidden md:block">
               <Tabs value={activeRole} onValueChange={(v) => setActiveRole(v as "sitter" | "owner")}>
                 <TabsList className="grid w-full max-w-md grid-cols-2">
                   <TabsTrigger value="sitter" className="gap-2">
