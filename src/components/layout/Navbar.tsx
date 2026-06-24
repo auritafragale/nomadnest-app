@@ -58,6 +58,7 @@ const Navbar = () => {
                 </Button>
               </Link>
             ))}
+            {/* Only visible to sitters and combined members — hidden for owner-only role */}
             {user && (role === "sitter" || role === "both") && (
               <Link to="/find-nomads">
                 <Button
@@ -68,7 +69,7 @@ const Navbar = () => {
                   )}
                 >
                   <MapPin className="w-4 h-4 mr-2" />
-                  Find Nomads
+                  Nomads Near Me
                 </Button>
               </Link>
             )}
