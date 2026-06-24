@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin, Moon, Sun, Crown } from "lucide-react";
+import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin, Moon, Sun, Crown, Info, BookOpen, HelpCircle, Shield, Mail, Lock, Cookie, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
@@ -186,6 +186,40 @@ const Navbar = () => {
                 </Button>
               </Link>
             )}
+
+            {/* Help & Support */}
+            <div className="pt-4 mt-2 border-t border-border">
+              <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Help & Support
+              </p>
+              <div className="space-y-1">
+                {[
+                  { href: "/about", label: "About NomadNest", icon: Info },
+                  { href: "/how-it-works", label: "How It Works", icon: BookOpen },
+                  { href: "/faq", label: "FAQ", icon: HelpCircle },
+                  { href: "/safety", label: "Safety & Trust", icon: Shield },
+                  { href: "/contact", label: "Contact", icon: Mail },
+                  { href: "/terms", label: "Terms of Service", icon: FileText },
+                  { href: "/privacy", label: "Privacy Policy", icon: Lock },
+                  { href: "/cookies", label: "Cookie Policy", icon: Cookie },
+                ].map((item) => (
+                  <Link key={item.href} to={item.href} onClick={() => setIsOpen(false)}>
+                    <Button
+                      variant="ghost"
+                      className={cn(
+                        "w-full justify-start text-primary hover:bg-terracotta-light",
+                        isActive(item.href) && "bg-terracotta-light"
+                      )}
+                    >
+                      <item.icon className="w-4 h-4 mr-2 text-primary" />
+                      <span className="flex-1 text-left">{item.label}</span>
+                      <ChevronRight className="w-4 h-4 ml-auto text-primary" />
+                    </Button>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
             <div className="pt-4 space-y-2 border-t border-border">
               {user ? (
                 <>
