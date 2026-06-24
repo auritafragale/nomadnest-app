@@ -73,6 +73,8 @@ const BrowseSitters = () => {
           </div>
         </div>
 
+        <NomadVisibilityBanner />
+
         {/* Filters */}
         <SitterFilters
           searchQuery={searchQuery}
