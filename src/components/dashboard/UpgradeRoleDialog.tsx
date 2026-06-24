@@ -96,7 +96,7 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
           <DialogDescription>
             {currentRole === "sitter"
               ? "Add Pet Parent capabilities to your account. You'll be able to create listings for your pets and find nomads when you travel."
-              : "Add Nomad capabilities to your account. You'll be able to browse sits and apply to take care of pets while traveling."}
+              : "Add Sitter capabilities to your account. You'll be able to browse sits and apply to take care of pets while traveling."}
           </DialogDescription>
         </DialogHeader>
 
