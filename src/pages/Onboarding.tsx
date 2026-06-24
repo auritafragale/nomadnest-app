@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import GoogleMapsProvider from "@/components/maps/GoogleMapsProvider";
 import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
+import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
+import { geocodeCityCountry } from "@/lib/geocode";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 type RoleChoice = "sitter" | "owner" | "both";
@@ -25,6 +27,7 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const { user, refreshRole, onboardingCompleted, loading } = useAuth();
   const { toast } = useToast();
+  const { data: mapsConfig } = useGoogleMapsKey();
 
   // Form state
   const [roleChoice, setRoleChoice] = useState<RoleChoice | null>(null);
@@ -112,6 +115,11 @@ const Onboarding = () => {
 
       // Create sitter profile if applicable
       if (roleChoice === "sitter" || roleChoice === "both") {
+        // Geocode city/country so the new nomad shows up on the Browse Nomads map.
+        const coords = mapsConfig?.key
+          ? await geocodeCityCountry(mapsConfig.key, city, country)
+          : null;
+
         await supabase
           .from("sitter_profiles")
           .upsert({
@@ -121,6 +129,7 @@ const Onboarding = () => {
             availability_type: availabilityType,
             available_from: availableFrom || null,
             available_to: availableTo || null,
+            ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
           }, { onConflict: 'user_id' });
       }
 
