@@ -9,6 +9,7 @@ import { Search, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import NomadGoogleMap from "@/components/maps/NomadGoogleMap";
+import NomadVisibilityBanner from "@/components/browse/NomadVisibilityBanner";
 
 export interface NomadOnMap {
   user_id: string;
@@ -103,6 +104,8 @@ const FindNomads = () => {
             </p>
           </div>
         </div>
+
+        <NomadVisibilityBanner />
 
         <div className="bg-surface border-b border-border sticky top-16 z-40">
           <div className="container py-4">
