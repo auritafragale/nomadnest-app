@@ -208,29 +208,10 @@ const Contact = () => {
               </Card>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* FAQs */}
-              <div>
-                <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
-                  <HelpCircle className="w-6 h-6" />
-                  Frequently Asked Questions
-                </h2>
-                <Accordion type="single" collapsible className="w-full">
-                  {faqs.map((faq, index) => (
-                    <AccordionItem key={index} value={`item-${index}`}>
-                      <AccordionTrigger className="text-left">
-                        {faq.question}
-                      </AccordionTrigger>
-                      <AccordionContent className="text-muted-foreground">
-                        {faq.answer}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
-
+            <div className="max-w-2xl mx-auto">
               {/* Contact Form */}
               <div>
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
