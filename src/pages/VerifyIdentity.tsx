@@ -328,9 +328,9 @@ const VerifyIdentity = () => {
                   <div className="flex justify-center mb-4">
                     <Upload className="w-14 h-14 text-primary" />
                   </div>
-                  <CardTitle className="text-xl text-center">Manual Review</CardTitle>
+                  <CardTitle className="text-xl text-center">Verify Your Identity</CardTitle>
                   <CardDescription className="text-center">
-                    Upload a photo of your ID and a selfie. Our team reviews submissions within 24–48 hours.
+                    Upload a photo ID and a selfie. Our team reviews submissions within 24–48 hours.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
