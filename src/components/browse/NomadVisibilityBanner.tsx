@@ -92,7 +92,7 @@ const NomadVisibilityBanner = () => {
             </>
           ) : (
             <>
-              👁️ You're hidden — turn on visibility to appear on the map and join city chats
+              👁️ You're hidden — turn on visibility to appear on the map and connect with nomads nearby
             </>
           )}
         </p>
