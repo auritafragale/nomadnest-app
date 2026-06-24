@@ -3,8 +3,7 @@ import { Map, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-ma
 import { MarkerClusterer, type Marker } from "@googlemaps/markerclusterer";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, Star, CheckCircle, MapPin } from "lucide-react";
+import { Star, CheckCircle, MapPin } from "lucide-react";
 import { SitterWithProfile } from "@/hooks/useSitters";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 
