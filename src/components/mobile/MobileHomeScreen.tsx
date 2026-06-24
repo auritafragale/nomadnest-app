@@ -21,7 +21,7 @@ const MobileHomeScreen = () => {
     setActiveRole(r);
   };
 
-  const fabLabel = mapRole === "sitter" ? "View Sits" : "Find Nomads";
+  const fabLabel = mapRole === "sitter" ? "View Sits" : "Browse Sitters";
   const fabPath = mapRole === "sitter" ? "/browse-sits" : "/browse-sitters";
 
   return (
