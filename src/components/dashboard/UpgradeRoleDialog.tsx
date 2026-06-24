@@ -24,8 +24,9 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
   const [loading, setLoading] = useState(false);
   const { user, refreshRole } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const newRoleLabel = currentRole === "sitter" ? "Pet Parent" : "Nomad";
+  const newRoleLabel = currentRole === "sitter" ? "Pet Parent" : "Sitter";
   const newRoleIcon = currentRole === "sitter" ? Home : Briefcase;
   const NewRoleIcon = newRoleIcon;
 
