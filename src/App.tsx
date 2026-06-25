@@ -41,6 +41,7 @@ import FAQ from "./pages/FAQ";
 import Membership from "./pages/Membership";
 import AdminVerifications from "./pages/AdminVerifications";
 import CityChat from "./pages/CityChat";
+import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
