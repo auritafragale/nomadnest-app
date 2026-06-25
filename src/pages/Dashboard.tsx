@@ -659,6 +659,9 @@ const OwnerDashboard = ({
           </CardContent>
         </Card>
 
+        {/* Upcoming & Past Sits */}
+        <UpcomingPastSits viewAs="owner" />
+
       </div>
     </div>
   );
