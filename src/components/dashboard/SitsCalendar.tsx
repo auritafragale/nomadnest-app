@@ -33,7 +33,7 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-destructive/20 text-destructive border-destructive/30",
 };
 
-const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | "owner"; userId: string }) => {
+export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | "owner"; userId: string }) => {
   const isOwner = sit.owner_user_id === userId;
   const isSitter = sit.sitter_user_id === userId;
   const otherParty = isOwner ? sit.sitter_profile : sit.owner_profile;
