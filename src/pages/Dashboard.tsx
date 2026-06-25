@@ -416,6 +416,12 @@ const SitterDashboard = ({
         {/* Sitter Invites */}
         <SitterInvitesSection />
 
+        {/* Availability Calendar */}
+        <SitterAvailabilityCalendar />
+
+        {/* Upcoming & Past Sits */}
+        <UpcomingPastSits viewAs="sitter" />
+
       </div>
     </div>
   );
