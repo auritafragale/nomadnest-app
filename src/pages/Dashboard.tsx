@@ -17,12 +17,12 @@ import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import { useSitterApplications } from "@/hooks/useSitterApplications";
 import { SitterApplicationCard } from "@/components/applications/SitterApplicationCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SitsCalendar } from "@/components/dashboard/SitsCalendar";
+
 import { OwnerListingCard } from "@/components/dashboard/OwnerListingCard";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
 import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
 import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection";
-import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
+
 import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompletenessCard";
 import { useOwnerApplications } from "@/hooks/useApplications";
 import { OwnerApplicationPreviewCard } from "@/components/dashboard/OwnerApplicationPreviewCard";
@@ -414,11 +414,6 @@ const SitterDashboard = ({
         {/* Sitter Invites */}
         <SitterInvitesSection />
 
-        {/* Availability Calendar */}
-        <SitterAvailabilityCalendar />
-
-        {/* Sits Calendar */}
-        <SitsCalendar viewAs="sitter" />
       </div>
     </div>
   );
@@ -656,8 +651,6 @@ const OwnerDashboard = ({
           </CardContent>
         </Card>
 
-        {/* Sits Calendar */}
-        <SitsCalendar viewAs="owner" />
       </div>
     </div>
   );
