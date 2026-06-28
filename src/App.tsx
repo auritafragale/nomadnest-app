@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -66,6 +66,12 @@ const AppShell = () => {
   const [onboardingDone, setOnboardingDone] = useState(
     () => user !== null || hasSeenOnboarding()
   );
+
+  useEffect(() => {
+    if (user !== null) {
+      setOnboardingDone(true);
+    }
+  }, [user]);
 
   const handleSplashDone = () => {
     sessionStorage.setItem(SPLASH_KEY, "1");
