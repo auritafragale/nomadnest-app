@@ -13,7 +13,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { AvatarUpload } from "@/components/onboarding/AvatarUpload";
 import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
