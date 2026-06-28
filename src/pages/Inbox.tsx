@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
@@ -23,6 +23,7 @@ const Inbox = () => {
   const { data: messages = [], isLoading: messagesLoading } = useMessages(selectedId);
   const sendMessage = useSendMessage();
   const markAsRead = useMarkAsRead();
+  const lastMarkedConversationRef = useRef<string | null>(null);
 
   const selectedConversation = conversations.find((c) => c.id === selectedId) || null;
   
@@ -44,7 +45,10 @@ const Inbox = () => {
   const handleSelect = (id: string | null) => {
     setSelectedId(id);
     if (id) {
-      markAsRead.mutate(id);
+      if (lastMarkedConversationRef.current !== id) {
+        lastMarkedConversationRef.current = id;
+        markAsRead.mutate(id);
+      }
       setSearchParams({ conversation: id });
     } else {
       setSearchParams({});
@@ -53,7 +57,8 @@ const Inbox = () => {
 
   // Mark messages as read when conversation is selected
   useEffect(() => {
-    if (selectedId) {
+    if (selectedId && lastMarkedConversationRef.current !== selectedId) {
+      lastMarkedConversationRef.current = selectedId;
       markAsRead.mutate(selectedId);
     }
   }, [selectedId]);
