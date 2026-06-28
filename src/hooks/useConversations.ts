@@ -125,20 +125,26 @@ export const useMessages = (conversationId: string | null) => {
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
+        async (payload) => {
           console.log("New message received:", payload);
+          const newMessage = payload.new as Message;
           // Add new message to cache
           queryClient.setQueryData<Message[]>(
             ["messages", conversationId],
             (old) => {
-              if (!old) return [payload.new as Message];
+              if (!old) return [newMessage];
               // Avoid duplicates
-              if (old.some((m) => m.id === (payload.new as Message).id)) {
+              if (old.some((m) => m.id === newMessage.id)) {
                 return old;
               }
-              return [...old, payload.new as Message];
+              return [...old, newMessage];
             }
           );
+          if (newMessage.sender_user_id !== user.id) {
+            await supabase.rpc("mark_conversation_messages_read", {
+              _conversation_id: conversationId,
+            });
+          }
           // Refresh conversations list for updated counts
           queryClient.invalidateQueries({ queryKey: ["conversations"] });
           queryClient.invalidateQueries({ queryKey: unreadMessagesQueryKey(user.id) });
