@@ -9,7 +9,7 @@ import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useNewApplicationsCount } from "@/hooks/useNewApplicationsCount";
 import { Badge } from "@/components/ui/badge";
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
-import { MobileNotificationsSection } from "@/components/notifications/MobileNotificationsSection";
+import { MobileNotificationsBell } from "@/components/notifications/MobileNotificationsBell";
 import { useTheme } from "@/contexts/ThemeContext";
 import blackLogo from "@/assets/Black_Logo.png";
 import whiteLogo from "@/assets/White_Logo.png";
@@ -152,8 +152,13 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Theme Toggle + Mobile Menu Toggle */}
+          {/* Theme Toggle + Mobile Notifications + Mobile Menu Toggle */}
           <div className="flex items-center gap-1">
+            {user && (
+              <div className="md:hidden">
+                <MobileNotificationsBell />
+              </div>
+            )}
             <button
               className="p-2.5 text-muted-foreground hover:text-foreground transition-colors rounded-md"
               onClick={toggleTheme}
@@ -270,7 +275,7 @@ const Navbar = () => {
                       )}
                     </Button>
                   </Link>
-                  <MobileNotificationsSection onNavigate={closeMenu} />
+                  
                 </div>
               )}
 
