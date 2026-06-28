@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Home, Search, Plus, MessageSquare, Calendar, Settings, 
+import {
+  Home, Search, Plus, MessageSquare, Calendar, Settings,
   LogOut, User, Briefcase, ArrowRight, MapPin, Clock,
-  FileText, Star, ClipboardList, Heart, Eye
+  FileText, Star, ClipboardList, Heart, Eye, Bell, X
 } from "lucide-react";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,6 +50,8 @@ interface OwnerProfile {
   bio: string | null;
 }
 
+const PUSH_BANNER_DISMISSED_KEY = "nomadnest_push_banner_dismissed";
+
 const Dashboard = () => {
   const { user, role, signOut, loading } = useAuth();
   const { activeRole, setActiveRole } = useActiveRole();
@@ -57,6 +60,17 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
+  const { isSupported, isSubscribed, isLoading: pushLoading, subscribe } = usePushNotifications();
+  const [pushBannerDismissed, setPushBannerDismissed] = useState(
+    () => localStorage.getItem(PUSH_BANNER_DISMISSED_KEY) === "true"
+  );
+
+  const dismissPushBanner = () => {
+    localStorage.setItem(PUSH_BANNER_DISMISSED_KEY, "true");
+    setPushBannerDismissed(true);
+  };
+
+  const showPushBanner = isSupported && !isSubscribed && !pushBannerDismissed && !!user;
 
   useEffect(() => {
     if (!loading && !user) {
@@ -132,12 +146,42 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
+      {/* Push notification opt-in banner */}
+      {showPushBanner && (
+        <div className="fixed top-16 left-0 right-0 z-40 bg-primary text-primary-foreground px-4 py-3 flex items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-2 min-w-0">
+            <Bell className="w-4 h-4 shrink-0" />
+            <span className="text-sm truncate">
+              Enable notifications to get instant alerts for new messages, applications and invitations
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-7 text-xs"
+              disabled={pushLoading}
+              onClick={subscribe}
+            >
+              Enable
+            </Button>
+            <button
+              onClick={dismissPushBanner}
+              className="text-primary-foreground/70 hover:text-primary-foreground"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Mobile home — map + role toggle + FAB */}
-      <div className="pt-16">
+      <div className={showPushBanner ? "pt-28" : "pt-16"}>
         <MobileHomeScreen />
       </div>
 
-      <main className="pt-4 md:pt-20 pb-12">
+      <main className={`pb-12 ${showPushBanner ? "pt-16 md:pt-32" : "pt-4 md:pt-20"}`}>
         <div className="container mx-auto px-4">
           <Breadcrumbs />
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
