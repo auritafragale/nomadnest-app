@@ -58,7 +58,7 @@ export const useUnreadMessages = () => {
     if (!user) return;
 
     const channel = supabase
-      .channel("unread-messages-count")
+      .channel(`unread-messages-count-${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -67,11 +67,12 @@ export const useUnreadMessages = () => {
           table: "messages",
         },
         (payload) => {
-          // Play sound if message is from someone else
-          if (payload.new && payload.new.sender_user_id !== user.id) {
-            playNotificationSound();
-          }
+          const newMsg = payload.new as { sender_user_id?: string } | null;
+          // Only react to messages from other users
+          if (!newMsg || newMsg.sender_user_id === user.id) return;
+          playNotificationSound();
           queryClient.invalidateQueries({ queryKey: ["unread-messages", user.id] });
+          queryClient.invalidateQueries({ queryKey: ["conversations"] });
         }
       )
       .on(
