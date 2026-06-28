@@ -43,6 +43,7 @@ import AdminVerifications from "./pages/AdminVerifications";
 import CityChat from "./pages/CityChat";
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
+import Safety from "./pages/Safety";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
