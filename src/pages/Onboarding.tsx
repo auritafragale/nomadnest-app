@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
   Home, ArrowRight, ArrowLeft, User, Users, Briefcase, 
-  Cat, Dog, Rabbit, MapPin, Calendar, Check, Loader2
+  Cat, Dog, Rabbit, Calendar, Check, Loader2
 } from "lucide-react";
 import { AvatarUpload } from "@/components/onboarding/AvatarUpload";
 import { useAuth } from "@/contexts/AuthContext";
