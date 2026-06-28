@@ -319,82 +319,81 @@ const Onboarding = () => {
 
       case 3:
         return (
-            <div className="space-y-6">
-              <div className="text-center">
-                <CardTitle className="text-xl mb-2">Your basics</CardTitle>
-                <CardDescription>Tell us a bit about yourself.</CardDescription>
-              </div>
+          <div className="space-y-6">
+            <div className="text-center">
+              <CardTitle className="text-xl mb-2">Your basics</CardTitle>
+              <CardDescription>Tell us a bit about yourself.</CardDescription>
+            </div>
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First name</Label>
-                    <Input
-                      id="firstName"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="Emma"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last name</Label>
-                    <Input
-                      id="lastName"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Thompson"
-                    />
-                  </div>
-                </div>
-
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
-                  <PlacesAutocompleteField
-                    id="country"
-                    value={country}
-                    onChange={setCountry}
-                    onSelect={(place) => {
-                      setCountry(place.country || place.description);
-                    }}
-                    types={["country"]}
-                    placeholder="United Kingdom"
+                  <Label htmlFor="firstName">First name</Label>
+                  <Input
+                    id="firstName"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="Emma"
                   />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <PlacesAutocompleteField
-                    id="city"
-                    value={city}
-                    onChange={setCity}
-                    onSelect={(place) => {
-                      if (place.city) setCity(place.city);
-                      if (!country && place.country) setCountry(place.country);
-                    }}
-                    types={["(cities)"]}
-                    placeholder="London"
+                  <Label htmlFor="lastName">Last name</Label>
+                  <Input
+                    id="lastName"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Thompson"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={handleBack} className="flex-1 h-12">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back
-                </Button>
-                <Button
-                  onClick={handleNext}
-                  className="flex-1 h-12"
-                  disabled={!firstName || !lastName}
-                >
-                  Next
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+              <div className="space-y-2">
+                <Label htmlFor="country">Country</Label>
+                <PlacesAutocompleteField
+                  id="country"
+                  value={country}
+                  onChange={setCountry}
+                  onSelect={(place) => {
+                    setCountry(place.country || place.description);
+                  }}
+                  types={["country"]}
+                  placeholder="United Kingdom"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <PlacesAutocompleteField
+                  id="city"
+                  value={city}
+                  onChange={setCity}
+                  onSelect={(place) => {
+                    if (place.city) setCity(place.city);
+                    if (!country && place.country) setCountry(place.country);
+                  }}
+                  types={["(cities)"]}
+                  placeholder="London"
+                />
               </div>
             </div>
-          
-        );
 
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={handleBack} className="flex-1 h-12">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+              <Button
+                onClick={handleNext}
+                className="flex-1 h-12"
+                disabled={!firstName || !lastName}
+              >
+                Next
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </div>
+        
+      );
       case 4:
         return (
           <div className="space-y-6">
