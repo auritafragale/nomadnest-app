@@ -48,14 +48,14 @@ const Onboarding = () => {
 
   // Redirect if not logged in, or if already onboarded
   useEffect(() => {
-    if (loading) return; // Wait for auth state to be determined
-    
+    if (loading || roleLoading) return; // Wait for auth state and role to be determined
+
     if (!user) {
       navigate("/auth");
     } else if (onboardingCompleted) {
       navigate("/dashboard");
     }
-  }, [user, onboardingCompleted, loading, navigate]);
+  }, [user, onboardingCompleted, loading, roleLoading, navigate]);
 
   // Pre-fill from profile if available
   useEffect(() => {
