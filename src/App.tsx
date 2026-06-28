@@ -67,6 +67,12 @@ const AppShell = () => {
     () => user !== null || hasSeenOnboarding()
   );
 
+  useEffect(() => {
+    if (user !== null) {
+      setOnboardingDone(true);
+    }
+  }, [user]);
+
   const handleSplashDone = () => {
     sessionStorage.setItem(SPLASH_KEY, "1");
     setSplashDone(true);
