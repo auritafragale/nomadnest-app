@@ -276,7 +276,7 @@ const Navbar = () => {
                       )}
                     </Button>
                   </Link>
-                  <MobileNotificationsSection onNavigate={closeMenu} />
+                  
                 </div>
               )}
 
