@@ -129,6 +129,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Clean up the push subscription for this device before the session is
+    // cleared — the DELETE needs a valid session to satisfy the RLS policy.
+    if (user && 'serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const pushSub = await registration.pushManager.getSubscription();
+        if (pushSub) {
+          await supabase
+            .from('push_subscriptions')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('endpoint', pushSub.endpoint);
+          await pushSub.unsubscribe();
+        }
+      } catch (err) {
+        console.error('Error cleaning up push subscription on sign out:', err);
+      }
+    }
     await supabase.auth.signOut();
     setRole(null);
     setOnboardingCompleted(false);

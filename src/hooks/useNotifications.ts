@@ -79,7 +79,7 @@ export const useNotifications = () => {
 export const useUnreadNotificationsCount = () => {
   const { user } = useAuth();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["notifications-unread-count", user?.id],
     queryFn: async () => {
       if (!user) return 0;
@@ -95,6 +95,24 @@ export const useUnreadNotificationsCount = () => {
     },
     enabled: !!user,
   });
+
+  // Keep the PWA app icon badge in sync with the unread count.
+  // setAppBadge/clearAppBadge are not in the standard TS lib yet.
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      setAppBadge?: (count?: number) => Promise<void>;
+      clearAppBadge?: () => Promise<void>;
+    };
+    if (!nav.setAppBadge) return;
+    const count = query.data ?? 0;
+    if (count > 0) {
+      nav.setAppBadge(count);
+    } else {
+      nav.clearAppBadge?.();
+    }
+  }, [query.data]);
+
+  return query;
 };
 
 export const useMarkNotificationRead = () => {

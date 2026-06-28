@@ -52,7 +52,15 @@ self.addEventListener("push", (event) => {
     renotify: true,
   };
 
-  event.waitUntil(self.registration.showNotification(data.title, options));
+  event.waitUntil(
+    Promise.resolve(self.registration.showNotification(data.title, options))
+      .then(() => self.registration.getNotifications())
+      .then((notifications) => {
+        if ('setAppBadge' in self.navigator) {
+          return self.navigator.setAppBadge(notifications.length);
+        }
+      })
+  );
 });
 
 // Notification clicked
@@ -64,6 +72,13 @@ self.addEventListener("notificationclick", (event) => {
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
+        // Clear badge once all notifications are dismissed
+        self.registration.getNotifications().then((remaining) => {
+          if (remaining.length === 0 && "clearAppBadge" in self.navigator) {
+            self.navigator.clearAppBadge();
+          }
+        });
+
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && "focus" in client) {
             client.navigate(url);

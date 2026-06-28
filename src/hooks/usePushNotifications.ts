@@ -139,17 +139,14 @@ export const usePushNotifications = () => {
 
       const subscriptionJson = subscription.toJSON();
 
-      // Save subscription to database
-      const { error } = await supabase
-        .from('push_subscriptions')
-        .upsert({
-          user_id: user.id,
-          endpoint: subscription.endpoint,
-          p256dh: subscriptionJson.keys?.p256dh || '',
-          auth: subscriptionJson.keys?.auth || '',
-        }, {
-          onConflict: 'user_id,endpoint'
-        });
+      // Use an RPC so it can atomically delete any stale row for this endpoint
+      // (possibly owned by a different user) then insert for the current user.
+      // A plain client-side upsert cannot cross user_id boundaries due to RLS.
+      const { error } = await supabase.rpc('upsert_push_subscription', {
+        p_endpoint: subscription.endpoint,
+        p_p256dh: subscriptionJson.keys?.p256dh || '',
+        p_auth: subscriptionJson.keys?.auth || '',
+      });
 
       if (error) {
         console.error('Error saving subscription:', error);
