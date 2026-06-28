@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { sendNotification } from "@/lib/notifications";
 
+const conversationsQueryKey = (userId?: string) => ["conversations", userId] as const;
+const unreadMessagesQueryKey = (userId?: string) => ["unread-messages", userId] as const;
+
 export interface Conversation {
   id: string;
   listing_id: string | null;
@@ -43,7 +46,7 @@ export const useConversations = () => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["conversations", user?.id],
+    queryKey: conversationsQueryKey(user?.id),
     queryFn: async (): Promise<Conversation[]> => {
       if (!user) return [];
 
@@ -138,6 +141,7 @@ export const useMessages = (conversationId: string | null) => {
           );
           // Refresh conversations list for updated counts
           queryClient.invalidateQueries({ queryKey: ["conversations"] });
+          queryClient.invalidateQueries({ queryKey: unreadMessagesQueryKey(user.id) });
         }
       )
       .on(
@@ -162,6 +166,8 @@ export const useMessages = (conversationId: string | null) => {
               );
             }
           );
+          queryClient.invalidateQueries({ queryKey: ["conversations"] });
+          queryClient.invalidateQueries({ queryKey: unreadMessagesQueryKey(user.id) });
         }
       )
       .subscribe();
@@ -250,6 +256,7 @@ export const useSendMessage = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["messages", variables.conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: unreadMessagesQueryKey(user?.id) });
     },
   });
 };
@@ -262,19 +269,68 @@ export const useMarkAsRead = () => {
     mutationFn: async (conversationId: string) => {
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase
-        .from("messages")
-        .update({ read_at: new Date().toISOString() })
-        .eq("conversation_id", conversationId)
-        .neq("sender_user_id", user.id)
-        .is("read_at", null);
+      const { error } = await supabase.rpc("mark_conversation_messages_read", {
+        _conversation_id: conversationId,
+      });
 
       if (error) throw error;
     },
-    onSuccess: (_, conversationId) => {
+    onMutate: async (conversationId) => {
+      if (!user) return;
+
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: conversationsQueryKey(user.id) }),
+        queryClient.cancelQueries({ queryKey: unreadMessagesQueryKey(user.id) }),
+        queryClient.cancelQueries({ queryKey: ["messages", conversationId] }),
+      ]);
+
+      const previousConversations = queryClient.getQueryData<Conversation[]>(
+        conversationsQueryKey(user.id)
+      );
+      const previousUnreadCount = queryClient.getQueryData<number>(
+        unreadMessagesQueryKey(user.id)
+      );
+      const previousMessages = queryClient.getQueryData<Message[]>(["messages", conversationId]);
+      const hadUnread = previousConversations?.some(
+        (conversation) => conversation.id === conversationId && conversation.unread_count > 0
+      );
+      const readAt = new Date().toISOString();
+
+      queryClient.setQueryData<Conversation[]>(conversationsQueryKey(user.id), (old) =>
+        old?.map((conversation) =>
+          conversation.id === conversationId
+            ? { ...conversation, unread_count: 0 }
+            : conversation
+        ) ?? old
+      );
+
+      if (hadUnread) {
+        queryClient.setQueryData<number>(unreadMessagesQueryKey(user.id), (old = 0) =>
+          Math.max(old - 1, 0)
+        );
+      }
+
+      queryClient.setQueryData<Message[]>(["messages", conversationId], (old) =>
+        old?.map((message) =>
+          message.sender_user_id !== user.id && !message.read_at
+            ? { ...message, read_at: readAt }
+            : message
+        ) ?? old
+      );
+
+      return { previousConversations, previousUnreadCount, previousMessages };
+    },
+    onError: (_error, conversationId, context) => {
+      if (!user || !context) return;
+
+      queryClient.setQueryData(conversationsQueryKey(user.id), context.previousConversations);
+      queryClient.setQueryData(unreadMessagesQueryKey(user.id), context.previousUnreadCount);
+      queryClient.setQueryData(["messages", conversationId], context.previousMessages);
+    },
+    onSettled: (_data, _error, conversationId) => {
       queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      queryClient.invalidateQueries({ queryKey: ["unread-messages", user?.id] });
+      queryClient.invalidateQueries({ queryKey: unreadMessagesQueryKey(user?.id) });
     },
   });
 };
