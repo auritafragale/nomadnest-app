@@ -22,9 +22,9 @@ const Footer = () => {
       heading: "Community",
       links: [
         { label: "Safety & Trust", href: "/safety" },
+        { label: "Community Standards", href: "/code-of-conduct" },
         { label: "FAQ", href: "/faq" },
         { label: "Member Perks", href: "/membership" },
-        { label: "Blog", href: "/blog" },
       ],
     },
     {
@@ -32,7 +32,7 @@ const Footer = () => {
       links: [
         { label: "Terms of Service", href: "/terms" },
         { label: "Privacy Policy", href: "/privacy" },
-        { label: "Cookie Policy", href: "/privacy" },
+        { label: "Cookie Policy", href: "/cookies" },
       ],
     },
   ];

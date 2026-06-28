@@ -36,6 +36,8 @@ import Settings from "./pages/Settings";
 import VerifyIdentity from "./pages/VerifyIdentity";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import Cookies from "./pages/Cookies";
+import CodeOfConduct from "./pages/CodeOfConduct";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import Membership from "./pages/Membership";
@@ -108,6 +110,8 @@ const AppShell = () => {
         <Route path="/membership" element={<Membership />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/cookies" element={<Cookies />} />
+        <Route path="/code-of-conduct" element={<CodeOfConduct />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
