@@ -319,7 +319,6 @@ const Onboarding = () => {
 
       case 3:
         return (
-        return (
             <div className="space-y-6">
               <div className="text-center">
                 <CardTitle className="text-xl mb-2">Your basics</CardTitle>
