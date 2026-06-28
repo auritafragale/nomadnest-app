@@ -274,6 +274,7 @@ export const useMarkAsRead = () => {
     onSuccess: (_, conversationId) => {
       queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["unread-messages", user?.id] });
     },
   });
 };
