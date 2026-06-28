@@ -10,6 +10,7 @@ import { useNewApplicationsCount } from "@/hooks/useNewApplicationsCount";
 import { Badge } from "@/components/ui/badge";
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 import { MobileNotificationsSection } from "@/components/notifications/MobileNotificationsSection";
+import { MobileNotificationsBell } from "@/components/notifications/MobileNotificationsBell";
 import { useTheme } from "@/contexts/ThemeContext";
 import blackLogo from "@/assets/Black_Logo.png";
 import whiteLogo from "@/assets/White_Logo.png";
