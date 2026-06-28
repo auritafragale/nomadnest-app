@@ -44,6 +44,7 @@ const Inbox = () => {
   const handleSelect = (id: string | null) => {
     setSelectedId(id);
     if (id) {
+      markAsRead.mutate(id);
       setSearchParams({ conversation: id });
     } else {
       setSearchParams({});
