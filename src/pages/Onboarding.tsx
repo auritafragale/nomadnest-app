@@ -392,8 +392,7 @@ const Onboarding = () => {
               </Button>
             </div>
           </div>
-        
-      );
+        );
       case 4:
         return (
           <div className="space-y-6">
