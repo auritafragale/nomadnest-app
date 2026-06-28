@@ -25,7 +25,7 @@ const Onboarding = () => {
   const [step, setStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, refreshRole, onboardingCompleted, loading } = useAuth();
+  const { user, refreshRole, onboardingCompleted, loading, roleLoading } = useAuth();
   const { toast } = useToast();
   const { data: mapsConfig } = useGoogleMapsKey();
 
