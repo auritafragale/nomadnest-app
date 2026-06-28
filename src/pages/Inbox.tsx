@@ -51,6 +51,7 @@ const Inbox = () => {
       }
       setSearchParams({ conversation: id });
     } else {
+      lastMarkedConversationRef.current = null;
       setSearchParams({});
     }
   };
