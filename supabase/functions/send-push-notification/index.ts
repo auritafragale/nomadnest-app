@@ -70,7 +70,7 @@ serve(async (req) => {
 
     // Configure web-push with VAPID details
     webpush.setVapidDetails(
-      'mailto:admin@trustedpetsitter.com',
+      'mailto:hello@nomadnest.global',
       vapidPublicKey,
       vapidPrivateKey
     );

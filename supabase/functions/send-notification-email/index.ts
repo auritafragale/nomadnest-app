@@ -75,7 +75,7 @@ const sendPushNotification = async (
 
     // Configure web-push
     webpush.setVapidDetails(
-      'mailto:admin@trustedpetsitter.com',
+      'mailto:hello@nomadnest.global',
       vapidPublicKey,
       vapidPrivateKey
     );
