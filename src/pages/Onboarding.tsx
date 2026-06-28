@@ -392,7 +392,7 @@ const Onboarding = () => {
                 </Button>
               </div>
             </div>
-          </GoogleMapsProvider>
+          
         );
 
       case 4:
