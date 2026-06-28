@@ -15,25 +15,10 @@ export const useUnreadMessages = () => {
     queryFn: async () => {
       if (!user) return 0;
 
-      // Get conversations where user is owner or sitter
-      const { data: conversations } = await supabase
-        .from("conversations")
-        .select("id")
-        .or(`owner_user_id.eq.${user.id},sitter_user_id.eq.${user.id}`);
+      const { data, error } = await supabase.rpc("get_unread_conversations_count");
 
-      if (!conversations || conversations.length === 0) return 0;
-
-      const conversationIds = conversations.map((c) => c.id);
-
-      // Count unread messages (not sent by current user and read_at is null)
-      const { count } = await supabase
-        .from("messages")
-        .select("*", { count: "exact", head: true })
-        .in("conversation_id", conversationIds)
-        .neq("sender_user_id", user.id)
-        .is("read_at", null);
-
-      return count || 0;
+      if (error) throw error;
+      return data || 0;
     },
     enabled: !!user,
     refetchInterval: 30000,
@@ -67,7 +52,7 @@ export const useUnreadMessages = () => {
           table: "messages",
         },
         (payload) => {
-          const newMsg = payload.new as { sender_user_id?: string } | null;
+          const newMsg = payload.new as { conversation_id?: string; sender_user_id?: string } | null;
           // Only react to messages from other users
           if (!newMsg || newMsg.sender_user_id === user.id) return;
           playNotificationSound();
@@ -84,6 +69,7 @@ export const useUnreadMessages = () => {
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ["unread-messages", user.id] });
+          queryClient.invalidateQueries({ queryKey: ["conversations"] });
         }
       )
       .subscribe();

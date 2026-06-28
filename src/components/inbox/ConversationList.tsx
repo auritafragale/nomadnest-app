@@ -53,6 +53,7 @@ export const ConversationList = ({
       <div className="space-y-1 p-2">
         {conversations.map((conversation) => {
           const otherUser = conversation.other_user;
+          const hasUnread = conversation.unread_count > 0;
           const initials = otherUser
             ? `${otherUser.first_name?.[0] || ""}${otherUser.last_name?.[0] || ""}`
             : "?";
@@ -62,11 +63,16 @@ export const ConversationList = ({
               key={conversation.id}
               onClick={() => onSelect(conversation.id)}
               className={cn(
-                "w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors",
+                "relative w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors",
                 "hover:bg-accent",
-                selectedId === conversation.id && "bg-accent"
+                hasUnread && "bg-primary/10 hover:bg-primary/15",
+                selectedId === conversation.id && "bg-accent",
+                selectedId === conversation.id && hasUnread && "bg-primary/15"
               )}
             >
+              {hasUnread && (
+                <span className="absolute left-1.5 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-primary" />
+              )}
               <Avatar className="h-12 w-12">
                 <AvatarImage src={otherUser?.avatar_url || undefined} />
                 <AvatarFallback className="bg-primary/10 text-primary">
@@ -76,7 +82,7 @@ export const ConversationList = ({
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-foreground truncate">
+                  <span className={cn("text-foreground truncate", hasUnread ? "font-bold" : "font-medium")}>
                     {otherUser?.first_name} {otherUser?.last_name}
                   </span>
                   {conversation.last_message && (
