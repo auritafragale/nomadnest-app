@@ -25,15 +25,15 @@ export const useUnreadMessages = () => {
 
       const conversationIds = conversations.map((c) => c.id);
 
-      // Count unread messages (not sent by current user and read_at is null)
-      const { count } = await supabase
+      // Count conversations with at least one unread message for the current user.
+      const { data: unreadMessages } = await supabase
         .from("messages")
-        .select("*", { count: "exact", head: true })
+        .select("conversation_id")
         .in("conversation_id", conversationIds)
         .neq("sender_user_id", user.id)
         .is("read_at", null);
 
-      return count || 0;
+      return new Set((unreadMessages || []).map((message) => message.conversation_id)).size;
     },
     enabled: !!user,
     refetchInterval: 30000,
@@ -67,7 +67,7 @@ export const useUnreadMessages = () => {
           table: "messages",
         },
         (payload) => {
-          const newMsg = payload.new as { sender_user_id?: string } | null;
+          const newMsg = payload.new as { conversation_id?: string; sender_user_id?: string } | null;
           // Only react to messages from other users
           if (!newMsg || newMsg.sender_user_id === user.id) return;
           playNotificationSound();
@@ -84,6 +84,7 @@ export const useUnreadMessages = () => {
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ["unread-messages", user.id] });
+          queryClient.invalidateQueries({ queryKey: ["conversations"] });
         }
       )
       .subscribe();
