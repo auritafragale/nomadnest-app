@@ -1031,6 +1031,7 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: string
       }
+      get_unread_conversations_count: { Args: never; Returns: number }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
