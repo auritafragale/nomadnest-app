@@ -1035,6 +1035,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      mark_conversation_messages_read: {
+        Args: { _conversation_id: string }
+        Returns: undefined
+      }
       redeem_founding_member_code: {
         Args: { p_code: string; p_user_id: string }
         Returns: string
