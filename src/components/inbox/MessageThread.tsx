@@ -41,7 +41,7 @@ export const MessageThread = ({
 }: MessageThreadProps) => {
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const otherUser = conversation?.other_user;
@@ -54,9 +54,7 @@ export const MessageThread = ({
   );
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isOtherTyping]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,7 +158,7 @@ export const MessageThread = ({
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+      <ScrollArea className="flex-1 p-4">
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -229,6 +227,7 @@ export const MessageThread = ({
             })}
           </div>
         )}
+        <div ref={bottomRef} />
       </ScrollArea>
 
       {/* Typing Indicator */}

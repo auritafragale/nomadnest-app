@@ -15,7 +15,7 @@ export const useUnreadMessages = () => {
     queryFn: async () => {
       if (!user) return 0;
 
-      const { data, error } = await supabase.rpc("get_unread_conversations_count");
+      const { data, error } = await supabase.rpc("get_unread_messages_count");
 
       if (error) throw error;
       return data || 0;

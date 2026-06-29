@@ -297,9 +297,10 @@ export const useMarkAsRead = () => {
         unreadMessagesQueryKey(user.id)
       );
       const previousMessages = queryClient.getQueryData<Message[]>(["messages", conversationId]);
-      const hadUnread = previousConversations?.some(
-        (conversation) => conversation.id === conversationId && conversation.unread_count > 0
-      );
+      // How many unread messages this conversation contributes to the total count
+      const conversationUnreadMessages = previousConversations?.find(
+        (c) => c.id === conversationId
+      )?.unread_count ?? 0;
       const readAt = new Date().toISOString();
 
       queryClient.setQueryData<Conversation[]>(conversationsQueryKey(user.id), (old) =>
@@ -310,9 +311,9 @@ export const useMarkAsRead = () => {
         ) ?? old
       );
 
-      if (hadUnread) {
+      if (conversationUnreadMessages > 0) {
         queryClient.setQueryData<number>(unreadMessagesQueryKey(user.id), (old = 0) =>
-          Math.max(old - 1, 0)
+          Math.max(old - conversationUnreadMessages, 0)
         );
       }
 
@@ -340,7 +341,7 @@ export const useMarkAsRead = () => {
       // navigated directly via a push notification URL (conversations not yet loaded,
       // so the optimistic decrement in onMutate is skipped).
       try {
-        const { data } = await supabase.rpc("get_unread_conversations_count");
+        const { data } = await supabase.rpc("get_unread_messages_count");
         const count = data || 0;
         const nav = navigator as Navigator & {
           setAppBadge?: (n?: number) => Promise<void>;
