@@ -72,6 +72,8 @@ export const useUnreadMessages = () => {
           // Only react to messages from other users
           if (!newMsg || newMsg.sender_user_id === user.id) return;
           playNotificationSound();
+          // Optimistic increment so the nav badge updates immediately without waiting for refetch
+          queryClient.setQueryData<number>(["unread-messages", user.id], (old = 0) => old + 1);
           queryClient.invalidateQueries({ queryKey: ["unread-messages", user.id] });
           queryClient.invalidateQueries({ queryKey: ["conversations"] });
         }

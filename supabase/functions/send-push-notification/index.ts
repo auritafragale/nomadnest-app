@@ -53,6 +53,27 @@ serve(async (req) => {
       .select('*')
       .eq('user_id', user_id);
 
+    // Query total unread message count for the recipient so sw.js can set the badge correctly
+    const { data: userConvos } = await supabase
+      .from('conversations')
+      .select('id')
+      .or(`owner_user_id.eq.${user_id},sitter_user_id.eq.${user_id}`);
+
+    const convIds = (userConvos || []).map((c: { id: string }) => c.id);
+    let unreadCount = 1; // default to at least 1 since we're sending a notification
+    if (convIds.length > 0) {
+      const { count } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .in('conversation_id', convIds)
+        .neq('sender_user_id', user_id)
+        .is('read_at', null);
+      unreadCount = count || 1;
+    }
+
+    // Enrich payload with unread count for badge display in sw.js
+    const enrichedPayload = { ...payload, unreadCount };
+
     if (subError) {
       console.error('Error fetching subscriptions:', subError);
       throw subError;
@@ -88,7 +109,7 @@ serve(async (req) => {
         try {
           await webpush.sendNotification(
             pushSubscription,
-            JSON.stringify(payload)
+            JSON.stringify(enrichedPayload)
           );
           console.log('Push notification sent successfully to endpoint:', sub.endpoint.substring(0, 50));
           return { success: true, endpoint: sub.endpoint };

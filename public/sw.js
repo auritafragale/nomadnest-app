@@ -63,10 +63,12 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     Promise.resolve(self.registration.showNotification(data.title, options))
-      .then(() => self.registration.getNotifications())
-      .then((notifications) => {
+      .then(() => {
         if ('setAppBadge' in self.navigator) {
-          return self.navigator.setAppBadge(notifications.length);
+          // Use unreadCount from payload when available — notifications.length is always 1
+          // because all messages share the same tag and replace each other in the tray.
+          const badgeCount = typeof data.unreadCount === 'number' ? data.unreadCount : 1;
+          return self.navigator.setAppBadge(badgeCount);
         }
       })
   );
