@@ -24,8 +24,10 @@ export const useUnreadMessages = () => {
     refetchInterval: 30000,
   });
 
-  // Keep app icon badge in sync with unread message count
+  // Keep app icon badge in sync with unread message count.
+  // Guard on isLoading so we don't clear the SW-set badge before data arrives.
   useEffect(() => {
+    if (isLoading) return;
     const nav = navigator as Navigator & {
       setAppBadge?: (count?: number) => Promise<void>;
       clearAppBadge?: () => Promise<void>;
@@ -36,7 +38,7 @@ export const useUnreadMessages = () => {
     } else {
       nav.clearAppBadge?.();
     }
-  }, [unreadCount]);
+  }, [unreadCount, isLoading]);
 
   // Play sound when unread count increases (skip initial mount)
   useEffect(() => {

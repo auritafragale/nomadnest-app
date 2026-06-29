@@ -333,6 +333,33 @@ export const useMarkAsRead = () => {
       queryClient.setQueryData(unreadMessagesQueryKey(user.id), context.previousUnreadCount);
       queryClient.setQueryData(["messages", conversationId], context.previousMessages);
     },
+    onSuccess: async () => {
+      // Fetch real unread count after the read receipt is confirmed by the server,
+      // then sync the app icon badge. Done here rather than in onMutate so the badge
+      // reflects confirmed server state, and to handle the case where the user
+      // navigated directly via a push notification URL (conversations not yet loaded,
+      // so the optimistic decrement in onMutate is skipped).
+      try {
+        const { data } = await supabase.rpc("get_unread_conversations_count");
+        const count = data || 0;
+        const nav = navigator as Navigator & {
+          setAppBadge?: (n?: number) => Promise<void>;
+          clearAppBadge?: () => Promise<void>;
+        };
+        if (nav.setAppBadge) {
+          if (count > 0) {
+            nav.setAppBadge(count);
+          } else {
+            nav.clearAppBadge?.();
+          }
+        }
+        // Keep the cache in sync so the reactive effect in useUnreadMessages
+        // doesn't contradict us on the next render.
+        queryClient.setQueryData(unreadMessagesQueryKey(user?.id), count);
+      } catch {
+        // Badge sync failure is non-critical; leave badge as-is.
+      }
+    },
     onSettled: (_data, _error, conversationId) => {
       queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
