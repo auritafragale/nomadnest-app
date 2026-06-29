@@ -27,6 +27,14 @@ const Inbox = () => {
   const { unreadCount } = useUnreadMessages();
   const lastMarkedConversationRef = useRef<string | null>(null);
 
+  const clearNotificationTray = () => {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_NOTIFICATIONS' });
+    }
+    const nav = navigator as Navigator & { clearAppBadge?: () => Promise<void> };
+    nav.clearAppBadge?.();
+  };
+
   const selectedConversation = conversations.find((c) => c.id === selectedId) || null;
   
   // Determine if the other user is a sitter or owner based on current user's role in this conversation
@@ -50,6 +58,7 @@ const Inbox = () => {
       if (lastMarkedConversationRef.current !== id) {
         lastMarkedConversationRef.current = id;
         markAsRead.mutate(id);
+        clearNotificationTray();
       }
       setSearchParams({ conversation: id });
     } else {
@@ -58,11 +67,12 @@ const Inbox = () => {
     }
   };
 
-  // Mark messages as read when conversation is selected
+  // Mark messages as read when conversation is selected (URL navigation path)
   useEffect(() => {
     if (selectedId && lastMarkedConversationRef.current !== selectedId) {
       lastMarkedConversationRef.current = selectedId;
       markAsRead.mutate(selectedId);
+      clearNotificationTray();
     }
   }, [selectedId]);
 

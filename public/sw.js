@@ -26,6 +26,15 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
+// App signals that the user has read messages — dismiss all notifications
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "CLEAR_NOTIFICATIONS") {
+    self.registration.getNotifications().then((notifications) => {
+      notifications.forEach((notification) => notification.close());
+    });
+  }
+});
+
 // Push notification received
 self.addEventListener("push", (event) => {
   let data = { title: "NomadNest", body: "You have a new notification" };
