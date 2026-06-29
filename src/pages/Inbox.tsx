@@ -11,6 +11,7 @@ import {
   useSendMessage,
   useMarkAsRead,
 } from "@/hooks/useConversations";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { cn } from "@/lib/utils";
 
 const Inbox = () => {
@@ -23,6 +24,7 @@ const Inbox = () => {
   const { data: messages = [], isLoading: messagesLoading } = useMessages(selectedId);
   const sendMessage = useSendMessage();
   const markAsRead = useMarkAsRead();
+  const { unreadCount } = useUnreadMessages();
   const lastMarkedConversationRef = useRef<string | null>(null);
 
   const selectedConversation = conversations.find((c) => c.id === selectedId) || null;
@@ -63,6 +65,13 @@ const Inbox = () => {
       markAsRead.mutate(selectedId);
     }
   }, [selectedId]);
+
+  // Clear app badge immediately when inbox is open and all messages are read
+  useEffect(() => {
+    if (unreadCount !== 0) return;
+    const nav = navigator as Navigator & { clearAppBadge?: () => Promise<void> };
+    nav.clearAppBadge?.();
+  }, [unreadCount]);
 
   if (loading) {
     return (
