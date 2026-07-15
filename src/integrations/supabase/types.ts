@@ -1032,6 +1032,7 @@ export type Database = {
         Returns: string
       }
       get_unread_conversations_count: { Args: never; Returns: number }
+      get_unread_messages_count: { Args: never; Returns: number }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1043,6 +1044,10 @@ export type Database = {
       redeem_founding_member_code: {
         Args: { p_code: string; p_user_id: string }
         Returns: string
+      }
+      upsert_push_subscription: {
+        Args: { p_auth: string; p_endpoint: string; p_p256dh: string }
+        Returns: undefined
       }
     }
     Enums: {
