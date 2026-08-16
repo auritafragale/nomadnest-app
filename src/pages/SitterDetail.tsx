@@ -248,18 +248,10 @@ const SitterDetail = () => {
         [ownerProfile?.first_name, ownerProfile?.last_name].filter(Boolean).join(" ") ||
         "A pet parent";
 
-      // Notification for sitter
-      await supabase.from("notifications").insert({
-        user_id: userId,
-        type: "invite",
-        title: "New sit invitation",
-        message: `${ownerDisplayName} has invited you to sit at ${listing?.title || "their home"}`,
-        data: {
-          invite_id: invite.id,
-          listing_id: selectedListing,
-          url: "/dashboard",
-        },
-      });
+      // The sitter's notification is created by a database trigger on
+      // sitter_invites — clients cannot insert notifications directly.
+
+
 
       // Find or create a DIRECT conversation (listing_id = null)
       const { data: existingConvo } = await supabase
