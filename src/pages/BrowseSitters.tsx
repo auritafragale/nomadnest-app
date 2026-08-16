@@ -20,6 +20,7 @@ const ITEMS_PER_PAGE = 24;
 const VIEW_MODE_KEY = "nomadnest_sitters_view";
 
 const BrowseSitters = () => {
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "map">(() => {
     const saved = localStorage.getItem(VIEW_MODE_KEY);
     return saved === "map" ? "map" : "grid";
