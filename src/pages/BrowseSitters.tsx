@@ -1,7 +1,10 @@
 import { useState, lazy, Suspense } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSitters } from "@/hooks/useSitters";
 import SitterGridCard from "@/components/browse/SitterGridCard";
 import SitterFilters from "@/components/browse/SitterFilters";
