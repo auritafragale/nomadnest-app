@@ -147,19 +147,10 @@ export const useCreateInvite = () => {
         "A pet owner";
       const listingTitleSafe = listingTitle || "my home";
 
-      // 1) In-app notification row for the sitter
-      await supabase.from("notifications").insert({
-        user_id: invite.sitter_user_id,
-        type: "invite",
-        title: "New sit invitation",
-        message: `${ownerName} has invited you to sit at ${listingTitleSafe}`,
-        data: {
-          listing_id: invite.listing_id,
-          sit_dates_id: invite.sit_dates_id,
-          owner_user_id: invite.owner_user_id,
-          url: "/dashboard",
-        },
-      });
+      // 1) The sitter's in-app notification is created by a database trigger
+      //    on sitter_invites — clients cannot insert notifications directly.
+
+
 
       // 2) Find-or-create a direct conversation between owner and sitter
       const { data: existingConvo } = await supabase

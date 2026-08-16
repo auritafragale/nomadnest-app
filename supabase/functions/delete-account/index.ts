@@ -46,6 +46,24 @@ serve(async (req) => {
     { auth: { persistSession: false } }
   );
 
+  // Remove rows that are NOT covered by an ON DELETE CASCADE from auth.users.
+  // Everything else (profiles, listings, sits, messages, reviews, reports,
+  // invites, city chat messages, sitter/owner profiles, roles) cascades away
+  // when the auth user is deleted below.
+  const orphanCleanup: Array<[string, string]> = [
+    ["notifications", "user_id"],
+    ["notification_preferences", "user_id"],
+    ["push_subscriptions", "user_id"],
+    ["favorites", "user_id"],
+  ];
+
+  for (const [table, column] of orphanCleanup) {
+    const { error } = await adminClient.from(table).delete().eq(column, userId);
+    if (error) {
+      console.error(`Failed to clean up ${table} for ${userId}:`, error.message);
+    }
+  }
+
   const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId);
 
   if (deleteError) {

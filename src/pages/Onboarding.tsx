@@ -93,7 +93,7 @@ const Onboarding = () => {
     
     try {
       // Update profile
-      await supabase
+      const { error: profileError } = await supabase
         .from("profiles")
         .update({
           first_name: firstName,
@@ -102,15 +102,19 @@ const Onboarding = () => {
           city,
         })
         .eq("id", user.id);
+      if (profileError) throw profileError;
 
-      // Create or update user role
-      await supabase
+      // Create or update user role — this is what unlocks the app, so a
+      // failure here must surface instead of dropping the user into a
+      // dashboard/onboarding redirect loop.
+      const { error: roleError } = await supabase
         .from("user_roles")
         .upsert({
           user_id: user.id,
           role: roleChoice,
           onboarding_completed: true,
         }, { onConflict: 'user_id' });
+      if (roleError) throw roleError;
 
       // Create sitter profile if applicable
       if (roleChoice === "sitter" || roleChoice === "both") {
@@ -119,7 +123,7 @@ const Onboarding = () => {
           ? await geocodeCityCountry(mapsConfig.key, city, country)
           : null;
 
-        await supabase
+        const { error: sitterError } = await supabase
           .from("sitter_profiles")
           .upsert({
             user_id: user.id,
@@ -130,16 +134,19 @@ const Onboarding = () => {
             available_to: availableTo || null,
             ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
           }, { onConflict: 'user_id' });
+        if (sitterError) throw sitterError;
       }
 
       // Create owner profile if applicable
       if (roleChoice === "owner" || roleChoice === "both") {
-        await supabase
+        const { error: ownerError } = await supabase
           .from("owner_profiles")
           .upsert({
             user_id: user.id,
           }, { onConflict: 'user_id' });
+        if (ownerError) throw ownerError;
       }
+
 
       await refreshRole();
 
@@ -185,10 +192,14 @@ const Onboarding = () => {
 
       navigate("/dashboard");
     } catch (error) {
+      console.error("Onboarding completion failed:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: "We couldn't finish setting up your account",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Please check your connection and try again.",
       });
     } finally {
       setIsLoading(false);
