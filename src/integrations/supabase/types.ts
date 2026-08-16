@@ -1045,6 +1045,7 @@ export type Database = {
         Args: { p_code: string; p_user_id: string }
         Returns: string
       }
+      request_is_end_user: { Args: never; Returns: boolean }
       upsert_push_subscription: {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string }
         Returns: undefined
