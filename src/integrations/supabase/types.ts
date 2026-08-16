@@ -1037,6 +1037,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      is_owner_active: { Args: { _owner_user_id: string }; Returns: boolean }
       mark_conversation_messages_read: {
         Args: { _conversation_id: string }
         Returns: undefined

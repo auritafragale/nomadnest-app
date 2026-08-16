@@ -1,7 +1,10 @@
 import { useState, lazy, Suspense } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSitters } from "@/hooks/useSitters";
 import SitterGridCard from "@/components/browse/SitterGridCard";
 import SitterFilters from "@/components/browse/SitterFilters";
@@ -17,6 +20,7 @@ const ITEMS_PER_PAGE = 24;
 const VIEW_MODE_KEY = "nomadnest_sitters_view";
 
 const BrowseSitters = () => {
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "map">(() => {
     const saved = localStorage.getItem(VIEW_MODE_KEY);
     return saved === "map" ? "map" : "grid";
@@ -109,12 +113,21 @@ const BrowseSitters = () => {
           ) : sitters.length === 0 ? (
             <div className="text-center py-16">
               <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No nomads found</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                {!user ? "Sign in to browse nomads" : "No nomads found"}
+              </h3>
               <p className="text-muted-foreground">
-                {searchQuery || selectedPetTypes.length > 0 || selectedLanguages.length > 0 || selectedExperienceLevels.length > 0
-                  ? "Try adjusting your filters to find more nomads"
-                  : "Be the first to create a nomad profile!"}
+                {!user
+                  ? "Nomad profiles are only visible to members, to protect their privacy."
+                  : searchQuery || selectedPetTypes.length > 0 || selectedLanguages.length > 0 || selectedExperienceLevels.length > 0
+                    ? "Try adjusting your filters to find more nomads"
+                    : "Be the first to create a nomad profile!"}
               </p>
+              {!user && (
+                <Button asChild className="mt-6">
+                  <Link to="/auth">Log in or create a profile</Link>
+                </Button>
+              )}
             </div>
           ) : (
             <>
