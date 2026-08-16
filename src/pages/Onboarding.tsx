@@ -192,10 +192,14 @@ const Onboarding = () => {
 
       navigate("/dashboard");
     } catch (error) {
+      console.error("Onboarding completion failed:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: "We couldn't finish setting up your account",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Please check your connection and try again.",
       });
     } finally {
       setIsLoading(false);
