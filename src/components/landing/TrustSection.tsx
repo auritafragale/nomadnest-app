@@ -1,4 +1,4 @@
-import { Users, ShieldCheck, Heart } from "lucide-react";
+import { Users, ShieldCheck, Heart, PawPrint } from "lucide-react";
 
 const stats = [
   {
@@ -14,9 +14,15 @@ const stats = [
     sub: "Onfido-powered identity checks",
   },
   {
+    icon: PawPrint,
+    value: "Pets First",
+    label: "Loved in their own home",
+    sub: "No kennels, no stress — just home",
+  },
+  {
     icon: Heart,
     value: "Founded by",
-    label: "Travellers, for Travellers",
+    label: "2 girls who love pets & people",
     sub: "Built from lived nomadic experience",
   },
 ];
