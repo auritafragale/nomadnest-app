@@ -47,17 +47,17 @@ const WhyDifferentSection = () => {
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 max-w-6xl mx-auto">
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="group p-6 rounded-2xl border border-border bg-background hover:shadow-soft hover:-translate-y-1 transition-all duration-300"
+              className="group p-3 sm:p-6 rounded-xl sm:rounded-2xl border border-border bg-background hover:shadow-soft hover:-translate-y-1 transition-all duration-300"
             >
-              <div className={`w-12 h-12 rounded-xl ${feature.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
-                <feature.icon className={`w-6 h-6 ${feature.iconColor}`} />
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl ${feature.color} flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 transition-transform duration-300`}>
+                <feature.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${feature.iconColor}`} />
               </div>
-              <h3 className="font-display text-lg mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+              <h3 className="font-display text-sm sm:text-lg mb-1 sm:mb-2 leading-tight">{feature.title}</h3>
+              <p className="text-muted-foreground text-[11px] sm:text-sm leading-relaxed line-clamp-3 sm:line-clamp-none">{feature.description}</p>
             </div>
           ))}
         </div>

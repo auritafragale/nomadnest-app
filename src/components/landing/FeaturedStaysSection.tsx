@@ -117,15 +117,15 @@ const DemoCard = ({ listing }: { listing: DemoListing }) => (
           loading="lazy"
         />
         {/* Status badge */}
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-2 left-2">
           {isPast(listing.end) ? (
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/90 text-xs font-semibold text-muted-foreground backdrop-blur-sm">
-              <CheckCircle2 className="w-3 h-3 text-success" />
-              Past Sit
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/90 text-[10px] font-semibold text-muted-foreground backdrop-blur-sm">
+              <CheckCircle2 className="w-2.5 h-2.5 text-success" />
+              Past
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/90 text-xs font-semibold text-warning backdrop-blur-sm">
-              <Clock className="w-3 h-3" />
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/90 text-[10px] font-semibold text-warning backdrop-blur-sm">
+              <Clock className="w-2.5 h-2.5" />
               Reviewing
             </span>
           )}
@@ -133,36 +133,36 @@ const DemoCard = ({ listing }: { listing: DemoListing }) => (
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <h3 className="font-semibold text-base leading-snug mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+      <div className="p-2.5 sm:p-4">
+        <h3 className="font-semibold text-xs sm:text-base leading-snug mb-2 line-clamp-2 group-hover:text-primary transition-colors">
           {listing.title}
         </h3>
 
-        <div className="space-y-1.5 mb-3">
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-primary" />
+        <div className="space-y-1 mb-2">
+          <div className="flex items-center gap-1 text-[11px] sm:text-sm text-muted-foreground">
+            <MapPin className="w-3 h-3 flex-shrink-0 text-primary" />
             <span className="truncate">{listing.city}, {listing.country}</span>
           </div>
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{formatRange(listing.start, listing.end)}</span>
+          <div className="flex items-center gap-1 text-[11px] sm:text-sm text-muted-foreground">
+            <Calendar className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate">{formatRange(listing.start, listing.end)}</span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex flex-wrap gap-1.5">
+        <div className="flex items-center justify-between gap-1">
+          <div className="flex flex-wrap gap-1 min-w-0">
             {listing.pets.map((pet, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-medium"
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] sm:text-xs font-medium"
               >
-                {pet.type === "cat" ? <Cat className="w-3 h-3" /> : <Dog className="w-3 h-3" />}
-                {pet.name}
+                {pet.type === "cat" ? <Cat className="w-2.5 h-2.5" /> : <Dog className="w-2.5 h-2.5" />}
+                <span className="truncate max-w-[60px] sm:max-w-none">{pet.name}</span>
               </span>
             ))}
           </div>
-          <span className="text-xs font-semibold text-primary group-hover:underline whitespace-nowrap">
-            View Sits
+          <span className="text-[10px] sm:text-xs font-semibold text-primary group-hover:underline whitespace-nowrap">
+            View
           </span>
         </div>
       </div>
@@ -183,7 +183,7 @@ const FeaturedStaysSection = () => (
         </p>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-2.5 sm:gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {DEMO_LISTINGS.map((listing) => (
           <DemoCard key={listing.id} listing={listing} />
         ))}

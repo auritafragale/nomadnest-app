@@ -25,7 +25,7 @@ const TrustSection = () => {
   return (
     <section className="py-16 bg-primary">
       <div className="container">
-        <div className="grid sm:grid-cols-3 gap-8 max-w-4xl mx-auto text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto text-center">
           {stats.map((stat) => (
             <div key={stat.label} className="flex flex-col items-center gap-3">
               <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">

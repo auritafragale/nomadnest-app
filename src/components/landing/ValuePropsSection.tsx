@@ -33,7 +33,7 @@ const ValuePropsSection = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:max-w-5xl mx-auto">
           {/* For Nomads */}
           <div className="rounded-2xl overflow-hidden border border-border bg-surface shadow-soft">
             <div className="h-1.5 bg-primary" />
