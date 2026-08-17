@@ -124,8 +124,8 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
 
   // Grid mode — new mobile-first card design
   return (
-    <Link to={`/listing/${listing.id}`}>
-      <Card variant="interactive" className="overflow-hidden group">
+    <Link to={`/listing/${listing.id}`} className="h-full">
+      <Card variant="interactive" className="overflow-hidden group h-full flex flex-col">
         {/* Image */}
         <div className="relative aspect-square sm:aspect-[4/3] overflow-hidden">
           <img
@@ -164,7 +164,7 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
           )}
         </div>
 
-        <div className="p-2.5 sm:p-4">
+        <div className="p-2.5 sm:p-4 flex-1 flex flex-col">
           {/* Host row */}
           {ownerName && (
             <div className="hidden sm:flex items-center gap-2 mb-2">
@@ -194,7 +194,7 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
           </div>
 
           {/* Rating + Pets row */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center justify-between flex-wrap gap-2 mt-auto pt-2">
             {listing.owner_rating && listing.owner_rating.count > 0 ? (
               <div className="flex items-center gap-1 text-sm">
                 <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
@@ -205,12 +205,19 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
               <span />
             )}
             <div className="flex flex-wrap gap-1">
-              {listing.pets.slice(0, 3).map((pet) => (
-                <Badge key={pet.id} variant="muted" className="gap-1 text-xs">
-                  {petIcon(pet.type)}
-                  {pet.name || pet.type}
-                </Badge>
-              ))}
+              {(() => {
+                const counts: Record<string, number> = {};
+                listing.pets.forEach((pet) => {
+                  const key = pet.type.toLowerCase();
+                  counts[key] = (counts[key] || 0) + 1;
+                });
+                return Object.entries(counts).map(([type, count]) => (
+                  <Badge key={type} variant="muted" className="gap-1 text-xs px-1.5">
+                    {petIcon(type)}
+                    {count > 1 && <span className="font-medium">{count}</span>}
+                  </Badge>
+                ));
+              })()}
             </div>
           </div>
         </div>
