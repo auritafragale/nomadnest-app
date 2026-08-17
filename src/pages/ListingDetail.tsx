@@ -404,15 +404,17 @@ const ListingDetail = () => {
                 className="w-full h-full object-cover"
               />
               {allPhotos.length > 1 && (
-                <>
+              <>
                   <button
                     onClick={prevPhoto}
+                    aria-label="Previous photo"
                     className="absolute left-3 top-1/2 -translate-y-1/2 p-3 bg-background/80 rounded-full hover:bg-background transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     onClick={nextPhoto}
+                    aria-label="Next photo"
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-background/80 rounded-full hover:bg-background transition-colors"
                   >
                     <ChevronRight className="w-5 h-5" />
@@ -422,6 +424,8 @@ const ListingDetail = () => {
                       <button
                         key={idx}
                         onClick={() => setCurrentPhotoIndex(idx)}
+                        aria-label={`Go to photo ${idx + 1} of ${allPhotos.length}`}
+                        aria-current={idx === currentPhotoIndex}
                         className="p-1.5"
                       >
                         <span className={cn(
