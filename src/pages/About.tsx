@@ -71,6 +71,15 @@ const About = () => {
               always wished existed.
             </p>
           </div>
+          <div className="max-w-4xl mx-auto mt-8 rounded-2xl overflow-hidden shadow-lg">
+            <img
+              src={aboutHero}
+              alt="A Nomad relaxing with a dog in a sunlit home"
+              width={1200}
+              height={800}
+              className="w-full h-auto object-cover"
+            />
+          </div>
         </section>
 
         {/* Why */}
@@ -152,6 +161,16 @@ const About = () => {
         {/* Journey */}
         <section className="container py-8 md:py-12">
           <div className="max-w-3xl mx-auto">
+            <div className="rounded-2xl overflow-hidden shadow-lg mb-8">
+              <img
+                src={aboutJourney}
+                alt="Travel planning scene with map and pet essentials"
+                width={1200}
+                height={800}
+                loading="lazy"
+                className="w-full h-auto object-cover"
+              />
+            </div>
             <h2 className="font-display text-3xl md:text-4xl text-foreground mb-6">
               Our journey <span className="text-muted-foreground">(the honest version)</span>
             </h2>
@@ -237,6 +256,16 @@ const About = () => {
               building. That community is the heart of NomadNest. The app is
               just the tool that connects them.
             </p>
+            <div className="rounded-2xl overflow-hidden shadow-lg mt-8 max-w-2xl mx-auto">
+              <img
+                src={aboutCommunity}
+                alt="NomadNest community members with their pets"
+                width={1200}
+                height={800}
+                loading="lazy"
+                className="w-full h-auto object-cover"
+              />
+            </div>
           </div>
         </section>
 
