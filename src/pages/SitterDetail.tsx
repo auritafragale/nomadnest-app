@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -379,8 +380,34 @@ const SitterDetail = () => {
     );
   }
 
+  const profileUrl = `https://nomadnest.global/sitter/${userId}`;
+  const profileTitleMeta = `${name}${location ? ` in ${location}` : ""} | Nomad on NomadNest`.slice(0, 60);
+  const profileDescriptionMeta = `Meet ${name}, a Nomad on NomadNest${location ? ` based in ${location}` : ""}. See their experience, reviews and availability for pet and house sits.`.slice(0, 155);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Helmet>
+        <title>{profileTitleMeta}</title>
+        <meta name="description" content={profileDescriptionMeta} />
+        <link rel="canonical" href={profileUrl} />
+        <meta property="og:title" content={profileTitleMeta} />
+        <meta property="og:description" content={profileDescriptionMeta} />
+        <meta property="og:url" content={profileUrl} />
+        <meta name="twitter:title" content={profileTitleMeta} />
+        <meta name="twitter:description" content={profileDescriptionMeta} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ProfilePage",
+            url: profileUrl,
+            mainEntity: {
+              "@type": "Person",
+              name,
+              address: location || undefined,
+            },
+          })}
+        </script>
+      </Helmet>
       <Navbar />
       <main className="flex-1 pt-16">
         <div className="container mx-auto px-4 pt-6 pb-8">

@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -350,8 +351,36 @@ const ListingDetail = () => {
     ? `${listing.profiles.first_name} ${listing.profiles.last_name || ""}`.trim()
     : "Pet Owner";
 
+  const listingUrl = `https://nomadnest.global/listing/${listing.id}`;
+  const listingTitleMeta = `${listing.title} | Pet Sit in ${listing.city || listing.country || "the world"}`.slice(0, 60);
+  const listingDescriptionMeta = (listing.description || `A house and pet sit in ${[listing.city, listing.country].filter(Boolean).join(", ")} on NomadNest.`)
+    .replace(/\s+/g, " ")
+    .slice(0, 155);
+
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>{listingTitleMeta}</title>
+        <meta name="description" content={listingDescriptionMeta} />
+        <link rel="canonical" href={listingUrl} />
+        <meta property="og:title" content={listingTitleMeta} />
+        <meta property="og:description" content={listingDescriptionMeta} />
+        <meta property="og:url" content={listingUrl} />
+        <meta name="twitter:title" content={listingTitleMeta} />
+        <meta name="twitter:description" content={listingDescriptionMeta} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Service",
+            name: listing.title,
+            description: listingDescriptionMeta,
+            serviceType: "House and pet sitting exchange",
+            url: listingUrl,
+            areaServed: [listing.city, listing.country].filter(Boolean).join(", ") || undefined,
+            provider: { "@type": "Organization", name: "NomadNest", url: "https://nomadnest.global" },
+          })}
+        </script>
+      </Helmet>
       <Navbar />
 
       <main className="pt-16 pb-8 md:pb-12">
