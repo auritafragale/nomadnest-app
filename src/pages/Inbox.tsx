@@ -97,9 +97,21 @@ const Inbox = () => {
 
   const handleSend = (body: string) => {
     if (selectedId) {
-      sendMessage.mutate({ conversationId: selectedId, body });
+      sendMessage.mutate(
+        { conversationId: selectedId, body },
+        {
+          onError: () => {
+            toast({
+              title: "Message not sent",
+              description: "Something went wrong. Please try again.",
+              variant: "destructive",
+            });
+          },
+        }
+      );
     }
   };
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
