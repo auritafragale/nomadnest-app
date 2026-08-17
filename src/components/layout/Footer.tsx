@@ -94,9 +94,6 @@ const Footer = () => {
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} NomadNest. All rights reserved.
           </p>
-          <p className="text-xs text-muted-foreground">
-            Founded by travellers, for travellers.
-          </p>
         </div>
       </div>
     </footer>
