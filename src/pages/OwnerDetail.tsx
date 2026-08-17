@@ -29,6 +29,7 @@ import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
+import VerificationBadges from "@/components/ui/VerificationBadges";
 
 interface OwnerProfile {
   id: string;
