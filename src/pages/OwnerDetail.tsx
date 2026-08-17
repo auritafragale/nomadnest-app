@@ -87,7 +87,7 @@ const OwnerDetail = () => {
             .maybeSingle(),
           supabase
             .from("profiles")
-            .select("first_name, last_name, avatar_url, city, country, founding_member, email_verified")
+            .select("first_name, last_name, avatar_url, city, country, founding_member, email_verified, phone_verified, id_verified")
             .eq("id", userId)
             .maybeSingle(),
           supabase
