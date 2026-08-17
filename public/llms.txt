@@ -1,0 +1,22 @@
+# NomadNest
+
+> NomadNest is a global community where travelling Nomads care for pets and homes in exchange for free accommodation. No money changes hands and there are no booking fees — members pay only an annual membership.
+
+## Pages
+
+- [Home](/): How the free care-for-accommodation exchange works.
+- [Browse sits](/browse-sits): House and pet sits available worldwide.
+- [Browse nomads](/browse-sitters): Verified Nomads available to care for pets and homes.
+- [How it works](/how-it-works): Step-by-step guide for Pet Parents and Nomads.
+- [Membership](/membership): Annual plans for Nomads, Pet Parents and Combined members.
+- [About](/about): Who founded NomadNest and why.
+- [Safety](/safety): ID verification, reviews and reporting tools.
+- [FAQ](/faq): Common questions about sits, pets and memberships.
+- [Contact](/contact): Reach the support team.
+
+## Optional
+
+- [Terms of Service](/terms): Membership terms.
+- [Privacy Policy](/privacy): How member data is handled.
+- [Cookie Policy](/cookies): Cookies and similar technologies.
+- [Community Standards](/code-of-conduct): Rules every member agrees to.
