@@ -469,32 +469,13 @@ const SitterDetail = () => {
                 <div className="mb-4">
                   <div className="flex flex-wrap items-start gap-2 mb-2">
                     <h1 className="text-2xl md:text-3xl font-bold flex-1 min-w-0">{name}</h1>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {sitter.id_verified && (
-                        <Badge variant="outline" className="gap-1 border-green-500 text-green-700 dark:text-green-400">
-                          <CheckCircle className="w-3 h-3" />
-                          ID Verified
-                        </Badge>
-                      )}
-                      {profile?.email_verified && (
-                        <Badge variant="outline" className="gap-1 border-blue-400 text-blue-600 dark:text-blue-400">
-                          <Mail className="w-3 h-3" />
-                          Email Verified
-                        </Badge>
-                      )}
-                      {profile?.phone_verified && (
-                        <Badge variant="outline" className="gap-1 border-purple-400 text-purple-600 dark:text-purple-400">
-                          <Phone className="w-3 h-3" />
-                          Phone Verified
-                        </Badge>
-                      )}
-                      {sitter.background_check && (
-                        <Badge variant="outline" className="gap-1">
-                          <Shield className="w-3 h-3" />
-                          Check
-                        </Badge>
-                      )}
-                    </div>
+                    <VerificationBadges
+                      className="mt-1"
+                      idVerified={sitter.id_verified}
+                      emailVerified={profile?.email_verified}
+                      phoneVerified={profile?.phone_verified}
+                      backgroundCheck={sitter.background_check}
+                    />
                   </div>
                   {sitter.headline && (
                     <p className="text-base md:text-lg text-muted-foreground">
