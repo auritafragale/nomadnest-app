@@ -224,13 +224,12 @@ const OwnerDetail = () => {
                   <div>
                     <h1 className="text-2xl md:text-3xl font-bold mb-2">{name}</h1>
                     <p className="text-base md:text-lg text-muted-foreground">Pet Parent</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {profile.email_verified && (
-                        <Badge variant="outline" className="gap-1 border-blue-400 text-blue-600 dark:text-blue-400">
-                          <Mail className="w-3 h-3" />
-                          Email Verified
-                        </Badge>
-                      )}
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <VerificationBadges
+                        idVerified={profile.id_verified}
+                        emailVerified={profile.email_verified}
+                        phoneVerified={profile.phone_verified}
+                      />
                       {profile.founding_member && (
                         <FoundingMemberBadge />
                       )}
