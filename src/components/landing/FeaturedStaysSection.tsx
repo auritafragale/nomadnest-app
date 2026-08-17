@@ -7,10 +7,10 @@ interface DemoListing {
   title: string;
   city: string;
   country: string;
-  dates: string;
+  start: string;
+  end: string;
   pets: { type: "cat" | "dog"; name: string }[];
   image: string;
-  badge: "past" | "reviewing";
 }
 
 const DEMO_LISTINGS: DemoListing[] = [
@@ -19,82 +19,91 @@ const DEMO_LISTINGS: DemoListing[] = [
     title: "Sunny terrace apartment with two friendly cats",
     city: "Barcelona",
     country: "Spain",
-    dates: "Jan 8 – Jan 24, 2026",
+    start: "2026-05-08",
+    end: "2026-05-24",
     pets: [{ type: "cat", name: "Luna" }, { type: "cat", name: "Mochi" }],
-    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&h=400&fit=crop",
-    badge: "past",
+    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=600&h=400&fit=crop",
   },
   {
     id: 2,
     title: "Charming Alfama flat with a golden retriever",
     city: "Lisbon",
     country: "Portugal",
-    dates: "Jan 20 – Feb 6, 2026",
+    start: "2026-06-02",
+    end: "2026-06-19",
     pets: [{ type: "dog", name: "Biscuit" }],
-    image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&h=400&fit=crop",
-    badge: "past",
+    image: "https://images.unsplash.com/photo-1494526585095-c41746248156?w=600&h=400&fit=crop",
   },
   {
     id: 3,
     title: "Tropical villa surrounded by rice fields",
     city: "Ubud",
     country: "Indonesia",
-    dates: "Feb 3 – Feb 20, 2026",
+    start: "2026-07-03",
+    end: "2026-07-20",
     pets: [{ type: "cat", name: "Kopi" }, { type: "dog", name: "Remy" }],
-    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop",
-    badge: "past",
+    image: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=600&h=400&fit=crop",
   },
   {
     id: 4,
     title: "Cosy stone cottage near Arthur's Seat",
     city: "Edinburgh",
     country: "UK",
-    dates: "Feb 14 – Mar 2, 2026",
+    start: "2026-07-28",
+    end: "2026-08-12",
     pets: [{ type: "dog", name: "Angus" }],
-    image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&h=400&fit=crop",
-    badge: "reviewing",
+    image: "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=600&h=400&fit=crop",
   },
   {
     id: 5,
     title: "Modern home with sea views and two cats",
     city: "Cape Town",
     country: "South Africa",
-    dates: "Feb 28 – Mar 16, 2026",
+    start: "2026-09-05",
+    end: "2026-09-22",
     pets: [{ type: "cat", name: "Atlas" }, { type: "cat", name: "Sage" }],
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&h=400&fit=crop",
-    badge: "reviewing",
+    image: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=600&h=400&fit=crop",
   },
   {
     id: 6,
     title: "Haussmann apartment steps from the Marais",
     city: "Paris",
     country: "France",
-    dates: "Mar 10 – Mar 27, 2026",
+    start: "2026-09-14",
+    end: "2026-10-01",
     pets: [{ type: "cat", name: "Brie" }],
-    image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=600&h=400&fit=crop",
-    badge: "past",
+    image: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&h=400&fit=crop",
   },
   {
     id: 7,
     title: "Bright South Congress bungalow with a labrador",
     city: "Austin",
     country: "USA",
-    dates: "Mar 22 – Apr 8, 2026",
+    start: "2026-10-06",
+    end: "2026-10-23",
     pets: [{ type: "dog", name: "Tex" }],
-    image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&h=400&fit=crop",
-    badge: "reviewing",
+    image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&h=400&fit=crop",
   },
   {
     id: 8,
     title: "Fitzroy terrace house with cat and garden",
     city: "Melbourne",
     country: "Australia",
-    dates: "Apr 5 – Apr 22, 2026",
+    start: "2026-11-02",
+    end: "2026-11-19",
     pets: [{ type: "cat", name: "Pepper" }],
-    image: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&h=400&fit=crop",
-    badge: "reviewing",
+    image: "https://images.unsplash.com/photo-1560185127-6ed189bf02f4?w=600&h=400&fit=crop",
   },
 ];
+
+const formatRange = (start: string, end: string) => {
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  const s = new Date(start);
+  const e = new Date(end);
+  return `${s.toLocaleDateString("en-GB", opts)} \u2013 ${e.toLocaleDateString("en-GB", opts)}, ${e.getFullYear()}`;
+};
+
+const isPast = (end: string) => new Date(end).getTime() < Date.now();
 
 const DemoCard = ({ listing }: { listing: DemoListing }) => (
   <Link to="/browse-sits" className="group block">
@@ -109,7 +118,7 @@ const DemoCard = ({ listing }: { listing: DemoListing }) => (
         />
         {/* Status badge */}
         <div className="absolute top-3 left-3">
-          {listing.badge === "past" ? (
+          {isPast(listing.end) ? (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/90 text-xs font-semibold text-muted-foreground backdrop-blur-sm">
               <CheckCircle2 className="w-3 h-3 text-success" />
               Past Sit
@@ -136,7 +145,7 @@ const DemoCard = ({ listing }: { listing: DemoListing }) => (
           </div>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{listing.dates}</span>
+            <span>{formatRange(listing.start, listing.end)}</span>
           </div>
         </div>
 
@@ -170,7 +179,7 @@ const FeaturedStaysSection = () => (
         </span>
         <h2 className="text-3xl md:text-4xl font-display mb-4">Recent Sits from Our Community</h2>
         <p className="text-muted-foreground max-w-xl mx-auto">
-          A taste of the sits our members have enjoyed — new opportunities are posted every week
+          A taste of the sits our members have enjoyed — new opportunities are posted daily
         </p>
       </div>
 

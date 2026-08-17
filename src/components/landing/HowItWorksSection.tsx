@@ -26,10 +26,8 @@ const HowItWorksSection = () => {
     <section className="py-20 bg-surface">
       <div className="container">
         <div className="text-center mb-14">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-terracotta-light text-primary text-sm font-semibold mb-4">
-            Simple &amp; Free
-          </span>
           <h2 className="text-3xl md:text-4xl font-display mb-4">How NomadNest Works</h2>
+
           <p className="text-muted-foreground max-w-xl mx-auto">
             Connect with trusted people worldwide in three simple steps
           </p>
