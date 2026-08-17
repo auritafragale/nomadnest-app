@@ -30,6 +30,7 @@ const Membership = () => {
   const [foundingLoading, setFoundingLoading] = useState(false);
   const [codeDialogOpen, setCodeDialogOpen] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
+  const [activeTab, setActiveTab] = useState<"sitter" | "owner" | "combined">("combined");
 
   const cancelled = searchParams.get("cancelled");
   const upgradeBoth = searchParams.get("upgrade") === "both";
