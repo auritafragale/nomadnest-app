@@ -52,11 +52,13 @@ const PlacesAutocompleteField = ({
     const init = () => {
       const g = (window as any).google?.maps?.places;
       if (!g) return false;
-      serviceRef.current = new g.AutocompleteService();
-      sessionTokenRef.current = new g.AutocompleteSessionToken();
-      // PlacesService needs a DOM node
-      const node = document.createElement("div");
-      placesServiceRef.current = new g.PlacesService(node);
+      if (g.AutocompleteSessionToken) sessionTokenRef.current = new g.AutocompleteSessionToken();
+      if (!g.AutocompleteSuggestion?.fetchAutocompleteSuggestions) {
+        // Legacy services
+        serviceRef.current = new g.AutocompleteService();
+        const node = document.createElement("div");
+        placesServiceRef.current = new g.PlacesService(node);
+      }
       return true;
     };
     if (init()) return;
@@ -67,17 +69,44 @@ const PlacesAutocompleteField = ({
   }, []);
 
   const fetchPredictions = useCallback(
-    (input: string) => {
-      if (!serviceRef.current || !input.trim()) {
+    async (input: string) => {
+      const g = (window as any).google?.maps?.places;
+      if (!g || !input.trim()) {
+        setPredictions([]);
+        return;
+      }
+
+      if (g.AutocompleteSuggestion?.fetchAutocompleteSuggestions) {
+        try {
+          const { suggestions } = await g.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+            input,
+            includedPrimaryTypes: types,
+            sessionToken: sessionTokenRef.current ?? undefined,
+          });
+          setPredictions(
+            (suggestions || [])
+              .map((s: any) => s.placePrediction)
+              .filter(Boolean)
+              .map((p: any) => ({
+                place_id: p.placeId,
+                description: p.text?.toString?.() || p.text?.text || "",
+                _prediction: p,
+              }))
+              .filter((p: any) => p.description)
+          );
+          setHighlight(0);
+        } catch {
+          setPredictions([]);
+        }
+        return;
+      }
+
+      if (!serviceRef.current) {
         setPredictions([]);
         return;
       }
       serviceRef.current.getPlacePredictions(
-        {
-          input,
-          types,
-          sessionToken: sessionTokenRef.current,
-        },
+        { input, types, sessionToken: sessionTokenRef.current },
         (results: any[] | null) => {
           setPredictions(results || []);
           setHighlight(0);
@@ -92,12 +121,51 @@ const PlacesAutocompleteField = ({
     onChange(v);
     setOpen(true);
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(() => fetchPredictions(v), 200);
+    debounceRef.current = window.setTimeout(() => fetchPredictions(v), 250);
   };
 
-  const handleSelect = (prediction: any) => {
+  const parseComponents = (components: any[] | undefined) => {
+    let city = "";
+    let country = "";
+    components?.forEach((c: any) => {
+      const typesList: string[] = c.types || [];
+      const name = c.long_name ?? c.longText ?? "";
+      if (typesList.includes("locality")) city = city || name;
+      if (typesList.includes("postal_town")) city = city || name;
+      if (typesList.includes("administrative_area_level_1")) city = city || name;
+      if (typesList.includes("country")) country = country || name;
+    });
+    return { city, country };
+  };
+
+  const handleSelect = async (prediction: any) => {
     setOpen(false);
     setPredictions([]);
+    const g = (window as any).google?.maps?.places;
+
+    // New Places API path
+    if (prediction?._prediction?.toPlace) {
+      try {
+        const place = prediction._prediction.toPlace();
+        await place.fetchFields({
+          fields: ["addressComponents", "formattedAddress", "location", "displayName"],
+        });
+        if (g?.AutocompleteSessionToken) sessionTokenRef.current = new g.AutocompleteSessionToken();
+        const { city, country } = parseComponents(place.addressComponents);
+        onSelect({
+          description: prediction.description,
+          city,
+          country,
+          formattedAddress: place.formattedAddress || prediction.description,
+          latitude: place.location?.lat?.(),
+          longitude: place.location?.lng?.(),
+        });
+      } catch {
+        onChange(prediction.description);
+      }
+      return;
+    }
+
     if (!placesServiceRef.current) {
       onChange(prediction.description);
       return;
@@ -109,21 +177,12 @@ const PlacesAutocompleteField = ({
         sessionToken: sessionTokenRef.current,
       },
       (place: any, status: string) => {
-        // Refresh session token after a details call
-        const g = (window as any).google?.maps?.places;
         if (g) sessionTokenRef.current = new g.AutocompleteSessionToken();
         if (status !== "OK" || !place) {
           onChange(prediction.description);
           return;
         }
-        let city = "";
-        let country = "";
-        place.address_components?.forEach((c: any) => {
-          if (c.types.includes("locality")) city = c.long_name;
-          if (!city && c.types.includes("postal_town")) city = c.long_name;
-          if (!city && c.types.includes("administrative_area_level_1")) city = c.long_name;
-          if (c.types.includes("country")) country = c.long_name;
-        });
+        const { city, country } = parseComponents(place.address_components);
         onSelect({
           description: prediction.description,
           city,
@@ -135,6 +194,7 @@ const PlacesAutocompleteField = ({
       }
     );
   };
+
 
   // Close on outside click
   useEffect(() => {
