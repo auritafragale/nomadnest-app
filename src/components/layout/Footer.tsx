@@ -14,7 +14,6 @@ const Footer = () => {
       links: [
         { label: "About NomadNest", href: "/about" },
         { label: "How It Works", href: "/#how-it-works" },
-        { label: "Our Story", href: "/about" },
         { label: "Contact", href: "/contact" },
       ],
     },
