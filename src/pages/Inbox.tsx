@@ -13,6 +13,8 @@ import {
 } from "@/hooks/useConversations";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+
 
 const Inbox = () => {
   const { user, loading } = useAuth();
