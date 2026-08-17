@@ -32,7 +32,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     start: "2026-06-02",
     end: "2026-06-19",
     pets: [{ type: "dog", name: "Biscuit" }],
-    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1564013799927-380f938ada4e?w=600&h=400&fit=crop",
   },
   {
     id: 3,
