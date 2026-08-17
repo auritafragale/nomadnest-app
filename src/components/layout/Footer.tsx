@@ -38,9 +38,9 @@ const Footer = () => {
   ];
 
   const socials = [
-    { icon: Instagram, label: "Instagram", href: "https://instagram.com/nomadnest" },
-    { icon: Facebook, label: "Facebook", href: "https://facebook.com/nomadnest" },
-    { icon: Mail, label: "Email", href: "mailto:hello@nomadnest.global" },
+    { icon: Instagram, label: "Instagram", href: "https://www.instagram.com/nomadnest.global" },
+    { icon: Facebook, label: "Facebook", href: "https://www.facebook.com/profile.php?id=61573065826502" },
+    { icon: Mail, label: "Email", href: "mailto:support@nomadnest.global" },
   ];
 
   return (
