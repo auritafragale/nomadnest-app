@@ -270,14 +270,14 @@ const About = () => {
                     <p className="text-xs text-muted-foreground">Community group</p>
                   </a>
                   <a
-                    href="mailto:hello@nomadnest.global"
+                    href="mailto:support@nomadnest.global"
                     className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-muted transition-colors text-center"
                   >
                     <div className="w-10 h-10 rounded-lg bg-terracotta-light text-primary flex items-center justify-center">
                       <Mail className="w-5 h-5" />
                     </div>
                     <p className="text-sm font-semibold text-foreground">Email</p>
-                    <p className="text-xs text-muted-foreground">hello@nomadnest.global</p>
+                    <p className="text-xs text-muted-foreground">support@nomadnest.global</p>
                   </a>
                 </div>
               </CardContent>
