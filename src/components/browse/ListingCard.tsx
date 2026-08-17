@@ -73,6 +73,7 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
                 )}
                 onClick={handleFavoriteClick}
                 disabled={toggleFavorite.isPending}
+                aria-label={isFavorited ? "Remove from favourites" : "Add to favourites"}
               >
                 {toggleFavorite.isPending ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
