@@ -26,7 +26,7 @@ const SplashScreen = ({ onDone }: SplashScreenProps) => {
         pointerEvents: fading ? "none" : "auto",
       }}
     >
-      <img src={whiteLogo} alt="NomadNest" className="h-16 w-auto mb-6" />
+      <img src={whiteLogo} alt="NomadNest" className="h-24 w-auto mb-6 drop-shadow-[0_2px_8px_rgba(0,0,0,0.15)]" />
       <p className="text-white/90 text-center text-base font-medium px-8 leading-relaxed max-w-xs">
         Where Travellers Find Homes & Pets Find Care
       </p>
