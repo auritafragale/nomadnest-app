@@ -22,7 +22,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     start: "2026-05-08",
     end: "2026-05-24",
     pets: [{ type: "cat", name: "Luna" }, { type: "cat", name: "Mochi" }],
-    image: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1548802673-380ab8ebc7b7?w=600&h=400&fit=crop",
   },
   {
     id: 2,
@@ -42,7 +42,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     start: "2026-07-03",
     end: "2026-07-20",
     pets: [{ type: "cat", name: "Kopi" }, { type: "dog", name: "Remy" }],
-    image: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=600&h=400&fit=crop",
   },
   {
     id: 4,
@@ -62,7 +62,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     start: "2026-09-05",
     end: "2026-09-22",
     pets: [{ type: "cat", name: "Atlas" }, { type: "cat", name: "Sage" }],
-    image: "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=600&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=600&h=400&fit=crop",
   },
   {
     id: 6,
@@ -72,7 +72,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     start: "2026-09-14",
     end: "2026-10-01",
     pets: [{ type: "cat", name: "Brie" }],
-    image: "https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?w=600&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=600&h=400&fit=crop",
   },
   {
     id: 7,
@@ -82,7 +82,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     start: "2026-10-06",
     end: "2026-10-23",
     pets: [{ type: "dog", name: "Tex" }],
-    image: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?w=600&h=400&fit=crop",
   },
   {
     id: 8,
@@ -92,7 +92,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     start: "2026-11-02",
     end: "2026-11-19",
     pets: [{ type: "cat", name: "Pepper" }],
-    image: "https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=600&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1494947665470-20322015e3a8?w=600&h=400&fit=crop",
   },
 ];
 
