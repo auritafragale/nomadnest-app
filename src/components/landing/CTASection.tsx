@@ -4,7 +4,7 @@ import { Crown, ArrowRight } from "lucide-react";
 
 const CTASection = () => {
   return (
-    <section className="py-24 bg-background relative overflow-hidden">
+    <section className="py-16 bg-background relative overflow-hidden">
       {/* Decorative blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/8 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
