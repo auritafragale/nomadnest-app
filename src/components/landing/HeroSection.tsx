@@ -138,6 +138,7 @@ const HeroSection = () => {
             />
             <button
               type="submit"
+              aria-label="Search"
               className="h-14 px-5 bg-primary text-white font-semibold hover:bg-primary/90 transition-colors flex items-center gap-2 flex-shrink-0"
             >
               <Search className="w-5 h-5" />
