@@ -63,7 +63,7 @@ const ValuePropsSection = () => {
           </div>
 
           {/* For Pet Parents */}
-          <div className="rounded-2xl overflow-hidden border border-border bg-surface shadow-soft">
+          <div className="rounded-2xl overflow-hidden border border-border bg-surface shadow-soft snap-center shrink-0 w-[85vw] sm:w-[60vw] md:w-auto md:shrink">
             <div className="h-1.5 bg-secondary" />
             <div className="p-4 sm:p-8">
               <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-ocean-light text-secondary text-xs sm:text-sm font-semibold mb-3 sm:mb-5">
