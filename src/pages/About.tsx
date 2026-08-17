@@ -89,7 +89,7 @@ const About = () => {
           </div>
         </section>
 
-        {/* Founders */}
+        {/* Founders — temporarily hidden
         <section className="container py-10 md:py-16">
           <div className="max-w-5xl mx-auto">
             <h2 className="font-display text-3xl md:text-4xl text-foreground mb-8 text-center">
@@ -144,6 +144,7 @@ const About = () => {
             </div>
           </div>
         </section>
+        */}
 
         {/* Journey */}
         <section className="container py-10 md:py-16">
