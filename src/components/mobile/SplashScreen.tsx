@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import whiteLogo from "@/assets/White_Logo_Full.png";
+import whiteLogoAsset from "@/assets/NomadNest_White.png.asset.json";
 
 interface SplashScreenProps {
   onDone: () => void;
