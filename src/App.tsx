@@ -9,6 +9,7 @@ import { ActiveRoleProvider } from "@/contexts/ActiveRoleContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
+import RouteSeo from "@/components/seo/RouteSeo";
 import SplashScreen from "@/components/mobile/SplashScreen";
 import OnboardingCarousel, { ONBOARDING_STORAGE_KEY } from "@/components/mobile/OnboardingCarousel";
 import BottomNav from "@/components/mobile/BottomNav";
@@ -90,6 +91,7 @@ const AppShell = () => {
         <OnboardingCarousel onDone={handleOnboardingDone} />
       )}
 
+      <RouteSeo />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/browse-sits" element={<BrowseSits />} />
