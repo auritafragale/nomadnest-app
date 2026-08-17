@@ -77,6 +77,7 @@ interface Profile {
   country: string | null;
   founding_member: boolean | null;
   full_name: string | null;
+  id_verified?: boolean | null;
 }
 
 interface Listing {
