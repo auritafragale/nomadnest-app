@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 interface NotificationEmailRequest {
-  type: "new_application" | "application_status" | "new_message" | "invite" | "review" | "id_verification_approved";
+  type: "new_application" | "application_status" | "new_message" | "invite" | "review" | "review_reminder" | "id_verification_approved";
   recipientUserId: string;
   data: Record<string, string>;
 }
@@ -193,6 +193,22 @@ const getEmailContent = (type: string, data: Record<string, string>) => {
         pushBody: `${data.reviewerName} left you a ${data.rating}-star review`,
         pushUrl: "/dashboard",
       };
+    case "review_reminder":
+      return {
+        subject:
+          Number(data.daysLeft) <= 2
+            ? `Last chance to review ${data.otherName}`
+            : `How was your sit with ${data.otherName}?`,
+        html: `
+          <h2>Leave your review</h2>
+          <p>Your sit at <strong>${data.listingTitle}</strong> has finished — please take a minute to review <strong>${data.otherName}</strong>.</p>
+          <p>Reviews build trust across the whole NomadNest community, and you have <strong>${data.daysLeft} day${Number(data.daysLeft) === 1 ? "" : "s"}</strong> left to leave yours.</p>
+          <p><a href="${data.appUrl}/dashboard">Write your review</a></p>
+        `,
+        pushTitle: "Leave a review",
+        pushBody: `You have ${data.daysLeft} day(s) left to review ${data.otherName}`,
+        pushUrl: "/dashboard",
+      };
     case "id_verification_approved":
       return {
         subject: "Your ID has been verified ✓",
@@ -261,6 +277,7 @@ const handler = async (req: Request): Promise<Response> => {
       new_message: "email_messages",
       invite: "email_sit_updates",
       review: "email_reviews",
+      review_reminder: "email_reviews",
     };
 
     const emailContent = getEmailContent(type, data);
