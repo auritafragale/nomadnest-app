@@ -29,6 +29,7 @@ import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
+import VerificationBadges from "@/components/ui/VerificationBadges";
 
 interface OwnerProfile {
   id: string;
@@ -45,6 +46,8 @@ interface Profile {
   country: string | null;
   founding_member: boolean | null;
   email_verified: boolean | null;
+  phone_verified: boolean | null;
+  id_verified: boolean | null;
 }
 
 interface Listing {
@@ -84,7 +87,7 @@ const OwnerDetail = () => {
             .maybeSingle(),
           supabase
             .from("profiles")
-            .select("first_name, last_name, avatar_url, city, country, founding_member, email_verified")
+            .select("first_name, last_name, avatar_url, city, country, founding_member, email_verified, phone_verified, id_verified")
             .eq("id", userId)
             .maybeSingle(),
           supabase
@@ -221,13 +224,12 @@ const OwnerDetail = () => {
                   <div>
                     <h1 className="text-2xl md:text-3xl font-bold mb-2">{name}</h1>
                     <p className="text-base md:text-lg text-muted-foreground">Pet Parent</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {profile.email_verified && (
-                        <Badge variant="outline" className="gap-1 border-blue-400 text-blue-600 dark:text-blue-400">
-                          <Mail className="w-3 h-3" />
-                          Email Verified
-                        </Badge>
-                      )}
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <VerificationBadges
+                        idVerified={profile.id_verified}
+                        emailVerified={profile.email_verified}
+                        phoneVerified={profile.phone_verified}
+                      />
                       {profile.founding_member && (
                         <FoundingMemberBadge />
                       )}

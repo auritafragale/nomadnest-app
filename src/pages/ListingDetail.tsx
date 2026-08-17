@@ -44,6 +44,7 @@ import { Star } from "lucide-react";
 import ReportDialog from "@/components/reports/ReportDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import ListingLocationMap from "@/components/maps/ListingLocationMap";
+import VerificationBadges from "@/components/ui/VerificationBadges";
 
 interface Pet {
   id: string;
@@ -77,6 +78,7 @@ interface Profile {
   country: string | null;
   founding_member: boolean | null;
   full_name: string | null;
+  id_verified?: boolean | null;
 }
 
 interface Listing {
@@ -172,9 +174,10 @@ const OwnerCard = ({
           <div>
             <h3 className="font-semibold group-hover:text-primary transition-colors">{ownerName}</h3>
             <p className="text-sm text-muted-foreground">Pet Parent</p>
-            {listing.profiles?.founding_member && (
-              <FoundingMemberBadge className="mt-1" />
-            )}
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <VerificationBadges idVerified={listing.profiles?.id_verified} />
+              {listing.profiles?.founding_member && <FoundingMemberBadge />}
+            </div>
             {reviewCount > 0 && (
               <div className="flex items-center gap-1 mt-1">
                 <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
@@ -271,7 +274,7 @@ const ListingDetail = () => {
           supabase.from("sit_dates").select("*").eq("listing_id", id),
           supabase
             .from("profiles")
-            .select("first_name, last_name, avatar_url, city, country, founding_member, full_name")
+            .select("first_name, last_name, avatar_url, city, country, founding_member, full_name, id_verified")
             .eq("id", listingRow.owner_user_id)
             .maybeSingle(),
         ]);

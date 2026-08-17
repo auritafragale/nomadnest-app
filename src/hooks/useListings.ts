@@ -39,7 +39,7 @@ export interface ListingWithDetails {
     status: string;
   }[];
   owner_rating?: { average: number; count: number };
-  owner_profile?: { first_name: string | null; last_name: string | null; avatar_url: string | null };
+  owner_profile?: { first_name: string | null; last_name: string | null; avatar_url: string | null; id_verified?: boolean | null };
   wifi_quality?: string | null;
 }
 
@@ -118,7 +118,7 @@ export const useListings = (filters: ListingFilters = {}) => {
       if (ownerIds.length > 0) {
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("id, first_name, last_name, avatar_url")
+          .select("id, first_name, last_name, avatar_url, id_verified")
           .in("id", ownerIds);
 
         if (profileData && profileData.length > 0) {
@@ -126,7 +126,7 @@ export const useListings = (filters: ListingFilters = {}) => {
           results = results.map((listing) => {
             const prof = profileMap.get(listing.owner_user_id);
             return prof
-              ? { ...listing, owner_profile: { first_name: prof.first_name, last_name: prof.last_name, avatar_url: prof.avatar_url } }
+              ? { ...listing, owner_profile: { first_name: prof.first_name, last_name: prof.last_name, avatar_url: prof.avatar_url, id_verified: (prof as any).id_verified } }
               : listing;
           });
         }
