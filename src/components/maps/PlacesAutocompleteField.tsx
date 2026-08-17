@@ -78,9 +78,18 @@ const PlacesAutocompleteField = ({
 
       if (g.AutocompleteSuggestion?.fetchAutocompleteSuggestions) {
         try {
+          const includedPrimaryTypes = types.flatMap((t) =>
+            t === "(cities)"
+              ? ["locality", "administrative_area_level_3"]
+              : t === "(regions)"
+                ? ["locality", "administrative_area_level_1", "postal_code"]
+                : t === "address"
+                  ? ["street_address", "premise", "route"]
+                  : [t]
+          );
           const { suggestions } = await g.AutocompleteSuggestion.fetchAutocompleteSuggestions({
             input,
-            includedPrimaryTypes: types,
+            includedPrimaryTypes,
             sessionToken: sessionTokenRef.current ?? undefined,
           });
           setPredictions(
