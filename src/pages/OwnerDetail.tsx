@@ -46,6 +46,8 @@ interface Profile {
   country: string | null;
   founding_member: boolean | null;
   email_verified: boolean | null;
+  phone_verified: boolean | null;
+  id_verified: boolean | null;
 }
 
 interface Listing {
