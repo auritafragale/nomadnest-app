@@ -57,7 +57,7 @@ const ValuePropsSection = () => {
                 ))}
               </ul>
               <Link to="/auth?signup=true&role=sitter">
-                <Button className="w-full text-sm sm:text-base" size="sm sm lg">Become a Nomad</Button>
+                <Button className="w-full text-sm sm:text-base" size="lg">Become a Nomad</Button>
               </Link>
             </div>
           </div>
