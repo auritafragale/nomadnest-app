@@ -12,6 +12,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Instagram, Facebook, Mail, Heart } from "lucide-react";
+import aboutHero from "@/assets/about-hero.jpg";
+import aboutCommunity from "@/assets/about-community.jpg";
+import aboutJourney from "@/assets/about-journey.jpg";
 
 const About = () => {
   useEffect(() => {
