@@ -23,9 +23,9 @@ const steps = [
 
 const HowItWorksSection = () => {
   return (
-    <section className="py-20 bg-surface">
+    <section className="py-12 bg-surface">
       <div className="container">
-        <div className="text-center mb-14">
+        <div className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-display mb-4">How NomadNest Works</h2>
 
           <p className="text-muted-foreground max-w-xl mx-auto">

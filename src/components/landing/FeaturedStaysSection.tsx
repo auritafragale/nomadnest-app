@@ -171,9 +171,9 @@ const DemoCard = ({ listing }: { listing: DemoListing }) => (
 );
 
 const FeaturedStaysSection = () => (
-  <section className="py-20 bg-background">
+  <section className="py-12 bg-background">
     <div className="container">
-      <div className="text-center mb-12">
+      <div className="text-center mb-8">
         <span className="inline-block px-4 py-1.5 rounded-full bg-terracotta-light text-primary text-sm font-semibold mb-4">
           From Our Community
         </span>

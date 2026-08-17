@@ -33,9 +33,9 @@ const features = [
 
 const WhyDifferentSection = () => {
   return (
-    <section className="py-20 bg-surface">
+    <section className="py-12 bg-surface">
       <div className="container">
-        <div className="text-center mb-14">
+        <div className="text-center mb-8">
           <span className="inline-block px-4 py-1.5 rounded-full bg-sand-light text-warning text-sm font-semibold mb-4">
             What Makes Us Different
           </span>

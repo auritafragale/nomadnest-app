@@ -4,21 +4,21 @@ const testimonials = [
   {
     quote: "NomadNest changed how I travel. I've house-sat in Portugal, Bali, and Colombia — all while caring for the most adorable animals. It's community, not just a platform.",
     name: "Sophie R.",
-    role: "Nomad since 2024",
+    role: "Nomad since 2025",
     avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=faces",
     rating: 5,
   },
   {
     quote: "I was nervous leaving our two cats for three weeks. Our NomadNest sitter sent daily photos, kept the house immaculate, and our cats absolutely loved her. 10/10.",
     name: "James & Priya T.",
-    role: "Pet Parents since 2024",
+    role: "Pet Parents since 2025",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop&crop=face",
     rating: 5,
   },
   {
     quote: "The founding member perks alone are worth it — the eSIM discount saved me €40 last month. But the real value is the genuine connections you make.",
     name: "Marco L.",
-    role: "Founding Nomad since 2024",
+    role: "Founding Nomad since 2025",
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&h=120&fit=crop&crop=face",
     rating: 5,
   },
@@ -26,9 +26,9 @@ const testimonials = [
 
 const TestimonialsSection = () => {
   return (
-    <section className="py-20 bg-gradient-warm">
+    <section className="py-12 bg-gradient-warm">
       <div className="container">
-        <div className="text-center mb-14">
+        <div className="text-center mb-8">
           <span className="inline-block px-4 py-1.5 rounded-full bg-terracotta-light text-primary text-sm font-semibold mb-4">
             Member Stories
           </span>
