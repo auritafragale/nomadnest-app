@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 
 const Inbox = () => {
   const { user, loading } = useAuth();
+  const { toast } = useToast();
+
   const [searchParams, setSearchParams] = useSearchParams();
   const conversationParam = searchParams.get("conversation");
   const [selectedId, setSelectedId] = useState<string | null>(conversationParam);
