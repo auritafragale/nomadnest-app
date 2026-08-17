@@ -5,7 +5,7 @@ const testimonials = [
     quote: "NomadNest changed how I travel. I've house-sat in Portugal, Bali, and Colombia — all while caring for the most adorable animals. It's community, not just a platform.",
     name: "Sophie R.",
     role: "Nomad since 2024",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b5bc?w=120&h=120&fit=crop&crop=face",
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=faces",
     rating: 5,
   },
   {

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Home, Globe, Heart, Users, Shield, Wifi, Luggage, BadgeCheck } from "lucide-react";
 
 const nomadBenefits = [
-  { icon: Home, text: "Stay in beautiful homes worldwide for free" },
+  { icon: Home, text: "Stay in beautiful homes worldwide" },
   { icon: Heart, text: "Care for adorable pets and make furry friends" },
   { icon: Users, text: "Connect with a global community of fellow nomads" },
   { icon: Wifi, text: "Exclusive perks: eSIM discounts, content insurance, luggage storage" },
@@ -11,10 +11,11 @@ const nomadBenefits = [
 
 const ownerBenefits = [
   { icon: BadgeCheck, text: "Find trusted, verified sitters you can rely on" },
-  { icon: Shield, text: "No booking fees — just £59/year membership" },
+  { icon: Shield, text: "No booking fees" },
   { icon: Heart, text: "Your pets stay happy and loved at home" },
   { icon: Users, text: "Join a caring, vetted community of travellers" },
 ];
+
 
 const ValuePropsSection = () => {
   return (
