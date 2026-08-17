@@ -258,7 +258,7 @@ const About = () => {
                     <p className="text-xs text-muted-foreground">@nomadnest.global</p>
                   </a>
                   <a
-                    href="https://www.facebook.com/groups/nomadnest.global/"
+                    href="https://www.facebook.com/profile.php?id=61573065826502"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-muted transition-colors text-center"
