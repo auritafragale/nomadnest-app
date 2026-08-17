@@ -50,7 +50,7 @@ const About = () => {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="container py-12 md:py-20">
+        <section className="container py-8 md:py-12">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="font-display text-4xl md:text-6xl leading-tight tracking-tight text-foreground">
               We believe travel shouldn&apos;t cost a fortune
@@ -71,7 +71,7 @@ const About = () => {
         </section>
 
         {/* Why */}
-        <section className="container py-10 md:py-16">
+        <section className="container py-8 md:py-12">
           <div className="max-w-3xl mx-auto">
             <h2 className="font-display text-3xl md:text-4xl text-foreground mb-6">
               Why NomadNest exists
@@ -90,7 +90,7 @@ const About = () => {
         </section>
 
         {/* Founders — temporarily hidden
-        <section className="container py-10 md:py-16">
+        <section className="container py-8 md:py-12">
           <div className="max-w-5xl mx-auto">
             <h2 className="font-display text-3xl md:text-4xl text-foreground mb-8 text-center">
               Meet the founders
@@ -147,7 +147,7 @@ const About = () => {
         */}
 
         {/* Journey */}
-        <section className="container py-10 md:py-16">
+        <section className="container py-8 md:py-12">
           <div className="max-w-3xl mx-auto">
             <h2 className="font-display text-3xl md:text-4xl text-foreground mb-6">
               Our journey <span className="text-muted-foreground">(the honest version)</span>
@@ -182,7 +182,7 @@ const About = () => {
         </section>
 
         {/* Comparison */}
-        <section className="container py-10 md:py-16">
+        <section className="container py-8 md:py-12">
           <div className="max-w-4xl mx-auto">
             <h2 className="font-display text-3xl md:text-4xl text-foreground mb-8 text-center">
               What makes us different
@@ -219,7 +219,7 @@ const About = () => {
         </section>
 
         {/* Community */}
-        <section className="container py-10 md:py-16">
+        <section className="container py-8 md:py-12">
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-terracotta-light text-primary mb-4">
               <Heart className="w-6 h-6" />
@@ -238,7 +238,7 @@ const About = () => {
         </section>
 
         {/* Connect */}
-        <section className="container py-10 md:py-20">
+        <section className="container py-8 md:py-12">
           <div className="max-w-3xl mx-auto">
             <Card variant="feature">
               <CardContent className="p-8 md:p-10">
