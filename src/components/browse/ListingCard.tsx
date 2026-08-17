@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Calendar, Cat, Dog, Heart, Loader2, Star } from "lucide-react";
+import { MapPin, Calendar, Cat, Dog, Heart, Loader2, Star, CheckCircle } from "lucide-react";
 import { ListingWithDetails } from "@/hooks/useListings";
 import { format, differenceInDays } from "date-fns";
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
@@ -175,6 +175,12 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
                 <AvatarFallback className="text-[10px]">{ownerInitials}</AvatarFallback>
               </Avatar>
               <span className="text-xs text-muted-foreground">Hosted by {ownerName}</span>
+              {listing.owner_profile?.id_verified && (
+                <CheckCircle
+                  className="w-3.5 h-3.5 text-green-600 dark:text-green-400 flex-shrink-0"
+                  aria-label="ID verified host"
+                />
+              )}
             </div>
           )}
 
