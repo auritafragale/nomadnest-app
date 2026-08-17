@@ -5,7 +5,8 @@ import Footer from "@/components/layout/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Users } from "lucide-react";
+import { Users } from "lucide-react";
+import LocationSearchInput from "@/components/search/LocationSearchInput";
 import { Skeleton } from "@/components/ui/skeleton";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import NomadGoogleMap from "@/components/maps/NomadGoogleMap";
@@ -110,15 +111,12 @@ const FindNomads = () => {
 
         <div className="bg-surface border-b border-border sticky top-16 z-40">
           <div className="container py-4">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or location..."
-                className="pl-10 h-12"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+            <LocationSearchInput
+              wrapperClassName="max-w-md"
+              placeholder="Search by name or location..."
+              value={searchQuery}
+              onChange={setSearchQuery}
+            />
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import LocationSearchInput from "@/components/search/LocationSearchInput";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -96,15 +97,13 @@ const ListingFilters = ({
     <div className="bg-surface border-b border-border sticky top-16 z-40">
       <div className="container py-4">
         <div className="flex flex-col gap-3">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Search by location, title, or description..."
-              className="pl-10 h-12"
-              value={filters.search || ""}
-              onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-            />
-          </div>
+          <LocationSearchInput
+            wrapperClassName="w-full"
+            placeholder="Search by location, title, or description..."
+            value={filters.search || ""}
+            onChange={(v) => onFiltersChange({ ...filters, search: v })}
+          />
+
           {/* Mobile: single filter button + view toggle */}
           {onMobileFiltersOpen && (
             <div className="md:hidden flex items-center gap-2">

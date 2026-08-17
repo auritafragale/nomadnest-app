@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, MapPin } from "lucide-react";
 import whiteLogo from "@/assets/White_Logo.png";
+import { useCityPredictions } from "@/hooks/useCityPredictions";
 
 const IMAGES = ["/hero-1.jpg", "/hero-2.jpg", "/hero-3.jpg"];
 const INTERVAL = 5500;
@@ -12,6 +13,8 @@ const HeroSection = () => {
   const [next, setNext] = useState<number | null>(null);
   const [fading, setFading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const { predictions, clear } = useCityPredictions(searchQuery);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -115,6 +118,7 @@ const HeroSection = () => {
           className="w-full max-w-xl animate-fade-up"
           style={{ animationDelay: "0.4s" }}
         >
+          <div className="relative">
           <div className="flex items-center bg-white rounded-xl shadow-2xl overflow-hidden">
             <div className="flex items-center gap-2 pl-4 text-muted-foreground flex-shrink-0">
               <MapPin className="w-5 h-5 text-primary" />
@@ -123,7 +127,13 @@ const HeroSection = () => {
               type="text"
               placeholder="Where are you going?"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSuggestOpen(true);
+              }}
+              onFocus={() => setSuggestOpen(true)}
+              onBlur={() => window.setTimeout(() => setSuggestOpen(false), 120)}
+              autoComplete="off"
               className="flex-1 h-14 px-3 text-foreground bg-transparent focus:outline-none placeholder:text-muted-foreground text-base"
             />
             <button
@@ -133,6 +143,26 @@ const HeroSection = () => {
               <Search className="w-5 h-5" />
               <span className="hidden sm:inline">Search</span>
             </button>
+          </div>
+          {suggestOpen && predictions.length > 0 && (
+            <ul className="absolute z-50 mt-2 w-full rounded-xl border border-border bg-popover text-popover-foreground shadow-2xl overflow-hidden text-left">
+              {predictions.map((p) => (
+                <li
+                  key={p.place_id}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setSearchQuery(p.description);
+                    clear();
+                    setSuggestOpen(false);
+                  }}
+                  className="flex items-center gap-2 px-4 py-3 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                >
+                  <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="truncate">{p.description}</span>
+                </li>
+              ))}
+            </ul>
+          )}
           </div>
         </form>
 

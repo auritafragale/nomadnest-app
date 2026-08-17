@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import LocationSearchInput from "@/components/search/LocationSearchInput";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -83,15 +84,12 @@ const SitterFilters = ({
     <div className="bg-surface border-b border-border sticky top-16 z-40">
       <div className="container py-4">
         <div className="flex flex-col gap-3">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, location, or languages..."
-              className="pl-10 h-12"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-            />
-          </div>
+          <LocationSearchInput
+            wrapperClassName="w-full"
+            placeholder="Search by name, location, or languages..."
+            value={searchQuery}
+            onChange={onSearchChange}
+          />
           <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-hide">
             <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
               <PopoverTrigger asChild>
