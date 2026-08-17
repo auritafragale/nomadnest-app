@@ -40,11 +40,11 @@ const TestimonialsSection = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="flex md:grid md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none pb-4 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth">
           {testimonials.map((testimonial) => (
             <div
               key={testimonial.name}
-              className="bg-surface rounded-2xl p-6 shadow-soft border border-border flex flex-col"
+              className="bg-surface rounded-2xl p-6 shadow-soft border border-border flex flex-col snap-center shrink-0 w-[80vw] sm:w-[60vw] md:w-auto md:shrink"
             >
               {/* Stars */}
               <div className="flex gap-1 mb-4">

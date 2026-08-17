@@ -27,14 +27,14 @@ const TrustSection = () => {
       <div className="container">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto text-center">
           {stats.map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center gap-3">
-              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
-                <stat.icon className="w-7 h-7 text-white" />
+            <div key={stat.label} className="flex flex-col items-center gap-2 sm:gap-3">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/20 flex items-center justify-center">
+                <stat.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
               </div>
               <div>
-                <p className="text-2xl md:text-3xl font-display text-white">{stat.value}</p>
-                <p className="font-semibold text-white">{stat.label}</p>
-                <p className="text-sm text-white/70 mt-0.5">{stat.sub}</p>
+                <p className="text-lg sm:text-2xl md:text-3xl font-display text-white leading-tight">{stat.value}</p>
+                <p className="font-semibold text-white text-sm sm:text-base leading-tight">{stat.label}</p>
+                <p className="text-xs sm:text-sm text-white/70 mt-0.5 leading-tight">{stat.sub}</p>
               </div>
             </div>
           ))}
