@@ -127,7 +127,7 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
     <Link to={`/listing/${listing.id}`}>
       <Card variant="interactive" className="overflow-hidden group">
         {/* Image */}
-        <div className="relative aspect-[4/3] overflow-hidden">
+        <div className="relative aspect-square sm:aspect-[4/3] overflow-hidden">
           <img
             src={imageUrl}
             alt={listing.title}
@@ -164,10 +164,10 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
           )}
         </div>
 
-        <div className="p-4">
+        <div className="p-2.5 sm:p-4">
           {/* Host row */}
           {ownerName && (
-            <div className="flex items-center gap-2 mb-2">
+            <div className="hidden sm:flex items-center gap-2 mb-2">
               <Avatar className="w-6 h-6">
                 <AvatarImage src={listing.owner_profile?.avatar_url || undefined} />
                 <AvatarFallback className="text-[10px]">{ownerInitials}</AvatarFallback>
@@ -177,18 +177,18 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
           )}
 
           {/* Title */}
-          <h3 className="font-semibold text-base leading-snug mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+          <h3 className="font-semibold text-sm sm:text-base leading-snug mb-1.5 sm:mb-2 line-clamp-2 group-hover:text-primary transition-colors">
             {listing.title}
           </h3>
 
           {/* Location & Dates */}
           <div className="space-y-1 mb-3">
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
+              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
               <span className="truncate">{location}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
+              <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
               {dateRange}
             </div>
           </div>

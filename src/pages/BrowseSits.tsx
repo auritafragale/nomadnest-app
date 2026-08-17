@@ -106,7 +106,7 @@ const BrowseSits = () => {
               {viewMode === "map" ? (
                 <Skeleton className="w-full h-[600px] rounded-lg" />
               ) : (
-                <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 lg:grid-cols-3">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <Skeleton key={i} className="h-80 rounded-lg" />
                   ))}
@@ -130,7 +130,7 @@ const BrowseSits = () => {
                   </Suspense>
                 ) : (
                   <>
-                    <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 lg:grid-cols-3">
                       {paginatedItems.map((listing) => (
                         <ListingCard key={listing.id} listing={listing} viewMode="grid" />
                       ))}
