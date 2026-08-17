@@ -445,6 +445,8 @@ const SitterDetail = () => {
                       <button
                         key={index}
                         onClick={() => setSelectedPhoto(index)}
+                        aria-label={`View photo ${index + 1} of ${allPhotos.length}`}
+                        aria-current={selectedPhoto === index}
                         className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
                           selectedPhoto === index
                             ? "border-primary"
@@ -595,7 +597,7 @@ const SitterDetail = () => {
                 {/* Pet Types */}
                 {sitter.pet_types && sitter.pet_types.length > 0 && (
                   <div className="mb-6">
-                    <h3 className="font-medium mb-2">Experienced with</h3>
+                    <p className="font-medium mb-2">Experienced with</p>
                     <div className="flex flex-wrap gap-2">
                       {sitter.pet_types.map((petType) => {
                         const Icon = petIcons[petType.toLowerCase()] || Dog;
@@ -634,7 +636,9 @@ const SitterDetail = () => {
             {sitter.bio && (
               <Card className="mb-6">
                 <CardHeader>
-                  <CardTitle>About {profile.first_name || "Me"}</CardTitle>
+                  <CardTitle asChild>
+                    <h2>About {profile.first_name || "Me"}</h2>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground whitespace-pre-wrap">
@@ -648,9 +652,11 @@ const SitterDetail = () => {
             {sitter.why_i_sit && (
               <Card className="mb-6">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Heart className="w-5 h-5 text-primary" />
-                    Why I Pet Sit
+                  <CardTitle asChild>
+                    <h2 className="flex items-center gap-2">
+                      <Heart className="w-5 h-5 text-primary" />
+                      Why I Pet Sit
+                    </h2>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -665,9 +671,11 @@ const SitterDetail = () => {
             {sitter.experience_details && (
               <Card className="mb-6">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="w-5 h-5 text-primary" />
-                    Experience
+                  <CardTitle asChild>
+                    <h2 className="flex items-center gap-2">
+                      <Award className="w-5 h-5 text-primary" />
+                      Experience
+                    </h2>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -683,9 +691,11 @@ const SitterDetail = () => {
               {/* Sit Style & Comfortable With */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-primary" />
-                    Sitting Style
+                  <CardTitle asChild>
+                    <h2 className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-primary" />
+                      Sitting Style
+                    </h2>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -713,9 +723,11 @@ const SitterDetail = () => {
               {/* Home Preferences */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Home className="w-5 h-5 text-primary" />
-                    Home Preferences
+                  <CardTitle asChild>
+                    <h2 className="flex items-center gap-2">
+                      <Home className="w-5 h-5 text-primary" />
+                      Home Preferences
+                    </h2>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -740,9 +752,11 @@ const SitterDetail = () => {
               sitter.preferred_cities?.length > 0) && (
               <Card className="mb-6">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-primary" />
-                    Preferred Locations
+                  <CardTitle asChild>
+                    <h2 className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-primary" />
+                      Preferred Locations
+                    </h2>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -771,9 +785,11 @@ const SitterDetail = () => {
             {sitter.latitude && sitter.longitude && (
               <Card className="mb-6">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    Location
+                  <CardTitle asChild>
+                    <h2 className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5" />
+                      Location
+                    </h2>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

@@ -404,15 +404,17 @@ const ListingDetail = () => {
                 className="w-full h-full object-cover"
               />
               {allPhotos.length > 1 && (
-                <>
+              <>
                   <button
                     onClick={prevPhoto}
+                    aria-label="Previous photo"
                     className="absolute left-3 top-1/2 -translate-y-1/2 p-3 bg-background/80 rounded-full hover:bg-background transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     onClick={nextPhoto}
+                    aria-label="Next photo"
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-background/80 rounded-full hover:bg-background transition-colors"
                   >
                     <ChevronRight className="w-5 h-5" />
@@ -422,6 +424,8 @@ const ListingDetail = () => {
                       <button
                         key={idx}
                         onClick={() => setCurrentPhotoIndex(idx)}
+                        aria-label={`Go to photo ${idx + 1} of ${allPhotos.length}`}
+                        aria-current={idx === currentPhotoIndex}
                         className="p-1.5"
                       >
                         <span className={cn(
@@ -473,7 +477,9 @@ const ListingDetail = () => {
               {listing.description && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>About this sit</CardTitle>
+                  <CardTitle asChild>
+                    <h2>About this sit</h2>
+                  </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground whitespace-pre-wrap">
@@ -486,9 +492,11 @@ const ListingDetail = () => {
               {/* Pets */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Dog className="w-5 h-5" />
-                    Meet the Pets ({listing.pets.length})
+                  <CardTitle asChild>
+                    <h2 className="flex items-center gap-2">
+                      <Dog className="w-5 h-5" />
+                      Meet the Pets ({listing.pets.length})
+                    </h2>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -571,9 +579,11 @@ const ListingDetail = () => {
               {/* Home Details */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Home className="w-5 h-5" />
-                    Home Details
+                  <CardTitle asChild>
+                    <h2 className="flex items-center gap-2">
+                      <Home className="w-5 h-5" />
+                      Home Details
+                    </h2>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -626,7 +636,9 @@ const ListingDetail = () => {
                 listing.home_care_tasks.length > 0) && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Requirements & House Rules</CardTitle>
+                    <CardTitle asChild>
+                      <h2>Requirements & House Rules</h2>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {listing.requirements.length > 0 && (
@@ -708,7 +720,9 @@ const ListingDetail = () => {
               {listing.ideal_sitter_description && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Ideal Nomad</CardTitle>
+                    <CardTitle asChild>
+                      <h2>Ideal Nomad</h2>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground whitespace-pre-wrap">
@@ -722,9 +736,11 @@ const ListingDetail = () => {
               {listing.latitude && listing.longitude && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5" />
-                      Location
+                    <CardTitle asChild>
+                      <h2 className="flex items-center gap-2">
+                        <MapPin className="w-5 h-5" />
+                        Location
+                      </h2>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -756,9 +772,11 @@ const ListingDetail = () => {
               <OwnerReviewsSection ownerUserId={listing.owner_user_id} />
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5" />
-                    Available Dates
+                  <CardTitle asChild>
+                    <h2 className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      Available Dates
+                    </h2>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">

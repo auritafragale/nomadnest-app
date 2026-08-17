@@ -77,8 +77,10 @@ const SectionCard = ({
         <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
           <Icon className="w-6 h-6" />
         </div>
-        <CardTitle className="text-xl md:text-2xl font-display leading-tight">
-          {title}
+        <CardTitle asChild>
+          <h2 className="text-xl md:text-2xl font-display leading-tight">
+            {title}
+          </h2>
         </CardTitle>
       </div>
     </CardHeader>
