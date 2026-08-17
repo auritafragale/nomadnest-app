@@ -60,6 +60,7 @@ import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import SitterLocationMap from "@/components/maps/SitterLocationMap";
+import VerificationBadges from "@/components/ui/VerificationBadges";
 
 interface SitterProfile {
   id: string;
