@@ -52,9 +52,17 @@ export const SitterInviteCard = ({ invite }: SitterInviteCardProps) => {
         onSuccess: () => {
           toast({ title: "Invite declined" });
         },
+        onError: () => {
+          toast({
+            title: "Could not decline invite",
+            description: "Please check your connection and try again.",
+            variant: "destructive",
+          });
+        },
       }
     );
   };
+
 
   const status = statusConfig[invite.status] || statusConfig.pending;
 
