@@ -38,3 +38,6 @@ verify_jwt = true
 
 [functions.notify-id-rejected]
 verify_jwt = true
+
+[functions.review-reminders]
+verify_jwt = false

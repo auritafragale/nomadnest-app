@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { format, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, isAfter, isBefore, startOfToday } from "date-fns";
+import { differenceInCalendarDays, format, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWithinInterval, parseISO, isAfter, isBefore, startOfToday } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +44,15 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
   const canStartSit = isOwner && sit.status === "confirmed";
   const canCompleteSit = isOwner && sit.status === "in_progress";
   const canCancelSit = isOwner && sit.status === "confirmed";
-  const canReview = sit.status === "completed" && !hasReviewed;
+  // Reviews stay open for 14 days after the sit's end date.
+  const REVIEW_WINDOW_DAYS = 14;
+  const daysSinceEnd = sit.sit_dates?.end_date
+    ? differenceInCalendarDays(startOfToday(), parseISO(sit.sit_dates.end_date))
+    : null;
+  const reviewDaysLeft =
+    daysSinceEnd === null ? null : Math.max(0, REVIEW_WINDOW_DAYS - daysSinceEnd);
+  const reviewWindowOpen = reviewDaysLeft === null || reviewDaysLeft > 0;
+  const canReview = sit.status === "completed" && !hasReviewed && reviewWindowOpen;
 
   // Check if user has already reviewed for this sit
   useEffect(() => {
@@ -200,6 +208,21 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
               </Button>
             }
           />
+          {reviewDaysLeft !== null && (
+            <p className="text-[11px] text-muted-foreground text-center mt-1.5">
+              {reviewDaysLeft === 1
+                ? "Last day to leave your review"
+                : `${reviewDaysLeft} days left to leave your review`}
+            </p>
+          )}
+        </div>
+      )}
+
+      {sit.status === "completed" && !hasReviewed && !reviewWindowOpen && (
+        <div className="mt-3 pt-2 border-t">
+          <p className="text-xs text-muted-foreground text-center">
+            The {REVIEW_WINDOW_DAYS}-day review window for this sit has closed
+          </p>
         </div>
       )}
 
