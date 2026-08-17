@@ -53,7 +53,8 @@ const Membership = () => {
 
   const openFoundingDialog = () => {
     if (!user) {
-      navigate("/auth");
+      // Send to the registration page where the invite code field is shown.
+      navigate("/auth?signup=true");
       return;
     }
     setInviteCode("");
