@@ -33,31 +33,31 @@ const ValuePropsSection = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:max-w-5xl mx-auto">
           {/* For Nomads */}
           <div className="rounded-2xl overflow-hidden border border-border bg-surface shadow-soft">
             <div className="h-1.5 bg-primary" />
-            <div className="p-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-terracotta-light text-primary text-sm font-semibold mb-5">
-                <Globe className="w-4 h-4" />
+            <div className="p-4 sm:p-8">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-terracotta-light text-primary text-xs sm:text-sm font-semibold mb-3 sm:mb-5">
+                <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 For Nomads
               </div>
-              <h3 className="text-2xl font-display mb-2">Explore the World, Free</h3>
-              <p className="text-muted-foreground text-sm mb-6">
+              <h3 className="text-lg sm:text-2xl font-display mb-1 sm:mb-2">Explore the World, Free</h3>
+              <p className="text-muted-foreground text-xs sm:text-sm mb-4 sm:mb-6">
                 Trade your skills and love of animals for free accommodation across the globe.
               </p>
-              <ul className="space-y-4 mb-8">
+              <ul className="space-y-2.5 sm:space-y-4 mb-5 sm:mb-8">
                 {nomadBenefits.map((benefit, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-terracotta-light flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <benefit.icon className="w-4 h-4 text-primary" />
+                  <li key={i} className="flex items-start gap-2 sm:gap-3">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-terracotta-light flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <benefit.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
                     </div>
-                    <span className="text-sm text-foreground leading-snug pt-1.5">{benefit.text}</span>
+                    <span className="text-xs sm:text-sm text-foreground leading-snug pt-1 sm:pt-1.5">{benefit.text}</span>
                   </li>
                 ))}
               </ul>
               <Link to="/auth?signup=true&role=sitter">
-                <Button className="w-full" size="lg">Become a Nomad</Button>
+                <Button className="w-full text-sm sm:text-base" size="lg">Become a Nomad</Button>
               </Link>
             </div>
           </div>
@@ -65,27 +65,27 @@ const ValuePropsSection = () => {
           {/* For Pet Parents */}
           <div className="rounded-2xl overflow-hidden border border-border bg-surface shadow-soft">
             <div className="h-1.5 bg-secondary" />
-            <div className="p-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ocean-light text-secondary text-sm font-semibold mb-5">
-                <Home className="w-4 h-4" />
+            <div className="p-4 sm:p-8">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-ocean-light text-secondary text-xs sm:text-sm font-semibold mb-3 sm:mb-5">
+                <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 For Pet Parents
               </div>
-              <h3 className="text-2xl font-display mb-2">Peace of Mind, Always</h3>
-              <p className="text-muted-foreground text-sm mb-6">
+              <h3 className="text-lg sm:text-2xl font-display mb-1 sm:mb-2">Peace of Mind, Always</h3>
+              <p className="text-muted-foreground text-xs sm:text-sm mb-4 sm:mb-6">
                 Travel knowing your home and pets are in the hands of someone who truly cares.
               </p>
-              <ul className="space-y-4 mb-8">
+              <ul className="space-y-2.5 sm:space-y-4 mb-5 sm:mb-8">
                 {ownerBenefits.map((benefit, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-ocean-light flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <benefit.icon className="w-4 h-4 text-secondary" />
+                  <li key={i} className="flex items-start gap-2 sm:gap-3">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-ocean-light flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <benefit.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-secondary" />
                     </div>
-                    <span className="text-sm text-foreground leading-snug pt-1.5">{benefit.text}</span>
+                    <span className="text-xs sm:text-sm text-foreground leading-snug pt-1 sm:pt-1.5">{benefit.text}</span>
                   </li>
                 ))}
               </ul>
               <Link to="/auth?signup=true&role=owner">
-                <Button variant="secondary" className="w-full" size="lg">List Your Home</Button>
+                <Button variant="secondary" className="w-full text-sm sm:text-base" size="lg">List Your Home</Button>
               </Link>
             </div>
           </div>
