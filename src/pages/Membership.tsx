@@ -92,28 +92,22 @@ const Membership = () => {
     }
   };
 
-  const plans = [
-    {
-      key: "sitter",
-      icon: <Star className="w-6 h-6" />,
-      badge: null,
-    },
-    {
-      key: "combined",
-      icon: <Sparkles className="w-6 h-6" />,
-      badge: "Best Value",
-    },
-    {
-      key: "owner",
-      icon: <Shield className="w-6 h-6" />,
-      badge: null,
-    },
+  const tabs: { key: "sitter" | "owner" | "combined"; label: string; sublabel: string }[] = [
+    { key: "sitter", label: "Become a Nomad", sublabel: "Find free stays" },
+    { key: "owner", label: "List Your Home", sublabel: "Find a sitter" },
+    { key: "combined", label: "Go Combined", sublabel: "Best value" },
   ];
 
   const isCurrentPlan = (planKey: string) => {
     if (foundingMember && planKey === "combined") return true;
     return subscribed && membershipType === planKey;
   };
+
+  const activePlan = MEMBERSHIP_PLANS[activeTab];
+  const activeMeta = tabs.find((t) => t.key === activeTab)!;
+  const activeIcon =
+    activeTab === "sitter" ? <Star className="w-6 h-6" /> : activeTab === "owner" ? <Shield className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />;
+  const activeBadge = activeTab === "combined" ? "Best Value" : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -139,7 +133,7 @@ const Membership = () => {
           </div>
         )}
 
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground">Choose Your Membership</h1>
           <p className="mt-3 text-muted-foreground text-lg max-w-2xl mx-auto">
             Join the NomadNest community and start connecting with trusted pet lovers around the world.
@@ -152,75 +146,88 @@ const Membership = () => {
           </div>
         ) : (
           <>
-            <div className="grid md:grid-cols-3 gap-6 mb-16">
-              {plans.map(({ key, icon, badge }) => {
-                const plan = MEMBERSHIP_PLANS[key as keyof typeof MEMBERSHIP_PLANS];
-                const isCurrent = isCurrentPlan(key);
-                const isCombined = key === "combined";
-
+            {/* CTA toggle buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 max-w-3xl mx-auto">
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.key;
                 return (
-                  <Card
-                    key={key}
-                    className={`relative overflow-hidden transition-all ${
-                      isCombined
-                        ? "border-2 border-primary shadow-xl scale-[1.02]"
-                        : "border-border"
-                    } ${isCurrent ? "ring-2 ring-accent" : ""} ${
-                      upgradeBoth && isCombined ? "ring-4 ring-primary ring-offset-2" : ""
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-4 py-3 text-center transition-all border-2 ${
+                      isActive
+                        ? "border-primary bg-primary text-primary-foreground shadow-md"
+                        : "border-border bg-card text-foreground hover:border-primary/50"
                     }`}
                   >
-                    {badge && (
-                      <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-4 py-1 text-xs font-bold rounded-bl-lg">
-                        {badge}
-                      </div>
-                    )}
-                    {isCurrent && (
-                      <div className="absolute top-0 left-0 bg-accent text-accent-foreground px-4 py-1 text-xs font-bold rounded-br-lg">
-                        Your Plan
-                      </div>
-                    )}
-                    <CardHeader className="text-center pt-8">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
-                        {icon}
-                      </div>
-                      <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
-                      <div className="mt-2">
-                        <span className="text-4xl font-bold text-foreground">{plan.price}</span>
-                        <span className="text-muted-foreground">/{plan.interval}</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-3">
-                        {plan.features.map((feature) => (
-                          <li key={feature} className="flex items-start gap-2">
-                            <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                            <span className="text-sm text-foreground">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                    <CardFooter className="pb-8">
-                      {isCurrent ? (
-                        <Button className="w-full" variant="outline" disabled>
-                          Current Plan
-                        </Button>
-                      ) : (
-                        <Button
-                          className="w-full"
-                          variant={isCombined ? "default" : "outline"}
-                          onClick={() => handleCheckout(key)}
-                          disabled={!!checkoutLoading}
-                        >
-                          {checkoutLoading === key ? (
-                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          ) : null}
-                          Get Started
-                        </Button>
-                      )}
-                    </CardFooter>
-                  </Card>
+                    <span className="text-sm font-bold leading-tight">{tab.label}</span>
+                    <span className={`text-xs ${isActive ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                      {tab.sublabel}
+                    </span>
+                  </button>
                 );
               })}
+            </div>
+
+            {/* Active plan card */}
+            <div className="max-w-md mx-auto mb-16">
+              <Card
+                className={`relative overflow-hidden transition-all ${
+                  activeTab === "combined"
+                    ? "border-2 border-primary shadow-xl"
+                    : "border-border shadow-md"
+                } ${isCurrentPlan(activeTab) ? "ring-2 ring-accent" : ""} ${
+                  upgradeBoth && activeTab === "combined" ? "ring-4 ring-primary ring-offset-2" : ""
+                }`}
+              >
+                {activeBadge && (
+                  <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-4 py-1 text-xs font-bold rounded-bl-lg">
+                    {activeBadge}
+                  </div>
+                )}
+                {isCurrentPlan(activeTab) && (
+                  <div className="absolute top-0 left-0 bg-accent text-accent-foreground px-4 py-1 text-xs font-bold rounded-br-lg">
+                    Your Plan
+                  </div>
+                )}
+                <CardHeader className="text-center pt-8">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
+                    {activeIcon}
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground">{activePlan.name}</h3>
+                  <div className="mt-2">
+                    <span className="text-4xl font-bold text-foreground">{activePlan.price}</span>
+                    <span className="text-muted-foreground">/{activePlan.interval}</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3">
+                    {activePlan.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2">
+                        <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                        <span className="text-sm text-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+                <CardFooter className="pb-8">
+                  {isCurrentPlan(activeTab) ? (
+                    <Button className="w-full" variant="outline" disabled>
+                      Current Plan
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full"
+                      variant={activeTab === "combined" ? "default" : "outline"}
+                      onClick={() => handleCheckout(activeTab)}
+                      disabled={!!checkoutLoading}
+                    >
+                      {checkoutLoading === activeTab ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Get Started
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
             </div>
 
             {/* Founding Member Section */}
