@@ -68,6 +68,33 @@ export type Database = {
           },
         ]
       }
+      background_job_state: {
+        Row: {
+          job_name: string
+          last_error: string | null
+          last_run_at: string | null
+          locked_until: string | null
+          pause_reason: string | null
+          paused: boolean
+        }
+        Insert: {
+          job_name: string
+          last_error?: string | null
+          last_run_at?: string | null
+          locked_until?: string | null
+          pause_reason?: string | null
+          paused?: boolean
+        }
+        Update: {
+          job_name?: string
+          last_error?: string | null
+          last_run_at?: string | null
+          locked_until?: string | null
+          pause_reason?: string | null
+          paused?: boolean
+        }
+        Relationships: []
+      }
       city_chat_messages: {
         Row: {
           content: string
@@ -702,6 +729,38 @@ export type Database = {
         }
         Relationships: []
       }
+      review_reminders: {
+        Row: {
+          id: string
+          sent_at: string
+          sit_id: string
+          stage: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          sent_at?: string
+          sit_id: string
+          stage: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          sent_at?: string
+          sit_id?: string
+          stage?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_reminders_sit_id_fkey"
+            columns: ["sit_id"]
+            isOneToOne: false
+            referencedRelation: "sits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           created_at: string
@@ -1023,6 +1082,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acquire_job_lease: {
+        Args: { p_job_name: string; p_lease_seconds: number }
+        Returns: boolean
+      }
       can_access_city_chat: {
         Args: { p_room_id: string; p_user_id: string }
         Returns: boolean
@@ -1046,6 +1109,7 @@ export type Database = {
         Args: { p_code: string; p_user_id: string }
         Returns: string
       }
+      release_job_lease: { Args: { p_job_name: string }; Returns: undefined }
       request_is_end_user: { Args: never; Returns: boolean }
       upsert_push_subscription: {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string }
