@@ -167,7 +167,7 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
         <div className="p-2.5 sm:p-4">
           {/* Host row */}
           {ownerName && (
-            <div className="flex items-center gap-2 mb-2">
+            <div className="hidden sm:flex items-center gap-2 mb-2">
               <Avatar className="w-6 h-6">
                 <AvatarImage src={listing.owner_profile?.avatar_url || undefined} />
                 <AvatarFallback className="text-[10px]">{ownerInitials}</AvatarFallback>
