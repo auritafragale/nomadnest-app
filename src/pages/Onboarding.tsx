@@ -240,7 +240,14 @@ const Onboarding = () => {
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <CardTitle className="text-xl mb-2">How will you use NomadNest?</CardTitle>
+              <div className="flex items-center justify-center gap-1.5">
+                <CardTitle className="text-xl mb-2">How will you use NomadNest?</CardTitle>
+                <HelpTooltip
+                  align="center"
+                  label="About roles"
+                  content="Nomads offer pet sitting while travelling; Pet Parents host a sitter for their pets. Combined lets you do both — sit and host — under one account (the Combined membership tier)."
+                />
+              </div>
               <CardDescription>You can change this later in Settings.</CardDescription>
             </div>
             
