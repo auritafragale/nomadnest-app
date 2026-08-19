@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import NomadGoogleMap from "@/components/maps/NomadGoogleMap";
 import NomadVisibilityBanner from "@/components/browse/NomadVisibilityBanner";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import CityChatsSection from "@/components/city-chat/CityChatsSection";
 
 export interface NomadOnMap {
