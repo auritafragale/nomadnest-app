@@ -12,38 +12,57 @@
 | Google Maps / Places | Maps, autocomplete, geocoding | Key + two Map IDs in place |
 | Web Push (VAPID) | Push notifications | Key pair in place |
 
-Nothing new needs to be signed up for. The only gap is that the WhatsApp OTP path is built but switched off.
+No new provider sign-ups are needed. The only outstanding item is that the WhatsApp OTP path is built but switched off.
 
 ## WhatsApp OTP: current state
 
-The code already supports it end to end:
+The code already supports WhatsApp end to end:
 
-- The verification screen shows an SMS / WhatsApp channel picker only when the frontend flag `VITE_ENABLE_WHATSAPP_VERIFY` is `true`.
-- The `verify-phone-start` function only forwards `whatsapp` to Twilio when the backend flag `ENABLE_WHATSAPP_VERIFY` is `true`, otherwise it silently falls back to SMS.
-- Both flags are currently unset, so every member gets SMS.
+- `src/components/settings/PhoneVerification.tsx` shows an SMS / WhatsApp channel picker only when the frontend flag `VITE_ENABLE_WHATSAPP_VERIFY` is `true`.
+- `supabase/functions/verify-phone-start/index.ts` only forwards `whatsapp` to Twilio when the backend flag `ENABLE_WHATSAPP_VERIFY` is `true`; otherwise it silently downgrades to SMS.
+- Both flags are currently unset, so every member gets SMS OTP.
 
-So switching WhatsApp on is a configuration job, not a build job — but it cannot be flipped until Twilio's side is ready.
+## Decision (confirmed)
 
-## What has to happen on Twilio first (your side)
+**Build the WhatsApp fallback now, keep SMS as the default channel for launch.** No launch blocker. The flags get flipped the moment your Twilio/Meta WhatsApp sender is approved.
 
-1. In the Twilio console, enable the **WhatsApp channel** on the same Verify Service already used for SMS.
-2. Twilio requires an approved WhatsApp sender: either a Twilio-provided WhatsApp number or your own number connected to a Meta WhatsApp Business Account, plus business verification with Meta. Twilio's Verify service supplies the OTP message template, so no template approval work on your part.
-3. Confirm in the Verify Service settings that WhatsApp shows as an enabled channel.
+## Build now — make WhatsApp robust and SMS-safe
 
-Until step 3 is done, requesting a WhatsApp OTP returns a Twilio error, which is exactly why the flags exist.
+These changes are safe whether or not WhatsApp is enabled yet:
 
-## What I will do once Twilio is ready
+1. **verify-phone-start: graceful WhatsApp → SMS fallback.**
+   - When `ENABLE_WHATSAPP_VERIFY` is on and the member chooses WhatsApp, attempt the WhatsApp verification first.
+   - If Twilio rejects the WhatsApp send (number has no WhatsApp account, sender not approved, rate limited, etc.), automatically retry the same number over SMS instead of surfacing a raw Twilio error.
+   - Return the channel that actually delivered in the response (`delivered_channel`), so the client message reflects reality.
+   - Keep the existing silent downgrade (WhatsApp → SMS) when the backend flag is off, unchanged.
 
-1. Add `ENABLE_WHATSAPP_VERIFY = true` as a backend secret so the edge function stops downgrading WhatsApp to SMS.
-2. Add `VITE_ENABLE_WHATSAPP_VERIFY = true` so the channel picker appears in Settings.
-3. Improve the fallback behaviour in `verify-phone-start`: if a WhatsApp send fails (member has no WhatsApp on that number, or the sender is rate-limited), retry automatically over SMS and tell the client which channel actually delivered, instead of surfacing a raw Twilio error.
-4. Update the verification UI so the delivery message reflects the channel that was actually used, and default the picker to WhatsApp with SMS as the visible alternative.
-5. Test both channels against a real number and confirm `phone_verified` is written to the profile.
+2. **verify-phone-check: no change needed.**
+   - Twilio Verify checks the code regardless of channel, so the check function works for both SMS and WhatsApp without modification.
+
+3. **PhoneVerification UI: reflect the real delivered channel.**
+   - The "Code sent to..." toast/message already reads the `channel` field; update it to read `delivered_channel` so it never lies (e.g. "Code sent via SMS" when WhatsApp fell back).
+   - Default the picker to SMS, with WhatsApp offered as the alternative once enabled. No behavioural change while flags are off.
+
+4. **No flag flips yet.**
+   - Do NOT set `ENABLE_WHATSAPP_VERIFY` or `VITE_ENABLE_WHATSAPP_VERIFY` now. SMS remains the only channel for launch.
+
+## Later — the moment your Twilio/Meta WhatsApp sender is approved
+
+This is your side, then mine:
+
+1. You: in the Twilio console, enable the WhatsApp channel on the existing Verify Service, with an approved WhatsApp sender (Twilio-provided number, or your own number connected to a Meta WhatsApp Business Account + Meta business verification). Twilio Verify supplies the OTP message template, so no template approval work on your part.
+2. Confirm in the Verify Service settings that WhatsApp shows as an enabled channel.
+3. Tell me it's ready. I then:
+   - Add `ENABLE_WHATSAPP_VERIFY = true` as a backend secret.
+   - Add `VITE_ENABLE_WHATSAPP_VERIFY = true` so the channel picker appears.
+   - Test both channels against a real number and confirm `phone_verified` is written to the profile.
+
+Until step 3 above is done, requesting a WhatsApp OTP would return a Twilio error — which is exactly why the flags exist and stay off until then.
 
 ## Optional related item
 
-WhatsApp click-to-chat (a "message us on WhatsApp" link for support) needs no API at all — just a `wa.me` link. Say the word if you want that on the contact page.
+WhatsApp click-to-chat (a "message us on WhatsApp" support link) needs no API at all — just a `wa.me` deep link. Say the word if you want that on the contact page; it's independent of OTP.
 
-## Recommendation
+## Why SMS for launch
 
-Keep SMS as the only channel for launch. WhatsApp OTP depends on Meta business verification, which can take days and is not on the critical path for sign-ups. Do the Twilio + Meta setup in parallel and I will flip the flags the moment it clears.
+WhatsApp OTP depends on Meta business verification, which can take days and is not on the critical path for sign-ups. SMS OTP already works today and covers every member. Building the fallback now means flipping WhatsApp on later is a one-line config change with no further code work.
