@@ -19,6 +19,7 @@ import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Loader2 } from "lucide-react";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 const Membership = () => {
   const navigate = useNavigate();
