@@ -978,9 +978,33 @@ const Settings = () => {
               </CardContent>
             </Card>
 
+            {/* Guided walkthrough */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Compass className="w-5 h-5" />
+                  App walkthrough
+                </CardTitle>
+                <CardDescription>
+                  A quick 5-step tour of browsing, applying, messaging, reviews and settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm text-muted-foreground">
+                    Replay the guided walkthrough at any time
+                  </p>
+                  <Button variant="outline" onClick={startWalkthrough}>
+                    Replay tour
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Sign Out */}
             <Card>
               <CardHeader>
+
                 <CardTitle className="flex items-center gap-2">
                   <LogOut className="w-5 h-5" />
                   Sign Out
