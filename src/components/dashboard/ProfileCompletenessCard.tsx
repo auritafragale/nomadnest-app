@@ -81,8 +81,14 @@ export const ProfileCompletenessCard = ({
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center justify-between">
           <span>Complete your profile</span>
-          <span className="text-sm font-normal text-muted-foreground">
-            {completedCount}/{totalCount}
+          <span className="flex items-center gap-1.5">
+            <HelpTooltip
+              label="Why complete your profile"
+              content="A fuller profile builds trust and helps you get more matches. Families are more likely to accept nomads and invites from complete profiles."
+            />
+            <span className="text-sm font-normal text-muted-foreground">
+              {completedCount}/{totalCount}
+            </span>
           </span>
         </CardTitle>
       </CardHeader>
