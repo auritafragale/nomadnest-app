@@ -28,6 +28,7 @@ import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompleten
 import { useOwnerApplications } from "@/hooks/useApplications";
 import { OwnerApplicationPreviewCard } from "@/components/dashboard/OwnerApplicationPreviewCard";
 import MembershipStatusCard from "@/components/dashboard/MembershipStatusCard";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import MobileHomeScreen from "@/components/mobile/MobileHomeScreen";
 import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
 import { UpcomingPastSits } from "@/components/dashboard/UpcomingPastSits";
