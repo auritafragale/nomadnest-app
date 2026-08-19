@@ -301,12 +301,9 @@ const Membership = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-3">
+                  <ul className="divide-y divide-border/60">
                     {activePlan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-sm text-foreground">{feature}</span>
-                      </li>
+                      <FeatureRow key={feature} feature={feature} />
                     ))}
                   </ul>
                 </CardContent>
