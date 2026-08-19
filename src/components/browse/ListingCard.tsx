@@ -9,6 +9,7 @@ import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
+import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
 
 interface ListingCardProps {
   listing: ListingWithDetails;
@@ -103,7 +104,7 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
                 {dateRange}
               </div>
             </div>
-            {listing.owner_rating && listing.owner_rating.count > 0 && (
+            {listing.owner_rating && listing.owner_rating.count > 0 ? (
               <div className="mb-3 space-y-1.5">
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -116,6 +117,10 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
                   compact={false}
                   className="max-w-sm"
                 />
+              </div>
+            ) : (
+              <div className="mb-3">
+                <RatingPlaceholder compact={false} />
               </div>
             )}
             <div className="flex flex-wrap gap-2">
@@ -219,7 +224,7 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
                 <span className="text-muted-foreground">({listing.owner_rating.count})</span>
               </div>
             ) : (
-              <span />
+              <RatingPlaceholder />
             )}
             <div className="flex flex-wrap gap-1">
               {(() => {
