@@ -766,6 +766,15 @@ export type Database = {
           created_at: string
           id: string
           rating: number
+          rating_cleanliness: number | null
+          rating_clear_expectations: number | null
+          rating_communication: number | null
+          rating_home_accuracy: number | null
+          rating_hospitality: number | null
+          rating_pet_care: number | null
+          rating_pet_preparedness: number | null
+          rating_reliability: number | null
+          rating_respect_home: number | null
           reviewee_user_id: string
           reviewer_user_id: string
           sit_id: string
@@ -775,6 +784,15 @@ export type Database = {
           created_at?: string
           id?: string
           rating: number
+          rating_cleanliness?: number | null
+          rating_clear_expectations?: number | null
+          rating_communication?: number | null
+          rating_home_accuracy?: number | null
+          rating_hospitality?: number | null
+          rating_pet_care?: number | null
+          rating_pet_preparedness?: number | null
+          rating_reliability?: number | null
+          rating_respect_home?: number | null
           reviewee_user_id: string
           reviewer_user_id: string
           sit_id: string
@@ -784,6 +802,15 @@ export type Database = {
           created_at?: string
           id?: string
           rating?: number
+          rating_cleanliness?: number | null
+          rating_clear_expectations?: number | null
+          rating_communication?: number | null
+          rating_home_accuracy?: number | null
+          rating_hospitality?: number | null
+          rating_pet_care?: number | null
+          rating_pet_preparedness?: number | null
+          rating_reliability?: number | null
+          rating_respect_home?: number | null
           reviewee_user_id?: string
           reviewer_user_id?: string
           sit_id?: string
