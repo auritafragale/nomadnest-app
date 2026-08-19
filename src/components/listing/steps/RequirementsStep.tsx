@@ -149,7 +149,13 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
 
       {/* Home Care Tasks */}
       <div className="space-y-3">
-        <Label className="text-base font-semibold">Home Care Tasks</Label>
+        <div className="flex items-center gap-1.5">
+          <Label className="text-base font-semibold">Home Care Tasks</Label>
+          <HelpTooltip
+            label="About home care"
+            content="Tasks beyond pet care, like watering plants or collecting mail. Being specific helps nomads know what to expect."
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
           Additional tasks beyond pet care
         </p>
