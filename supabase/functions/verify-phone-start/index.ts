@@ -54,9 +54,54 @@ serve(async (req) => {
 
   // Normalise channel: only allow whatsapp if the env flag is set.
   const enableWhatsApp = Deno.env.get("ENABLE_WHATSAPP_VERIFY") === "true";
-  const resolvedChannel = (channel === "whatsapp" && enableWhatsApp) ? "whatsapp" : "sms";
+  const requestedChannel = (channel === "whatsapp" && enableWhatsApp) ? "whatsapp" : "sms";
 
   const basicAuth = btoa(`${accountSid}:${authToken}`);
+
+  // ── Start Twilio Verify (with WhatsApp → SMS fallback) ────────────────────
+  // If WhatsApp is requested and enabled, try WhatsApp first; if Twilio rejects
+  // it (no WhatsApp on that number, sender not approved, rate limited, etc.),
+  // fall back to SMS automatically so the member still gets a code.
+  const startVerification = async (verifyChannel: "sms" | "whatsapp") => {
+    const verifyUrl = `https://verify.twilio.com/v2/Services/${serviceSid}/Verifications`;
+    const body = new URLSearchParams({ To: phone_number, Channel: verifyChannel });
+
+    const res = await fetch(verifyUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
+    });
+    return res;
+  };
+
+  let verifyRes = await startVerification(requestedChannel);
+  let deliveredChannel: "sms" | "whatsapp" = requestedChannel;
+
+  if (requestedChannel === "whatsapp" && !verifyRes.ok) {
+    // WhatsApp send failed — retry over SMS instead of surfacing the error.
+    verifyRes = await startVerification("sms");
+    deliveredChannel = "sms";
+  }
+
+  if (!verifyRes.ok) {
+    const err = await verifyRes.json();
+    return new Response(JSON.stringify({ error: err.message || "Failed to send verification code" }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  return new Response(JSON.stringify({
+    success: true,
+    channel: deliveredChannel,
+    delivered_channel: deliveredChannel,
+    voip_warning: isVoip,
+    line_type: lineType,
+  }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 
   // ── Part 4: Twilio Lookup (line_type_intelligence) ───────────────────────
   // Non-blocking: if Lookup fails we still proceed with verification.
