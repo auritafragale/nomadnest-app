@@ -50,7 +50,6 @@ export const MEMBERSHIP_PLANS = {
     features: [
       "Everything in Nomad plan",
       "Everything in Pet Parent plan",
-      "Best value",
       "No booking fees ever",
       "Member Perks & partner discounts",
     ],
