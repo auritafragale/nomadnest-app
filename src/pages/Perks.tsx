@@ -11,7 +11,7 @@ import { usePerks, PERK_CATEGORIES } from "@/hooks/usePerks";
 import { useMembership } from "@/hooks/useMembership";
 import { useAuth } from "@/contexts/AuthContext";
 import PerkCard from "@/components/perks/PerkCard";
-import HelpTooltip from "@/components/ui/HelpTooltip";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 const Perks = () => {
   const { perks, loading, getDiscountCode, openPerk } = usePerks();
