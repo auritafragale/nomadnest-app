@@ -502,12 +502,17 @@ const SitterDetail = () => {
                       {location}
                     </div>
                   )}
-                  {ratingData && ratingData.count > 0 && (
+                  {ratingData && ratingData.count > 0 ? (
                     <div className="flex items-center gap-2">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                       {ratingData.average.toFixed(1)} ({ratingData.count} review{ratingData.count !== 1 ? "s" : ""})
                     </div>
-                  )}
+                  ) : ratingData ? (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground/70">
+                      <Star className="w-4 h-4" />
+                      <span className="italic">No reviews yet</span>
+                    </div>
+                  ) : null}
                   {sitter.experience_level && (
                     <div className="flex items-center gap-2">
                       <Award className="w-4 h-4" />
