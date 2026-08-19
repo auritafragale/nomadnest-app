@@ -8,6 +8,7 @@ import { format, differenceInDays } from "date-fns";
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 
 interface ListingCardProps {
   listing: ListingWithDetails;
@@ -103,10 +104,18 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
               </div>
             </div>
             {listing.owner_rating && listing.owner_rating.count > 0 && (
-              <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                <span className="font-medium">{listing.owner_rating.average.toFixed(1)}</span>
-                <span>({listing.owner_rating.count})</span>
+              <div className="mb-3 space-y-1.5">
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <span className="font-medium">{listing.owner_rating.average.toFixed(1)}</span>
+                  <span>({listing.owner_rating.count})</span>
+                </div>
+                <CategoryRatingsSummary
+                  categories={listing.owner_category_ratings || []}
+                  limit={4}
+                  compact={false}
+                  className="max-w-sm"
+                />
               </div>
             )}
             <div className="flex flex-wrap gap-2">
@@ -228,6 +237,15 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
               })()}
             </div>
           </div>
+
+          {/* Category sub-ratings */}
+          {listing.owner_rating && listing.owner_rating.count > 0 && (
+            <CategoryRatingsSummary
+              categories={listing.owner_category_ratings || []}
+              limit={4}
+              className="mt-2"
+            />
+          )}
         </div>
       </Card>
     </Link>

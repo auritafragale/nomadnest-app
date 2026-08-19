@@ -6,6 +6,7 @@ import { MapPin, Star, CheckCircle, Dog, Cat, Bird, Rabbit, Fish } from "lucide-
 import { SitterWithProfile } from "@/hooks/useSitters";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import MessageSitterButton from "@/components/browse/MessageSitterButton";
+import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 
 
 const petIcons: Record<string, typeof Dog> = {
@@ -78,6 +79,15 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
             <span className="font-medium text-foreground">{average.toFixed(1)}</span>
             <span className="text-muted-foreground">({count})</span>
           </div>
+        )}
+
+        {/* Category sub-ratings */}
+        {count > 0 && sitter.category_ratings?.length > 0 && (
+          <CategoryRatingsSummary
+            categories={sitter.category_ratings}
+            limit={4}
+            className="mb-1.5"
+          />
         )}
 
         {/* Founding Member badge */}

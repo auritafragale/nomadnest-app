@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  aggregateCategoryRatings,
+  SITTER_RATING_CATEGORIES,
+  type CategoryAverage,
+} from "@/lib/categoryRatings";
 
 export interface SitterWithProfile {
   id: string;
@@ -35,6 +40,7 @@ export interface SitterWithProfile {
     founding_member: boolean | null;
   } | null;
   rating: { average: number; count: number };
+  category_ratings: CategoryAverage[];
 }
 
 interface UseSittersOptions {
@@ -76,7 +82,9 @@ export const useSitters = (options: UseSittersOptions = {}) => {
             .in("id", userIds),
           supabase
             .from("reviews")
-            .select("reviewee_user_id, rating")
+            .select(
+              "reviewee_user_id, rating, rating_pet_care, rating_communication, rating_cleanliness, rating_reliability, rating_respect_home"
+            )
             .in("reviewee_user_id", userIds),
         ]);
 
@@ -88,9 +96,13 @@ export const useSitters = (options: UseSittersOptions = {}) => {
 
         // Compute per-sitter average ratings
         const ratingsMap = new Map<string, { sum: number; count: number }>();
+        const reviewsByUser = new Map<string, Record<string, unknown>[]>();
         (ratingsResult.data || []).forEach((r) => {
           const cur = ratingsMap.get(r.reviewee_user_id) || { sum: 0, count: 0 };
           ratingsMap.set(r.reviewee_user_id, { sum: cur.sum + r.rating, count: cur.count + 1 });
+          const list = reviewsByUser.get(r.reviewee_user_id) || [];
+          list.push(r as Record<string, unknown>);
+          reviewsByUser.set(r.reviewee_user_id, list);
         });
 
         let filteredData: SitterWithProfile[] = sitterData
@@ -103,6 +115,10 @@ export const useSitters = (options: UseSittersOptions = {}) => {
               rating: ratingData
                 ? { average: ratingData.sum / ratingData.count, count: ratingData.count }
                 : { average: 0, count: 0 },
+              category_ratings: aggregateCategoryRatings(
+                reviewsByUser.get(sitter.user_id) || [],
+                SITTER_RATING_CATEGORIES
+              ),
             };
           }) as SitterWithProfile[];
 

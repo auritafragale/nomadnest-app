@@ -9,6 +9,7 @@ import { SitterWithProfile } from "@/hooks/useSitters";
 import { useStartConversation } from "@/hooks/useConversations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 
 interface SitterCardProps {
   sitter: SitterWithProfile;
@@ -218,6 +219,27 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
                 {isAvailable() ? "Available" : "Booked"}
               </Badge>
             </div>
+
+            {sitter.rating.count > 0 && (
+              <div className="mt-3 space-y-1.5">
+                <div
+                  className={`flex items-center gap-1 text-sm ${
+                    viewMode === "list" ? "" : "justify-center"
+                  }`}
+                >
+                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <span className="font-medium">{sitter.rating.average.toFixed(1)}</span>
+                  <span className="text-muted-foreground">({sitter.rating.count})</span>
+                </div>
+                <CategoryRatingsSummary
+                  categories={sitter.category_ratings || []}
+                  compact={false}
+                  className="max-w-sm mx-auto"
+                />
+              </div>
+            )}
+
+
 
             {viewMode === "list" && (
               <div className="flex gap-3 mt-4">
