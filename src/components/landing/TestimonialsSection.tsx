@@ -22,6 +22,13 @@ const testimonials = [
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&h=120&fit=crop&crop=face",
     rating: 5,
   },
+  {
+    quote: "As a full-time Nomad, finding affordable stays was always a struggle. NomadNest gave me a home in every city — and a furry friend to come back to.",
+    name: "Lena K.",
+    role: "Combined member since 2025",
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face",
+    rating: 5,
+  },
 ];
 
 const TestimonialsSection = () => {
