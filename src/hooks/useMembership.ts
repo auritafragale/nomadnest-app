@@ -52,6 +52,7 @@ export const MEMBERSHIP_PLANS = {
       "Everything in Pet Parent plan",
       "Best value",
       "No booking fees ever",
+      "Member Perks & partner discounts",
     ],
   },
 } as const;
