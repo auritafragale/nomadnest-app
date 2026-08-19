@@ -100,6 +100,14 @@ export const SitterReviewsSection = ({
             .filter(Boolean)
             .join(", ");
 
+          const breakdown = [
+            { label: "Pet Care", value: review.rating_pet_care },
+            { label: "Comms", value: review.rating_communication },
+            { label: "Cleanliness", value: review.rating_cleanliness },
+            { label: "Reliability", value: review.rating_reliability },
+            { label: "Respect", value: review.rating_respect_home },
+          ].filter((b) => b.value != null);
+
           return (
             <div key={review.id} className="border-b border-border last:border-0 pb-4 last:pb-0">
               <div className="flex items-start gap-3">
@@ -124,6 +132,17 @@ export const SitterReviewsSection = ({
                       </>
                     )}
                   </div>
+                  {breakdown.length > 0 && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mb-2">
+                      {breakdown.map((b) => (
+                        <span key={b.label} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          {b.label}
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          {b.value}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {review.text && (
                     <p className="text-muted-foreground text-sm whitespace-pre-wrap">
                       {review.text}
