@@ -580,8 +580,15 @@ const Onboarding = () => {
           return (
             <div className="space-y-6">
               <div className="text-center">
+              <div className="flex items-center justify-center gap-1.5">
                 <CardTitle className="text-xl mb-2">Ready to post a sit?</CardTitle>
-                <CardDescription>Are you here to post a sit now?</CardDescription>
+                <HelpTooltip
+                  align="center"
+                  label="About posting a sit"
+                  content="You can create your listing now or add it later from your dashboard — you don't have to decide today."
+                />
+              </div>
+              <CardDescription>Are you here to post a sit now?</CardDescription>
               </div>
               
               <div className="space-y-3">
