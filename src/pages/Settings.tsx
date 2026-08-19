@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -646,6 +647,10 @@ const Settings = () => {
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="w-5 h-5" />
                   Role & Access
+                  <HelpTooltip
+                    label="About role & access"
+                    content="Your role sets what you can do: Nomads care for pets, Pet Parents host sitters, and Combined members can do both. Switch modes from the dashboard."
+                  />
                 </CardTitle>
                 <CardDescription>
                   Manage how you use NomadNest
@@ -730,6 +735,10 @@ const Settings = () => {
                 <CardTitle className="flex items-center gap-2">
                   <Eye className="w-5 h-5" />
                   Profile Visibility
+                  <HelpTooltip
+                    label="About profile visibility"
+                    content="Pausing hides your profile from search and maps, but keeps your data. Reactivate anytime to show up again."
+                  />
                 </CardTitle>
                 <CardDescription>
                   Control whether your profiles are visible to others
