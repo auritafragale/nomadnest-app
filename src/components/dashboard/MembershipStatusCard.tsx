@@ -46,6 +46,10 @@ const MembershipStatusCard = () => {
         <CardTitle className="text-base flex items-center gap-2">
           <Crown className="w-4 h-4 text-accent" />
           Membership
+          <HelpTooltip
+            label="About membership"
+            content="Your membership tier gates listing creation and inviting nomads. NomadNest is a barter — free stays for free sitting — so the membership covers running the platform, not the sit."
+          />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
