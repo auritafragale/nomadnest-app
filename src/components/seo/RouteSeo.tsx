@@ -36,6 +36,11 @@ const ROUTE_META: Record<string, Meta> = {
     description:
       "NomadNest was founded by two women who love pets and people, building a global community built on trust, not booking fees.",
   },
+  "/perks": {
+    title: "Member Perks & Partner Discounts | NomadNest",
+    description:
+      "NomadNest members unlock exclusive partner deals on travel insurance, pet care, gear and coworking. Included with your annual membership.",
+  },
   "/safety": {
     title: "Safety & Trust at NomadNest",
     description:

@@ -44,6 +44,8 @@ import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import Membership from "./pages/Membership";
 import AdminVerifications from "./pages/AdminVerifications";
+import AdminPerks from "./pages/AdminPerks";
+import Perks from "./pages/Perks";
 import CityChat from "./pages/CityChat";
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
@@ -127,6 +129,8 @@ const AppShell = () => {
         <Route path="/code-of-conduct" element={<CodeOfConduct />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/faq" element={<FAQ />} />
+        <Route path="/perks" element={<Perks />} />
+        <Route path="/admin/perks" element={<ProtectedRoute><AdminPerks /></ProtectedRoute>} />
         <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
         <Route path="/city-chat/:roomId" element={<ProtectedRoute><CityChat /></ProtectedRoute>} />
         <Route path="/about" element={<About />} />
