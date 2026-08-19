@@ -32,7 +32,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     start: "2026-06-02",
     end: "2026-06-19",
     pets: [{ type: "dog", name: "Biscuit" }],
-    image: "https://images.unsplash.com/photo-1564013799927-380f938ada4e?w=600&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=600&h=400&fit=crop",
   },
   {
     id: 3,
@@ -73,26 +73,6 @@ const DEMO_LISTINGS: DemoListing[] = [
     end: "2026-10-01",
     pets: [{ type: "cat", name: "Brie" }],
     image: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=600&h=400&fit=crop",
-  },
-  {
-    id: 7,
-    title: "Bright South Congress bungalow with a labrador",
-    city: "Austin",
-    country: "USA",
-    start: "2026-10-06",
-    end: "2026-10-23",
-    pets: [{ type: "dog", name: "Tex" }],
-    image: "https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?w=600&h=400&fit=crop",
-  },
-  {
-    id: 8,
-    title: "Fitzroy terrace house with cat and garden",
-    city: "Melbourne",
-    country: "Australia",
-    start: "2026-11-02",
-    end: "2026-11-19",
-    pets: [{ type: "cat", name: "Pepper" }],
-    image: "https://images.unsplash.com/photo-1494947665470-20322015e3a8?w=600&h=400&fit=crop",
   },
 ];
 
@@ -183,7 +163,7 @@ const FeaturedStaysSection = () => (
         </p>
       </div>
 
-      <div className="grid gap-2.5 sm:gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-2.5 sm:gap-4 grid-cols-2 lg:grid-cols-3">
         {DEMO_LISTINGS.map((listing) => (
           <DemoCard key={listing.id} listing={listing} />
         ))}
