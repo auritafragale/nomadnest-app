@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.review-reminders]
 verify_jwt = false
+
+[functions.perk-redirect]
+verify_jwt = true

@@ -517,6 +517,98 @@ export type Database = {
         }
         Relationships: []
       }
+      perk_clicks: {
+        Row: {
+          clicked_at: string
+          id: string
+          perk_id: string
+          referrer: string | null
+          user_id: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          id?: string
+          perk_id: string
+          referrer?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          id?: string
+          perk_id?: string
+          referrer?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perk_clicks_perk_id_fkey"
+            columns: ["perk_id"]
+            isOneToOne: false
+            referencedRelation: "perks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      perks: {
+        Row: {
+          affiliate_url: string
+          benefit_short: string
+          category: string
+          created_at: string
+          description: string | null
+          discount_code: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          logo_url: string | null
+          name: string
+          slug: string
+          sort_order: number
+          subid_param: string | null
+          terms: string | null
+          updated_at: string
+        }
+        Insert: {
+          affiliate_url: string
+          benefit_short: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          discount_code?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          logo_url?: string | null
+          name: string
+          slug: string
+          sort_order?: number
+          subid_param?: string | null
+          terms?: string | null
+          updated_at?: string
+        }
+        Update: {
+          affiliate_url?: string
+          benefit_short?: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          discount_code?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          sort_order?: number
+          subid_param?: string | null
+          terms?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pets: {
         Row: {
           age: string | null
@@ -1113,6 +1205,42 @@ export type Database = {
         Args: { p_job_name: string; p_lease_seconds: number }
         Returns: boolean
       }
+      admin_list_perks: {
+        Args: never
+        Returns: {
+          affiliate_url: string
+          benefit_short: string
+          category: string
+          created_at: string
+          description: string | null
+          discount_code: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          logo_url: string | null
+          name: string
+          slug: string
+          sort_order: number
+          subid_param: string | null
+          terms: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "perks"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_perk_click_stats: {
+        Args: never
+        Returns: {
+          clicks_30d: number
+          perk_id: string
+          total_clicks: number
+        }[]
+      }
       can_access_city_chat: {
         Args: { p_room_id: string; p_user_id: string }
         Returns: boolean
@@ -1121,12 +1249,15 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: string
       }
+      get_perk_discount_code: { Args: { p_slug: string }; Returns: string }
       get_unread_conversations_count: { Args: never; Returns: number }
       get_unread_messages_count: { Args: never; Returns: number }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      is_active_member: { Args: { _user_id: string }; Returns: boolean }
+      is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       is_owner_active: { Args: { _owner_user_id: string }; Returns: boolean }
       mark_conversation_messages_read: {
         Args: { _conversation_id: string }

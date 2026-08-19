@@ -23,7 +23,7 @@ const Footer = () => {
         { label: "Safety & Trust", href: "/safety" },
         { label: "Community Standards", href: "/code-of-conduct" },
         { label: "FAQ", href: "/faq" },
-        { label: "Member Perks", href: "/membership" },
+        { label: "Member Perks", href: "/perks" },
       ],
     },
     {
