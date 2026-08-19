@@ -54,11 +54,11 @@ serve(async (req) => {
 
   // Normalise channel: only allow whatsapp if the env flag is set.
   const enableWhatsApp = Deno.env.get("ENABLE_WHATSAPP_VERIFY") === "true";
-  const resolvedChannel = (channel === "whatsapp" && enableWhatsApp) ? "whatsapp" : "sms";
+  const requestedChannel = (channel === "whatsapp" && enableWhatsApp) ? "whatsapp" : "sms";
 
   const basicAuth = btoa(`${accountSid}:${authToken}`);
 
-  // ── Part 4: Twilio Lookup (line_type_intelligence) ───────────────────────
+  // ── Twilio Lookup (line_type_intelligence) ──────────────────────────────
   // Non-blocking: if Lookup fails we still proceed with verification.
   let lineType: string | null = null;
   let isVoip = false;
@@ -89,22 +89,33 @@ serve(async (req) => {
     console.error("Twilio Lookup error (non-fatal):", err);
   }
 
-  // ── Start Twilio Verify ───────────────────────────────────────────────────
-  const verifyUrl = `https://verify.twilio.com/v2/Services/${serviceSid}/Verifications`;
+  // ── Start Twilio Verify (with WhatsApp → SMS fallback) ──────────────────
+  // If WhatsApp is requested and enabled, try WhatsApp first; if Twilio rejects
+  // it (no WhatsApp on that number, sender not approved, rate limited, etc.),
+  // fall back to SMS automatically so the member still gets a code.
+  const startVerification = async (verifyChannel: "sms" | "whatsapp") => {
+    const verifyUrl = `https://verify.twilio.com/v2/Services/${serviceSid}/Verifications`;
+    const body = new URLSearchParams({ To: phone_number, Channel: verifyChannel });
 
-  const body = new URLSearchParams({
-    To: phone_number,
-    Channel: resolvedChannel,
-  });
+    const res = await fetch(verifyUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
+    });
+    return res;
+  };
 
-  const verifyRes = await fetch(verifyUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${basicAuth}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: body.toString(),
-  });
+  let verifyRes = await startVerification(requestedChannel);
+  let deliveredChannel: "sms" | "whatsapp" = requestedChannel;
+
+  if (requestedChannel === "whatsapp" && !verifyRes.ok) {
+    // WhatsApp send failed — retry over SMS instead of surfacing the error.
+    verifyRes = await startVerification("sms");
+    deliveredChannel = "sms";
+  }
 
   if (!verifyRes.ok) {
     const err = await verifyRes.json();
@@ -115,7 +126,10 @@ serve(async (req) => {
 
   return new Response(JSON.stringify({
     success: true,
-    channel: resolvedChannel,
+    // delivered_channel is the channel that actually sent the code.
+    // channel is kept for backwards compatibility with older clients.
+    channel: deliveredChannel,
+    delivered_channel: deliveredChannel,
     // Inform the client if a VOIP warning should be shown. We do NOT block.
     voip_warning: isVoip,
     line_type: lineType,

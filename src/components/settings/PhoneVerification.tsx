@@ -71,12 +71,19 @@ export const PhoneVerification = ({ phoneVerified, phoneNumber, onVerified }: Pr
         setVoipWarning(true);
       }
 
+      // The channel that actually delivered the code (may differ from the
+      // requested channel if WhatsApp fell back to SMS).
+      const delivered = (data?.delivered_channel ?? data?.channel ?? channel) as "sms" | "whatsapp";
+
       setStep("code_sent");
       startCooldown();
 
       toast({
         title: isResend ? "Code resent" : "Code sent",
-        description: `We sent a ${channel === "whatsapp" ? "WhatsApp message" : "text"} to ${phone.trim()}.`,
+        description:
+          delivered !== channel
+            ? `We couldn't reach WhatsApp, so we sent a text to ${phone.trim()} instead.`
+            : `We sent a ${delivered === "whatsapp" ? "WhatsApp message" : "text"} to ${phone.trim()}.`,
       });
     } catch (err: any) {
       toast({
