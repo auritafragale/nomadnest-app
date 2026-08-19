@@ -113,7 +113,9 @@ const WriteReviewDialog = ({
         insertPayload[c.key] = ratings[c.key];
       }
 
-      const { error } = await supabase.from("reviews").insert(insertPayload);
+      const { error } = await supabase
+        .from("reviews")
+        .insert(insertPayload as never);
 
       if (error) throw error;
 
