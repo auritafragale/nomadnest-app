@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Check, Crown, Star, Sparkles, Shield, Gift } from "lucide-react";
+import { Check, Crown, Star, Sparkles, Shield, Gift, ChevronDown, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import {
@@ -20,6 +20,97 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Loader2 } from "lucide-react";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+
+const PERK_EXAMPLES = [
+  "Travel insurance",
+  "eSIMs & connectivity",
+  "Luggage storage",
+  "Airport lounges",
+  "Pet insurance & care",
+  "Gear & tech",
+  "Coworking & wellness",
+];
+
+const FEATURE_DESCRIPTIONS: Record<string, string> = {
+  "Unlimited sit applications":
+    "Apply to as many house-sits as you like, anywhere in the world. No caps, no per-application fees.",
+  "Profile with reviews":
+    "A public Nomad profile showing your verified badges, reviews from Pet Parents, and bio so families can trust you.",
+  "Find Nomads map":
+    "See other Nomads on an interactive map and connect with the community wherever you travel.",
+  "Community access":
+    "Join city chat rooms and talk to local Nomads and Pet Parents before you arrive.",
+  "Unlimited listing posts":
+    "List every home and pet you need sat. Manage multiple listings with no per-listing charge.",
+  "Manage applications":
+    "Review Nomad applicants, message them, and choose who stays — all in one place.",
+  "Map listing visibility":
+    "Your listings appear on the browse map with coral pins so Nomads can discover them.",
+  "No booking fees ever":
+    "Sits are a barter — free accommodation for free pet care. You never pay a booking fee.",
+  "Best value":
+    "One membership covers both Nomad and Pet Parent access at a lower combined price.",
+  "Everything in Nomad plan":
+    "All Nomad benefits: unlimited applications, profile with reviews, Find Nomads map and community access.",
+  "Everything in Pet Parent plan":
+    "All Pet Parent benefits: unlimited listings, application management, map visibility and community access.",
+  "Member Perks & partner discounts": "__PERKS__",
+};
+
+function FeatureRow({ feature }: { feature: string }) {
+  const [open, setOpen] = useState(false);
+  const isPerks = feature === "Member Perks & partner discounts";
+  const desc = FEATURE_DESCRIPTIONS[feature] ?? "Included with your NomadNest membership.";
+
+  return (
+    <li className="border-b border-border/60 last:border-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-start gap-2 py-2.5 text-left group"
+      >
+        <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+        <span className="flex-1 text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+          {feature}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 text-muted-foreground shrink-0 mt-1 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <div className="pl-7 pb-3 -mt-1">
+          {isPerks ? (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Exclusive partner deals negotiated for members — some links earn NomadNest a small
+                commission to keep fees low.
+              </p>
+              <ul className="flex flex-wrap gap-1.5">
+                {PERK_EXAMPLES.map((ex) => (
+                  <li
+                    key={ex}
+                    className="text-[11px] rounded-full bg-primary/10 text-primary px-2 py-0.5"
+                  >
+                    {ex}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to="/perks"
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline mt-1"
+              >
+                Browse all perks <ExternalLink className="w-3 h-3" />
+              </Link>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground leading-relaxed pr-6">{desc}</p>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
 
 const Membership = () => {
   const navigate = useNavigate();
@@ -210,12 +301,9 @@ const Membership = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-3">
+                  <ul className="divide-y divide-border/60">
                     {activePlan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-sm text-foreground">{feature}</span>
-                      </li>
+                      <FeatureRow key={feature} feature={feature} />
                     ))}
                   </ul>
                 </CardContent>

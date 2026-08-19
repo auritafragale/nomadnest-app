@@ -23,6 +23,7 @@ export const MEMBERSHIP_PLANS = {
       "Find Nomads map",
       "Community access",
       "No booking fees ever",
+      "Member Perks & partner discounts",
     ],
   },
   owner: {
@@ -37,6 +38,7 @@ export const MEMBERSHIP_PLANS = {
       "Map listing visibility",
       "Community access",
       "No booking fees ever",
+      "Member Perks & partner discounts",
     ],
   },
   combined: {
@@ -50,6 +52,7 @@ export const MEMBERSHIP_PLANS = {
       "Everything in Pet Parent plan",
       "Best value",
       "No booking fees ever",
+      "Member Perks & partner discounts",
     ],
   },
 } as const;
