@@ -30,6 +30,7 @@ import {
   Bell,
   Shield,
   LogOut,
+  Compass,
   Briefcase,
   Home,
   MessageSquare,
