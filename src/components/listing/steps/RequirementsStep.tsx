@@ -69,7 +69,13 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
 
       {/* Nomad Requirements */}
       <div className="space-y-3">
-        <Label className="text-base font-semibold">Nomad Requirements</Label>
+        <div className="flex items-center gap-1.5">
+          <Label className="text-base font-semibold">Nomad Requirements</Label>
+          <HelpTooltip
+            label="About requirements"
+            content="Optional must-haves for your sit. Selecting fewer keeps your listing open to more nomads; selecting more narrows the pool."
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
           Select any must-have qualifications
         </p>
