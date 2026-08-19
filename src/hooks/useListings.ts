@@ -1,5 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  aggregateCategoryRatings,
+  OWNER_RATING_CATEGORIES,
+  type CategoryAverage,
+} from "@/lib/categoryRatings";
 
 export interface ListingFilters {
   search?: string;
@@ -39,6 +44,7 @@ export interface ListingWithDetails {
     status: string;
   }[];
   owner_rating?: { average: number; count: number };
+  owner_category_ratings?: CategoryAverage[];
   owner_profile?: { first_name: string | null; last_name: string | null; avatar_url: string | null; id_verified?: boolean | null };
   wifi_quality?: string | null;
 }
@@ -95,20 +101,30 @@ export const useListings = (filters: ListingFilters = {}) => {
       if (ownerIds.length > 0) {
         const { data: reviewData } = await supabase
           .from("reviews")
-          .select("reviewee_user_id, rating")
+          .select(
+            "reviewee_user_id, rating, rating_communication, rating_home_accuracy, rating_pet_preparedness, rating_hospitality, rating_clear_expectations"
+          )
           .in("reviewee_user_id", ownerIds);
 
         if (reviewData && reviewData.length > 0) {
           const ratingMap = new Map<string, { sum: number; count: number }>();
+          const reviewsByOwner = new Map<string, Record<string, unknown>[]>();
           reviewData.forEach((r) => {
             const existing = ratingMap.get(r.reviewee_user_id) || { sum: 0, count: 0 };
             ratingMap.set(r.reviewee_user_id, { sum: existing.sum + r.rating, count: existing.count + 1 });
+            const list = reviewsByOwner.get(r.reviewee_user_id) || [];
+            list.push(r as Record<string, unknown>);
+            reviewsByOwner.set(r.reviewee_user_id, list);
           });
           results = results.map((listing) => {
             const rating = ratingMap.get(listing.owner_user_id);
             return {
               ...listing,
               owner_rating: rating ? { average: rating.sum / rating.count, count: rating.count } : undefined,
+              owner_category_ratings: aggregateCategoryRatings(
+                reviewsByOwner.get(listing.owner_user_id) || [],
+                OWNER_RATING_CATEGORIES
+              ),
             };
           });
         }
