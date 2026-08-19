@@ -192,12 +192,25 @@ const WriteReviewDialog = ({
           <DialogTitle>Review {revieweeName}</DialogTitle>
           <DialogDescription>
             Rate your experience with this {reviewType === "owner" ? "Pet Parent" : "Nomad"} across the categories below.
+            <span className="inline-flex align-middle ml-1">
+              <HelpTooltip
+                label="About the review window"
+                content="Reviews are open for 14 days after the sit ends. After that, the sit auto-completes and reviews close."
+              />
+            </span>
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 pt-4">
           {/* Category Ratings */}
           <div className="space-y-4">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-sm font-semibold">Category Ratings</Label>
+              <HelpTooltip
+                label="About sub-ratings"
+                content="Each category scores a different aspect of the sit. Your overall rating is the average of these."
+              />
+            </div>
             {categories.map((category) => {
               const value = displayValue(category.key);
               return (
