@@ -479,7 +479,13 @@ const Onboarding = () => {
                 </div>
 
                 <div>
-                  <Label className="mb-3 block">Do you usually sit as…</Label>
+                  <div className="mb-3 flex items-center gap-1.5">
+                    <Label className="block">Do you usually sit as…</Label>
+                    <HelpTooltip
+                      label="About sit style"
+                      content="This tells families who will be arriving — e.g. a couple travelling together. It helps hosts prepare the right space."
+                    />
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {["Solo", "Couple", "Friends", "Family"].map((style) => (
                       <button
