@@ -136,7 +136,14 @@ const Membership = () => {
         )}
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground">Choose Your Membership</h1>
+          <div className="flex items-center justify-center gap-1.5">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground">Choose Your Membership</h1>
+            <HelpTooltip
+              align="center"
+              label="Why a membership"
+              content="NomadNest is a barter — free accommodation for free pet sitting. No money changes hands for sits, so this membership covers running the platform, not the sit itself."
+            />
+          </div>
           <p className="mt-3 text-muted-foreground text-lg max-w-2xl mx-auto">
             Join the NomadNest community and start connecting with trusted pet lovers around the world.
           </p>
