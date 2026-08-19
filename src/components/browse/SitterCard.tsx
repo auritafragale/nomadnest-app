@@ -9,6 +9,7 @@ import { SitterWithProfile } from "@/hooks/useSitters";
 import { useStartConversation } from "@/hooks/useConversations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 
 interface SitterCardProps {
   sitter: SitterWithProfile;
