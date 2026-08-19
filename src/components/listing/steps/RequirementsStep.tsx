@@ -109,7 +109,13 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
 
       {/* House Rules */}
       <div className="space-y-3">
-        <Label className="text-base font-semibold">House Rules</Label>
+        <div className="flex items-center gap-1.5">
+          <Label className="text-base font-semibold">House Rules</Label>
+          <HelpTooltip
+            label="About house rules"
+            content="Non-negotiable boundaries for your home (e.g. no smoking, no guests). Nomads must accept these to be confirmed."
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
           Important rules nomads should follow
         </p>
