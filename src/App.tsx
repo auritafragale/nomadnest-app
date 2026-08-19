@@ -13,6 +13,7 @@ import RouteSeo from "@/components/seo/RouteSeo";
 import SplashScreen from "@/components/mobile/SplashScreen";
 import OnboardingCarousel, { ONBOARDING_STORAGE_KEY } from "@/components/mobile/OnboardingCarousel";
 import BottomNav from "@/components/mobile/BottomNav";
+import GuidedWalkthrough from "@/components/walkthrough/GuidedWalkthrough";
 import Index from "./pages/Index";
 import BrowseSits from "./pages/BrowseSits";
 import FindNomads from "./pages/FindNomads";
