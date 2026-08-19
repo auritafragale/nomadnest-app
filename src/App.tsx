@@ -89,8 +89,11 @@ const AppShell = () => {
     <>
       {!splashDone && <SplashScreen onDone={handleSplashDone} />}
       {splashDone && !onboardingDone && (
+        <OnboardingCarousel onDone={handleOnboardingDone} />
       )}
       {splashDone && onboardingDone && <GuidedWalkthrough />}
+
+
 
 
       <RouteSeo />
