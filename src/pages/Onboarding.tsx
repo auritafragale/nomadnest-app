@@ -505,7 +505,13 @@ const Onboarding = () => {
                 </div>
 
                 <div>
-                  <Label className="mb-3 block">Your availability</Label>
+                  <div className="mb-3 flex items-center gap-1.5">
+                    <Label className="block">Your availability</Label>
+                    <HelpTooltip
+                      label="About availability"
+                      content="Choose specific dates if you know when you're free, or 'flexible' if you're open to discussing dates with families."
+                    />
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => setAvailabilityType("dates")}
