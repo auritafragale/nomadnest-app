@@ -215,6 +215,13 @@ const Dashboard = () => {
           {role === "both" && (
             <div className="mb-8 hidden md:block">
               <Tabs value={activeRole} onValueChange={(v) => setActiveRole(v as "sitter" | "owner")}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-medium text-muted-foreground">Switch mode</span>
+                  <HelpTooltip
+                    label="About switching modes"
+                    content="Switching changes which listings, applications, and invites you see. Nomad Mode shows sits you can apply for; Pet Parent Mode shows your listings and incoming applications."
+                  />
+                </div>
                 <TabsList className="grid w-full max-w-md grid-cols-2">
                   <TabsTrigger value="sitter" className="gap-2">
                     <Briefcase className="w-4 h-4" />
