@@ -69,9 +69,15 @@ const BrowseSitters = () => {
         {/* Header */}
         <div className="bg-surface border-b border-border">
           <div className="container py-5 md:py-8">
-            <h1 className="text-2xl md:text-4xl font-display mb-1">
-              Browse Sitters
-            </h1>
+            <div className="flex items-center gap-1.5 mb-1">
+              <h1 className="text-2xl md:text-4xl font-display">
+                Browse Sitters
+              </h1>
+              <HelpTooltip
+                label="About location privacy"
+                content="For safety, exact home addresses stay hidden until a sit is confirmed. You'll see the city and approximate area until then."
+              />
+            </div>
             <p className="text-sm md:text-base text-muted-foreground">
               Find trusted nomads ready to care for your home and pets
             </p>

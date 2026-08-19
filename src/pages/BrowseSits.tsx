@@ -77,7 +77,13 @@ const BrowseSits = () => {
       <main className="flex-1 pt-16">
         <div className="bg-surface border-b border-border">
           <div className="container py-6 md:py-8">
-            <h1 className="text-2xl md:text-4xl font-display mb-1">Browse Sits</h1>
+            <div className="flex items-center gap-1.5 mb-1">
+              <h1 className="text-2xl md:text-4xl font-display">Browse Sits</h1>
+              <HelpTooltip
+                label="How matching works"
+                content="Matching works both ways: as a Nomad you apply to sits that interest you, and Pet Parents can also invite you directly to their listings."
+              />
+            </div>
             <p className="text-sm md:text-base text-muted-foreground">
               Find your perfect pet sitting opportunity worldwide
             </p>
