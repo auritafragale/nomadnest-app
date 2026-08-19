@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import ImageUpload from "@/components/listing/ImageUpload";
+import { OWNER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 
 interface Profile {
   first_name: string;
@@ -97,14 +98,16 @@ const EditOwnerProfile = () => {
       // Fetch owner profile
       const { data: ownerData } = await supabase
         .from("owner_profiles")
-        .select("*")
+        .select(OWNER_PROFILE_COLUMNS as "*")
         .eq("user_id", user.id)
         .maybeSingle();
+
+      const { data: contact } = await supabase.rpc("get_my_contact_info").maybeSingle();
 
       if (ownerData) {
         setOwnerProfile({
           bio: ownerData.bio || "",
-          phone: ownerData.phone || "",
+          phone: (contact as any)?.owner_phone || "",
         });
       }
     } catch (error) {

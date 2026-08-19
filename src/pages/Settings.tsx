@@ -125,11 +125,14 @@ const Settings = () => {
     if (!user) return;
 
     try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, avatar_url, city, country, email, phone_number, phone_verified")
-        .eq("id", user.id)
-        .maybeSingle();
+      const [{ data }, { data: contact }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("first_name, last_name, avatar_url, city, country")
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase.rpc("get_my_contact_info").maybeSingle(),
+      ]);
 
       if (data) {
         setProfile({
@@ -138,11 +141,11 @@ const Settings = () => {
           avatar_url: data.avatar_url || "",
           city: data.city || "",
           country: data.country || "",
-          email: data.email || user.email || "",
+          email: (contact as any)?.email || user.email || "",
         });
-        setPhoneVerified(!!(data as any).phone_verified);
-        setPhoneNumber((data as any).phone_number ?? null);
       }
+      setPhoneVerified(!!(contact as any)?.phone_verified);
+      setPhoneNumber((contact as any)?.phone_number ?? null);
     } catch (error) {
       console.error("Error fetching profile:", error);
     } finally {

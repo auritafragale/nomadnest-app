@@ -32,12 +32,12 @@ import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import VerificationBadges from "@/components/ui/VerificationBadges";
+import { OWNER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 
 interface OwnerProfile {
   id: string;
   user_id: string;
   bio: string | null;
-  phone: string | null;
 }
 
 interface Profile {
@@ -89,7 +89,7 @@ const OwnerDetail = () => {
         const [ownerResult, profileResult, listingsResult] = await Promise.all([
           supabase
             .from("owner_profiles")
-            .select("*")
+            .select(OWNER_PROFILE_COLUMNS as "*")
             .eq("user_id", userId)
             .maybeSingle(),
           supabase

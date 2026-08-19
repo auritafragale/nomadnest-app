@@ -33,6 +33,7 @@ import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
+import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 
 interface Profile {
   first_name: string;
@@ -194,9 +195,13 @@ const EditSitterProfile = () => {
       // Fetch sitter profile
       const { data: sitterData } = await supabase
         .from("sitter_profiles")
-        .select("*")
+        .select(SITTER_PROFILE_COLUMNS as "*")
         .eq("user_id", user.id)
         .maybeSingle();
+
+      const { data: contact } = await supabase.rpc("get_my_contact_info").maybeSingle();
+      const sitterPhone = (contact as any)?.sitter_phone || "";
+
 
       if (sitterData) {
         setSitterProfile({
@@ -217,7 +222,7 @@ const EditSitterProfile = () => {
           preferred_regions: sitterData.preferred_regions || [],
           preferred_countries: sitterData.preferred_countries || [],
           preferred_cities: sitterData.preferred_cities || [],
-          phone: sitterData.phone || "",
+          phone: sitterPhone,
           gallery: sitterData.gallery || [],
           age_range: sitterData.age_range || "",
         });

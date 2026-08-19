@@ -84,29 +84,13 @@ const AdminVerifications = () => {
 
   const loadSubmissions = async () => {
     setLoadingData(true);
-    // Fetch submissions and join with profile data for reviewer names
-    const { data, error } = await supabase
-      .from("manual_id_verifications")
-      .select(`
-        id, user_id, id_photo_path, selfie_path, status,
-        reviewed_by, reviewed_at, notes, created_at,
-        profiles!manual_id_verifications_user_id_fkey (
-          first_name, last_name, email
-        )
-      `)
-      .order("created_at", { ascending: false });
+    // Admin-only secure lookup: includes the submitter's name and email
+    const { data, error } = await supabase.rpc("admin_list_id_verifications");
 
     if (error) {
       toast({ variant: "destructive", title: "Failed to load submissions", description: error.message });
     } else {
-      setSubmissions(
-        (data ?? []).map((row: any) => ({
-          ...row,
-          first_name: row.profiles?.first_name ?? null,
-          last_name: row.profiles?.last_name ?? null,
-          email: row.profiles?.email ?? null,
-        }))
-      );
+      setSubmissions((data ?? []) as unknown as Submission[]);
     }
     setLoadingData(false);
   };

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 import {
   aggregateCategoryRatings,
   SITTER_RATING_CATEGORIES,
@@ -64,7 +65,7 @@ export const useSitters = (options: UseSittersOptions = {}) => {
       try {
         const { data: sitterData, error: sitterError } = await supabase
           .from("sitter_profiles")
-          .select("*");
+          .select(SITTER_PROFILE_COLUMNS as "*");
 
         if (sitterError) throw sitterError;
 

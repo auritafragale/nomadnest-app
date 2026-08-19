@@ -63,6 +63,7 @@ import { ShareDialog } from "@/components/share/ShareDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import SitterLocationMap from "@/components/maps/SitterLocationMap";
 import VerificationBadges from "@/components/ui/VerificationBadges";
+import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 
 interface SitterProfile {
   id: string;
@@ -150,7 +151,7 @@ const SitterDetail = () => {
         const [sitterResult, profileResult] = await Promise.all([
           supabase
             .from("sitter_profiles")
-            .select("*")
+            .select(SITTER_PROFILE_COLUMNS as "*")
             .eq("user_id", userId)
             .maybeSingle(),
           supabase

@@ -1205,6 +1205,23 @@ export type Database = {
         Args: { p_job_name: string; p_lease_seconds: number }
         Returns: boolean
       }
+      admin_list_id_verifications: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          id_photo_path: string
+          last_name: string
+          notes: string
+          reviewed_at: string
+          reviewed_by: string
+          selfie_path: string
+          status: string
+          user_id: string
+        }[]
+      }
       admin_list_perks: {
         Args: never
         Returns: {
@@ -1248,6 +1265,17 @@ export type Database = {
       get_listing_private_address: {
         Args: { p_listing_id: string }
         Returns: string
+      }
+      get_my_contact_info: {
+        Args: never
+        Returns: {
+          email: string
+          owner_phone: string
+          phone_line_type: string
+          phone_number: string
+          phone_verified: boolean
+          sitter_phone: string
+        }[]
       }
       get_perk_discount_code: { Args: { p_slug: string }; Returns: string }
       get_unread_conversations_count: { Args: never; Returns: number }
