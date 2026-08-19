@@ -75,6 +75,11 @@ const OwnerDetail = () => {
   
   const startConversation = useStartConversation();
   const ratingData = useOwnerAverageRating(userId);
+  const { data: ownerReviewsForCategories = [] } = useOwnerReviews(userId);
+  const ownerCategoryAverages = aggregateCategoryRatings(
+    ownerReviewsForCategories,
+    OWNER_RATING_CATEGORIES
+  );
 
   useEffect(() => {
     const fetchOwnerData = async () => {

@@ -136,6 +136,11 @@ const SitterDetail = () => {
   
   const startConversation = useStartConversation();
   const { data: ratingData } = useSitterAverageRating(userId);
+  const { data: sitterReviewsForCategories = [] } = useSitterReviews(userId);
+  const sitterCategoryAverages = aggregateCategoryRatings(
+    sitterReviewsForCategories,
+    SITTER_RATING_CATEGORIES
+  );
 
   useEffect(() => {
     const fetchSitterData = async () => {
