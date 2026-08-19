@@ -52,7 +52,7 @@ const Footer = () => {
               <img src={logo} alt="NomadNest" className="h-10 w-auto" />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-              Where travellers find homes and pets find care. No booking fees. Just adventure.
+              Where travellers find homes and pets find care. No booking fees. Just community.
             </p>
             <div className="flex items-center gap-3 pt-1">
               {socials.map((social) => (
