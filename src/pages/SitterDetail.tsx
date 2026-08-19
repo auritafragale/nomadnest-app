@@ -55,7 +55,9 @@ import {
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
 import { SitterReviewsSection } from "@/components/reviews/SitterReviewsSection";
-import { useSitterAverageRating } from "@/hooks/useSitterReviews";
+import { useSitterAverageRating, useSitterReviews } from "@/hooks/useSitterReviews";
+import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
+import { aggregateCategoryRatings, SITTER_RATING_CATEGORIES } from "@/lib/categoryRatings";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
@@ -134,6 +136,11 @@ const SitterDetail = () => {
   
   const startConversation = useStartConversation();
   const { data: ratingData } = useSitterAverageRating(userId);
+  const { data: sitterReviewsForCategories = [] } = useSitterReviews(userId);
+  const sitterCategoryAverages = aggregateCategoryRatings(
+    sitterReviewsForCategories,
+    SITTER_RATING_CATEGORIES
+  );
 
   useEffect(() => {
     const fetchSitterData = async () => {
@@ -514,6 +521,15 @@ const SitterDetail = () => {
                     </div>
                   )}
                 </div>
+
+                {sitterCategoryAverages.length > 0 && (
+                  <CategoryRatingsSummary
+                    categories={sitterCategoryAverages}
+                    compact={false}
+                    className="mb-6 max-w-md"
+                  />
+                )}
+
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2 mb-6">

@@ -28,7 +28,7 @@ export const REVIEW_CATEGORY_COLUMNS = [
   "rating_clear_expectations",
 ] as const;
 
-type ReviewRow = Record<string, unknown>;
+type ReviewRow = object;
 
 /**
  * Averages each category sub-rating across a set of reviews.
@@ -41,7 +41,7 @@ export const aggregateCategoryRatings = (
   return categories
     .map(({ key, label }) => {
       const values = reviews
-        .map((r) => r[key])
+        .map((r) => (r as Record<string, unknown>)[key])
         .filter((v): v is number => typeof v === "number" && v > 0);
       if (values.length === 0) return null;
       return {
