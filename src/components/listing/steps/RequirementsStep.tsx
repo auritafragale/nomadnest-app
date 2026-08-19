@@ -203,7 +203,13 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
 
       {/* Communication Style */}
       <div className="space-y-2">
-        <Label className="text-base font-semibold">Preferred Communication</Label>
+        <div className="flex items-center gap-1.5">
+          <Label className="text-base font-semibold">Preferred Communication</Label>
+          <HelpTooltip
+            label="About communication"
+            content="How often you'd like updates once the sit starts. Nomads see this to set expectations for staying in touch."
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
           How often would you like updates during the sit?
         </p>
