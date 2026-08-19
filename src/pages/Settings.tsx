@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { startWalkthrough } from "@/components/walkthrough/GuidedWalkthrough";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,7 @@ import {
   Bell,
   Shield,
   LogOut,
+  Compass,
   Briefcase,
   Home,
   MessageSquare,
@@ -977,9 +979,33 @@ const Settings = () => {
               </CardContent>
             </Card>
 
+            {/* Guided walkthrough */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Compass className="w-5 h-5" />
+                  App walkthrough
+                </CardTitle>
+                <CardDescription>
+                  A quick 5-step tour of browsing, applying, messaging, reviews and settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm text-muted-foreground">
+                    Replay the guided walkthrough at any time
+                  </p>
+                  <Button variant="outline" onClick={startWalkthrough}>
+                    Replay tour
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Sign Out */}
             <Card>
               <CardHeader>
+
                 <CardTitle className="flex items-center gap-2">
                   <LogOut className="w-5 h-5" />
                   Sign Out
