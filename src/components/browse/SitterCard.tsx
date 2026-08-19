@@ -10,6 +10,7 @@ import { useStartConversation } from "@/hooks/useConversations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
+import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
 
 interface SitterCardProps {
   sitter: SitterWithProfile;
@@ -220,7 +221,7 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
               </Badge>
             </div>
 
-            {sitter.rating.count > 0 && (
+            {sitter.rating.count > 0 ? (
               <div className="mt-3 space-y-1.5">
                 <div
                   className={`flex items-center gap-1 text-sm ${
@@ -236,6 +237,10 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
                   compact={false}
                   className="max-w-sm mx-auto"
                 />
+              </div>
+            ) : (
+              <div className="mt-3">
+                <RatingPlaceholder compact={false} className={viewMode === "list" ? "" : "justify-center"} />
               </div>
             )}
 

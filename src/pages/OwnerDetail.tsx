@@ -251,10 +251,15 @@ const OwnerDetail = () => {
                       {location}
                     </div>
                   )}
-                  {ratingData && ratingData.reviewCount > 0 && (
+                  {ratingData && ratingData.reviewCount > 0 ? (
                     <div className="flex items-center gap-2">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                       {ratingData.averageRating.toFixed(1)} ({ratingData.reviewCount} review{ratingData.reviewCount !== 1 ? "s" : ""})
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground/70">
+                      <Star className="w-4 h-4" />
+                      <span className="italic">No reviews yet</span>
                     </div>
                   )}
                   <div className="flex items-center gap-2">

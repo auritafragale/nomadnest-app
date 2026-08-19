@@ -7,6 +7,7 @@ import { SitterWithProfile } from "@/hooks/useSitters";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import MessageSitterButton from "@/components/browse/MessageSitterButton";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
+import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
 
 
 const petIcons: Record<string, typeof Dog> = {
@@ -73,21 +74,23 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
         )}
 
         {/* Rating */}
-        {count > 0 && (
-          <div className="flex items-center justify-center gap-0.5 text-xs mb-1.5">
-            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-            <span className="font-medium text-foreground">{average.toFixed(1)}</span>
-            <span className="text-muted-foreground">({count})</span>
-          </div>
-        )}
-
-        {/* Category sub-ratings */}
-        {count > 0 && sitter.category_ratings?.length > 0 && (
-          <CategoryRatingsSummary
-            categories={sitter.category_ratings}
-            limit={4}
-            className="mb-1.5"
-          />
+        {count > 0 ? (
+          <>
+            <div className="flex items-center justify-center gap-0.5 text-xs mb-1.5">
+              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+              <span className="font-medium text-foreground">{average.toFixed(1)}</span>
+              <span className="text-muted-foreground">({count})</span>
+            </div>
+            {sitter.category_ratings?.length > 0 && (
+              <CategoryRatingsSummary
+                categories={sitter.category_ratings}
+                limit={4}
+                className="mb-1.5"
+              />
+            )}
+          </>
+        ) : (
+          <RatingPlaceholder className="mb-1.5 justify-center" />
         )}
 
         {/* Founding Member badge */}
