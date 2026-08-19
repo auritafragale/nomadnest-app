@@ -99,7 +99,7 @@ const ListingFilters = ({
         <div className="flex flex-col gap-3">
           <LocationSearchInput
             wrapperClassName="w-full"
-            placeholder="Search by location, title, or description..."
+            placeholder="Search location or keyword"
             value={filters.search || ""}
             onChange={(v) => onFiltersChange({ ...filters, search: v })}
           />

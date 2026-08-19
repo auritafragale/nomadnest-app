@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 
 export const useSitterPreferences = () => {
   const { user, role } = useAuth();
@@ -12,7 +13,7 @@ export const useSitterPreferences = () => {
 
       const { data, error } = await supabase
         .from("sitter_profiles")
-        .select("*")
+        .select(SITTER_PROFILE_COLUMNS as "*")
         .eq("user_id", user.id)
         .maybeSingle();
 
