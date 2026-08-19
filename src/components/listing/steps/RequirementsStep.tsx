@@ -1,5 +1,6 @@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ListingFormData } from "@/hooks/useListingForm";
@@ -68,7 +69,13 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
 
       {/* Nomad Requirements */}
       <div className="space-y-3">
-        <Label className="text-base font-semibold">Nomad Requirements</Label>
+        <div className="flex items-center gap-1.5">
+          <Label className="text-base font-semibold">Nomad Requirements</Label>
+          <HelpTooltip
+            label="About requirements"
+            content="Optional must-haves for your sit. Selecting fewer keeps your listing open to more nomads; selecting more narrows the pool."
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
           Select any must-have qualifications
         </p>
@@ -102,7 +109,13 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
 
       {/* House Rules */}
       <div className="space-y-3">
-        <Label className="text-base font-semibold">House Rules</Label>
+        <div className="flex items-center gap-1.5">
+          <Label className="text-base font-semibold">House Rules</Label>
+          <HelpTooltip
+            label="About house rules"
+            content="Non-negotiable boundaries for your home (e.g. no smoking, no guests). Nomads must accept these to be confirmed."
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
           Important rules nomads should follow
         </p>
@@ -136,7 +149,13 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
 
       {/* Home Care Tasks */}
       <div className="space-y-3">
-        <Label className="text-base font-semibold">Home Care Tasks</Label>
+        <div className="flex items-center gap-1.5">
+          <Label className="text-base font-semibold">Home Care Tasks</Label>
+          <HelpTooltip
+            label="About home care"
+            content="Tasks beyond pet care, like watering plants or collecting mail. Being specific helps nomads know what to expect."
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
           Additional tasks beyond pet care
         </p>
@@ -184,7 +203,13 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
 
       {/* Communication Style */}
       <div className="space-y-2">
-        <Label className="text-base font-semibold">Preferred Communication</Label>
+        <div className="flex items-center gap-1.5">
+          <Label className="text-base font-semibold">Preferred Communication</Label>
+          <HelpTooltip
+            label="About communication"
+            content="How often you'd like updates once the sit starts. Nomads see this to set expectations for staying in touch."
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
           How often would you like updates during the sit?
         </p>

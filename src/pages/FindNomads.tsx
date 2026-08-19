@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import NomadGoogleMap from "@/components/maps/NomadGoogleMap";
 import NomadVisibilityBanner from "@/components/browse/NomadVisibilityBanner";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import CityChatsSection from "@/components/city-chat/CityChatsSection";
 
 export interface NomadOnMap {
@@ -100,7 +101,13 @@ const FindNomads = () => {
       <main className="flex-1 pt-20">
         <div className="bg-surface border-b border-border">
           <div className="container py-8">
-            <h1 className="text-3xl md:text-4xl font-display mb-2">Find Nomads</h1>
+            <div className="flex items-center gap-1.5 mb-2">
+              <h1 className="text-3xl md:text-4xl font-display">Find Nomads</h1>
+              <HelpTooltip
+                label="About nomad visibility"
+                content="Your visibility toggle controls whether other nomads can see you on this map. Hide it any time to pause discovery without losing your profile."
+              />
+            </div>
             <p className="text-muted-foreground">
               Discover other nomads around the world and connect with them
             </p>

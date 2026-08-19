@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 type RoleChoice = "sitter" | "owner" | "both";
@@ -239,7 +240,14 @@ const Onboarding = () => {
         return (
           <div className="space-y-6">
             <div className="text-center">
-              <CardTitle className="text-xl mb-2">How will you use NomadNest?</CardTitle>
+              <div className="flex items-center justify-center gap-1.5">
+                <CardTitle className="text-xl mb-2">How will you use NomadNest?</CardTitle>
+                <HelpTooltip
+                  align="center"
+                  label="About roles"
+                  content="Nomads offer pet sitting while travelling; Pet Parents host a sitter for their pets. Combined lets you do both — sit and host — under one account (the Combined membership tier)."
+                />
+              </div>
               <CardDescription>You can change this later in Settings.</CardDescription>
             </div>
             
@@ -471,7 +479,13 @@ const Onboarding = () => {
                 </div>
 
                 <div>
-                  <Label className="mb-3 block">Do you usually sit as…</Label>
+                  <div className="mb-3 flex items-center gap-1.5">
+                    <Label className="block">Do you usually sit as…</Label>
+                    <HelpTooltip
+                      label="About sit style"
+                      content="This tells families who will be arriving — e.g. a couple travelling together. It helps hosts prepare the right space."
+                    />
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {["Solo", "Couple", "Friends", "Family"].map((style) => (
                       <button
@@ -491,7 +505,13 @@ const Onboarding = () => {
                 </div>
 
                 <div>
-                  <Label className="mb-3 block">Your availability</Label>
+                  <div className="mb-3 flex items-center gap-1.5">
+                    <Label className="block">Your availability</Label>
+                    <HelpTooltip
+                      label="About availability"
+                      content="Choose specific dates if you know when you're free, or 'flexible' if you're open to discussing dates with families."
+                    />
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => setAvailabilityType("dates")}
@@ -560,8 +580,15 @@ const Onboarding = () => {
           return (
             <div className="space-y-6">
               <div className="text-center">
+              <div className="flex items-center justify-center gap-1.5">
                 <CardTitle className="text-xl mb-2">Ready to post a sit?</CardTitle>
-                <CardDescription>Are you here to post a sit now?</CardDescription>
+                <HelpTooltip
+                  align="center"
+                  label="About posting a sit"
+                  content="You can create your listing now or add it later from your dashboard — you don't have to decide today."
+                />
+              </div>
+              <CardDescription>Are you here to post a sit now?</CardDescription>
               </div>
               
               <div className="space-y-3">

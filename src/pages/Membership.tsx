@@ -19,6 +19,7 @@ import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Loader2 } from "lucide-react";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 const Membership = () => {
   const navigate = useNavigate();
@@ -135,7 +136,14 @@ const Membership = () => {
         )}
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground">Choose Your Membership</h1>
+          <div className="flex items-center justify-center gap-1.5">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground">Choose Your Membership</h1>
+            <HelpTooltip
+              align="center"
+              label="Why a membership"
+              content="NomadNest is a barter — free accommodation for free pet sitting. No money changes hands for sits, so this membership covers running the platform, not the sit itself."
+            />
+          </div>
           <p className="mt-3 text-muted-foreground text-lg max-w-2xl mx-auto">
             Join the NomadNest community and start connecting with trusted pet lovers around the world.
           </p>
@@ -235,7 +243,14 @@ const Membership = () => {
             {!subscribed && !foundingMember && (
               <div className="bg-accent/10 border-2 border-accent rounded-2xl p-8 text-center max-w-xl mx-auto">
                 <Crown className="w-10 h-10 text-accent mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-foreground mb-2">Join as a Founding Member</h3>
+                <div className="flex items-center justify-center gap-1.5 mb-2">
+                  <h3 className="text-xl font-bold text-foreground">Join as a Founding Member</h3>
+                  <HelpTooltip
+                    align="center"
+                    label="About founding member codes"
+                    content="A Founding Member code is an invite granted to early supporters. Redeeming one unlocks free lifetime Combined membership — no annual fee."
+                  />
+                </div>
                 <p className="text-muted-foreground mb-6">
                   Be one of the first to shape NomadNest. Founding Member spots are limited and require an invite code.
                 </p>

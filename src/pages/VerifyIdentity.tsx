@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft, Upload, Clock } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { useVerification } from "@/hooks/useVerification";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -330,7 +331,14 @@ const VerifyIdentity = () => {
                   <div className="flex justify-center mb-4">
                     <Upload className="w-14 h-14 text-primary" />
                   </div>
-                  <CardTitle className="text-xl text-center">Verify Your Identity</CardTitle>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <CardTitle className="text-xl text-center">Verify Your Identity</CardTitle>
+                    <HelpTooltip
+                      align="center"
+                      label="Why verify"
+                      content="Verifying builds trust and adds an ID-verified badge to your profile, so families and nomads feel safer connecting with you."
+                    />
+                  </div>
                   <CardDescription className="text-center">
                     Upload a photo ID and a selfie. Our team reviews submissions within 24–48 hours.
                   </CardDescription>

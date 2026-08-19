@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 interface Room {
   id: string;
@@ -254,6 +255,10 @@ const CityChat = () => {
               <h1 className="text-xl font-display font-semibold flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary" />
                 {room.city}
+                <HelpTooltip
+                  label="About city chat"
+                  content="City chats are local community spaces for nomads in the same area to swap tips, meet up, and ask questions."
+                />
               </h1>
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <span>{room.country}</span>

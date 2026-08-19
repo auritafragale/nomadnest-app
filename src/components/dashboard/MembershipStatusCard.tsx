@@ -1,6 +1,7 @@
 import { Crown, CreditCard, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { Badge } from "@/components/ui/badge";
 import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
 import { useNavigate } from "react-router-dom";
@@ -45,6 +46,10 @@ const MembershipStatusCard = () => {
         <CardTitle className="text-base flex items-center gap-2">
           <Crown className="w-4 h-4 text-accent" />
           Membership
+          <HelpTooltip
+            label="About membership"
+            content="Your membership tier gates listing creation and inviting nomads. NomadNest is a barter — free stays for free sitting — so the membership covers running the platform, not the sit."
+          />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
