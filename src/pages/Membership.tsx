@@ -243,7 +243,14 @@ const Membership = () => {
             {!subscribed && !foundingMember && (
               <div className="bg-accent/10 border-2 border-accent rounded-2xl p-8 text-center max-w-xl mx-auto">
                 <Crown className="w-10 h-10 text-accent mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-foreground mb-2">Join as a Founding Member</h3>
+                <div className="flex items-center justify-center gap-1.5 mb-2">
+                  <h3 className="text-xl font-bold text-foreground">Join as a Founding Member</h3>
+                  <HelpTooltip
+                    align="center"
+                    label="About founding member codes"
+                    content="A Founding Member code is an invite granted to early supporters. Redeeming one unlocks free lifetime Combined membership — no annual fee."
+                  />
+                </div>
                 <p className="text-muted-foreground mb-6">
                   Be one of the first to shape NomadNest. Founding Member spots are limited and require an invite code.
                 </p>
