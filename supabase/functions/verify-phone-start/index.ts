@@ -58,7 +58,7 @@ serve(async (req) => {
 
   const basicAuth = btoa(`${accountSid}:${authToken}`);
 
-  // ── Part 4: Twilio Lookup (line_type_intelligence) ───────────────────────
+  // ── Twilio Lookup (line_type_intelligence) ──────────────────────────────
   // Non-blocking: if Lookup fails we still proceed with verification.
   let lineType: string | null = null;
   let isVoip = false;
@@ -89,7 +89,7 @@ serve(async (req) => {
     console.error("Twilio Lookup error (non-fatal):", err);
   }
 
-  // ── Start Twilio Verify (with WhatsApp → SMS fallback) ────────────────────
+  // ── Start Twilio Verify (with WhatsApp → SMS fallback) ──────────────────
   // If WhatsApp is requested and enabled, try WhatsApp first; if Twilio rejects
   // it (no WhatsApp on that number, sender not approved, rate limited, etc.),
   // fall back to SMS automatically so the member still gets a code.
@@ -126,117 +126,10 @@ serve(async (req) => {
 
   return new Response(JSON.stringify({
     success: true,
+    // delivered_channel is the channel that actually sent the code.
+    // channel is kept for backwards compatibility with older clients.
     channel: deliveredChannel,
     delivered_channel: deliveredChannel,
-    voip_warning: isVoip,
-    line_type: lineType,
-  }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-
-  // ── Start Twilio Verify (with WhatsApp → SMS fallback) ────────────────────
-  // If WhatsApp is requested and enabled, try WhatsApp first; if Twilio rejects
-  // it (no WhatsApp on that number, sender not approved, rate limited, etc.),
-  // fall back to SMS automatically so the member still gets a code.
-  const startVerification = async (verifyChannel: "sms" | "whatsapp") => {
-    const verifyUrl = `https://verify.twilio.com/v2/Services/${serviceSid}/Verifications`;
-    const body = new URLSearchParams({ To: phone_number, Channel: verifyChannel });
-
-    const res = await fetch(verifyUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${basicAuth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: body.toString(),
-    });
-    return res;
-  };
-
-  let verifyRes = await startVerification(requestedChannel);
-  let deliveredChannel: "sms" | "whatsapp" = requestedChannel;
-
-  if (requestedChannel === "whatsapp" && !verifyRes.ok) {
-    // WhatsApp send failed — retry over SMS instead of surfacing the error.
-    verifyRes = await startVerification("sms");
-    deliveredChannel = "sms";
-  }
-
-  if (!verifyRes.ok) {
-    const err = await verifyRes.json();
-    return new Response(JSON.stringify({ error: err.message || "Failed to send verification code" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  return new Response(JSON.stringify({
-    success: true,
-    channel: deliveredChannel,
-    delivered_channel: deliveredChannel,
-    voip_warning: isVoip,
-    line_type: lineType,
-  }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-
-  // ── Part 4: Twilio Lookup (line_type_intelligence) ───────────────────────
-  // Non-blocking: if Lookup fails we still proceed with verification.
-  let lineType: string | null = null;
-  let isVoip = false;
-
-  try {
-    const lookupRes = await fetch(
-      `https://lookups.twilio.com/v2/PhoneNumbers/${encodeURIComponent(phone_number)}?Fields=line_type_intelligence`,
-      { headers: { Authorization: `Basic ${basicAuth}` } }
-    );
-
-    if (lookupRes.ok) {
-      const lookupData = await lookupRes.json();
-      lineType = lookupData?.line_type_intelligence?.type ?? null;
-      isVoip = lineType === "voip" || lineType === "nonFixedVoip";
-
-      // Persist the line type so it is available for manual review later.
-      const adminClient = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-        { auth: { persistSession: false } }
-      );
-      await adminClient
-        .from("profiles")
-        .update({ phone_line_type: lineType })
-        .eq("id", user.id);
-    }
-  } catch (err) {
-    console.error("Twilio Lookup error (non-fatal):", err);
-  }
-
-  // ── Start Twilio Verify ───────────────────────────────────────────────────
-  const verifyUrl = `https://verify.twilio.com/v2/Services/${serviceSid}/Verifications`;
-
-  const body = new URLSearchParams({
-    To: phone_number,
-    Channel: resolvedChannel,
-  });
-
-  const verifyRes = await fetch(verifyUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${basicAuth}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: body.toString(),
-  });
-
-  if (!verifyRes.ok) {
-    const err = await verifyRes.json();
-    return new Response(JSON.stringify({ error: err.message || "Failed to send verification code" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  return new Response(JSON.stringify({
-    success: true,
-    channel: resolvedChannel,
     // Inform the client if a VOIP warning should be shown. We do NOT block.
     voip_warning: isVoip,
     line_type: lineType,
