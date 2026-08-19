@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 type RoleChoice = "sitter" | "owner" | "both";
