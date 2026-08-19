@@ -274,6 +274,19 @@ const Membership = () => {
                 </p>
               </div>
             )}
+
+            <div className="text-center mt-10">
+              <p className="text-sm text-muted-foreground mb-3">
+                Every membership also unlocks exclusive partner deals on travel, insurance, pet care
+                and gear.
+              </p>
+              <Button variant="outline" asChild>
+                <Link to="/perks">
+                  <Gift className="w-4 h-4 mr-2" />
+                  See Member Perks
+                </Link>
+              </Button>
+            </div>
           </>
         )}
       </div>
