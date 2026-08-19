@@ -6,6 +6,7 @@ import { useListings, ListingFilters } from "@/hooks/useListings";
 import ListingCard from "@/components/browse/ListingCard";
 import ListingFiltersComponent from "@/components/browse/ListingFilters";
 import BackToTopButton from "@/components/ui/BackToTopButton";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import Pagination from "@/components/browse/Pagination";
 import { usePagination } from "@/hooks/usePagination";
 import FilterBottomSheet, { MobileFilters } from "@/components/mobile/FilterBottomSheet";

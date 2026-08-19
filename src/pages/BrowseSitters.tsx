@@ -9,6 +9,7 @@ import { useSitters } from "@/hooks/useSitters";
 import SitterGridCard from "@/components/browse/SitterGridCard";
 import SitterFilters from "@/components/browse/SitterFilters";
 import BackToTopButton from "@/components/ui/BackToTopButton";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import Pagination from "@/components/browse/Pagination";
 import { usePagination } from "@/hooks/usePagination";
 import { Users } from "lucide-react";
