@@ -48,8 +48,6 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {
     "Your listings appear on the browse map with coral pins so Nomads can discover them.",
   "No booking fees ever":
     "Sits are a barter — free accommodation for free pet care. You never pay a booking fee.",
-  "Best value":
-    "One membership covers both Nomad and Pet Parent access at a lower combined price.",
   "Everything in Nomad plan":
     "All Nomad benefits: unlimited applications, profile with reviews, Find Nomads map and community access.",
   "Everything in Pet Parent plan":
