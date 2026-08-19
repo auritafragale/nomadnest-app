@@ -6,6 +6,11 @@ interface OwnerReview {
   rating: number;
   text: string | null;
   created_at: string;
+  rating_communication: number | null;
+  rating_home_accuracy: number | null;
+  rating_pet_preparedness: number | null;
+  rating_hospitality: number | null;
+  rating_clear_expectations: number | null;
   reviewer: {
     id: string;
     first_name: string | null;
@@ -35,7 +40,12 @@ export const useOwnerReviews = (ownerUserId: string | undefined) => {
           rating,
           text,
           created_at,
-          sit_id
+          sit_id,
+          rating_communication,
+          rating_home_accuracy,
+          rating_pet_preparedness,
+          rating_hospitality,
+          rating_clear_expectations
         `)
         .eq("reviewee_user_id", ownerUserId)
         .order("created_at", { ascending: false });

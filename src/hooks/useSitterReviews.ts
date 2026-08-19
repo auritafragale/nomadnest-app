@@ -6,6 +6,11 @@ export interface SitterReview {
   rating: number;
   text: string | null;
   created_at: string;
+  rating_pet_care: number | null;
+  rating_communication: number | null;
+  rating_cleanliness: number | null;
+  rating_reliability: number | null;
+  rating_respect_home: number | null;
   reviewer: {
     first_name: string | null;
     last_name: string | null;
@@ -35,7 +40,12 @@ export const useSitterReviews = (sitterUserId: string | undefined) => {
           text,
           created_at,
           reviewer_user_id,
-          sit_id
+          sit_id,
+          rating_pet_care,
+          rating_communication,
+          rating_cleanliness,
+          rating_reliability,
+          rating_respect_home
         `)
         .eq("reviewee_user_id", sitterUserId)
         .order("created_at", { ascending: false });
@@ -82,6 +92,11 @@ export const useSitterReviews = (sitterUserId: string | undefined) => {
           rating: review.rating,
           text: review.text,
           created_at: review.created_at,
+          rating_pet_care: review.rating_pet_care,
+          rating_communication: review.rating_communication,
+          rating_cleanliness: review.rating_cleanliness,
+          rating_reliability: review.rating_reliability,
+          rating_respect_home: review.rating_respect_home,
           reviewer: {
             first_name: reviewer?.first_name || null,
             last_name: reviewer?.last_name || null,
