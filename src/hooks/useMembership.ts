@@ -23,6 +23,7 @@ export const MEMBERSHIP_PLANS = {
       "Find Nomads map",
       "Community access",
       "No booking fees ever",
+      "Member Perks & partner discounts",
     ],
   },
   owner: {
