@@ -38,6 +38,7 @@ export const MEMBERSHIP_PLANS = {
       "Map listing visibility",
       "Community access",
       "No booking fees ever",
+      "Member Perks & partner discounts",
     ],
   },
   combined: {
