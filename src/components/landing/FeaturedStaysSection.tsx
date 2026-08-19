@@ -163,7 +163,7 @@ const FeaturedStaysSection = () => (
         </p>
       </div>
 
-      <div className="grid gap-2.5 sm:gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-2.5 sm:gap-4 grid-cols-2 lg:grid-cols-3">
         {DEMO_LISTINGS.map((listing) => (
           <DemoCard key={listing.id} listing={listing} />
         ))}
