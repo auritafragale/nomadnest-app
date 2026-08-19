@@ -38,6 +38,43 @@ const testimonials = [
 ];
 
 const TestimonialsSection = () => {
+  const autoplay = useRef(
+    Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true })
+  );
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { loop: true, align: "start" },
+    [autoplay.current]
+  );
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
+    onSelect();
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect);
+      emblaApi.off("reInit", onSelect);
+    };
+  }, [emblaApi]);
+
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
+
+  const toggleAutoplay = useCallback(() => {
+    const plugin = autoplay.current;
+    if (!plugin) return;
+    if (isPlaying) {
+      plugin.stop();
+      setIsPlaying(false);
+    } else {
+      plugin.play();
+      setIsPlaying(true);
+    }
+  }, [isPlaying]);
+
   return (
     <section className="py-12 bg-gradient-warm">
       <div className="container">
@@ -53,42 +90,113 @@ const TestimonialsSection = () => {
           </p>
         </div>
 
-        <div className="flex md:grid md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none pb-4 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth">
-          {testimonials.map((testimonial) => (
-            <div
-              key={testimonial.name}
-              className="bg-surface rounded-2xl p-6 shadow-soft border border-border flex flex-col snap-center shrink-0 w-[80vw] sm:w-[60vw] md:w-auto md:shrink"
-            >
-              {/* Stars */}
-              <div className="flex gap-1 mb-4">
-                {Array.from({ length: testimonial.rating }).map((_, i) => (
-                  <Star key={i} className="w-4 h-4 text-accent fill-accent" />
-                ))}
-              </div>
+        <div className="max-w-5xl mx-auto">
+          <div
+            className="overflow-hidden -mx-4 px-4 md:mx-0 md:px-0"
+            ref={emblaRef}
+            role="region"
+            aria-roledescription="carousel"
+            aria-label="Member testimonials"
+          >
+            <div className="flex gap-4 md:gap-6">
+              {testimonials.map((testimonial, index) => (
+                <div
+                  key={testimonial.name}
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-label={`Testimonial ${index + 1} of ${testimonials.length}`}
+                  className="min-w-0 shrink-0 basis-[85%] sm:basis-[60%] md:basis-[calc((100%-3rem)/3)]"
+                >
+                  <div className="h-full bg-surface rounded-2xl p-6 shadow-soft border border-border flex flex-col">
+                    {/* Stars */}
+                    <div className="flex gap-1 mb-4">
+                      {Array.from({ length: testimonial.rating }).map((_, i) => (
+                        <Star key={i} className="w-4 h-4 text-accent fill-accent" />
+                      ))}
+                    </div>
 
-              {/* Quote */}
-              <p className="text-sm text-foreground leading-relaxed flex-1 mb-6 italic">
-                "{testimonial.quote}"
-              </p>
+                    {/* Quote */}
+                    <p className="text-sm text-foreground leading-relaxed flex-1 mb-6 italic">
+                      "{testimonial.quote}"
+                    </p>
 
-              {/* Author */}
-              <div className="flex items-center gap-3">
-                <img
-                  src={testimonial.avatar}
-                  alt={testimonial.name}
-                  className="w-11 h-11 rounded-full object-cover flex-shrink-0"
-                />
-                <div>
-                  <p className="font-semibold text-sm">{testimonial.name}</p>
-                  <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                    {/* Author */}
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={testimonial.avatar}
+                        alt={testimonial.name}
+                        loading="lazy"
+                        className="w-11 h-11 rounded-full object-cover flex-shrink-0"
+                      />
+                      <div>
+                        <p className="font-semibold text-sm">{testimonial.name}</p>
+                        <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center justify-center gap-3 mt-6">
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              onClick={scrollPrev}
+              aria-label="Previous testimonial"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+
+            <div className="flex items-center gap-2" role="tablist" aria-label="Choose testimonial">
+              {testimonials.map((testimonial, index) => (
+                <button
+                  key={testimonial.name}
+                  type="button"
+                  role="tab"
+                  aria-selected={index === selectedIndex}
+                  aria-label={`Go to testimonial ${index + 1}`}
+                  onClick={() => emblaApi?.scrollTo(index)}
+                  className={cn(
+                    "h-2 rounded-full transition-all",
+                    index === selectedIndex
+                      ? "w-6 bg-primary"
+                      : "w-2 bg-border hover:bg-muted-foreground/40"
+                  )}
+                />
+              ))}
+            </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              onClick={scrollNext}
+              aria-label="Next testimonial"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full gap-1.5"
+              onClick={toggleAutoplay}
+              aria-pressed={isPlaying}
+              aria-label={isPlaying ? "Pause autoplay" : "Start autoplay"}
+            >
+              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              <span className="text-xs">{isPlaying ? "Pause" : "Play"}</span>
+            </Button>
+          </div>
         </div>
       </div>
     </section>
   );
 };
+
 
 export default TestimonialsSection;
