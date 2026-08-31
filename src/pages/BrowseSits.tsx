@@ -153,12 +153,32 @@ const BrowseSits = () => {
                 )}
               </div>
             </>
-          ) : (
+          ) : hasActiveFilters ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-2">No sits found matching your criteria.</p>
               <p className="text-sm text-muted-foreground">Try adjusting your search or filters.</p>
             </div>
+          ) : (
+            <div className="text-center py-12 max-w-md mx-auto">
+              <p className="text-lg font-medium text-foreground mb-2">
+                No sits posted right now
+              </p>
+              <p className="text-sm text-muted-foreground mb-6">
+                NomadNest is young and new homes are added every week. Complete your Nomad
+                profile so Pet Parents can invite you directly — that is how most early
+                matches happen.
+              </p>
+              <div className="flex flex-wrap gap-3 justify-center">
+                <Button asChild>
+                  <Link to="/edit-sitter-profile">Complete my profile</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/find-nomads">Find Nomads near me</Link>
+                </Button>
+              </div>
+            </div>
           )}
+
         </div>
       </main>
 
