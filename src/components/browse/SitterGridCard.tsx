@@ -8,6 +8,7 @@ import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import MessageSitterButton from "@/components/browse/MessageSitterButton";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
+import { formatPetType } from "@/lib/petTypes";
 
 
 const petIcons: Record<string, typeof Dog> = {
@@ -112,7 +113,7 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
                   className="gap-0.5 text-[10px] px-1.5 h-5 capitalize"
                 >
                   <Icon className="w-2.5 h-2.5" />
-                  {type}
+                  {formatPetType(type)}
                 </Badge>
               );
             })}

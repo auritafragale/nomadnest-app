@@ -14,7 +14,7 @@ interface BreadcrumbsProps {
 const routeLabels: Record<string, string> = {
   dashboard: "Dashboard",
   "browse-sits": "Browse Sits",
-  "browse-sitters": "Browse Sitters",
+  "browse-sitters": "Browse Nomads",
   inbox: "Messages",
   applications: "Applications",
   saved: "Saved Listings",

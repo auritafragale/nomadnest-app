@@ -55,7 +55,7 @@ const NotFound = () => {
             <Button variant="outline" asChild>
               <Link to="/browse-sitters">
                 <Users className="mr-2 h-4 w-4" />
-                Browse Sitters
+                Browse Nomads
               </Link>
             </Button>
             <Button variant="ghost" onClick={() => navigate(-1)}>
