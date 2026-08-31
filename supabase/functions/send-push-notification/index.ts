@@ -42,10 +42,24 @@ serve(async (req) => {
       throw new Error('Supabase credentials not configured');
     }
 
-    const { user_id, payload }: RequestBody = await req.json();
-    console.log('Sending push notification to user:', user_id, 'payload:', payload);
+    const { payload }: RequestBody = await req.json();
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // This endpoint is only used for the member's own "send a test push" button,
+    // so the recipient is always the caller — never a user id from the body.
+    // Otherwise anyone could push arbitrary notifications to any account.
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const jwt = authHeader.replace('Bearer ', '').trim();
+    const { data: caller, error: callerError } = await supabase.auth.getUser(jwt);
+    if (callerError || !caller?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const user_id = caller.user.id;
+    console.log('Sending push notification to user:', user_id, 'payload:', payload);
 
     // Get user's push subscriptions
     const { data: subscriptions, error: subError } = await supabase
