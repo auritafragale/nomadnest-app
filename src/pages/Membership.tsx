@@ -118,6 +118,10 @@ const Membership = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { subscribed, membershipType, foundingMember, loading, startCheckout, redeemFoundingMemberCode } = useMembership();
+  // Don't promise a stocked perks hub until there are enough partners live.
+  const { perks } = usePerks();
+  const perksLive = perks.length >= 3;
+
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [foundingLoading, setFoundingLoading] = useState(false);
   const [codeDialogOpen, setCodeDialogOpen] = useState(false);
