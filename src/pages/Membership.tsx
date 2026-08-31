@@ -55,7 +55,7 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {
   "Member Perks & partner discounts": "__PERKS__",
 };
 
-function FeatureRow({ feature }: { feature: string }) {
+function FeatureRow({ feature, perksLive }: { feature: string; perksLive: boolean }) {
   const [open, setOpen] = useState(false);
   const isPerks = feature === "Member Perks & partner discounts";
   const desc = FEATURE_DESCRIPTIONS[feature] ?? "Included with your NomadNest membership.";
@@ -81,8 +81,9 @@ function FeatureRow({ feature }: { feature: string }) {
           {isPerks ? (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Exclusive partner deals negotiated for members — some links earn NomadNest a small
-                commission to keep fees low.
+                {perksLive
+                  ? "Exclusive partner deals negotiated for members — some links earn NomadNest a small commission to keep fees low."
+                  : "Partner perks are rolling out now. The first deals go live shortly and every membership gets them automatically — some links earn NomadNest a small commission to keep fees low."}
               </p>
               <ul className="flex flex-wrap gap-1.5">
                 {PERK_EXAMPLES.map((ex) => (
@@ -363,8 +364,9 @@ const Membership = () => {
 
             <div className="text-center mt-10">
               <p className="text-sm text-muted-foreground mb-3">
-                Every membership also unlocks exclusive partner deals on travel, insurance, pet care
-                and gear.
+                {perksLive
+                  ? "Every membership also unlocks exclusive partner deals on travel, insurance, pet care and gear."
+                  : "Partner perks on travel, insurance, pet care and gear are rolling out — included with every membership."}
               </p>
               <Button variant="outline" asChild>
                 <Link to="/perks">
