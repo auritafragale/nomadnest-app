@@ -62,6 +62,8 @@ const GuidedWalkthrough = () => {
   const { user, onboardingCompleted } = useAuth();
   const { activeRole } = useActiveRole();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
 
