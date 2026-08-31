@@ -327,7 +327,7 @@ const SitterDashboard = ({
               <Link to="/edit-sitter-profile" className="flex-1">
                 <Button className="w-full">
                   <User className="w-4 h-4 mr-2" />
-                  Edit Sitter Profile
+                  Edit Nomad Profile
                 </Button>
               </Link>
               <Link to={`/sitter/${userId}`}>
@@ -607,7 +607,7 @@ const OwnerDashboard = ({
                     <Search className="w-6 h-6 text-secondary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Browse Sitters</h3>
+                    <h3 className="font-semibold">Browse Nomads</h3>
                     <p className="text-sm text-muted-foreground">Find trusted nomads</p>
                   </div>
                   <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
