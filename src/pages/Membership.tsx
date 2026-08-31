@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
+import { usePerks } from "@/hooks/usePerks";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Loader2 } from "lucide-react";
@@ -302,7 +303,7 @@ const Membership = () => {
                 <CardContent>
                   <ul className="divide-y divide-border/60">
                     {activePlan.features.map((feature) => (
-                      <FeatureRow key={feature} feature={feature} />
+                      <FeatureRow key={feature} feature={feature} perksLive={perksLive} />
                     ))}
                   </ul>
                 </CardContent>
