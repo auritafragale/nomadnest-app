@@ -84,18 +84,24 @@ const AppShell = () => {
 
   const handleOnboardingDone = () => setOnboardingDone(true);
 
+  // The splash and the intro carousel are a first-visit welcome for the home
+  // screen only. On any deep link (shared listing, profile, password reset,
+  // city chat) they must never cover the page the visitor asked for.
+  const isHome = location.pathname === "/";
+  const showSplash = !splashDone && isHome;
+  const introFinished = (splashDone || !isHome) && (onboardingDone || !isHome);
+
   const showBottomNav =
     user !== null && !NO_BOTTOM_NAV_PATHS.includes(location.pathname);
 
   return (
     <>
-      {!splashDone && <SplashScreen onDone={handleSplashDone} />}
-      {/* The intro carousel is a first-visit welcome for the home screen only —
-          it must never cover a deep link (shared listing, auth, reset password). */}
-      {splashDone && !onboardingDone && location.pathname === "/" && (
+      {showSplash && <SplashScreen onDone={handleSplashDone} />}
+      {!showSplash && !onboardingDone && isHome && (
         <OnboardingCarousel onDone={handleOnboardingDone} />
       )}
-      {splashDone && (onboardingDone || location.pathname !== "/") && <GuidedWalkthrough />}
+      {introFinished && <GuidedWalkthrough />}
+
 
 
 
