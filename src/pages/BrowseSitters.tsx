@@ -113,11 +113,14 @@ const BrowseSitters = () => {
                 </div>
               )}
             </>
-          ) : error ? (
+          ) : error && user ? (
             <div className="text-center py-12">
-              <p className="text-destructive">{error}</p>
+              <p className="text-muted-foreground">
+                We couldn't load Nomad profiles just now. Please refresh and try again.
+              </p>
             </div>
-          ) : sitters.length === 0 ? (
+          ) : error || sitters.length === 0 ? (
+
             <div className="text-center py-16">
               <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
               <h3 className="text-xl font-semibold mb-2">

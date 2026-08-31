@@ -47,9 +47,11 @@ const Perks = () => {
               <HelpTooltip content="Exclusive partner deals negotiated for NomadNest members. Some links earn us a small commission, which helps keep membership fees low." />
             </h1>
             <p className="text-muted-foreground text-sm md:text-base">
-              Exclusive partner deals on travel, insurance, pet care and gear — free with your
-              NomadNest membership.
+              {perks.length > 0
+                ? "Exclusive partner deals on travel, insurance, pet care and gear — free with your NomadNest membership."
+                : "Partner deals on travel, insurance, pet care and gear are rolling out — included free with every NomadNest membership."}
             </p>
+
           </header>
 
           {!isMember && !membershipLoading && (
