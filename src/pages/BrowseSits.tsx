@@ -1,4 +1,6 @@
 import { useState, lazy, Suspense, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,6 +65,11 @@ const BrowseSits = () => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  const hasActiveFilters =
+    Object.values(filters).some((v) =>
+      Array.isArray(v) ? v.length > 0 : v !== undefined && v !== "" && v !== false
+    );
 
   const mobileFilterActive =
     mobileFilters.lastMinute ||
