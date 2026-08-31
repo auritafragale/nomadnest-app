@@ -291,6 +291,8 @@ const VerifyIdentity = () => {
             Back
           </Button>
 
+          <h1 className="sr-only">Verify your identity on NomadNest</h1>
+
           {step === "intro" && (
             <div className="space-y-6">
               {ONFIDO_ENABLED && (
@@ -332,9 +334,7 @@ const VerifyIdentity = () => {
                     <Upload className="w-14 h-14 text-primary" />
                   </div>
                   <div className="flex items-center justify-center gap-1.5">
-                    <CardTitle asChild className="text-xl text-center">
-                      <h1>Verify Your Identity</h1>
-                    </CardTitle>
+                    <CardTitle className="text-xl text-center">Verify Your Identity</CardTitle>
                     <HelpTooltip
                       align="center"
                       label="Why verify"
