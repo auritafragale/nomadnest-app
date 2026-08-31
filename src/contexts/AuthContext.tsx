@@ -131,10 +131,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     // Clean up the push subscription for this device before the session is
     // cleared — the DELETE needs a valid session to satisfy the RLS policy.
-    if (user && 'serviceWorker' in navigator) {
+    // navigator.serviceWorker.ready never resolves when no worker is registered,
+    // so this is time-boxed: sign out must never hang on it.
+    if (user && "serviceWorker" in navigator) {
       try {
-        const registration = await navigator.serviceWorker.ready;
-        const pushSub = await registration.pushManager.getSubscription();
+        const registration = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000)),
+        ]);
+        const pushSub = await registration?.pushManager.getSubscription();
         if (pushSub) {
           await supabase
             .from('push_subscriptions')
@@ -151,6 +156,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRole(null);
     setOnboardingCompleted(false);
   };
+
 
   return (
     <AuthContext.Provider

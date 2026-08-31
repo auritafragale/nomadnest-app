@@ -291,6 +291,8 @@ const VerifyIdentity = () => {
             Back
           </Button>
 
+          <h1 className="sr-only">Verify your identity on NomadNest</h1>
+
           {step === "intro" && (
             <div className="space-y-6">
               {ONFIDO_ENABLED && (
