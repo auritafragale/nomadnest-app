@@ -97,7 +97,15 @@ serve(async (req) => {
     const subscription = subscriptions.data[0];
     const productId = subscription.items.data[0].price.product as string;
     const membershipType = MEMBERSHIP_TIERS[productId] || "sitter";
-    const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+    // In API version 2025-08-27.basil the period fields live on the subscription
+    // item, not the subscription. Fall back to the legacy top-level field.
+    const periodEnd =
+      (subscription.items.data[0] as { current_period_end?: number })?.current_period_end ??
+      (subscription as unknown as { current_period_end?: number }).current_period_end;
+    const subscriptionEnd =
+      typeof periodEnd === "number" && Number.isFinite(periodEnd)
+        ? new Date(periodEnd * 1000).toISOString()
+        : null;
 
     await supabaseClient.from("profiles").update({
       membership_status: "active",
