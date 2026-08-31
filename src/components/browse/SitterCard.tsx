@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
+import { formatPetType } from "@/lib/petTypes";
 
 interface SitterCardProps {
   sitter: SitterWithProfile;
@@ -212,7 +213,7 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
                 return (
                   <Badge key={petType} variant="muted" className="gap-1 capitalize">
                     <Icon className="w-3 h-3" />
-                    {petType}
+                    {formatPetType(petType)}
                   </Badge>
                 );
               })}

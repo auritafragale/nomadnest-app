@@ -380,7 +380,7 @@ const SitterDetail = () => {
               This sitter profile doesn't exist or may have been removed.
             </p>
             <Button asChild>
-              <Link to="/browse-sitters">Browse Sitters</Link>
+              <Link to="/browse-sitters">Browse Nomads</Link>
             </Button>
           </div>
         </main>

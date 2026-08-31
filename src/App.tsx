@@ -90,10 +90,13 @@ const AppShell = () => {
   return (
     <>
       {!splashDone && <SplashScreen onDone={handleSplashDone} />}
-      {splashDone && !onboardingDone && (
+      {/* The intro carousel is a first-visit welcome for the home screen only —
+          it must never cover a deep link (shared listing, auth, reset password). */}
+      {splashDone && !onboardingDone && location.pathname === "/" && (
         <OnboardingCarousel onDone={handleOnboardingDone} />
       )}
-      {splashDone && onboardingDone && <GuidedWalkthrough />}
+      {splashDone && (onboardingDone || location.pathname !== "/") && <GuidedWalkthrough />}
+
 
 
 

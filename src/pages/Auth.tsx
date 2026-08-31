@@ -180,9 +180,10 @@ const Auth = () => {
 
         <Card variant="elevated" className="animate-scale-in">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl">
-              {mode === "login" ? "Welcome back" : "Create your profile"}
+            <CardTitle asChild className="text-2xl">
+              <h1>{mode === "login" ? "Welcome back" : "Create your profile"}</h1>
             </CardTitle>
+
             <CardDescription>
               {mode === "login"
                 ? "Log in to continue your pet sitting journey"

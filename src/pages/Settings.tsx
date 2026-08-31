@@ -289,11 +289,11 @@ const Settings = () => {
   const getRoleLabel = () => {
     switch (role) {
       case "sitter":
-        return "Pet Sitter";
+        return "Nomad";
       case "owner":
-        return "Pet Owner";
+        return "Pet Parent";
       case "both":
-        return "Pet Sitter & Owner";
+        return "Nomad & Pet Parent";
       default:
         return "Unknown";
     }
@@ -716,7 +716,7 @@ const Settings = () => {
                         onClick={() => navigate("/edit-sitter-profile")}
                       >
                         <Briefcase className="w-4 h-4 mr-2" />
-                        Sitter Profile
+                        Nomad Profile
                       </Button>
                     )}
                     {((role === "owner") || (role === "both" && activeRole === "owner")) && (
@@ -763,11 +763,11 @@ const Settings = () => {
                           <div className="flex items-center gap-3">
                             <Briefcase className="w-5 h-5 text-muted-foreground" />
                             <div>
-                              <p className="font-medium">Sitter Profile</p>
+                              <p className="font-medium">Nomad Profile</p>
                               <p className="text-sm text-muted-foreground">
                                 {profileVisibility.sitterProfileActive
-                                  ? "Your sitter profile is visible to pet owners"
-                                  : "Your sitter profile is hidden from search results"}
+                                  ? "Your Nomad profile is visible to Pet Parents"
+                                  : "Your Nomad profile is hidden from search results"}
                               </p>
                             </div>
                           </div>

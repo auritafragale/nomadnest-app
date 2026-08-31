@@ -71,7 +71,7 @@ const BrowseSitters = () => {
           <div className="container py-5 md:py-8">
             <div className="flex items-center gap-1.5 mb-1">
               <h1 className="text-2xl md:text-4xl font-display">
-                Browse Sitters
+                Browse Nomads
               </h1>
               <HelpTooltip
                 label="About location privacy"

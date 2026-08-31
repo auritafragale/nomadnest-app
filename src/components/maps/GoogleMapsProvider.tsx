@@ -2,6 +2,7 @@ import { APIProvider } from "@vis.gl/react-google-maps";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createContext, useContext } from "react";
+import MapErrorBoundary from "./MapErrorBoundary";
 
 interface GoogleMapsContextValue {
   listingMapId: string;
@@ -33,11 +34,13 @@ const GoogleMapsProvider = ({ children, height = "600px" }: GoogleMapsProviderPr
   }
 
   return (
-    <APIProvider apiKey={config.key} libraries={["places"]}>
-      <GoogleMapsContext.Provider value={{ listingMapId: config.listingMapId, nomadMapId: config.nomadMapId }}>
-        {children}
-      </GoogleMapsContext.Provider>
-    </APIProvider>
+    <MapErrorBoundary height={height}>
+      <APIProvider apiKey={config.key} libraries={["places"]}>
+        <GoogleMapsContext.Provider value={{ listingMapId: config.listingMapId, nomadMapId: config.nomadMapId }}>
+          {children}
+        </GoogleMapsContext.Provider>
+      </APIProvider>
+    </MapErrorBoundary>
   );
 };
 

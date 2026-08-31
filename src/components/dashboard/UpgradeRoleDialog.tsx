@@ -26,7 +26,7 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const newRoleLabel = currentRole === "sitter" ? "Pet Parent" : "Sitter";
+  const newRoleLabel = currentRole === "sitter" ? "Pet Parent" : "Nomad";
   const newRoleIcon = currentRole === "sitter" ? Home : Briefcase;
   const NewRoleIcon = newRoleIcon;
 
@@ -140,7 +140,7 @@ const UpgradeRoleDialog = ({ currentRole, onUpgrade }: UpgradeRoleDialogProps) =
               ) : (
                 <Plus className="w-4 h-4 mr-2" />
               )}
-              {currentRole === "sitter" ? "Add Pet Parent Access" : "Add Sitter Access"}
+              {currentRole === "sitter" ? "Add Pet Parent Access" : "Add Nomad Access"}
             </Button>
           </div>
         </div>

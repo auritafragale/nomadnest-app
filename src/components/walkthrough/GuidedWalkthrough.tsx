@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Search, Send, MessageCircle, Star, Settings as SettingsIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,16 +62,21 @@ const GuidedWalkthrough = () => {
   const { user, onboardingCompleted } = useAuth();
   const { activeRole } = useActiveRole();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
 
-  // Auto-open once for first-time users who finished onboarding
+  // Auto-open once for first-time users who finished onboarding — only on the
+  // dashboard, so the tour never covers a page the member navigated to on purpose.
   useEffect(() => {
     if (!user || !onboardingCompleted) return;
+    if (location.pathname !== "/dashboard") return;
     if (localStorage.getItem(WALKTHROUGH_STORAGE_KEY) === "true") return;
     setIndex(0);
     setOpen(true);
-  }, [user, onboardingCompleted]);
+  }, [user, onboardingCompleted, location.pathname]);
+
 
   useEffect(() => {
     const handler = () => {

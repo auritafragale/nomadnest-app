@@ -22,7 +22,7 @@ const BottomNav = () => {
 
   const ownerTabs: Tab[] = [
     sitsTab,
-    { href: "/browse-sitters", label: "Browse Sitters", icon: User },
+    { href: "/browse-sitters", label: "Browse Nomads", icon: User },
     chatsTab,
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   ];
@@ -38,7 +38,7 @@ const BottomNav = () => {
   if (!user) {
     tabs = [
       sitsTab,
-      { href: "/browse-sitters", label: "Browse Sitters", icon: User },
+      { href: "/browse-sitters", label: "Browse Nomads", icon: User },
       chatsTab,
       { href: "/auth", label: "Profile", icon: User },
     ];
