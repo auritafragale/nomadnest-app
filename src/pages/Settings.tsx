@@ -767,7 +767,7 @@ const Settings = () => {
                               <p className="text-sm text-muted-foreground">
                                 {profileVisibility.sitterProfileActive
                                   ? "Your Nomad profile is visible to Pet Parents"
-                                  : "Your sitter profile is hidden from search results"}
+                                  : "Your Nomad profile is hidden from search results"}
                               </p>
                             </div>
                           </div>
