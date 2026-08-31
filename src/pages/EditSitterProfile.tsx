@@ -368,7 +368,7 @@ const EditSitterProfile = () => {
                 Back
               </Button>
               <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-                Edit Sitter Profile
+                Edit Nomad Profile
               </h1>
               <p className="text-sm md:text-base text-muted-foreground mt-1">
                 Make your profile stand out to attract pet owners

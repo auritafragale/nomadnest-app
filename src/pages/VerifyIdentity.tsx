@@ -332,7 +332,9 @@ const VerifyIdentity = () => {
                     <Upload className="w-14 h-14 text-primary" />
                   </div>
                   <div className="flex items-center justify-center gap-1.5">
-                    <CardTitle className="text-xl text-center">Verify Your Identity</CardTitle>
+                    <CardTitle asChild className="text-xl text-center">
+                      <h1>Verify Your Identity</h1>
+                    </CardTitle>
                     <HelpTooltip
                       align="center"
                       label="Why verify"
