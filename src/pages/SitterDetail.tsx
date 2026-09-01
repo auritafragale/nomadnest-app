@@ -164,7 +164,7 @@ const SitterDetail = () => {
         if (profileResult.error) throw profileResult.error;
 
         setSitter(sitterResult.data);
-        setProfile(profileResult.data as PublicProfile | null);
+        setProfile(profileResult.data as unknown as PublicProfile | null);
 
         // Fetch user's listings with open sit dates if they're an owner
         if (user) {
