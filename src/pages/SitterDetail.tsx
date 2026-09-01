@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -154,9 +155,7 @@ const SitterDetail = () => {
             .select(SITTER_PROFILE_COLUMNS as "*")
             .eq("user_id", userId)
             .maybeSingle(),
-          supabase
-            .from("profiles")
-            .select("first_name, last_name, avatar_url, city, country, founding_member, email_verified, phone_verified")
+          publicProfiles("first_name, last_name, avatar_url, city, country, founding_member, email_verified, phone_verified")
             .eq("id", userId)
             .maybeSingle(),
         ]);
@@ -165,7 +164,7 @@ const SitterDetail = () => {
         if (profileResult.error) throw profileResult.error;
 
         setSitter(sitterResult.data);
-        setProfile(profileResult.data);
+        setProfile(profileResult.data as unknown as PublicProfile | null);
 
         // Fetch user's listings with open sit dates if they're an owner
         if (user) {

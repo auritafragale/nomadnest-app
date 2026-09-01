@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { publicProfiles } from "@/lib/publicProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
@@ -272,9 +273,7 @@ const ListingDetail = () => {
         const [petsResult, datesResult, profileResult] = await Promise.all([
           supabase.from("pets").select("*").eq("listing_id", id),
           supabase.from("sit_dates").select("*").eq("listing_id", id),
-          supabase
-            .from("profiles")
-            .select("first_name, last_name, avatar_url, city, country, founding_member, full_name, id_verified")
+          publicProfiles("first_name, last_name, avatar_url, city, country, founding_member, full_name, id_verified")
             .eq("id", listingRow.owner_user_id)
             .maybeSingle(),
         ]);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { publicProfiles } from "@/lib/publicProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -92,9 +93,7 @@ const OwnerDetail = () => {
             .select(OWNER_PROFILE_COLUMNS as "*")
             .eq("user_id", userId)
             .maybeSingle(),
-          supabase
-            .from("profiles")
-            .select("first_name, last_name, avatar_url, city, country, founding_member, email_verified, phone_verified, id_verified")
+          publicProfiles("first_name, last_name, avatar_url, city, country, founding_member, email_verified, phone_verified, id_verified")
             .eq("id", userId)
             .maybeSingle(),
           supabase
@@ -118,7 +117,7 @@ const OwnerDetail = () => {
         if (listingsResult.error) throw listingsResult.error;
 
         setOwnerProfile(ownerResult.data);
-        setProfile(profileResult.data);
+        setProfile(profileResult.data as unknown as Profile | null);
         setListings((listingsResult.data || []) as Listing[]);
       } catch (error: any) {
         console.error("Error fetching owner:", error);

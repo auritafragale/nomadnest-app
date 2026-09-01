@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import {
   aggregateCategoryRatings,
   OWNER_RATING_CATEGORIES,
@@ -132,10 +133,8 @@ export const useListings = (filters: ListingFilters = {}) => {
 
       // Fetch owner profiles in bulk
       if (ownerIds.length > 0) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name, avatar_url, id_verified")
-          .in("id", ownerIds);
+        const { data: profileData } = await publicProfiles("id, first_name, last_name, avatar_url, id_verified")
+          .in("id", ownerIds) as { data: PublicProfile[] | null };
 
         if (profileData && profileData.length > 0) {
           const profileMap = new Map(profileData.map((p) => [p.id, p]));

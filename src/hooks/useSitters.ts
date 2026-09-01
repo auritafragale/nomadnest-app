@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
+import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import {
   aggregateCategoryRatings,
   SITTER_RATING_CATEGORIES,
@@ -77,10 +78,8 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         const userIds = sitterData.map((s) => s.user_id);
 
         const [profilesResult, ratingsResult] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("id, first_name, last_name, avatar_url, city, country, founding_member")
-            .in("id", userIds),
+          publicProfiles("id, first_name, last_name, avatar_url, city, country, founding_member")
+            .in("id", userIds) as unknown as Promise<{ data: PublicProfile[] | null; error: { message: string } | null }>,
           supabase
             .from("reviews")
             .select(

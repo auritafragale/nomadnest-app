@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Users } from "lucide-react";
@@ -49,10 +50,8 @@ const FindNomads = () => {
 
       if (!error && data && data.length > 0) {
         const userIds = data.map((d) => d.user_id);
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name, avatar_url, city, country, founding_member")
-          .in("id", userIds);
+        const { data: profiles } = await publicProfiles("id, first_name, last_name, avatar_url, city, country, founding_member")
+          .in("id", userIds) as { data: PublicProfile[] | null };
 
         const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 

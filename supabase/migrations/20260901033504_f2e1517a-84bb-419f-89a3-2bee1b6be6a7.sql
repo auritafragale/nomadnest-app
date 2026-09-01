@@ -1,0 +1,1 @@
+ALTER VIEW public.public_profiles RENAME COLUMN is_founding_member TO founding_member;
