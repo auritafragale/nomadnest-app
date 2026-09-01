@@ -1220,10 +1220,10 @@ export type Database = {
           country: string | null
           email_verified: boolean | null
           first_name: string | null
+          founding_member: boolean | null
           full_name: string | null
           id: string | null
           id_verified: boolean | null
-          is_founding_member: boolean | null
           last_name: string | null
           location: string | null
           phone_verified: boolean | null
@@ -1235,10 +1235,10 @@ export type Database = {
           country?: string | null
           email_verified?: boolean | null
           first_name?: string | null
+          founding_member?: never
           full_name?: string | null
           id?: string | null
           id_verified?: boolean | null
-          is_founding_member?: never
           last_name?: string | null
           location?: string | null
           phone_verified?: boolean | null
@@ -1250,10 +1250,10 @@ export type Database = {
           country?: string | null
           email_verified?: boolean | null
           first_name?: string | null
+          founding_member?: never
           full_name?: string | null
           id?: string | null
           id_verified?: boolean | null
-          is_founding_member?: never
           last_name?: string | null
           location?: string | null
           phone_verified?: boolean | null
