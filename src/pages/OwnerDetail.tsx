@@ -117,7 +117,7 @@ const OwnerDetail = () => {
         if (listingsResult.error) throw listingsResult.error;
 
         setOwnerProfile(ownerResult.data);
-        setProfile(profileResult.data);
+        setProfile(profileResult.data as unknown as Profile | null);
         setListings((listingsResult.data || []) as Listing[]);
       } catch (error: any) {
         console.error("Error fetching owner:", error);
