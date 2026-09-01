@@ -1,9 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // Safe cross-user profile data. The `public_profiles` view only exposes
-// display fields (names, avatar, city/country, badges) — email, phone
-// numbers, membership data, Onfido IDs and admin flags are column-revoked
-// on the base `profiles` table and never readable through the Data API.
+// display fields (names, avatar, city/country, verification/founding badges)
+// of discoverable members — email, phone numbers, membership data, Onfido
+// IDs and admin flags are column-revoked on the base `profiles` table and
+// are never readable through the Data API.
+//
+// Use `profiles` directly ONLY for the signed-in user's own row.
 
 export interface PublicProfile {
   id: string;
@@ -21,34 +24,11 @@ export interface PublicProfile {
   is_founding_member: boolean | null;
 }
 
-type PublicProfileQuery = {
-  eq: (column: string, value: unknown) => PublicProfileQuery;
-  in: (column: string, values: unknown[]) => PromiseLike<{ data: PublicProfile[] | null; error: { message: string } | null }> & PublicProfileQuery;
-  maybeSingle: () => PromiseLike<{ data: PublicProfile | null; error: { message: string } | null }>;
-};
+export const PUBLIC_PROFILE_COLUMNS =
+  "id, first_name, last_name, avatar_url, city, country, id_verified, email_verified, phone_verified, is_founding_member";
 
-// Thin typed wrapper over the public_profiles view. Accepts .eq() chains and
-// .in() filters, then either resolves to rows (await) or .maybeSingle().
-export function publicProfiles(columns = "*"): PublicProfileQuery {
+// The view isn't in the generated Database types yet, so the result is
+// untyped (PostgrestBuilder<unknown>). Cast with `as unknown as PublicProfile[]`.
+export const publicProfiles = (columns = PUBLIC_PROFILE_COLUMNS) =>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query: any = supabase.from("public_profiles" as never).select(columns) as any;
-
-  const api: PublicProfileQuery = {
-    eq(column: string, value: unknown) {
-      query = query.eq(column, value);
-      return api;
-    },
-    in(column: string, values: unknown[]) {
-      query = query.in(column, values);
-      return api as never;
-    },
-    maybeSingle() {
-      return query.maybeSingle();
-    },
-    then(onfulfilled, onrejected) {
-      return (query as PromiseLike<unknown>).then(onfulfilled, onrejected);
-    },
-  } as PublicProfileQuery;
-
-  return api;
-}
+  supabase.from("public_profiles" as any).select(columns);
