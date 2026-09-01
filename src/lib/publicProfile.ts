@@ -21,7 +21,7 @@ export interface PublicProfile {
   id_verified: boolean | null;
   email_verified: boolean | null;
   phone_verified: boolean | null;
-  is_founding_member: boolean | null;
+  founding_member: boolean | null;
 }
 
 export const PUBLIC_PROFILE_COLUMNS =
