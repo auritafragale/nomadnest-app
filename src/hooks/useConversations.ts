@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { publicProfiles } from "@/lib/publicProfile";
+import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import { sendNotification } from "@/lib/notifications";
 
 const conversationsQueryKey = (userId?: string) => ["conversations", userId] as const;
@@ -72,7 +72,7 @@ export const useConversations = () => {
           // Get other user's profile (safe public view — no contact details)
           const { data: profile } = await publicProfiles("id, first_name, last_name, avatar_url")
             .eq("id", otherUserId)
-            .maybeSingle();
+            .maybeSingle() as { data: PublicProfile | null };
 
           // Get last message
           const { data: messages } = await supabase

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
+import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import {
   aggregateCategoryRatings,
   SITTER_RATING_CATEGORIES,

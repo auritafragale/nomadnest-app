@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { publicProfiles } from "@/lib/publicProfile";
+import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import type { Database } from "@/integrations/supabase/types";
 import { sendNotification } from "@/lib/notifications";
 import { format } from "date-fns";
@@ -94,7 +94,7 @@ export const useOwnerApplications = (statusFilter?: ApplicationStatus | "all") =
 
           const { data: sitterUser } = await publicProfiles("id, first_name, last_name, avatar_url, city, country")
             .eq("id", app.sitter_user_id)
-            .maybeSingle();
+            .maybeSingle() as { data: PublicProfile | null };
 
           return {
             ...app,

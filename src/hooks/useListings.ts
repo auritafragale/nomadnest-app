@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import {
   aggregateCategoryRatings,
   OWNER_RATING_CATEGORIES,
