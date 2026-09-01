@@ -49,9 +49,7 @@ const FindNomads = () => {
 
       if (!error && data && data.length > 0) {
         const userIds = data.map((d) => d.user_id);
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name, avatar_url, city, country, founding_member")
+        const { data: profiles } = await publicProfiles("id, first_name, last_name, avatar_url, city, country, founding_member")
           .in("id", userIds);
 
         const profileMap = new Map((profiles || []).map((p) => [p.id, p]));

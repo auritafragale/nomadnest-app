@@ -77,9 +77,7 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         const userIds = sitterData.map((s) => s.user_id);
 
         const [profilesResult, ratingsResult] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("id, first_name, last_name, avatar_url, city, country, founding_member")
+          publicProfiles("id, first_name, last_name, avatar_url, city, country, founding_member")
             .in("id", userIds),
           supabase
             .from("reviews")

@@ -91,11 +91,9 @@ export const useOwnerApplications = (statusFilter?: ApplicationStatus | "all") =
             .eq("user_id", app.sitter_user_id)
             .maybeSingle();
 
-          const { data: sitterUser } = await supabase
-            .from("profiles")
-            .select("id, first_name, last_name, avatar_url, city, country")
+          const { data: sitterUser } = await publicProfiles("id, first_name, last_name, avatar_url, city, country")
             .eq("id", app.sitter_user_id)
-            .single();
+            .maybeSingle();
 
           return {
             ...app,

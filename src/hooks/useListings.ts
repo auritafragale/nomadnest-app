@@ -132,9 +132,7 @@ export const useListings = (filters: ListingFilters = {}) => {
 
       // Fetch owner profiles in bulk
       if (ownerIds.length > 0) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name, avatar_url, id_verified")
+        const { data: profileData } = await publicProfiles("id, first_name, last_name, avatar_url, id_verified")
           .in("id", ownerIds);
 
         if (profileData && profileData.length > 0) {

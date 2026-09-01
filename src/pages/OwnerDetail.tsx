@@ -92,9 +92,7 @@ const OwnerDetail = () => {
             .select(OWNER_PROFILE_COLUMNS as "*")
             .eq("user_id", userId)
             .maybeSingle(),
-          supabase
-            .from("profiles")
-            .select("first_name, last_name, avatar_url, city, country, founding_member, email_verified, phone_verified, id_verified")
+          publicProfiles("first_name, last_name, avatar_url, city, country, founding_member, email_verified, phone_verified, id_verified")
             .eq("id", userId)
             .maybeSingle(),
           supabase

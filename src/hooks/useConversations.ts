@@ -68,12 +68,10 @@ export const useConversations = () => {
             ? conv.sitter_user_id 
             : conv.owner_user_id;
 
-          // Get other user's profile
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("id, first_name, last_name, avatar_url")
+          // Get other user's profile (safe public view — no contact details)
+          const { data: profile } = await publicProfiles("id, first_name, last_name, avatar_url")
             .eq("id", otherUserId)
-            .single();
+            .maybeSingle();
 
           // Get last message
           const { data: messages } = await supabase
