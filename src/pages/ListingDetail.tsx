@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { publicProfiles } from "@/lib/publicProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";

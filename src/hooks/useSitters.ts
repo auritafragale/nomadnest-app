@@ -78,7 +78,7 @@ export const useSitters = (options: UseSittersOptions = {}) => {
 
         const [profilesResult, ratingsResult] = await Promise.all([
           publicProfiles("id, first_name, last_name, avatar_url, city, country, founding_member")
-            .in("id", userIds),
+            .in("id", userIds) as Promise<{ data: PublicProfile[] | null; error: { message: string } | null }>,
           supabase
             .from("reviews")
             .select(

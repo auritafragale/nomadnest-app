@@ -133,7 +133,7 @@ export const useListings = (filters: ListingFilters = {}) => {
       // Fetch owner profiles in bulk
       if (ownerIds.length > 0) {
         const { data: profileData } = await publicProfiles("id, first_name, last_name, avatar_url, id_verified")
-          .in("id", ownerIds);
+          .in("id", ownerIds) as { data: PublicProfile[] | null };
 
         if (profileData && profileData.length > 0) {
           const profileMap = new Map(profileData.map((p) => [p.id, p]));
