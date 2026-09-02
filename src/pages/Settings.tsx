@@ -46,6 +46,7 @@ import {
   Phone,
   Crown,
 } from "lucide-react";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,6 +74,7 @@ interface Profile {
 const Settings = () => {
   const navigate = useNavigate();
   const { user, role, signOut, refreshRole } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const { activeRole } = useActiveRole();
   const { toast } = useToast();
 
