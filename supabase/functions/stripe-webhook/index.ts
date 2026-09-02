@@ -1,8 +1,15 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import {
+  renderBrandedEmail,
+  sendBrandedEmail,
+} from "../_shared/branded-email.ts";
+import {
+  buildMembershipEmail,
+  type MembershipEmailKind,
+} from "../_shared/email-templates.ts";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const APP_URL = "https://nomadnest.global";
 
 const MEMBERSHIP_TIERS: Record<string, string> = {
@@ -18,59 +25,13 @@ const PLAN_NAMES: Record<string, string> = {
 };
 
 const sendEmail = async (to: string, subject: string, html: string) => {
-  if (!RESEND_API_KEY) {
-    console.error("RESEND_API_KEY not configured, skipping email to", to);
-    return;
-  }
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "NomadNest <noreply@nomadnest.global>",
-      to: [to],
-      subject,
-      html,
-    }),
-  });
-  if (!response.ok) {
-    const error = await response.text();
-    console.error(`Resend failed [${response.status}]: ${error}`);
-  } else {
+  try {
+    await sendBrandedEmail(to, subject, html);
     console.log(`Membership email sent to ${to}: ${subject}`);
+  } catch (err) {
+    console.error(String(err));
   }
 };
-
-const wrapHtml = (body: string) => `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <style>
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-      a { color: #E8735A; }
-      h2 { color: #E8735A; }
-    </style>
-  </head>
-  <body>
-    <div style="text-align: center; margin-bottom: 24px;">
-      <img src="https://nomadnest.global/logo-email.png" alt="NomadNest" style="max-width: 160px;" />
-    </div>
-    ${body}
-    <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-    <p style="font-size: 12px; color: #888;">
-      You're receiving this because you have a NomadNest membership.
-      <a href="${APP_URL}/settings">Manage your email preferences</a>
-    </p>
-  </body>
-  </html>
-`;
-
-const fmtDate = (iso: string | null) =>
-  iso
-    ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
-    : null;
 
 // Look up the member's profile (id + name) by email for notifications.
 const getProfileByEmail = async (supabase: any, email: string) => {
