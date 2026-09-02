@@ -51,6 +51,8 @@ interface Member {
   created_at: string;
 }
 
+const FOUNDER_EMAILS = ["auritadxb@gmail.com", "orecf001@gmail.com"];
+
 const roleLabel = (role: string | null) => {
   if (role === "sitter") return "Nomad";
   if (role === "owner") return "Pet Parent";
