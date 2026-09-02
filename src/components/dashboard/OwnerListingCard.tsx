@@ -160,6 +160,12 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                     {format(new Date(nextDate.end_date), "MMM d, yyyy")}
                   </span>
                 )}
+                {datesExpired && (
+                  <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                    <Calendar className="w-3 h-3" />
+                    Dates expired — add new dates to appear in Browse
+                  </span>
+                )}
                 {listing._count.applications > 0 && (
                   <span className="flex items-center gap-1">
                     <Users className="w-3 h-3" />
