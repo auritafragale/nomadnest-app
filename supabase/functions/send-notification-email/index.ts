@@ -1,8 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import webpush from "https://esm.sh/web-push@3.6.7";
-
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+import {
+  renderBrandedEmail,
+  sendBrandedEmail,
+} from "../_shared/branded-email.ts";
+import { buildNotificationEmail } from "../_shared/email-templates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,29 +17,6 @@ interface NotificationEmailRequest {
   recipientUserId: string;
   data: Record<string, string>;
 }
-
-const sendEmail = async (to: string, subject: string, html: string) => {
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "NomadNest <noreply@nomadnest.global>",
-      to: [to],
-      subject,
-      html,
-    }),
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to send email");
-  }
-  
-  return response.json();
-};
 
 const sendPushNotification = async (
   supabase: any,
@@ -124,115 +104,6 @@ const sendPushNotification = async (
   }
 };
 
-const getEmailContent = (type: string, data: Record<string, string>) => {
-  switch (type) {
-    case "new_application":
-      return {
-        subject: `New application for ${data.listingTitle}`,
-        html: `
-          <h2>You have a new application!</h2>
-          <p><strong>${data.sitterName}</strong> has applied for your sit at <strong>${data.listingTitle}</strong>.</p>
-          <p>Dates: ${data.startDate} - ${data.endDate}</p>
-          <p><a href="${data.appUrl}/applications">View the application</a></p>
-        `,
-        pushTitle: "New Application!",
-        pushBody: `${data.sitterName} applied for ${data.listingTitle}`,
-        pushUrl: "/applications",
-      };
-    case "application_status":
-      return {
-        subject: `Your application has been ${data.status}`,
-        html: `
-          <h2>Application Update</h2>
-          <p>Your application for <strong>${data.listingTitle}</strong> has been <strong>${data.status}</strong>.</p>
-          ${data.status === "accepted" ? "<p>Congratulations! The owner will be in touch soon.</p>" : ""}
-          <p><a href="${data.appUrl}/dashboard">View your dashboard</a></p>
-        `,
-        pushTitle: `Application ${data.status === "accepted" ? "Accepted!" : "Updated"}`,
-        pushBody: `Your application for ${data.listingTitle} was ${data.status}`,
-        pushUrl: "/dashboard",
-      };
-    case "new_message":
-      return {
-        subject: `New message from ${data.senderName}`,
-        html: `
-          <h2>You have a new message</h2>
-          <p><strong>${data.senderName}</strong> sent you a message:</p>
-          <blockquote style="border-left: 3px solid #ccc; padding-left: 12px; color: #555;">
-            ${data.messagePreview}
-          </blockquote>
-          <p><a href="${data.appUrl}/inbox?conversation=${data.conversationId}">Reply now</a></p>
-        `,
-        pushTitle: `Message from ${data.senderName}`,
-        pushBody: data.messagePreview.substring(0, 100),
-        pushUrl: `/inbox?conversation=${data.conversationId}`,
-      };
-    case "invite":
-      return {
-        subject: `You've been invited to sit at ${data.listingTitle}`,
-        html: `
-          <h2>You've received an invitation!</h2>
-          <p><strong>${data.ownerName}</strong> has invited you to sit at <strong>${data.listingTitle}</strong>.</p>
-          <p>Dates: ${data.startDate} - ${data.endDate}</p>
-          <p><a href="${data.appUrl}/dashboard">View the invitation</a></p>
-        `,
-        pushTitle: "New Invitation!",
-        pushBody: `${data.ownerName} invited you to ${data.listingTitle}`,
-        pushUrl: "/dashboard",
-      };
-    case "review":
-      return {
-        subject: "You've received a new review",
-        html: `
-          <h2>New Review</h2>
-          <p><strong>${data.reviewerName}</strong> left you a ${data.rating}-star review.</p>
-          ${data.text ? `<blockquote style="border-left: 3px solid #ccc; padding-left: 12px; color: #555;">${data.text}</blockquote>` : ""}
-          <p><a href="${data.appUrl}/dashboard">View your profile</a></p>
-        `,
-        pushTitle: "New Review!",
-        pushBody: `${data.reviewerName} left you a ${data.rating}-star review`,
-        pushUrl: "/dashboard",
-      };
-    case "review_reminder":
-      return {
-        subject:
-          Number(data.daysLeft) <= 2
-            ? `Last chance to review ${data.otherName}`
-            : `How was your sit with ${data.otherName}?`,
-        html: `
-          <h2>Leave your review</h2>
-          <p>Your sit at <strong>${data.listingTitle}</strong> has finished — please take a minute to review <strong>${data.otherName}</strong>.</p>
-          <p>Reviews build trust across the whole NomadNest community, and you have <strong>${data.daysLeft} day${Number(data.daysLeft) === 1 ? "" : "s"}</strong> left to leave yours.</p>
-          <p><a href="${data.appUrl}/dashboard">Write your review</a></p>
-        `,
-        pushTitle: "Leave a review",
-        pushBody: `You have ${data.daysLeft} day(s) left to review ${data.otherName}`,
-        pushUrl: "/dashboard",
-      };
-    case "id_verification_approved":
-      return {
-        subject: "Your ID has been verified ✓",
-        html: `
-          <h2>You're verified! 🎉</h2>
-          <p>Great news — your ID has been successfully verified.</p>
-          <p>Your profile now displays the <strong>ID Verified</strong> badge, helping you build trust faster with the NomadNest community.</p>
-          <p><a href="${data.appUrl}/dashboard">Go to your dashboard</a></p>
-        `,
-        pushTitle: "ID Verified ✓",
-        pushBody: "Your ID has been verified. Your profile now shows the badge.",
-        pushUrl: "/dashboard",
-      };
-    default:
-      return {
-        subject: "NomadNest Notification",
-        html: `<p>You have a new notification on NomadNest.</p>`,
-        pushTitle: "NomadNest",
-        pushBody: "You have a new notification",
-        pushUrl: "/dashboard",
-      };
-  }
-};
-
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -306,15 +177,15 @@ const handler = async (req: Request): Promise<Response> => {
       review_reminder: "email_reviews",
     };
 
-    const emailContent = getEmailContent(type, data);
+    const emailContent = buildNotificationEmail(type, data);
 
     // Write the in-app notification first: the bell/notification list reads this
     // table, and clients are not allowed to insert rows for other members.
     const { error: notifError } = await supabaseClient.from("notifications").insert({
       user_id: recipientUserId,
       type,
-      title: emailContent.pushTitle,
-      message: emailContent.pushBody,
+      title: emailContent.pushTitle ?? emailContent.subject,
+      message: emailContent.pushBody ?? "",
       data: { ...data, url: emailContent.pushUrl },
     });
     if (notifError) {
@@ -325,9 +196,9 @@ const handler = async (req: Request): Promise<Response> => {
     await sendPushNotification(
       supabaseClient,
       recipientUserId,
-      emailContent.pushTitle,
-      emailContent.pushBody,
-      emailContent.pushUrl,
+      emailContent.pushTitle ?? emailContent.subject,
+      emailContent.pushBody ?? "",
+      emailContent.pushUrl ?? "/dashboard",
       type
     );
 
@@ -341,31 +212,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const fullHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-          a { color: #16a34a; }
-          h2 { color: #16a34a; }
-        </style>
-      </head>
-      <body>
-        <div style="text-align: center; margin-bottom: 24px;">
-          <img src="https://nomadnest.global/logo-email.png" alt="NomadNest" style="max-width: 160px;" />
-        </div>
-        ${emailContent.html}
-        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-        <p style="font-size: 12px; color: #888;">
-          You're receiving this because you have an account on NomadNest. 
-          <a href="${data.appUrl}/settings">Manage your email preferences</a>
-        </p>
-      </body>
-      </html>
-    `;
+    const fullHtml = renderBrandedEmail(emailContent, {
+      preview: emailContent.preview,
+    });
 
-    const emailResponse = await sendEmail(profile.email, emailContent.subject, fullHtml);
+    const emailResponse = await sendBrandedEmail(profile.email, emailContent.subject, fullHtml);
 
     console.log("Email sent successfully:", emailResponse);
 
