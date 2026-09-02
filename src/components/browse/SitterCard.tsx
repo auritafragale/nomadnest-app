@@ -118,8 +118,12 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               {sitter.id_verified && (
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-4 h-4 text-primary-foreground" />
+                <div
+                  className="absolute -bottom-1 -right-1 w-6 h-6 bg-success rounded-full flex items-center justify-center ring-2 ring-background"
+                  title="ID Verified"
+                  aria-label="ID verified"
+                >
+                  <CheckCircle className="w-4 h-4 text-success-foreground" />
                 </div>
               )}
             </div>
@@ -152,9 +156,9 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
                 </div>
                 <div className="flex items-center gap-2">
                   {sitter.id_verified && (
-                    <Badge variant="outline" className="gap-1">
+                    <Badge variant="outline" className="gap-1 border-success/40 text-success">
                       <CheckCircle className="w-3 h-3" />
-                      Verified
+                      ID Verified
                     </Badge>
                   )}
                   {sitter.background_check && (
