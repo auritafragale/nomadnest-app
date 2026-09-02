@@ -144,12 +144,19 @@ const EditOwnerProfile = () => {
           {
             user_id: user.id,
             bio: ownerProfile.bio || null,
-            phone: ownerProfile.phone || null,
           },
           { onConflict: "user_id" }
         );
 
       if (ownerError) throw ownerError;
+
+      // Phone numbers are write-only for members (never readable by others),
+      // so they are saved through a dedicated secure function.
+      const { error: phoneError } = await supabase.rpc("set_my_profile_phone" as any, {
+        p_target: "owner",
+        p_phone: ownerProfile.phone || null,
+      });
+      if (phoneError) throw phoneError;
 
       toast({
         title: "Profile saved!",
