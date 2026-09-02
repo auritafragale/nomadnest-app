@@ -254,6 +254,15 @@ const Navbar = () => {
 
               {user && (
                 <div className="pt-2 mt-2 border-t border-border space-y-1">
+                  {isAdmin && (
+                    <Link to="/admin" onClick={closeMenu}>
+                      <Button variant="ghost" className={cn("w-full justify-start", isActive("/admin") && "text-primary bg-terracotta-light")}>
+                        <ShieldCheck className="w-4 h-4 mr-2" />
+                        Admin Panel
+                      </Button>
+                    </Link>
+                  )}
+
                   {(role === "sitter" || role === "both") && (
                     <Link to="/saved" onClick={closeMenu}>
                       <Button variant="ghost" className={cn("w-full justify-start", isActive("/saved") && "text-primary bg-terracotta-light")}>
