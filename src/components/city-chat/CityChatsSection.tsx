@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, MessageCircle, Lock, Search } from "lucide-react";
 import { useCityChatRooms, type CityChatRoom } from "@/hooks/useCityChatRooms";
+import { cn } from "@/lib/utils";
 
 const RoomCard = ({ room }: { room: CityChatRoom }) => (
   <Card className="p-5 flex flex-col gap-3">
