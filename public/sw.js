@@ -1,5 +1,5 @@
-const CACHE_NAME = "nomadnest-v1";
-const APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png"];
+const CACHE_NAME = "nomadnest-v2";
+const APP_SHELL = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -19,11 +19,62 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Fetch strategy:
+//  - Navigations (HTML): network-first so the latest index.html (referencing
+//    Vite's content-hashed bundles) is always served; fall back to cache when
+//    offline. This is what fixes "must clear browsing data to see updates".
+//  - Same-origin hashed static assets (/assets/*): cache-first, revalidate in
+//    the background. Filenames change on content change, so a cached copy is
+//    always the correct version for that filename.
+//  - Everything else (API/Supabase, Google Maps, cross-origin, non-GET):
+//    bypass the cache entirely and go straight to the network.
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
-  event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
-  );
+  const request = event.request;
+
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+
+  // Navigation requests — network-first.
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(() =>
+          caches.match(request).then(
+            (cached) =>
+              cached ||
+              caches.match("/index.html").then(
+                (fallback) => fallback || Response.error()
+              )
+          )
+        )
+    );
+    return;
+  }
+
+  // Only cache same-origin static assets under /assets/ (content-hashed by Vite).
+  if (url.origin === self.location.origin && url.pathname.startsWith("/assets/")) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        const networkFetch = fetch(request)
+          .then((response) => {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            return response;
+          })
+          .catch(() => cached);
+        return cached || networkFetch;
+      })
+    );
+    return;
+  }
+
+  // All other requests (API, cross-origin, etc.) bypass the cache.
 });
 
 // App signals that the user has read messages — dismiss all notifications
