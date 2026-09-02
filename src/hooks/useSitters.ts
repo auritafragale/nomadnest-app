@@ -64,9 +64,13 @@ export const useSitters = (options: UseSittersOptions = {}) => {
       setError(null);
 
       try {
+        // Only nomads who opted into being discoverable are listed — their
+        // display details also only exist in the safe public profile view when
+        // they are visible, so unfiltered rows render as empty placeholders.
         const { data: sitterData, error: sitterError } = await supabase
           .from("sitter_profiles")
-          .select(SITTER_PROFILE_COLUMNS as "*");
+          .select(SITTER_PROFILE_COLUMNS as "*")
+          .eq("is_visible", true);
 
         if (sitterError) throw sitterError;
 
