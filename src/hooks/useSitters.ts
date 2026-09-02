@@ -126,6 +126,9 @@ export const useSitters = (options: UseSittersOptions = {}) => {
             };
           }) as SitterWithProfile[];
 
+        // Defensive: never render a nomad card without display details.
+        filteredData = filteredData.filter((sitter) => sitter.profile !== null);
+
         if (options.searchQuery) {
           const search = options.searchQuery.toLowerCase();
           filteredData = filteredData.filter((sitter) => {
