@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
+import AdminNav from "@/components/admin/AdminNav";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,36 +48,15 @@ const emptyPerk: PerkInput = {
 };
 
 const AdminPerks = () => {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { perks, stats, loading, createPerk, updatePerk, deletePerk } = useAdminPerks();
 
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [editing, setEditing] = useState<AdminPerk | null>(null);
   const [form, setForm] = useState<PerkInput>(emptyPerk);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase.rpc("is_admin_user", { _user_id: user.id });
-      if (cancelled) return;
-      const admin = data === true;
 
-      setIsAdmin(admin);
-      if (!admin) navigate("/dashboard");
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user, authLoading, navigate]);
 
   const openCreate = () => {
     setEditing(null);
@@ -150,24 +128,12 @@ const AdminPerks = () => {
     }
   };
 
-  if (authLoading || isAdmin === null) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container mx-auto px-4 pt-24 space-y-4">
-          <Skeleton className="h-8 w-56" />
-          <Skeleton className="h-40 w-full" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) return null;
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="container mx-auto px-4 pt-20 pb-16">
+        <AdminNav />
+
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-display font-bold flex items-center gap-2">

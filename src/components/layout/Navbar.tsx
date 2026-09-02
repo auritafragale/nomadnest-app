@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin, Moon, Sun, Crown, Info, BookOpen, HelpCircle, Shield, Mail, Lock, Cookie, Users, ChevronRight } from "lucide-react";
+import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin, Moon, Sun, Crown, Info, BookOpen, HelpCircle, Shield, Mail, Lock, Cookie, Users, ChevronRight, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useNewApplicationsCount } from "@/hooks/useNewApplicationsCount";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ const Navbar = () => {
   const { unreadCount } = useUnreadMessages();
   const { newApplicationsCount } = useNewApplicationsCount();
   const { user, loading, role } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const { theme, toggleTheme } = useTheme();
   const logo = theme === "dark" ? whiteLogo : blackLogo;
 
@@ -133,12 +135,21 @@ const Navbar = () => {
                   </Button>
                 </Link>
                 <NotificationsDropdown />
+                {isAdmin && (
+                  <Link to="/admin">
+                    <Button variant="ghost" className={cn(isActive("/admin") && "text-primary bg-terracotta-light")}>
+                      <ShieldCheck className="w-4 h-4 mr-2" />
+                      Admin
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/dashboard">
                   <Button>
                     <LayoutDashboard className="w-4 h-4 mr-2" />
                     Dashboard
                   </Button>
                 </Link>
+
               </>
             ) : (
               <>
@@ -243,6 +254,15 @@ const Navbar = () => {
 
               {user && (
                 <div className="pt-2 mt-2 border-t border-border space-y-1">
+                  {isAdmin && (
+                    <Link to="/admin" onClick={closeMenu}>
+                      <Button variant="ghost" className={cn("w-full justify-start", isActive("/admin") && "text-primary bg-terracotta-light")}>
+                        <ShieldCheck className="w-4 h-4 mr-2" />
+                        Admin Panel
+                      </Button>
+                    </Link>
+                  )}
+
                   {(role === "sitter" || role === "both") && (
                     <Link to="/saved" onClick={closeMenu}>
                       <Button variant="ghost" className={cn("w-full justify-start", isActive("/saved") && "text-primary bg-terracotta-light")}>

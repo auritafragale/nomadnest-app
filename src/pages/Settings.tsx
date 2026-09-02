@@ -46,6 +46,7 @@ import {
   Phone,
   Crown,
 } from "lucide-react";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,6 +74,7 @@ interface Profile {
 const Settings = () => {
   const navigate = useNavigate();
   const { user, role, signOut, refreshRole } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const { activeRole } = useActiveRole();
   const { toast } = useToast();
 
@@ -647,8 +649,29 @@ const Settings = () => {
               </CardContent>
             </Card>
 
+            {/* Founder admin panel */}
+            {isAdmin && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-primary" />
+                    Founder Admin
+                  </CardTitle>
+                  <CardDescription>
+                    Verifications, member perks, email templates and community stats
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate("/admin")} className="w-full sm:w-auto">
+                    Open admin panel
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Role Management */}
             <Card>
+
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="w-5 h-5" />

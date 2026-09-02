@@ -1269,6 +1269,20 @@ export type Database = {
         Args: { p_job_name: string; p_lease_seconds: number }
         Returns: boolean
       }
+      admin_dashboard_stats: {
+        Args: never
+        Returns: {
+          active_members: number
+          active_perks: number
+          founding_code_max: number
+          founding_code_used: number
+          founding_members: number
+          open_sit_dates: number
+          pending_verifications: number
+          published_listings: number
+          total_members: number
+        }[]
+      }
       admin_list_id_verifications: {
         Args: never
         Returns: {
@@ -1284,6 +1298,26 @@ export type Database = {
           selfie_path: string
           status: string
           user_id: string
+        }[]
+      }
+      admin_list_members: {
+        Args: never
+        Returns: {
+          city: string
+          country: string
+          created_at: string
+          email: string
+          email_verified: boolean
+          first_name: string
+          founding_member: boolean
+          id: string
+          id_verified: boolean
+          is_admin: boolean
+          last_name: string
+          membership_status: string
+          membership_type: string
+          phone_verified: boolean
+          role: Database["public"]["Enums"]["app_role"]
         }[]
       }
       admin_list_perks: {

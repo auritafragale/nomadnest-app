@@ -9,6 +9,8 @@ import { ActiveRoleProvider } from "@/contexts/ActiveRoleContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
+import AdminRoute from "@/components/layout/AdminRoute";
+
 import RouteSeo from "@/components/seo/RouteSeo";
 import SplashScreen from "@/components/mobile/SplashScreen";
 import OnboardingCarousel, { ONBOARDING_STORAGE_KEY } from "@/components/mobile/OnboardingCarousel";
@@ -43,9 +45,11 @@ import CodeOfConduct from "./pages/CodeOfConduct";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import Membership from "./pages/Membership";
+import AdminHub from "./pages/AdminHub";
 import AdminVerifications from "./pages/AdminVerifications";
 import AdminPerks from "./pages/AdminPerks";
 import AdminEmails from "./pages/AdminEmails";
+
 import Perks from "./pages/Perks";
 import CityChat from "./pages/CityChat";
 import About from "./pages/About";
@@ -140,9 +144,11 @@ const AppShell = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/perks" element={<Perks />} />
-        <Route path="/admin/perks" element={<ProtectedRoute><AdminPerks /></ProtectedRoute>} />
-        <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
-        <Route path="/admin/emails" element={<ProtectedRoute><AdminEmails /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminHub /></AdminRoute>} />
+        <Route path="/admin/perks" element={<AdminRoute><AdminPerks /></AdminRoute>} />
+        <Route path="/admin/verifications" element={<AdminRoute><AdminVerifications /></AdminRoute>} />
+        <Route path="/admin/emails" element={<AdminRoute><AdminEmails /></AdminRoute>} />
+
         <Route path="/city-chat/:roomId" element={<ProtectedRoute><CityChat /></ProtectedRoute>} />
         <Route path="/about" element={<About />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
