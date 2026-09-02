@@ -436,6 +436,7 @@ export type Database = {
         Row: {
           created_at: string
           email_application_status: boolean
+          email_membership: boolean
           email_messages: boolean
           email_new_applications: boolean
           email_reviews: boolean
@@ -447,6 +448,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email_application_status?: boolean
+          email_membership?: boolean
           email_messages?: boolean
           email_new_applications?: boolean
           email_reviews?: boolean
@@ -458,6 +460,7 @@ export type Database = {
         Update: {
           created_at?: string
           email_application_status?: boolean
+          email_membership?: boolean
           email_messages?: boolean
           email_new_applications?: boolean
           email_reviews?: boolean
