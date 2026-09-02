@@ -75,11 +75,10 @@ const AdminEmails = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="mb-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to dashboard
-        </Button>
+      <Navbar />
+      <div className="max-w-6xl mx-auto px-4 pt-20 pb-8">
+        <AdminNav />
+
 
         <div className="flex items-center gap-3 mb-6">
           <Mail className="w-6 h-6 text-primary" />
