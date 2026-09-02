@@ -10,8 +10,8 @@ const slides = [
   },
   {
     image: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&h=1000&fit=crop",
-    title: "Care for Pets",
-    subtitle: "Give furry friends the love and attention they deserve while you explore.",
+    title: "Pet Parents, Travel Freely",
+    subtitle: "Leave your pets happy at home with a trusted Nomad — no kennels, no sitting fees.",
   },
   {
     image: "https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=800&h=1000&fit=crop",

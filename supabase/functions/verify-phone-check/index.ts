@@ -41,10 +41,20 @@ serve(async (req) => {
     });
   }
 
-  const { phone_number, code } = await req.json() as {
+  const { phone_number: rawPhone, code } = await req.json() as {
     phone_number: string;
     code: string;
   };
+
+  // Same E.164 normalisation as verify-phone-start so the check hits the
+  // verification that was actually created.
+  const digitsOnly = (rawPhone ?? "").replace(/[^\d+]/g, "");
+  const withPlus = digitsOnly.startsWith("+")
+    ? digitsOnly
+    : digitsOnly.startsWith("00")
+      ? `+${digitsOnly.slice(2)}`
+      : `+${digitsOnly}`;
+  const phone_number = digitsOnly ? `+${withPlus.slice(1).replace(/\+/g, "")}` : "";
 
   if (!phone_number || !code) {
     return new Response(JSON.stringify({ error: "phone_number and code are required" }), {

@@ -41,13 +41,31 @@ serve(async (req) => {
     });
   }
 
-  const { phone_number, channel } = await req.json() as {
+  const { phone_number: rawPhone, channel } = await req.json() as {
     phone_number: string;
     channel: "sms" | "whatsapp";
   };
 
-  if (!phone_number) {
+  if (!rawPhone) {
     return new Response(JSON.stringify({ error: "phone_number is required" }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Twilio requires E.164 (+441234567890). Members often type spaces, dashes,
+  // brackets or the international "00" prefix — normalise instead of failing.
+  const digitsOnly = rawPhone.replace(/[^\d+]/g, "");
+  let phone_number = digitsOnly.startsWith("+")
+    ? digitsOnly
+    : digitsOnly.startsWith("00")
+      ? `+${digitsOnly.slice(2)}`
+      : `+${digitsOnly}`;
+  phone_number = `+${phone_number.slice(1).replace(/\+/g, "")}`;
+
+  if (!/^\+[1-9]\d{6,14}$/.test(phone_number)) {
+    return new Response(JSON.stringify({
+      error: "That number doesn't look right. Include your country code, e.g. +44 7534 640769.",
+    }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
@@ -118,7 +136,8 @@ serve(async (req) => {
   }
 
   if (!verifyRes.ok) {
-    const err = await verifyRes.json();
+    const err = await verifyRes.json().catch(() => ({}));
+    console.error("Twilio Verify error:", verifyRes.status, JSON.stringify(err));
     return new Response(JSON.stringify({ error: err.message || "Failed to send verification code" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -130,6 +149,7 @@ serve(async (req) => {
     // channel is kept for backwards compatibility with older clients.
     channel: deliveredChannel,
     delivered_channel: deliveredChannel,
+    phone_number,
     // Inform the client if a VOIP warning should be shown. We do NOT block.
     voip_warning: isVoip,
     line_type: lineType,

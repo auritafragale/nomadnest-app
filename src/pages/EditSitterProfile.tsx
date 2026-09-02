@@ -296,13 +296,20 @@ const EditSitterProfile = () => {
           preferred_regions: sitterProfile.preferred_regions,
           preferred_countries: sitterProfile.preferred_countries,
           preferred_cities: sitterProfile.preferred_cities,
-          phone: sitterProfile.phone || null,
           gallery: sitterProfile.gallery,
           age_range: sitterProfile.age_range || null,
           ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
         }, { onConflict: "user_id" });
 
       if (sitterError) throw sitterError;
+
+      // Phone numbers are write-only for members (never readable by others),
+      // so they are saved through a dedicated secure function.
+      const { error: phoneError } = await supabase.rpc("set_my_profile_phone" as any, {
+        p_target: "sitter",
+        p_phone: sitterProfile.phone || null,
+      });
+      if (phoneError) throw phoneError;
 
       toast({
         title: "Profile saved!",

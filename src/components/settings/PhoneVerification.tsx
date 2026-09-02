@@ -13,6 +13,18 @@ const WHATSAPP_ENABLED = import.meta.env.VITE_ENABLE_WHATSAPP_VERIFY === "true";
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
+// Edge functions return their message in the response body; supabase-js only
+// surfaces a generic "non-2xx status code". Dig the real reason out.
+const readFunctionError = async (err: any, fallback: string) => {
+  try {
+    const body = await err?.context?.json?.();
+    if (body?.error) return body.error as string;
+  } catch {
+    // ignore — fall through to the generic message
+  }
+  return err?.message || fallback;
+};
+
 interface Props {
   phoneVerified: boolean;
   phoneNumber: string | null;
@@ -89,7 +101,7 @@ export const PhoneVerification = ({ phoneVerified, phoneNumber, onVerified }: Pr
       toast({
         variant: "destructive",
         title: "Could not send code",
-        description: err.message,
+        description: await readFunctionError(err, "Please try again in a moment."),
       });
     } finally {
       setLoading(false);
@@ -114,7 +126,7 @@ export const PhoneVerification = ({ phoneVerified, phoneNumber, onVerified }: Pr
       toast({
         variant: "destructive",
         title: "Invalid code",
-        description: err.message ?? "Please check the code and try again.",
+        description: await readFunctionError(err, "Please check the code and try again."),
       });
     } finally {
       setLoading(false);

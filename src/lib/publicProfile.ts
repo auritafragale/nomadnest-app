@@ -25,7 +25,7 @@ export interface PublicProfile {
 }
 
 export const PUBLIC_PROFILE_COLUMNS =
-  "id, first_name, last_name, avatar_url, city, country, id_verified, email_verified, phone_verified, is_founding_member";
+  "id, first_name, last_name, avatar_url, city, country, id_verified, email_verified, phone_verified, founding_member";
 
 // The view isn't in the generated Database types yet, so the result is
 // untyped (PostgrestBuilder<unknown>). Cast with `as unknown as PublicProfile[]`.
