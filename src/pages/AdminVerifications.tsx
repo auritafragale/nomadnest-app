@@ -66,13 +66,10 @@ const AdminVerifications = () => {
     if (!user) { navigate("/auth"); return; }
 
     const init = async () => {
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .single();
+      const { data: adminData } = await supabase.rpc("is_admin_user", { _user_id: user.id });
 
-      const admin = !!(profileData as any)?.is_admin;
+      const admin = adminData === true;
+
       setIsAdmin(admin);
       if (!admin) { setLoadingData(false); return; }
 
