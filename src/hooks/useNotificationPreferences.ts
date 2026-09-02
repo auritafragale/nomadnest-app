@@ -8,6 +8,7 @@ export interface NotificationPreferences {
   email_sit_updates: boolean;
   email_reviews: boolean;
   email_application_status: boolean;
+  email_membership: boolean;
 }
 
 const defaultPreferences: NotificationPreferences = {
@@ -16,6 +17,7 @@ const defaultPreferences: NotificationPreferences = {
   email_sit_updates: true,
   email_reviews: true,
   email_application_status: true,
+  email_membership: true,
 };
 
 export const useNotificationPreferences = () => {

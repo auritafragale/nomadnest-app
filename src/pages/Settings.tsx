@@ -44,6 +44,7 @@ import {
   EyeOff,
   ShieldCheck,
   Phone,
+  Crown,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
@@ -973,6 +974,27 @@ const Settings = () => {
                         checked={notifications?.email_application_status ?? true}
                         onCheckedChange={(checked) =>
                           handleNotificationChange("email_application_status", checked)
+                        }
+                        disabled={updateNotifications.isPending}
+                      />
+                    </div>
+
+                    <Separator />
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Crown className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">Membership</p>
+                          <p className="text-sm text-muted-foreground">
+                            Payment confirmations, renewals and membership updates
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notifications?.email_membership ?? true}
+                        onCheckedChange={(checked) =>
+                          handleNotificationChange("email_membership", checked)
                         }
                         disabled={updateNotifications.isPending}
                       />
