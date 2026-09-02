@@ -29,7 +29,7 @@ Bring City Chats closer to the Hostelworld model: questions become threads with 
 Recorded for a later decision:
 
 1. **Membership perk (status quo)** — City Chats remain included in the £59 / £99 annual plans. Simplest; no new Stripe objects, no extra checkout friction.
-2. **City Pass add-on** — a separate paid pass (e.g. 30 days of city-chat access without a confirmed sit), sold as a new Stripe one-time price. Mirrors Hostelworld's Social Pass. Needs: a `city_passes` table (user, expiry), the pass check added to the access function, a paywall sheet on locked rooms, and webhook handling to grant the pass.
+2. **City Pass add-on** — a separate paid pass giving city-chat access without a confirmed sit, sold in four durations like Hostelworld's Social Pass: 1 week, 1 month, 3 months and 1 year, each a new Stripe one-time price. Needs: a `city_passes` table (user, expiry), the pass check added to the access function, a paywall sheet on locked rooms, and webhook handling to grant the pass.
 3. **Free preview, paid to post** — read the last few messages free, pay or subscribe to post and open threads. Best for conversion, but weakest for community warmth.
 4. **Bundled with Perks** — position chat access as part of a higher "Nomad+" tier alongside partner perks, rather than a standalone purchase.
 
