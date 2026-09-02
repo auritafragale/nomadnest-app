@@ -43,9 +43,11 @@ import CodeOfConduct from "./pages/CodeOfConduct";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import Membership from "./pages/Membership";
+import AdminHub from "./pages/AdminHub";
 import AdminVerifications from "./pages/AdminVerifications";
 import AdminPerks from "./pages/AdminPerks";
 import AdminEmails from "./pages/AdminEmails";
+
 import Perks from "./pages/Perks";
 import CityChat from "./pages/CityChat";
 import About from "./pages/About";
