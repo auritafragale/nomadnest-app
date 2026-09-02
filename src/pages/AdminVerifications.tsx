@@ -47,11 +47,10 @@ const statusBadge = (status: string) => {
 };
 
 const AdminVerifications = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -60,24 +59,11 @@ const AdminVerifications = () => {
   const [rejectReason, setRejectReason] = useState<string>("");
   const [rejectNotes, setRejectNotes] = useState<string>("");
 
-  // Check admin status then load submissions
+  // Access is already enforced by AdminRoute
   useEffect(() => {
-    if (authLoading || (!user && !authLoading)) return;
-    if (!user) { navigate("/auth"); return; }
+    loadSubmissions();
+  }, []);
 
-    const init = async () => {
-      const { data: adminData } = await supabase.rpc("is_admin_user", { _user_id: user.id });
-
-      const admin = adminData === true;
-
-      setIsAdmin(admin);
-      if (!admin) { setLoadingData(false); return; }
-
-      await loadSubmissions();
-    };
-
-    init();
-  }, [user, authLoading]);
 
   const loadSubmissions = async () => {
     setLoadingData(true);
