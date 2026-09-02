@@ -108,6 +108,13 @@ const AdminHub = () => {
     );
   }, [members, query]);
 
+  const admins = useMemo(() => members.filter((m) => m.is_admin), [members]);
+  const unexpectedAdmins = useMemo(
+    () => admins.filter((m) => !FOUNDER_EMAILS.includes((m.email ?? "").toLowerCase())),
+    [admins],
+  );
+
+
   const tiles = [
     {
       href: "/admin/verifications",
