@@ -10,23 +10,32 @@ serve(async (req) => {
     const signature = req.headers.get("X-SHA2-Signature");
     const webhookToken = Deno.env.get("ONFIDO_WEBHOOK_TOKEN");
 
-    if (signature && webhookToken) {
-      const key = await crypto.subtle.importKey(
-        "raw",
-        new TextEncoder().encode(webhookToken),
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["sign"]
-      );
-      const sigBytes = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody));
-      const computed = Array.from(new Uint8Array(sigBytes))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-
-      if (computed !== signature) {
-        return new Response("Invalid signature", { status: 401 });
-      }
+    // Signature verification is mandatory — an unsigned or unconfigured
+    // request must never be able to mark a member as ID verified.
+    if (!webhookToken) {
+      console.error("ONFIDO_WEBHOOK_TOKEN is not configured");
+      return new Response("Webhook not configured", { status: 500 });
     }
+    if (!signature) {
+      return new Response("Missing signature", { status: 401 });
+    }
+
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(webhookToken),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const sigBytes = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody));
+    const computed = Array.from(new Uint8Array(sigBytes))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    if (computed !== signature) {
+      return new Response("Invalid signature", { status: 401 });
+    }
+
 
     const payload = JSON.parse(rawBody);
     const { resource_type, action, object } = payload;
