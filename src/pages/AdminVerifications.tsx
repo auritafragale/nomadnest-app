@@ -135,14 +135,8 @@ const AdminVerifications = () => {
           .eq("id", userId);
         if (profileError) throw profileError;
 
-        // In-app notification
-        await supabase.from("notifications").insert({
-          user_id: userId,
-          type: "id_verification_approved",
-          title: "ID Verified ✓",
-          message: "Your ID has been verified. Your profile now shows the ID Verified badge.",
-          data: {},
-        });
+        // Email + in-app notification are both created by send-notification-email
+
 
         // Email via existing send-notification-email
         await supabase.functions.invoke("send-notification-email", {

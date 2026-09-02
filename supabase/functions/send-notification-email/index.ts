@@ -115,24 +115,32 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Require a signed-in caller — this function sends real emails and pushes.
+    // Require either a signed-in caller or a trusted internal (service-role)
+    // caller such as the scheduled review-reminders job.
     const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
-    const { data: caller, error: callerErr } = await supabaseClient.auth.getUser(jwt);
-    if (callerErr || !caller?.user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const isInternalCaller = serviceKey.length > 0 && jwt === serviceKey;
+
+    let callerUserId: string | null = null;
+    if (!isInternalCaller) {
+      const { data: caller, error: callerErr } = await supabaseClient.auth.getUser(jwt);
+      if (callerErr || !caller?.user) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      callerUserId = caller.user.id;
     }
 
     const { type, recipientUserId, data }: NotificationEmailRequest = await req.json();
 
     // Admin-only notification types must come from an admin account.
-    if (type === "id_verification_approved") {
+    if (type === "id_verification_approved" && !isInternalCaller) {
       const { data: callerProfile } = await supabaseClient
         .from("profiles")
         .select("is_admin")
-        .eq("id", caller.user.id)
+        .eq("id", callerUserId)
         .maybeSingle();
       if (!callerProfile?.is_admin) {
         return new Response(
@@ -141,6 +149,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
     }
+
 
     console.log(`Processing ${type} notification for user ${recipientUserId}`);
 
