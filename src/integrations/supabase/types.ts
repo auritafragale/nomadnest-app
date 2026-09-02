@@ -1360,6 +1360,10 @@ export type Database = {
         Args: { p_room_id: string; p_user_id: string }
         Returns: boolean
       }
+      city_chat_key: {
+        Args: { p_city: string; p_country: string }
+        Returns: string
+      }
       get_listing_private_address: {
         Args: { p_listing_id: string }
         Returns: string
@@ -1416,6 +1420,7 @@ export type Database = {
         Args: { p_phone: string; p_target: string }
         Returns: undefined
       }
+      unaccent_fallback: { Args: { p_text: string }; Returns: string }
       upsert_push_subscription: {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string }
         Returns: undefined
