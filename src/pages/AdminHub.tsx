@@ -51,6 +51,8 @@ interface Member {
   created_at: string;
 }
 
+const FOUNDER_EMAILS = ["auritadxb@gmail.com", "orecf001@gmail.com"];
+
 const roleLabel = (role: string | null) => {
   if (role === "sitter") return "Nomad";
   if (role === "owner") return "Pet Parent";
@@ -107,6 +109,13 @@ const AdminHub = () => {
         .some((v) => (v as string).toLowerCase().includes(q))
     );
   }, [members, query]);
+
+  const admins = useMemo(() => members.filter((m) => m.is_admin), [members]);
+  const unexpectedAdmins = useMemo(
+    () => admins.filter((m) => !FOUNDER_EMAILS.includes((m.email ?? "").toLowerCase())),
+    [admins],
+  );
+
 
   const tiles = [
     {
@@ -198,6 +207,44 @@ const AdminHub = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Admin access */}
+          <Card className="mb-8">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-primary" />
+                Admin access
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {loading ? (
+                <Skeleton className="h-6 w-64" />
+              ) : (
+                <>
+                  <ul className="text-sm space-y-1">
+                    {admins.map((a) => (
+                      <li key={a.id} className="flex items-center gap-2">
+                        <Badge variant="outline">Admin</Badge>
+                        <span className="truncate">{a.email}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {unexpectedAdmins.length > 0 && (
+                    <p className="text-sm text-destructive font-medium">
+                      Warning: {unexpectedAdmins.length} unexpected admin account
+                      {unexpectedAdmins.length > 1 ? "s" : ""} detected.
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Admin rights can only be changed directly in the database — there is no in-app
+                    way to grant them.
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+
 
           {/* Tools */}
           <h2 className="text-lg font-semibold mb-3">Tools</h2>
