@@ -1,6 +1,6 @@
 # Threaded City Chats + nearby city discovery
 
-Bring City Chats closer to the Hostelworld model: questions become threads with reply counts and reactions, and members get a "cities near me" picker so they land in the right room fast. Monetisation is documented only — nothing is charged in this build.
+Bring City Chats closer to the Hostelworld model: questions become threads with reply counts and reactions. Access stays as it is today — members already get rooms from their profile location and from confirmed sit locations — with a "cities near me" list added purely as a faster way to find those rooms. Monetisation is documented only — nothing is charged in this build.
 
 ## 1. Reply threads
 
