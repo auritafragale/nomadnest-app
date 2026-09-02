@@ -50,7 +50,9 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
   const duplicateListing = useDuplicateListing();
   const reopenSitDate = useReopenSitDate();
 
-  const nextDate = listing.sit_dates.find((d) => d.status === "open");
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const nextDate = listing.sit_dates.find((d) => d.status === "open" && d.end_date >= todayIso);
+  const datesExpired = !nextDate && listing.status === "published";
   const closedDates = listing.sit_dates.filter((d) => d.status === "closed" || d.status === "booked");
   const petNames = listing.pets.map((p) => p.name || p.type).join(", ");
 

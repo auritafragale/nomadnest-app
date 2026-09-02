@@ -216,9 +216,10 @@ export const useListings = (filters: ListingFilters = {}) => {
         // No-op for now — reasons are on sitter profiles, not listings
       }
 
-      // Only return listings that have open sit dates
+      // Only return listings that have open sit dates that haven't already passed
+      const todayIso = new Date().toISOString().slice(0, 10);
       results = results.filter((listing) =>
-        listing.sit_dates.some((sitDate) => sitDate.status === "open")
+        listing.sit_dates.some((sitDate) => sitDate.status === "open" && sitDate.end_date >= todayIso)
       );
 
       // Sort results
