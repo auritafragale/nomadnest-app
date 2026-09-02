@@ -156,9 +156,9 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
                 </div>
                 <div className="flex items-center gap-2">
                   {sitter.id_verified && (
-                    <Badge variant="outline" className="gap-1">
+                    <Badge variant="outline" className="gap-1 border-success/40 text-success">
                       <CheckCircle className="w-3 h-3" />
-                      Verified
+                      ID Verified
                     </Badge>
                   )}
                   {sitter.background_check && (
