@@ -142,9 +142,11 @@ const AppShell = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/perks" element={<Perks />} />
-        <Route path="/admin/perks" element={<ProtectedRoute><AdminPerks /></ProtectedRoute>} />
-        <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
-        <Route path="/admin/emails" element={<ProtectedRoute><AdminEmails /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminHub /></AdminRoute>} />
+        <Route path="/admin/perks" element={<AdminRoute><AdminPerks /></AdminRoute>} />
+        <Route path="/admin/verifications" element={<AdminRoute><AdminVerifications /></AdminRoute>} />
+        <Route path="/admin/emails" element={<AdminRoute><AdminEmails /></AdminRoute>} />
+
         <Route path="/city-chat/:roomId" element={<ProtectedRoute><CityChat /></ProtectedRoute>} />
         <Route path="/about" element={<About />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
