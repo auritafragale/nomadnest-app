@@ -1341,6 +1341,23 @@ export type Database = {
           sitter_phone: string
         }[]
       }
+      get_my_membership: {
+        Args: never
+        Returns: {
+          founding_member: boolean
+          membership_expiry: string
+          membership_status: string
+          membership_type: string
+        }[]
+      }
+      get_my_verification: {
+        Args: never
+        Returns: {
+          id_verified: boolean
+          onfido_applicant_id: string
+          onfido_check_id: string
+        }[]
+      }
       get_perk_discount_code: { Args: { p_slug: string }; Returns: string }
       get_unread_conversations_count: { Args: never; Returns: number }
       get_unread_messages_count: { Args: never; Returns: number }
