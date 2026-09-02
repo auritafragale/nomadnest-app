@@ -10,8 +10,6 @@ import {
   type MembershipEmailKind,
 } from "../_shared/email-templates.ts";
 
-const APP_URL = "https://nomadnest.global";
-
 const MEMBERSHIP_TIERS: Record<string, string> = {
   "prod_UJcVggxhZfowro": "sitter",
   "prod_UJcVTj7SmQp8V8": "owner",
