@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS city_chat_rooms_city_key_unique ON public.city_chat_rooms (city_key);

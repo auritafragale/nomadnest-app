@@ -50,7 +50,9 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
   const duplicateListing = useDuplicateListing();
   const reopenSitDate = useReopenSitDate();
 
-  const nextDate = listing.sit_dates.find((d) => d.status === "open");
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const nextDate = listing.sit_dates.find((d) => d.status === "open" && d.end_date >= todayIso);
+  const datesExpired = !nextDate && listing.status === "published";
   const closedDates = listing.sit_dates.filter((d) => d.status === "closed" || d.status === "booked");
   const petNames = listing.pets.map((p) => p.name || p.type).join(", ");
 
@@ -156,6 +158,12 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                     <Calendar className="w-3 h-3" />
                     {format(new Date(nextDate.start_date), "MMM d")} -{" "}
                     {format(new Date(nextDate.end_date), "MMM d, yyyy")}
+                  </span>
+                )}
+                {datesExpired && (
+                  <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                    <Calendar className="w-3 h-3" />
+                    Dates expired — add new dates to appear in Browse
                   </span>
                 )}
                 {listing._count.applications > 0 && (
