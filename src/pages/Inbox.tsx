@@ -12,6 +12,8 @@ import {
   useMarkAsRead,
 } from "@/hooks/useConversations";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import CityChatsSection from "@/components/city-chat/CityChatsSection";
+import { MessageCircle, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,6 +25,18 @@ const Inbox = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const conversationParam = searchParams.get("conversation");
   const [selectedId, setSelectedId] = useState<string | null>(conversationParam);
+  const tabParam = searchParams.get("tab");
+  const activeTab: "messages" | "city-chats" =
+    tabParam === "city-chats" && !conversationParam ? "city-chats" : "messages";
+
+  const setActiveTab = (tab: "messages" | "city-chats") => {
+    if (tab === "city-chats") {
+      setSelectedId(null);
+      setSearchParams({ tab: "city-chats" });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   const { data: conversations = [], isLoading: conversationsLoading } = useConversations();
   const { data: messages = [], isLoading: messagesLoading } = useMessages(selectedId);
@@ -124,9 +138,37 @@ const Inbox = () => {
       <main className="flex-1 pt-20">
         <div className="container max-w-6xl mx-auto px-4 py-6 h-[calc(100svh-9rem)] md:h-[calc(100svh-5rem)]">
           <Breadcrumbs />
-          <h1 className="text-2xl font-bold text-foreground mb-6">Messages</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-4">Chats</h1>
 
-          <div className="flex h-[calc(100%-4rem)] border border-border rounded-lg overflow-hidden bg-card">
+          <div className="flex bg-muted rounded-full p-1 gap-1 w-full max-w-md mb-4">
+            {([
+              { id: "messages", label: "Messages", icon: MessageCircle },
+              { id: "city-chats", label: "City Chats", icon: MapPin },
+            ] as const).map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveTab(id)}
+                aria-pressed={activeTab === id}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-1.5 rounded-full text-sm font-medium transition-colors",
+                  activeTab === id
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground"
+                )}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "city-chats" ? (
+            <div className="h-[calc(100%-7rem)] overflow-y-auto pb-6">
+              <CityChatsSection className="mt-0 space-y-8" />
+            </div>
+          ) : (
+          <div className="flex h-[calc(100%-7rem)] border border-border rounded-lg overflow-hidden bg-card">
             {/* Conversation List */}
             <div
               className={cn(
@@ -160,6 +202,7 @@ const Inbox = () => {
               />
             </div>
           </div>
+          )}
         </div>
       </main>
     </div>
