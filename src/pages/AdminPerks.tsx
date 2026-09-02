@@ -68,13 +68,10 @@ const AdminPerks = () => {
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .maybeSingle();
+      const { data } = await supabase.rpc("is_admin_user", { _user_id: user.id });
       if (cancelled) return;
-      const admin = data?.is_admin === true;
+      const admin = data === true;
+
       setIsAdmin(admin);
       if (!admin) navigate("/dashboard");
     })();
