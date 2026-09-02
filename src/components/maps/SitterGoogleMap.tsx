@@ -169,9 +169,9 @@ const SitterInfoWindow = ({ sitter, onClose }: { sitter: SitterWithProfile; onCl
           <div className="min-w-0">
             <p className="font-semibold text-sm leading-tight truncate">{name}</p>
             {sitter.id_verified && (
-              <div className="flex items-center gap-0.5 text-primary">
+              <div className="flex items-center gap-0.5 text-success">
                 <CheckCircle className="w-3 h-3" />
-                <span className="text-xs">Verified</span>
+                <span className="text-xs">ID Verified</span>
               </div>
             )}
           </div>
