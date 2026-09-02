@@ -133,12 +133,21 @@ const Navbar = () => {
                   </Button>
                 </Link>
                 <NotificationsDropdown />
+                {isAdmin && (
+                  <Link to="/admin">
+                    <Button variant="ghost" className={cn(isActive("/admin") && "text-primary bg-terracotta-light")}>
+                      <ShieldCheck className="w-4 h-4 mr-2" />
+                      Admin
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/dashboard">
                   <Button>
                     <LayoutDashboard className="w-4 h-4 mr-2" />
                     Dashboard
                   </Button>
                 </Link>
+
               </>
             ) : (
               <>
