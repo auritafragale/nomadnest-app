@@ -150,24 +150,12 @@ const AdminPerks = () => {
     }
   };
 
-  if (authLoading || isAdmin === null) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container mx-auto px-4 pt-24 space-y-4">
-          <Skeleton className="h-8 w-56" />
-          <Skeleton className="h-40 w-full" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) return null;
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="container mx-auto px-4 pt-20 pb-16">
+        <AdminNav />
+
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-display font-bold flex items-center gap-2">
