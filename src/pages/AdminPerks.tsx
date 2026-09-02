@@ -49,36 +49,15 @@ const emptyPerk: PerkInput = {
 };
 
 const AdminPerks = () => {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { perks, stats, loading, createPerk, updatePerk, deletePerk } = useAdminPerks();
 
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [editing, setEditing] = useState<AdminPerk | null>(null);
   const [form, setForm] = useState<PerkInput>(emptyPerk);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase.rpc("is_admin_user", { _user_id: user.id });
-      if (cancelled) return;
-      const admin = data === true;
 
-      setIsAdmin(admin);
-      if (!admin) navigate("/dashboard");
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user, authLoading, navigate]);
 
   const openCreate = () => {
     setEditing(null);
