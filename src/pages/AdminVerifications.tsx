@@ -165,28 +165,6 @@ const AdminVerifications = () => {
     await handleDecision(sub.id, sub.user_id, "rejected", rejectReason, rejectNotes);
   };
 
-  if (authLoading || isAdmin === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (isAdmin === false) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="pt-24 pb-12 container max-w-2xl mx-auto px-4 text-center">
-          <XCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Not Authorised</h1>
-          <p className="text-muted-foreground mb-6">You do not have admin access to this page.</p>
-          <Button onClick={() => navigate("/dashboard")}>Back to Dashboard</Button>
-        </main>
-      </div>
-    );
-  }
-
   const pending   = submissions.filter(s => s.status === "pending");
   const reviewed  = submissions.filter(s => s.status !== "pending");
 
@@ -195,7 +173,9 @@ const AdminVerifications = () => {
       <Navbar />
       <main className="pt-20 pb-12">
         <div className="container max-w-4xl mx-auto px-4">
+          <AdminNav />
           <div className="flex items-center gap-3 mb-8">
+
             <ShieldCheck className="w-7 h-7 text-primary" />
             <div>
               <h1 className="text-2xl font-bold">ID Verification Review</h1>
