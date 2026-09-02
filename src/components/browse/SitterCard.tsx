@@ -118,8 +118,12 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               {sitter.id_verified && (
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-4 h-4 text-primary-foreground" />
+                <div
+                  className="absolute -bottom-1 -right-1 w-6 h-6 bg-success rounded-full flex items-center justify-center ring-2 ring-background"
+                  title="ID Verified"
+                  aria-label="ID verified"
+                >
+                  <CheckCircle className="w-4 h-4 text-success-foreground" />
                 </div>
               )}
             </div>
