@@ -1412,6 +1412,10 @@ export type Database = {
       }
       release_job_lease: { Args: { p_job_name: string }; Returns: undefined }
       request_is_end_user: { Args: never; Returns: boolean }
+      set_my_profile_phone: {
+        Args: { p_phone: string; p_target: string }
+        Returns: undefined
+      }
       upsert_push_subscription: {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string }
         Returns: undefined
