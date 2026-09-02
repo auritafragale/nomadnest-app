@@ -647,8 +647,29 @@ const Settings = () => {
               </CardContent>
             </Card>
 
+            {/* Founder admin panel */}
+            {isAdmin && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-primary" />
+                    Founder Admin
+                  </CardTitle>
+                  <CardDescription>
+                    Verifications, member perks, email templates and community stats
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate("/admin")} className="w-full sm:w-auto">
+                    Open admin panel
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Role Management */}
             <Card>
+
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="w-5 h-5" />
