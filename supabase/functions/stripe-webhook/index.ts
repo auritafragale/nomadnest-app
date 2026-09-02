@@ -72,71 +72,23 @@ const membershipEmailEnabled = async (supabase: any, userId: string) => {
 const sendMembershipEmail = async (
   supabase: any,
   email: string,
-  kind: "activated" | "cancelled" | "payment_failed" | "renewal_reminder",
+  kind: MembershipEmailKind,
   details: { planName?: string; endDate?: string | null; amount?: string | null }
 ) => {
   const profile = await getProfileByEmail(supabase, email);
-  const name = profile?.first_name ? ` ${profile.first_name}` : "";
 
-  let subject = "";
-  let title = "";
-  let message = "";
-  let body = "";
-
-  switch (kind) {
-    case "activated":
-      subject = `Welcome aboard — your ${details.planName ?? "membership"} is active 🎉`;
-      title = "Membership active";
-      message = `Your ${details.planName ?? "membership"} is now active.`;
-      body = `
-        <h2>You're in${name}!</h2>
-        <p>Your <strong>${details.planName ?? "NomadNest membership"}</strong> is now active.</p>
-        ${details.endDate ? `<p>It renews on <strong>${fmtDate(details.endDate)}</strong>.</p>` : ""}
-        <p>Time to make the most of it:</p>
-        <p>
-          <a href="${APP_URL}/browse-sits">Browse sits</a> &nbsp;·&nbsp;
-          <a href="${APP_URL}/browse-sitters">Find Nomads</a> &nbsp;·&nbsp;
-          <a href="${APP_URL}/perks">Member Perks</a>
-        </p>
-      `;
-      break;
-    case "cancelled":
-      subject = "Your NomadNest membership has been cancelled";
-      title = "Membership cancelled";
-      message = "Your membership has been cancelled.";
-      body = `
-        <h2>Sorry to see you go${name}</h2>
-        <p>Your NomadNest membership has been cancelled and your access has ended.</p>
-        <p>You can rejoin any time — your profile, reviews and messages are still here waiting for you.</p>
-        <p><a href="${APP_URL}/membership">Rejoin NomadNest</a></p>
-      `;
-      break;
-    case "payment_failed":
-      subject = "Action needed: your membership payment failed";
-      title = "Payment failed";
-      message = "Your membership payment failed — please update your card.";
-      body = `
-        <h2>Payment issue${name}</h2>
-        <p>We couldn't take payment for your NomadNest membership${details.amount ? ` (<strong>${details.amount}</strong>)` : ""}.</p>
-        <p>Please update your payment method soon to keep your membership active — if payment keeps failing, your access will be paused.</p>
-        <p><a href="${APP_URL}/dashboard">Update your payment method</a> (Membership → Manage Subscription)</p>
-      `;
-      break;
-    case "renewal_reminder":
-      subject = "Your NomadNest membership renews soon";
-      title = "Membership renewal coming up";
-      message = "Your membership renews in a few days.";
-      body = `
-        <h2>Heads up${name}</h2>
-        <p>Your NomadNest membership will renew in the next few days${details.endDate ? `, on <strong>${fmtDate(details.endDate)}</strong>` : ""}.</p>
-        <p>No action needed if you'd like to stay — and thank you for being part of the community.</p>
-        <p><a href="${APP_URL}/dashboard">Manage your membership</a></p>
-      `;
-      break;
-  }
+  const content = buildMembershipEmail(kind, {
+    ...details,
+    name: profile?.first_name,
+  });
 
   if (profile) {
-    await insertNotification(supabase, profile.id, title, message);
+    await insertNotification(
+      supabase,
+      profile.id,
+      content.pushTitle ?? content.subject,
+      content.pushBody ?? ""
+    );
     // Billing-critical emails (payment failed) always send; others respect prefs.
     if (kind !== "payment_failed") {
       const enabled = await membershipEmailEnabled(supabase, profile.id);
@@ -147,7 +99,14 @@ const sendMembershipEmail = async (
     }
   }
 
-  await sendEmail(email, subject, wrapHtml(body));
+  await sendEmail(
+    email,
+    content.subject,
+    renderBrandedEmail(content, {
+      preview: content.preview,
+      footerReason: content.footerReason,
+    })
+  );
 };
 
 serve(async (req) => {
