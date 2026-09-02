@@ -52,7 +52,7 @@ const CityChatsSection = ({ className }: { className?: string }) => {
   }, [rooms, trimmed]);
 
   return (
-    <section className="mt-10 space-y-10">
+    <section className={cn("mt-10 space-y-10", className)}>
       <div>
         <div className="flex items-center gap-2 mb-2">
           <MessageCircle className="w-5 h-5 text-primary" />
