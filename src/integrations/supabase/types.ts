@@ -95,11 +95,44 @@ export type Database = {
         }
         Relationships: []
       }
+      city_chat_message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "city_chat_message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "city_chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       city_chat_messages: {
         Row: {
           content: string
           created_at: string
           id: string
+          parent_message_id: string | null
           room_id: string
           sender_user_id: string
         }
@@ -107,6 +140,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          parent_message_id?: string | null
           room_id: string
           sender_user_id: string
         }
@@ -114,10 +148,18 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          parent_message_id?: string | null
           room_id?: string
           sender_user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "city_chat_messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "city_chat_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "city_chat_messages_room_id_fkey"
             columns: ["room_id"]
@@ -134,6 +176,8 @@ export type Database = {
           country: string
           created_at: string
           id: string
+          latitude: number | null
+          longitude: number | null
         }
         Insert: {
           city: string
@@ -141,6 +185,8 @@ export type Database = {
           country: string
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
         }
         Update: {
           city?: string
@@ -148,6 +194,8 @@ export type Database = {
           country?: string
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
         }
         Relationships: []
       }
@@ -1363,6 +1411,15 @@ export type Database = {
       city_chat_key: {
         Args: { p_city: string; p_country: string }
         Returns: string
+      }
+      city_chat_thread_summaries: {
+        Args: { p_room_id: string }
+        Returns: {
+          last_reply_at: string
+          parent_message_id: string
+          replier_avatars: string[]
+          reply_count: number
+        }[]
       }
       get_listing_private_address: {
         Args: { p_listing_id: string }
