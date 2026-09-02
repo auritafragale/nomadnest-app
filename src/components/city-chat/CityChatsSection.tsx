@@ -32,7 +32,7 @@ const RoomCard = ({ room }: { room: CityChatRoom }) => (
   </Card>
 );
 
-const CityChatsSection = () => {
+const CityChatsSection = ({ className }: { className?: string }) => {
   const { rooms, loading } = useCityChatRooms();
   const [query, setQuery] = useState("");
 
