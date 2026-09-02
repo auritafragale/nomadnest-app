@@ -75,6 +75,28 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    // Admin-only: this sends real emails + in-app notices to arbitrary users.
+    const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
+    const { data: caller, error: callerErr } = await admin.auth.getUser(jwt);
+    if (callerErr || !caller?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: callerProfile } = await admin
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", caller.user.id)
+      .maybeSingle();
+    if (!callerProfile?.is_admin) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+
     // Look up email + name from profiles
     const { data: profile, error: profileErr } = await admin
       .from("profiles")

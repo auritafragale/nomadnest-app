@@ -244,9 +244,35 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // Require a signed-in caller — this function sends real emails and pushes.
+    const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
+    const { data: caller, error: callerErr } = await supabaseClient.auth.getUser(jwt);
+    if (callerErr || !caller?.user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { type, recipientUserId, data }: NotificationEmailRequest = await req.json();
 
+    // Admin-only notification types must come from an admin account.
+    if (type === "id_verification_approved") {
+      const { data: callerProfile } = await supabaseClient
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", caller.user.id)
+        .maybeSingle();
+      if (!callerProfile?.is_admin) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     console.log(`Processing ${type} notification for user ${recipientUserId}`);
+
 
     // Get user email and check notification preferences
     const { data: profile, error: profileError } = await supabaseClient
