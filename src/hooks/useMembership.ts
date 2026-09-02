@@ -85,11 +85,8 @@ export const useMembership = () => {
       });
     } catch {
       // Fallback: check profile directly
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("founding_member, membership_status, membership_type")
-        .eq("id", user.id)
-        .single();
+      const { data: membershipRows } = await supabase.rpc("get_my_membership");
+      const profile = Array.isArray(membershipRows) ? membershipRows[0] : membershipRows;
 
       setState({
         subscribed: profile?.membership_status === "active" || profile?.founding_member === true,
@@ -98,6 +95,7 @@ export const useMembership = () => {
         subscriptionEnd: null,
         loading: false,
       });
+
     }
   }, [user]);
 
