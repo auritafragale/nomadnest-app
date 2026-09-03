@@ -8,6 +8,8 @@ export interface CityChatRoom {
   country: string;
   city_key: string;
   created_at: string;
+  latitude?: number | null;
+  longitude?: number | null;
   hasAccess: boolean;
 }
 
