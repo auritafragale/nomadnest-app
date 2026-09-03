@@ -1,9 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { format, isToday, isYesterday } from "date-fns";
 import { ArrowLeft, Lock, Send, Users, MapPin } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,8 +9,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { useMessageReactions } from "@/hooks/useMessageReactions";
+import MessageBubble, { type BubbleMessage } from "@/components/city-chat/MessageBubble";
+import ThreadPanel from "@/components/city-chat/ThreadPanel";
 
 interface Room {
   id: string;
@@ -33,17 +33,16 @@ interface ChatMessage {
   sender_user_id: string;
   content: string;
   created_at: string;
+  parent_message_id: string | null;
   sender?: SenderProfile | null;
 }
 
-const MESSAGE_PAGE_SIZE = 100;
+interface ThreadInfo {
+  replyCount: number;
+  avatars: string[];
+}
 
-const formatStamp = (s: string) => {
-  const d = new Date(s);
-  if (isToday(d)) return format(d, "h:mm a");
-  if (isYesterday(d)) return `Yesterday ${format(d, "h:mm a")}`;
-  return format(d, "MMM d, h:mm a");
-};
+const MESSAGE_PAGE_SIZE = 100;
 
 const CityChat = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -54,6 +53,8 @@ const CityChat = () => {
   const [room, setRoom] = useState<Room | null>(null);
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [threads, setThreads] = useState<Record<string, ThreadInfo>>({});
+  const [openThread, setOpenThread] = useState<BubbleMessage | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [input, setInput] = useState("");
@@ -62,6 +63,12 @@ const CityChat = () => {
   const [nomadCount, setNomadCount] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const profileCache = useRef<Map<string, SenderProfile>>(new Map());
+
+  const { byMessage, toggleReaction } = useMessageReactions(roomId, !!hasAccess);
+  const reactionsFor = useCallback(
+    (messageId: string) => byMessage.get(messageId) ?? [],
+    [byMessage],
+  );
 
   const hydrateSenders = async (msgs: ChatMessage[]): Promise<ChatMessage[]> => {
     const missing = Array.from(
@@ -76,6 +83,19 @@ const CityChat = () => {
     }
     return msgs.map((m) => ({ ...m, sender: profileCache.current.get(m.sender_user_id) || null }));
   };
+
+  const loadThreadSummaries = useCallback(async () => {
+    if (!roomId) return;
+    const { data } = await supabase.rpc("city_chat_thread_summaries", { p_room_id: roomId });
+    const map: Record<string, ThreadInfo> = {};
+    (data || []).forEach((row) => {
+      map[row.parent_message_id] = {
+        replyCount: Number(row.reply_count),
+        avatars: (row.replier_avatars || []) as string[],
+      };
+    });
+    setThreads(map);
+  }, [roomId]);
 
   useEffect(() => {
     if (!roomId || !user) return;
@@ -119,14 +139,16 @@ const CityChat = () => {
           .from("city_chat_messages")
           .select("*")
           .eq("room_id", roomId)
+          .is("parent_message_id", null)
           .order("created_at", { ascending: false })
           .limit(MESSAGE_PAGE_SIZE);
-        const ordered = (msgs || []).slice().reverse();
+        const ordered = ((msgs || []) as ChatMessage[]).slice().reverse();
         const hydrated = await hydrateSenders(ordered);
         if (mounted) {
           setMessages(hydrated);
           setHasMore((msgs || []).length === MESSAGE_PAGE_SIZE);
         }
+        await loadThreadSummaries();
       }
 
       if (mounted) setLoading(false);
@@ -136,7 +158,7 @@ const CityChat = () => {
     return () => {
       mounted = false;
     };
-  }, [roomId, user]);
+  }, [roomId, user, loadThreadSummaries]);
 
   // Realtime
   useEffect(() => {
@@ -153,6 +175,22 @@ const CityChat = () => {
         },
         async (payload) => {
           const msg = payload.new as ChatMessage;
+          if (msg.parent_message_id) {
+            const avatar = profileCache.current.get(msg.sender_user_id)?.avatar_url;
+            setThreads((prev) => {
+              const existing = prev[msg.parent_message_id!] ?? { replyCount: 0, avatars: [] };
+              return {
+                ...prev,
+                [msg.parent_message_id!]: {
+                  replyCount: existing.replyCount + 1,
+                  avatars: avatar && !existing.avatars.includes(avatar)
+                    ? [...existing.avatars, avatar].slice(0, 3)
+                    : existing.avatars,
+                },
+              };
+            });
+            return;
+          }
           const [hydrated] = await hydrateSenders([msg]);
           setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, hydrated]));
         },
@@ -178,10 +216,11 @@ const CityChat = () => {
       .from("city_chat_messages")
       .select("*")
       .eq("room_id", roomId)
+      .is("parent_message_id", null)
       .lt("created_at", oldest)
       .order("created_at", { ascending: false })
       .limit(MESSAGE_PAGE_SIZE);
-    const ordered = (data || []).slice().reverse();
+    const ordered = ((data || []) as ChatMessage[]).slice().reverse();
     const hydrated = await hydrateSenders(ordered);
     setMessages((prev) => [...hydrated, ...prev]);
     setHasMore((data || []).length === MESSAGE_PAGE_SIZE);
@@ -257,7 +296,7 @@ const CityChat = () => {
                 {room.city}
                 <HelpTooltip
                   label="About city chat"
-                  content="City chats are local community spaces for nomads in the same area to swap tips, meet up, and ask questions."
+                  content="City chats are local community spaces for nomads in the same area to swap tips, meet up, and ask questions. Reply in a thread to keep the room tidy."
                 />
               </h1>
               <p className="text-sm text-muted-foreground flex items-center gap-2">
@@ -306,56 +345,17 @@ const CityChat = () => {
                   </div>
                 ) : (
                   <div className="space-y-4 px-1">
-                    {messages.map((m) => {
-                      const isOwn = m.sender_user_id === user?.id;
-                      const initials = `${m.sender?.first_name?.[0] || ""}${m.sender?.last_name?.[0] || ""}`.toUpperCase() || "?";
-                      const name = m.sender
-                        ? `${m.sender.first_name || ""} ${m.sender.last_name || ""}`.trim() || "Nomad"
-                        : "Nomad";
-                      return (
-                        <div
-                          key={m.id}
-                          className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}
-                        >
-                          {!isOwn && (
-                            <Link to={`/sitter/${m.sender_user_id}`}>
-                              <Avatar className="w-8 h-8">
-                                <AvatarImage src={m.sender?.avatar_url || undefined} />
-                                <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                  {initials}
-                                </AvatarFallback>
-                              </Avatar>
-                            </Link>
-                          )}
-                          <div
-                            className={cn(
-                              "max-w-[75%] rounded-2xl px-4 py-2",
-                              isOwn
-                                ? "bg-primary text-primary-foreground rounded-br-sm"
-                                : "bg-muted text-foreground rounded-bl-sm",
-                            )}
-                          >
-                            {!isOwn && (
-                              <Link
-                                to={`/sitter/${m.sender_user_id}`}
-                                className="text-xs font-semibold hover:underline block"
-                              >
-                                {name}
-                              </Link>
-                            )}
-                            <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
-                            <p
-                              className={cn(
-                                "text-[10px] mt-1",
-                                isOwn ? "text-primary-foreground/70" : "text-muted-foreground",
-                              )}
-                            >
-                              {formatStamp(m.created_at)}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {messages.map((m) => (
+                      <MessageBubble
+                        key={m.id}
+                        message={m}
+                        isOwn={m.sender_user_id === user?.id}
+                        reactions={reactionsFor(m.id)}
+                        onToggleReaction={(emoji) => toggleReaction(m.id, emoji)}
+                        thread={threads[m.id]}
+                        onOpenThread={() => setOpenThread(m)}
+                      />
+                    ))}
                   </div>
                 )}
               </ScrollArea>
@@ -371,6 +371,17 @@ const CityChat = () => {
                   <Send className="w-4 h-4" />
                 </Button>
               </form>
+
+              <ThreadPanel
+                roomId={roomId}
+                parent={openThread}
+                onClose={() => {
+                  setOpenThread(null);
+                  loadThreadSummaries();
+                }}
+                reactionsFor={reactionsFor}
+                onToggleReaction={toggleReaction}
+              />
             </>
           )}
         </div>
