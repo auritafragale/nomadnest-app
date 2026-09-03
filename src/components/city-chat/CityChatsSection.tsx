@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, MessageCircle, Lock, Search } from "lucide-react";
 import { useCityChatRooms, type CityChatRoom } from "@/hooks/useCityChatRooms";
+import NearbyCityChats from "@/components/city-chat/NearbyCityChats";
 import { cn } from "@/lib/utils";
 
 const RoomCard = ({ room }: { room: CityChatRoom }) => (
@@ -54,6 +55,8 @@ const CityChatsSection = ({ className }: { className?: string }) => {
 
   return (
     <section className={cn("mt-10 space-y-10", className)}>
+      <NearbyCityChats />
+
       <div>
         <div className="flex items-center gap-2 mb-2">
           <MessageCircle className="w-5 h-5 text-primary" />
