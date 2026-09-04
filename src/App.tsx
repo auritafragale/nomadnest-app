@@ -112,7 +112,9 @@ const AppShell = () => {
 
 
 
+      <ScrollToTop />
       <RouteSeo />
+
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/browse-sits" element={<BrowseSits />} />
