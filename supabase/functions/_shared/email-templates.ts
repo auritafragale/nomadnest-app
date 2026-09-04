@@ -155,11 +155,12 @@ export function buildNotificationEmail(
           ${data.reason ? quote(data.reason) : ""}
           <p>The dates are open again, so you can keep looking for your next match.</p>
         `,
-        ctaLabel: "Open your dashboard",
-        ctaUrl: `${data.appUrl}/dashboard`,
+        ctaLabel: "See the cancelled sit",
+        ctaUrl: `${data.appUrl}${data.url || "/dashboard"}`,
         pushTitle: "Sit cancelled",
         pushBody: `${data.listingTitle} was cancelled${data.reason ? `: ${data.reason}` : ""}`,
-        pushUrl: "/dashboard",
+        pushUrl: data.url || "/dashboard",
+
       };
     case "id_verification_approved":
       return {
