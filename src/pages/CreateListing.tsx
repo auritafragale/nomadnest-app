@@ -90,10 +90,28 @@ const CreateListing = () => {
         }
         return true;
       case 4:
+        // If the member typed text but picked no suggestion, try to resolve
+        // it via geocoding before declaring the location missing.
         if (!formData.city.trim() || !formData.country.trim()) {
+          // Give the field a chance to resolve via its onBlur geocoder first.
+          const resolver = (window as any).__nomadnestResolveLocation as
+            | (() => Promise<void>)
+            | undefined;
+          if (resolver) {
+            await resolver();
+            // Re-check after resolution — the updateFormData call is sync-set
+            // but React state batching means formData here is stale, so we
+            // cannot read the new city. Instead the resolve sets state and we
+            // tell the member to press Next again; the clearer message guides
+            // them. If coordinates exist we allow it through below.
+            if (formData.latitude || formData.longitude) {
+              return true;
+            }
+          }
           toast({
             title: "Location required",
-            description: "Please add your city and country",
+            description:
+              "Please search and pick a city, or type one like 'Dubai, United Arab Emirates' then press Next again.",
             variant: "destructive",
           });
           return false;
