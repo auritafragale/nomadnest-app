@@ -20,6 +20,7 @@ interface PlacesAutocompleteFieldProps {
   value: string;
   onChange: (value: string) => void;
   onSelect: (place: PlaceSelection) => void;
+  onBlur?: () => void;
   types: string[];
   placeholder?: string;
   showIcon?: boolean;
