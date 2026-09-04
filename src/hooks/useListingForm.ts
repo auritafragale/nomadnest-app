@@ -38,6 +38,7 @@ export interface ListingFormData {
   home_type: string;
   city: string;
   country: string;
+  locationQuery: string;
   area: string;
   address_private: string;
   latitude: number | null;
