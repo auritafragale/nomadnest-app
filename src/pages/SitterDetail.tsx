@@ -52,6 +52,8 @@ import {
   Star,
   Flag,
   Phone,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
