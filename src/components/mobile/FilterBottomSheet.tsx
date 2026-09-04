@@ -17,12 +17,8 @@ import { cn } from "@/lib/utils";
 
 const petOptions = ["Dog", "Cat", "Bird", "Fish", "Rabbit", "Other"];
 
-const reasonOptions = [
-  { value: "I Love Travelling", label: "I Love Travelling" },
-  { value: "I Am A Digital Nomad", label: "Digital Nomad" },
-  { value: "Budget Travel", label: "Budget Holidays" },
-  { value: "I Love Pets", label: "I Love Pets" },
-];
+
+
 
 export interface MobileFilters {
   lastMinute: boolean;
