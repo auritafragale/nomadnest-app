@@ -189,7 +189,7 @@ const ListingDetail = () => {
   const [loading, setLoading] = useState(true);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
-  const [selectedDateId, setSelectedDateId] = useState<string | null>(null);
+  const [selectedDateIds, setSelectedDateIds] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -273,7 +273,11 @@ const ListingDetail = () => {
   };
 
   const openDates = listing?.sit_dates.filter((d) => d.status === "open") || [];
-  const selectedSitDate = openDates.find((d) => d.id === selectedDateId) || null;
+  const selectedSitDates = openDates.filter((d) => selectedDateIds.includes(d.id));
+  const toggleDate = (id: string) =>
+    setSelectedDateIds((prev) =>
+      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id],
+    );
   const isOwner = user?.id === listing?.owner_user_id;
   const canApply = user && !isOwner && (role === "sitter" || role === "both");
 
@@ -739,11 +743,11 @@ const ListingDetail = () => {
                           key={sitDate.id}
                           className={cn(
                             "p-3 rounded-lg border cursor-pointer transition-all",
-                            selectedDateId === sitDate.id
+                            selectedDateIds.includes(sitDate.id)
                               ? "border-primary bg-primary/10"
                               : "border-border hover:border-primary/50"
                           )}
-                          onClick={() => setSelectedDateId(sitDate.id)}
+                          onClick={() => toggleDate(sitDate.id)}
                         >
                           <div className="font-medium">
                             {format(parseISO(sitDate.start_date), "MMM d")} -{" "}
@@ -776,17 +780,21 @@ const ListingDetail = () => {
                     className="w-full" 
                     size="lg"
                     onClick={() => setApplyDialogOpen(true)}
-                    disabled={!selectedDateId}
+                    disabled={selectedDateIds.length === 0}
                   >
-                    {selectedDateId ? "Apply for this Sit" : "Select dates to apply"}
+                    {selectedDateIds.length === 0
+                      ? "Select dates to apply"
+                      : selectedDateIds.length === 1
+                        ? "Apply for this Sit"
+                        : `Apply for ${selectedDateIds.length} date ranges`}
                   </Button>
                   <ApplyDialog
                     open={applyDialogOpen}
                     onOpenChange={setApplyDialogOpen}
                     listingId={listing.id}
                     listingTitle={listing.title}
-                    sitDate={selectedSitDate}
-                    onSuccess={() => setSelectedDateId(null)}
+                    sitDates={selectedSitDates}
+                    onSuccess={() => setSelectedDateIds([])}
                   />
                 </>
               )}
