@@ -360,26 +360,8 @@ const SitterDashboard = ({
 
       {/* Middle Column - Actions & Applications */}
       <div className="md:col-span-1 lg:col-span-2 space-y-6">
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 gap-4">
-          <Link to="/saved">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-destructive/10 flex items-center justify-center">
-                    <Heart className="w-6 h-6 text-destructive" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Saved Sits</h3>
-                    <p className="text-sm text-muted-foreground">Your favorites</p>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+        {/* Saved Sits lives in the header actions, so no duplicate card here */}
 
-        </div>
 
         {/* My Applications */}
         <Card id="my-applications">
