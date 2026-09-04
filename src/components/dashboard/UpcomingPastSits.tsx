@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { parseISO, isAfter, isBefore, isSameDay, isWithinInterval, startOfToday } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "lucide-react";
+import { Calendar, XCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSits } from "@/hooks/useSits";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,7 +51,8 @@ export const UpcomingPastSits = ({ viewAs }: UpcomingPastSitsProps) => {
       .filter((sit) => {
         if (!sit.sit_dates) return false;
         const endDate = parseISO(sit.sit_dates.end_date);
-        return sit.status === "completed" || sit.status === "cancelled" || isBefore(endDate, today);
+        if (sit.status === "cancelled") return false;
+        return sit.status === "completed" || isBefore(endDate, today);
       })
       .sort((a, b) => {
         const dateA = a.sit_dates ? parseISO(a.sit_dates.end_date) : new Date();
@@ -59,6 +60,18 @@ export const UpcomingPastSits = ({ viewAs }: UpcomingPastSitsProps) => {
         return dateB.getTime() - dateA.getTime();
       });
   }, [filteredSits, today]);
+
+  const cancelledSits = useMemo(
+    () =>
+      filteredSits
+        .filter((sit) => sit.status === "cancelled")
+        .sort((a, b) => {
+          const dateA = a.sit_dates ? parseISO(a.sit_dates.start_date) : new Date();
+          const dateB = b.sit_dates ? parseISO(b.sit_dates.start_date) : new Date();
+          return dateB.getTime() - dateA.getTime();
+        }),
+    [filteredSits],
+  );
 
   if (isLoading) {
     return <Skeleton className="h-64 w-full rounded-lg" />;
@@ -129,6 +142,31 @@ export const UpcomingPastSits = ({ viewAs }: UpcomingPastSitsProps) => {
           )}
         </CardContent>
       </Card>
+
+      {/* Cancelled Sits — never happened, so kept out of history */}
+      {cancelledSits.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <XCircle className="w-5 h-5" />
+              Cancelled Sits
+              <Badge variant="outline" className="ml-auto">{cancelledSits.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {cancelledSits.slice(0, 3).map((sit) => (
+                <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} />
+              ))}
+              {cancelledSits.length > 3 && (
+                <p className="text-sm text-muted-foreground text-center">
+                  +{cancelledSits.length - 3} more cancelled sits
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
