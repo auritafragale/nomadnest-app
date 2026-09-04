@@ -52,6 +52,8 @@ import {
   Star,
   Flag,
   Phone,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
@@ -128,6 +130,8 @@ const SitterDetail = () => {
   const [inviteMessage, setInviteMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<number>(0);
+  const [photoOpen, setPhotoOpen] = useState(false);
+
   const [isStartingChat, setIsStartingChat] = useState(false);
   
   const startConversation = useStartConversation();
@@ -424,15 +428,49 @@ const SitterDetail = () => {
 
             {/* Header Section */}
             <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">
-              {/* Photo Gallery */}
-              <div className="space-y-4">
-                <div className="aspect-square w-32 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted">
+              {/* Photo Gallery — sit-style arrows, tap to open full size */}
+              <div className="space-y-3">
+                <div className="relative aspect-square w-40 sm:w-48 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted">
                   {allPhotos.length > 0 ? (
-                    <img
-                      src={allPhotos[selectedPhoto]}
-                      alt={name}
-                      className="w-full h-full object-cover"
-                    />
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoOpen(true)}
+                        aria-label="Open photo full size"
+                        className="block w-full h-full"
+                      >
+                        <img
+                          src={allPhotos[selectedPhoto]}
+                          alt={name}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                      {allPhotos.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            aria-label="Previous photo"
+                            onClick={() =>
+                              setSelectedPhoto((i) => (i - 1 + allPhotos.length) % allPhotos.length)
+                            }
+                            className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur p-1.5 shadow hover:bg-background"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Next photo"
+                            onClick={() => setSelectedPhoto((i) => (i + 1) % allPhotos.length)}
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur p-1.5 shadow hover:bg-background"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                          <span className="absolute bottom-1.5 right-1.5 rounded-full bg-background/80 px-2 py-0.5 text-[11px] text-muted-foreground">
+                            {selectedPhoto + 1}/{allPhotos.length}
+                          </span>
+                        </>
+                      )}
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Avatar className="w-full h-full">
@@ -441,6 +479,22 @@ const SitterDetail = () => {
                     </div>
                   )}
                 </div>
+
+                <Dialog open={photoOpen} onOpenChange={setPhotoOpen}>
+                  <DialogContent className="max-w-3xl p-2">
+                    <DialogHeader className="sr-only">
+                      <DialogTitle>{name}</DialogTitle>
+                    </DialogHeader>
+                    {allPhotos.length > 0 && (
+                      <img
+                        src={allPhotos[selectedPhoto]}
+                        alt={name}
+                        className="w-full max-h-[80vh] object-contain rounded-lg"
+                      />
+                    )}
+                  </DialogContent>
+                </Dialog>
+
                 {allPhotos.length > 1 && (
                   <div className="flex gap-2 overflow-x-auto pb-2">
                     {allPhotos.map((photo, index) => (
@@ -469,59 +523,76 @@ const SitterDetail = () => {
               {/* Profile Info */}
               <div className="md:col-span-2 min-w-0">
                 <div className="mb-3">
-                  {/* Name + founding badge on one line */}
+                  {/* Name + founding badge + report flag on one line */}
                   <div className="flex items-center gap-2 min-w-0">
                     <h1 className="text-xl md:text-3xl font-bold truncate">{name}</h1>
                     {profile.founding_member && <FoundingMemberBadge />}
+                    {user && user.id !== userId && (
+                      <ReportDialog
+                        targetType="user"
+                        targetId={userId!}
+                        targetLabel="sitter"
+                        trigger={
+                          <Button variant="ghost" size="icon" className="text-muted-foreground shrink-0 h-8 w-8">
+                            <Flag className="w-4 h-4" />
+                          </Button>
+                        }
+                      />
+                    )}
                   </div>
                   {sitter.headline && (
                     <p className="text-sm md:text-lg text-muted-foreground">
                       {sitter.headline}
                     </p>
                   )}
-                  {/* Verification badges stay contained on their own row */}
-                  <div className="flex items-center gap-2 mt-2 overflow-x-auto whitespace-nowrap">
-                    <VerificationBadges
-                      idVerified={sitter.id_verified}
-                      emailVerified={profile?.email_verified}
-                      phoneVerified={profile?.phone_verified}
-                      backgroundCheck={sitter.background_check}
-                    />
+                  {/* All verification badges on one wrapping row */}
+                  <VerificationBadges
+                    idVerified={sitter.id_verified}
+                    emailVerified={profile?.email_verified}
+                    phoneVerified={profile?.phone_verified}
+                    backgroundCheck={sitter.background_check}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div className="space-y-1.5 mb-6 text-sm text-muted-foreground">
+                  {/* Row 1: location + languages */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    {location && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <MapPin className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{location}</span>
+                      </div>
+                    )}
+                    {sitter.languages && sitter.languages.length > 0 && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Languages className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{sitter.languages.join(", ")}</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Row 2: reviews + experience */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    {ratingData && ratingData.count > 0 ? (
+                      <div className="flex items-center gap-2">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        {ratingData.average.toFixed(1)} ({ratingData.count} review{ratingData.count !== 1 ? "s" : ""})
+                      </div>
+                    ) : ratingData ? (
+                      <div className="flex items-center gap-1 text-muted-foreground/70">
+                        <Star className="w-4 h-4" />
+                        <span className="italic">No reviews yet</span>
+                      </div>
+                    ) : null}
+                    {sitter.experience_level && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Award className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{sitter.experience_level}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-sm text-muted-foreground">
-
-                  {location && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      {location}
-                    </div>
-                  )}
-                  {ratingData && ratingData.count > 0 ? (
-                    <div className="flex items-center gap-2">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      {ratingData.average.toFixed(1)} ({ratingData.count} review{ratingData.count !== 1 ? "s" : ""})
-                    </div>
-                  ) : ratingData ? (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground/70">
-                      <Star className="w-4 h-4" />
-                      <span className="italic">No reviews yet</span>
-                    </div>
-                  ) : null}
-                  {sitter.experience_level && (
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4" />
-                      {sitter.experience_level}
-                    </div>
-                  )}
-                  {sitter.languages && sitter.languages.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Languages className="w-4 h-4" />
-                      {sitter.languages.join(", ")}
-                    </div>
-                  )}
-                </div>
 
                 {sitterCategoryAverages.length > 0 && (
                   <CategoryRatingsSummary
@@ -579,19 +650,9 @@ const SitterDetail = () => {
                     title={`${name} - Pet Sitter`}
                     description={sitter.headline || `Check out ${name}'s pet sitting profile`}
                   />
-                  {user && user.id !== userId && (
-                    <ReportDialog
-                      targetType="user"
-                      targetId={userId!}
-                      targetLabel="sitter"
-                      trigger={
-                        <Button variant="ghost" size="icon" className="text-muted-foreground">
-                          <Flag className="w-4 h-4" />
-                        </Button>
-                      }
-                    />
-                  )}
                 </div>
+
+
 
                 {/* Pet Types */}
                 {sitter.pet_types && sitter.pet_types.length > 0 && (
