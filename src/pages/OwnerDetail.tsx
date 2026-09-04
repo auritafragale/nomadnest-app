@@ -286,8 +286,7 @@ const OwnerDetail = () => {
                   </div>
                 </div>
 
-                  )}
-                </div>
+
 
 
                 {/* Action Buttons */}
