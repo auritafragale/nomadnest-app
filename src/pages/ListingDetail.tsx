@@ -177,7 +177,7 @@ const OwnerCard = ({
             <p className="text-sm text-muted-foreground">Pet Parent</p>
             <div className="flex flex-wrap items-center gap-2 mt-1">
               <VerificationBadges idVerified={listing.profiles?.id_verified} />
-              {listing.profiles?.founding_member && <FoundingMemberBadge />}
+              {listing.profiles?.founding_member && <FoundingMemberBadge compact />}
             </div>
             {reviewCount > 0 && (
               <div className="flex items-center gap-1 mt-1">
@@ -205,21 +205,6 @@ const OwnerCard = ({
               View Profile
             </Link>
           </Button>
-          {canMessage && (
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleMessage}
-              disabled={isStartingChat}
-            >
-              {isStartingChat ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <MessageSquare className="w-4 h-4 mr-2" />
-              )}
-              Message Owner
-            </Button>
-          )}
         </div>
       </CardContent>
     </Card>
