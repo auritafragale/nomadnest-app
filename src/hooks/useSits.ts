@@ -122,15 +122,20 @@ export const useUpdateSitStatus = () => {
           .maybeSingle();
 
         if (sit && user) {
-          const otherUserId =
-            sit.owner_user_id === user.id ? sit.sitter_user_id : sit.owner_user_id;
+          const otherIsSitter = sit.owner_user_id === user.id;
+          const otherUserId = otherIsSitter ? sit.sitter_user_id : sit.owner_user_id;
+          // Deep-link straight to the cancelled item for the recipient's role.
+          const url = otherIsSitter
+            ? "/dashboard?appTab=cancelled#my-applications"
+            : "/applications?status=cancelled";
           await supabase.from("notifications").insert({
             user_id: otherUserId,
             type: "sit_cancelled",
             title: "Sit cancelled",
             message: `${(sit.listing as { title?: string } | null)?.title || "A sit"} was cancelled. Reason: ${reason?.trim() || "no reason given"}`,
-            data: { url: "/dashboard", sit_id: sitId },
+            data: { url, sit_id: sitId },
           });
+
 
           // Email + push for the other party.
           const { data: me } = await supabase
