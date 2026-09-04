@@ -523,59 +523,76 @@ const SitterDetail = () => {
               {/* Profile Info */}
               <div className="md:col-span-2 min-w-0">
                 <div className="mb-3">
-                  {/* Name + founding badge on one line */}
+                  {/* Name + founding badge + report flag on one line */}
                   <div className="flex items-center gap-2 min-w-0">
                     <h1 className="text-xl md:text-3xl font-bold truncate">{name}</h1>
                     {profile.founding_member && <FoundingMemberBadge />}
+                    {user && user.id !== userId && (
+                      <ReportDialog
+                        targetType="user"
+                        targetId={userId!}
+                        targetLabel="sitter"
+                        trigger={
+                          <Button variant="ghost" size="icon" className="text-muted-foreground shrink-0 h-8 w-8">
+                            <Flag className="w-4 h-4" />
+                          </Button>
+                        }
+                      />
+                    )}
                   </div>
                   {sitter.headline && (
                     <p className="text-sm md:text-lg text-muted-foreground">
                       {sitter.headline}
                     </p>
                   )}
-                  {/* Verification badges stay contained on their own row */}
-                  <div className="flex items-center gap-2 mt-2 overflow-x-auto whitespace-nowrap">
-                    <VerificationBadges
-                      idVerified={sitter.id_verified}
-                      emailVerified={profile?.email_verified}
-                      phoneVerified={profile?.phone_verified}
-                      backgroundCheck={sitter.background_check}
-                    />
+                  {/* All verification badges on one wrapping row */}
+                  <VerificationBadges
+                    idVerified={sitter.id_verified}
+                    emailVerified={profile?.email_verified}
+                    phoneVerified={profile?.phone_verified}
+                    backgroundCheck={sitter.background_check}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div className="space-y-1.5 mb-6 text-sm text-muted-foreground">
+                  {/* Row 1: location + languages */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    {location && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <MapPin className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{location}</span>
+                      </div>
+                    )}
+                    {sitter.languages && sitter.languages.length > 0 && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Languages className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{sitter.languages.join(", ")}</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Row 2: reviews + experience */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    {ratingData && ratingData.count > 0 ? (
+                      <div className="flex items-center gap-2">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        {ratingData.average.toFixed(1)} ({ratingData.count} review{ratingData.count !== 1 ? "s" : ""})
+                      </div>
+                    ) : ratingData ? (
+                      <div className="flex items-center gap-1 text-muted-foreground/70">
+                        <Star className="w-4 h-4" />
+                        <span className="italic">No reviews yet</span>
+                      </div>
+                    ) : null}
+                    {sitter.experience_level && (
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Award className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{sitter.experience_level}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-sm text-muted-foreground">
-
-                  {location && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      {location}
-                    </div>
-                  )}
-                  {ratingData && ratingData.count > 0 ? (
-                    <div className="flex items-center gap-2">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      {ratingData.average.toFixed(1)} ({ratingData.count} review{ratingData.count !== 1 ? "s" : ""})
-                    </div>
-                  ) : ratingData ? (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground/70">
-                      <Star className="w-4 h-4" />
-                      <span className="italic">No reviews yet</span>
-                    </div>
-                  ) : null}
-                  {sitter.experience_level && (
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4" />
-                      {sitter.experience_level}
-                    </div>
-                  )}
-                  {sitter.languages && sitter.languages.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Languages className="w-4 h-4" />
-                      {sitter.languages.join(", ")}
-                    </div>
-                  )}
-                </div>
 
                 {sitterCategoryAverages.length > 0 && (
                   <CategoryRatingsSummary
