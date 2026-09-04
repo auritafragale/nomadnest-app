@@ -3,6 +3,7 @@ import { differenceInCalendarDays, format, isSameMonth, startOfMonth, endOfMonth
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Calendar, ChevronLeft, ChevronRight, MapPin, User, Play, CheckCircle, XCircle, Star } from "lucide-react";
 import { useSits, Sit, useUpdateSitStatus } from "@/hooks/useSits";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,6 +41,7 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
   const otherPartyLabel = isOwner ? "Sitter" : "Owner";
   const { mutate: updateStatus, isPending } = useUpdateSitStatus();
   const [hasReviewed, setHasReviewed] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   // Status is derived live from the dates so the badge is right even before the
   // nightly job promotes the row (confirmed -> in progress -> completed).
@@ -193,14 +195,29 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
                 <AlertDialogHeader>
                   <AlertDialogTitle>Cancel this sit?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will cancel the sit. The sitter will be notified and the sit dates will become available again.
+                    This will cancel the sit and re-open the dates. Please tell the other
+                    party why — a reason is required.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
+                <Textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Why are you cancelling? (required)"
+                  rows={3}
+                />
                 <AlertDialogFooter>
                   <AlertDialogCancel>Keep Sit</AlertDialogCancel>
-                  <AlertDialogAction 
+                  <AlertDialogAction
+                    disabled={!cancelReason.trim()}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => updateStatus({ sitId: sit.id, sitDatesId: sit.sit_dates_id, status: "cancelled" })}
+                    onClick={() =>
+                      updateStatus({
+                        sitId: sit.id,
+                        sitDatesId: sit.sit_dates_id,
+                        status: "cancelled",
+                        reason: cancelReason.trim(),
+                      })
+                    }
                   >
                     Cancel Sit
                   </AlertDialogAction>
