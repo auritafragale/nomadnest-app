@@ -64,12 +64,13 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
   const [resolving, setResolving] = useState(false);
   const { data: mapsConfig } = useGoogleMapsKey();
   const savedLocation = [formData.city, formData.country].filter(Boolean).join(", ");
-  const [locationQuery, setLocationQuery] = useState(savedLocation);
 
   // Keep the visible text in sync when the city is filled in elsewhere
   // (geolocation, editing an existing listing).
   useEffect(() => {
-    if (savedLocation && !locationQuery) setLocationQuery(savedLocation);
+    if (savedLocation && !formData.locationQuery) {
+      updateFormData({ locationQuery: savedLocation });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedLocation]);
 
@@ -85,8 +86,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
   // via Google Geocoding, so a member who just types "Dubai" is never trapped.
   const resolveLocation = useCallback(async () => {
     setLocationError(null);
-    const typed = locationQuery.trim();
-    // Already resolved (city matches the text) — nothing to do.
+    const typed = (formData.locationQuery || "").trim();
     if (!typed) return;
     const alreadyResolved = formData.city && savedLocation.toLowerCase() === typed.toLowerCase();
     if (alreadyResolved) return;
@@ -101,9 +101,6 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
         setLocationError("We couldn't find that place — try 'Dubai, United Arab Emirates'.");
         return;
       }
-      // Reverse the typed string into city/country by geocoding again with
-      // the resolved coords would need a second call; instead parse the typed
-      // text as "City, Country" when possible, or set it as city wholesale.
       const parts = typed.split(",").map((s) => s.trim()).filter(Boolean);
       const city = parts.length > 1 ? parts[0] : typed;
       const country = parts.length > 1 ? parts.slice(1).join(", ") : "";
@@ -116,20 +113,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
     } finally {
       setResolving(false);
     }
-  }, [locationQuery, formData.city, formData.country, savedLocation, mapsConfig?.key, updateFormData]);
-
-  // Expose resolveLocation so the parent (CreateListing/EditListing) can call
-  // it before validating/submitting. Stored on a ref-like window prop is hacky;
-  // instead we attach it to formData via a custom event the parent can trigger.
-  // Simpler: we resolve on blur here, and also re-resolve in the parent submit.
-  useEffect(() => {
-    (window as any).__nomadnestResolveLocation = resolveLocation;
-    return () => {
-      if ((window as any).__nomadnestResolveLocation === resolveLocation) {
-        delete (window as any).__nomadnestResolveLocation;
-      }
-    };
-  }, [resolveLocation]);
+  }, [formData.locationQuery, formData.city, formData.country, savedLocation, mapsConfig?.key, updateFormData]);
 
   const handleGeolocate = () => {
     if (!navigator.geolocation) return;
