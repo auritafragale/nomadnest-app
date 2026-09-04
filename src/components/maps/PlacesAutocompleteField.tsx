@@ -149,21 +149,7 @@ const PlacesAutocompleteField = ({
       }
 
       legacy();
-      return;
 
-      if (!serviceRef.current) {
-        setPredictions([]);
-        return;
-      }
-
-      serviceRef.current.getPlacePredictions(
-        { input, types, sessionToken: sessionTokenRef.current },
-        (results: any[] | null) => {
-          if (requestId !== requestIdRef.current) return;
-          setPredictions((results || []).slice(0, 6));
-          setHighlight(0);
-        }
-      );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [types.join(",")]
