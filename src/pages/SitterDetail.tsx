@@ -426,15 +426,49 @@ const SitterDetail = () => {
 
             {/* Header Section */}
             <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">
-              {/* Photo Gallery */}
-              <div className="space-y-4">
-                <div className="aspect-square w-32 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted">
+              {/* Photo Gallery — sit-style arrows, tap to open full size */}
+              <div className="space-y-3">
+                <div className="relative aspect-square w-40 sm:w-48 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted">
                   {allPhotos.length > 0 ? (
-                    <img
-                      src={allPhotos[selectedPhoto]}
-                      alt={name}
-                      className="w-full h-full object-cover"
-                    />
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoOpen(true)}
+                        aria-label="Open photo full size"
+                        className="block w-full h-full"
+                      >
+                        <img
+                          src={allPhotos[selectedPhoto]}
+                          alt={name}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                      {allPhotos.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            aria-label="Previous photo"
+                            onClick={() =>
+                              setSelectedPhoto((i) => (i - 1 + allPhotos.length) % allPhotos.length)
+                            }
+                            className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur p-1.5 shadow hover:bg-background"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Next photo"
+                            onClick={() => setSelectedPhoto((i) => (i + 1) % allPhotos.length)}
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur p-1.5 shadow hover:bg-background"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                          <span className="absolute bottom-1.5 right-1.5 rounded-full bg-background/80 px-2 py-0.5 text-[11px] text-muted-foreground">
+                            {selectedPhoto + 1}/{allPhotos.length}
+                          </span>
+                        </>
+                      )}
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Avatar className="w-full h-full">
@@ -443,6 +477,22 @@ const SitterDetail = () => {
                     </div>
                   )}
                 </div>
+
+                <Dialog open={photoOpen} onOpenChange={setPhotoOpen}>
+                  <DialogContent className="max-w-3xl p-2">
+                    <DialogHeader className="sr-only">
+                      <DialogTitle>{name}</DialogTitle>
+                    </DialogHeader>
+                    {allPhotos.length > 0 && (
+                      <img
+                        src={allPhotos[selectedPhoto]}
+                        alt={name}
+                        className="w-full max-h-[80vh] object-contain rounded-lg"
+                      />
+                    )}
+                  </DialogContent>
+                </Dialog>
+
                 {allPhotos.length > 1 && (
                   <div className="flex gap-2 overflow-x-auto pb-2">
                     {allPhotos.map((photo, index) => (
