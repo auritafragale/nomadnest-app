@@ -248,12 +248,13 @@ const EditListing = () => {
   };
 
   // Resolve a typed-but-not-selected location into city/country/coords before
-  // validating, so a member who just types "Dubai" is never trapped.
-  const resolveLocationIfNeeded = async () => {
-    if (!formData || currentStep !== 4) return;
+  // validating. Returns true if resolved (or already was).
+  const resolveLocationIfNeeded = async (): Promise<boolean> => {
+    if (!formData || currentStep !== 4) return true;
     const typed = (formData.locationQuery || "").trim();
     const hasResolved = formData.city.trim() || formData.country.trim();
-    if (hasResolved || !typed) return;
+    if (hasResolved) return true;
+    if (!typed) return false;
     try {
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(typed)}&format=json&limit=1`,
@@ -269,15 +270,21 @@ const EditListing = () => {
           latitude: parseFloat(results[0].lat),
           longitude: parseFloat(results[0].lon),
         });
+        return true;
       }
     } catch (e) {
       console.warn("Location resolution failed", e);
     }
+    return false;
   };
 
   const handleNext = async () => {
     if (currentStep === 4) {
-      await resolveLocationIfNeeded();
+      const resolved = await resolveLocationIfNeeded();
+      if (resolved) {
+        nextStep();
+        return;
+      }
     }
     if (validateCurrentStep()) {
       nextStep();
