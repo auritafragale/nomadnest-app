@@ -41,6 +41,25 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
   const { mutate: updateStatus, isPending } = useUpdateSitStatus();
   const [hasReviewed, setHasReviewed] = useState(false);
 
+  // Status is derived live from the dates so the badge is right even before the
+  // nightly job promotes the row (confirmed -> in progress -> completed).
+  const start = sit.sit_dates?.start_date ? parseISO(sit.sit_dates.start_date) : null;
+  const end = sit.sit_dates?.end_date ? parseISO(sit.sit_dates.end_date) : null;
+  const todayDate = startOfToday();
+  const isCurrent =
+    (sit.status === "confirmed" || sit.status === "in_progress") &&
+    !!start &&
+    !!end &&
+    start <= todayDate &&
+    end >= todayDate;
+  const isFinished =
+    (sit.status === "confirmed" || sit.status === "in_progress") && !!end && end < todayDate;
+  const displayStatus = isCurrent
+    ? "in_progress"
+    : isFinished
+      ? "completed"
+      : sit.status;
+
   const canStartSit = isOwner && sit.status === "confirmed";
   const canCompleteSit = isOwner && sit.status === "in_progress";
   const canCancelSit = isOwner && sit.status === "confirmed";
@@ -95,8 +114,8 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
             </p>
           )}
           <div className="flex items-center gap-2 mt-1.5">
-            <Badge variant="outline" className={cn("text-xs", statusColors[sit.status])}>
-              {sit.status.replace("_", " ")}
+            <Badge variant="outline" className={cn("text-xs", statusColors[displayStatus])}>
+              {isCurrent ? "Current" : displayStatus.replace("_", " ")}
             </Badge>
           </div>
         </div>
