@@ -58,8 +58,10 @@ export const useOwnerListings = () => {
               .order("start_date", { ascending: true }),
             supabase
               .from("applications")
+              // Only live applications count — declined/withdrawn rounds reset to 0.
               .select("id", { count: "exact" })
-              .eq("listing_id", listing.id),
+              .eq("listing_id", listing.id)
+              .in("status", ["applied", "shortlisted", "accepted"]),
           ]);
 
           return {

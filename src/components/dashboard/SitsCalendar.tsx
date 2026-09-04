@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, ChevronLeft, ChevronRight, MapPin, User, Play, CheckCircle, XCircle, Star } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, MapPin, User, MessageSquare, CheckCircle, XCircle, Star } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useSits, Sit, useUpdateSitStatus } from "@/hooks/useSits";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -62,9 +63,8 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
       ? "completed"
       : sit.status;
 
-  const canStartSit = isOwner && sit.status === "confirmed";
   const canCompleteSit = isOwner && sit.status === "in_progress";
-  const canCancelSit = isOwner && sit.status === "confirmed";
+  const canCancelSit = sit.status === "confirmed" || sit.status === "in_progress";
   // Reviews stay open for 14 days after the sit's end date.
   const REVIEW_WINDOW_DAYS = 14;
   const daysSinceEnd = sit.sit_dates?.end_date
@@ -132,32 +132,16 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
         </span>
       </div>
 
-      {/* Owner Actions */}
-      {(canStartSit || canCompleteSit || canCancelSit) && (
+      {/* Sit actions */}
+      {(canCompleteSit || canCancelSit || isCurrent || sit.status === "confirmed") && (
         <div className="mt-3 pt-2 border-t flex gap-2">
-          {canStartSit && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" className="flex-1" disabled={isPending}>
-                  <Play className="w-3 h-3 mr-1" />
-                  Start Sit
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Start this sit?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will mark the sit as "in progress". The sitter has arrived and the sit has begun.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => updateStatus({ sitId: sit.id, status: "in_progress" })}>
-                    Start Sit
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+          {(sit.status === "confirmed" || sit.status === "in_progress") && (
+            <Button size="sm" variant="secondary" className="flex-1" asChild>
+              <Link to="/inbox">
+                <MessageSquare className="w-3 h-3 mr-1" />
+                Message {isOwner ? "nomad" : "pet parent"}
+              </Link>
+            </Button>
           )}
           {canCompleteSit && (
             <AlertDialog>
