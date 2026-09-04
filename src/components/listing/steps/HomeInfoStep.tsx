@@ -58,6 +58,15 @@ const amenitiesList = [
 
 const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
   const [isGeolocating, setIsGeolocating] = useState(false);
+  const savedLocation = [formData.city, formData.country].filter(Boolean).join(", ");
+  const [locationQuery, setLocationQuery] = useState(savedLocation);
+
+  // Keep the visible text in sync when the city is filled in elsewhere
+  // (geolocation, editing an existing listing).
+  useEffect(() => {
+    if (savedLocation && !locationQuery) setLocationQuery(savedLocation);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedLocation]);
 
   const toggleAmenity = (amenity: string) => {
     const current = formData.amenities;
