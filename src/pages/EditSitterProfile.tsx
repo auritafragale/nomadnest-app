@@ -742,36 +742,34 @@ const EditSitterProfile = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {petTypeOptions.map((type) => (
+                    {petTypeOptions.map((type) => {
+                      const selected = sitterProfile.pet_types.map(canonicalPetType);
+                      const isSelected = selected.includes(type);
+                      const togglePetType = () =>
+                        updateSitterProfile({
+                          pet_types: isSelected
+                            ? selected.filter((t) => t !== type)
+                            : [...selected, type],
+                        });
+                      return (
                       <div
                         key={type}
                         className={cn(
                           "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
-                          sitterProfile.pet_types.includes(type)
+                          isSelected
                             ? "border-primary bg-primary/10"
                             : "border-border hover:border-primary/50"
                         )}
-                        onClick={() =>
-                          toggleArrayItem(
-                            sitterProfile.pet_types,
-                            type,
-                            (types) => updateSitterProfile({ pet_types: types })
-                          )
-                        }
+                        onClick={togglePetType}
                       >
                         <Checkbox
-                          checked={sitterProfile.pet_types.includes(type)}
-                          onCheckedChange={() =>
-                            toggleArrayItem(
-                              sitterProfile.pet_types,
-                              type,
-                              (types) => updateSitterProfile({ pet_types: types })
-                            )
-                          }
+                          checked={isSelected}
+                          onCheckedChange={togglePetType}
                         />
                         <span className="text-sm">{formatPetType(type)}</span>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
