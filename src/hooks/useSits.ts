@@ -153,8 +153,10 @@ export const useUpdateSitStatus = () => {
               reason: reason?.trim() || "",
               startDate: dates?.start_date || "",
               endDate: dates?.end_date || "",
+              url,
             },
           });
+
         }
       }
 
