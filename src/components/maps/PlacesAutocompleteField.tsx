@@ -289,6 +289,10 @@ const PlacesAutocompleteField = ({
         value={value}
         onChange={handleChange}
         onFocus={() => predictions.length > 0 && setOpen(true)}
+        onBlur={() => {
+          setOpen(false);
+          onBlur?.();
+        }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         autoComplete="off"
