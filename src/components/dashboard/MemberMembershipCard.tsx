@@ -4,7 +4,6 @@ import { Crown, CreditCard, Loader2, User, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
 import { useToast } from "@/hooks/use-toast";
