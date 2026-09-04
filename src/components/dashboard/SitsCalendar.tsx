@@ -295,8 +295,11 @@ export const SitsCalendar = ({ viewAs }: SitsCalendarProps) => {
       .filter((sit) => {
         if (!sit.sit_dates) return false;
         const endDate = parseISO(sit.sit_dates.end_date);
-        return sit.status === "completed" || sit.status === "cancelled" || isBefore(endDate, today);
+        // Cancelled sits never happened — they only show in the Cancelled application tabs.
+        if (sit.status === "cancelled") return false;
+        return sit.status === "completed" || isBefore(endDate, today);
       })
+
       .sort((a, b) => {
         const dateA = a.sit_dates ? parseISO(a.sit_dates.end_date) : new Date();
         const dateB = b.sit_dates ? parseISO(b.sit_dates.end_date) : new Date();
