@@ -11,19 +11,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
-import { formatPetType } from "@/lib/petTypes";
+import { formatPetType, petTypeIcon, dedupePetTypes } from "@/lib/petTypes";
 
 interface SitterCardProps {
   sitter: SitterWithProfile;
   viewMode: "grid" | "list";
 }
 
-const petIcons: Record<string, typeof Dog> = {
-  dog: Dog,
-  cat: Cat,
-  bird: Bird,
-  rabbit: Rabbit,
-};
 
 const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
   const navigate = useNavigate();
@@ -212,8 +206,8 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
                 viewMode === "list" ? "" : "justify-center"
               }`}
             >
-              {(sitter.pet_types || []).slice(0, 3).map((petType) => {
-                const Icon = petIcons[petType.toLowerCase()] || Dog;
+              {dedupePetTypes(sitter.pet_types).slice(0, 3).map((petType) => {
+                const Icon = petTypeIcon(petType);
                 return (
                   <Badge key={petType} variant="muted" className="gap-1 capitalize">
                     <Icon className="w-3 h-3" />

@@ -167,6 +167,10 @@ const EditListing = () => {
     );
   };
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentStep]);
+
   const nextStep = () => {
     if (currentStep < totalSteps) {
       setCurrentStep((prev) => prev + 1);

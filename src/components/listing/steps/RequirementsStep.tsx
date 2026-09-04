@@ -15,7 +15,7 @@ const requirementsList = [
   "Experience with my pet type",
   "References from previous sits",
   "Verified ID",
-  "Background check",
+  "Solo traveller",
   "Non-smoker",
   "No other pets accompanying",
   "Valid driver's license",

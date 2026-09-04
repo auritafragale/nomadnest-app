@@ -34,9 +34,12 @@ interface ApplyDialogProps {
   onOpenChange: (open: boolean) => void;
   listingId: string;
   listingTitle: string;
-  sitDate: SitDate | null;
+  /** All date ranges the nomad selected — one application is created per range. */
+  sitDates: SitDate[];
   onSuccess?: () => void;
 }
+
+const MAX_ACTIVE_APPLICANTS = 5;
 
 const HIGHLIGHT_OPTIONS = [
   "Experienced with this pet type",
@@ -54,7 +57,7 @@ export const ApplyDialog = ({
   onOpenChange,
   listingId,
   listingTitle,
-  sitDate,
+  sitDates,
   onSuccess,
 }: ApplyDialogProps) => {
   const { user } = useAuth();
@@ -68,29 +71,48 @@ export const ApplyDialog = ({
   const [selectedHighlights, setSelectedHighlights] = useState<string[]>([]);
   const [customHighlight, setCustomHighlight] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasExistingApplication, setHasExistingApplication] = useState(false);
+  const [alreadyApplied, setAlreadyApplied] = useState<Set<string>>(new Set());
+  const [fullDates, setFullDates] = useState<Set<string>>(new Set());
   const [checkingApplication, setCheckingApplication] = useState(false);
 
-  // Check for existing application when dialog opens
+  const applicableDates = sitDates.filter(
+    (d) => !alreadyApplied.has(d.id) && !fullDates.has(d.id),
+  );
+  const hasExistingApplication = sitDates.length > 0 && applicableDates.length === 0;
+
+  // Check for existing applications / full rounds when dialog opens
   useEffect(() => {
     const checkExisting = async () => {
-      if (!open || !user || !sitDate) return;
+      if (!open || !user || sitDates.length === 0) return;
 
       setCheckingApplication(true);
-      const { data, error } = await supabase
-        .from("applications")
-        .select("id")
-        .eq("listing_id", listingId)
-        .eq("sit_dates_id", sitDate.id)
-        .eq("sitter_user_id", user.id)
-        .maybeSingle();
+      const ids = sitDates.map((d) => d.id);
 
-      setHasExistingApplication(!!data && !error);
+      const { data: mine } = await supabase
+        .from("applications")
+        .select("sit_dates_id")
+        .eq("listing_id", listingId)
+        .eq("sitter_user_id", user.id)
+        .in("sit_dates_id", ids);
+
+      const { data: active } = await supabase
+        .from("applications")
+        .select("sit_dates_id")
+        .in("sit_dates_id", ids)
+        .in("status", ["applied", "shortlisted"]);
+
+      const counts = new Map<string, number>();
+      (active || []).forEach((a) => {
+        counts.set(a.sit_dates_id, (counts.get(a.sit_dates_id) || 0) + 1);
+      });
+
+      setAlreadyApplied(new Set((mine || []).map((a) => a.sit_dates_id)));
+      setFullDates(new Set(ids.filter((id) => (counts.get(id) || 0) >= MAX_ACTIVE_APPLICANTS)));
       setCheckingApplication(false);
     };
 
     checkExisting();
-  }, [open, user, listingId, sitDate]);
+  }, [open, user, listingId, sitDates]);
 
   const toggleHighlight = (highlight: string) => {
     setSelectedHighlights((prev) =>
@@ -108,24 +130,34 @@ export const ApplyDialog = ({
   };
 
   const handleSubmit = async () => {
-    if (!user || !sitDate) return;
+    if (!user || applicableDates.length === 0) return;
+    if (!message.trim()) {
+      toast({
+        title: "Message required",
+        description: "Please introduce yourself to the Pet Parent before applying.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.from("applications").insert({
-        listing_id: listingId,
-        sit_dates_id: sitDate.id,
-        sitter_user_id: user.id,
-        message: message.trim() || null,
-        who_applying: whoApplying.trim() || null,
-        highlights: selectedHighlights.length > 0 ? selectedHighlights : null,
-        status: "applied",
-      });
+      // One application row per selected date range.
+      const { error } = await supabase.from("applications").insert(
+        applicableDates.map((d) => ({
+          listing_id: listingId,
+          sit_dates_id: d.id,
+          sitter_user_id: user.id,
+          message: message.trim(),
+          who_applying: whoApplying.trim() || null,
+          highlights: selectedHighlights.length > 0 ? selectedHighlights : null,
+          status: "applied" as const,
+        })),
+      );
 
       if (error) throw error;
 
-      // Get listing owner and sitter profile for notification
       const { data: listing } = await supabase
         .from("listings")
         .select("owner_user_id")
@@ -138,26 +170,32 @@ export const ApplyDialog = ({
         .eq("id", user.id)
         .single();
 
-      // Send notification to owner
       if (listing?.owner_user_id) {
-        sendNotification({
-          type: "new_application",
-          recipientUserId: listing.owner_user_id,
-          data: {
-            listingTitle,
-            sitterName: [sitterProfile?.first_name, sitterProfile?.last_name].filter(Boolean).join(" ") || "A nomad",
-            startDate: format(parseISO(sitDate.start_date), "MMM d, yyyy"),
-            endDate: format(parseISO(sitDate.end_date), "MMM d, yyyy"),
-          },
+        applicableDates.forEach((d) => {
+          sendNotification({
+            type: "new_application",
+            recipientUserId: listing.owner_user_id,
+            data: {
+              listingTitle,
+              sitterName:
+                [sitterProfile?.first_name, sitterProfile?.last_name]
+                  .filter(Boolean)
+                  .join(" ") || "A nomad",
+              startDate: format(parseISO(d.start_date), "MMM d, yyyy"),
+              endDate: format(parseISO(d.end_date), "MMM d, yyyy"),
+            },
+          });
         });
       }
 
       toast({
-        title: "Application sent!",
-        description: "The owner will review your application soon.",
+        title:
+          applicableDates.length > 1
+            ? `${applicableDates.length} applications sent!`
+            : "Application sent!",
+        description: "The Pet Parent will review your application soon.",
       });
 
-      // Reset form
       setMessage("");
       setWhoApplying("");
       setSelectedHighlights([]);
@@ -213,28 +251,39 @@ export const ApplyDialog = ({
             <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center mx-auto mb-4">
               <Star className="h-6 w-6 text-amber-600 dark:text-amber-400" />
             </div>
-            <h3 className="font-medium text-foreground mb-2">Already Applied</h3>
+            <h3 className="font-medium text-foreground mb-2">Not available</h3>
             <p className="text-sm text-muted-foreground">
-              You've already submitted an application for these dates. The owner will review it soon.
+              You've already applied for these dates, or this round already has
+              {" "}{MAX_ACTIVE_APPLICANTS} nomads under review. Try other dates or check back soon.
             </p>
           </div>
         ) : (
           <div className="space-y-5 mt-2">
-            {/* Selected Dates */}
-            {sitDate && (
-              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  {format(parseISO(sitDate.start_date), "MMM d")} -{" "}
-                  {format(parseISO(sitDate.end_date), "MMM d, yyyy")}
+            {/* Selected Dates — one application is sent per range */}
+            <div className="space-y-2">
+              {applicableDates.map((d) => (
+                <div
+                  key={d.id}
+                  className="p-3 rounded-lg bg-primary/5 border border-primary/20"
+                >
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    {format(parseISO(d.start_date), "MMM d")} -{" "}
+                    {format(parseISO(d.end_date), "MMM d, yyyy")}
+                  </div>
+                  {d.flexibility && (
+                    <Badge variant="outline" className="mt-2 text-xs">
+                      {d.flexibility.replace(/_/g, " ")}
+                    </Badge>
+                  )}
                 </div>
-                {sitDate.flexibility && (
-                  <Badge variant="outline" className="mt-2 text-xs">
-                    {sitDate.flexibility.replace(/_/g, " ")}
-                  </Badge>
-                )}
-              </div>
-            )}
+              ))}
+              {applicableDates.length > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  A separate application is sent for each date range.
+                </p>
+              )}
+            </div>
 
             {/* Who's Applying */}
             <div className="space-y-2">
@@ -311,7 +360,9 @@ export const ApplyDialog = ({
 
             {/* Message */}
             <div className="space-y-2">
-              <Label htmlFor="message">Your message to the owner</Label>
+              <Label htmlFor="message">
+                Your message to the Pet Parent <span className="text-destructive">*</span>
+              </Label>
               <Textarea
                 id="message"
                 placeholder="Introduce yourself, share your experience with pets, and explain why you'd be a great fit for this sit..."
@@ -321,7 +372,7 @@ export const ApplyDialog = ({
                 className="resize-none"
               />
               <p className="text-xs text-muted-foreground">
-                A personal message helps your application stand out
+                A personal message is required — it helps your application stand out
               </p>
             </div>
 
@@ -329,7 +380,7 @@ export const ApplyDialog = ({
             <Button
               className="w-full"
               onClick={handleSubmit}
-              disabled={!sitDate || isSubmitting}
+              disabled={applicableDates.length === 0 || !message.trim() || isSubmitting}
             >
               {isSubmitting ? (
                 <>

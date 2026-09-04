@@ -17,12 +17,8 @@ import { cn } from "@/lib/utils";
 
 const petOptions = ["Dog", "Cat", "Bird", "Fish", "Rabbit", "Other"];
 
-const reasonOptions = [
-  { value: "I Love Travelling", label: "I Love Travelling" },
-  { value: "I Am A Digital Nomad", label: "Digital Nomad" },
-  { value: "Budget Travel", label: "Budget Holidays" },
-  { value: "I Love Pets", label: "I Love Pets" },
-];
+
+
 
 export interface MobileFilters {
   lastMinute: boolean;
@@ -41,12 +37,8 @@ interface FilterBottomSheetProps {
 const FilterBottomSheet = ({ open, onClose, filters, onApply }: FilterBottomSheetProps) => {
   const [draft, setDraft] = useState<MobileFilters>(filters);
 
-  const toggleReason = (v: string) => {
-    setDraft((d) => ({
-      ...d,
-      reasons: d.reasons.includes(v) ? d.reasons.filter((r) => r !== v) : [...d.reasons, v],
-    }));
-  };
+
+
 
   const togglePet = (v: string) => {
     setDraft((d) => ({
@@ -110,26 +102,8 @@ const FilterBottomSheet = ({ open, onClose, filters, onApply }: FilterBottomShee
             </button>
           </div>
 
-          {/* Reason For Sit */}
-          <div>
-            <p className="text-sm font-semibold text-foreground mb-3">Reason For Sit</p>
-            <div className="flex flex-wrap gap-2">
-              {reasonOptions.map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => toggleReason(value)}
-                  className={cn(
-                    "px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors",
-                    draft.reasons.includes(value)
-                      ? "border-[#E8735A] bg-[#E8735A] text-white"
-                      : "border-border text-foreground"
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+
+
 
           {/* Pet Types */}
           <div>

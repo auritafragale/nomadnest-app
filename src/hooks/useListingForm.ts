@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface Pet {
   id: string;
@@ -162,6 +162,10 @@ export const useListingForm = () => {
       sit_dates: prev.sit_dates.filter((date) => date.id !== id),
     }));
   };
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentStep]);
 
   const nextStep = () => {
     if (currentStep < totalSteps) {

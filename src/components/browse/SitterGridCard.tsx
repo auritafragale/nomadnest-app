@@ -8,16 +8,9 @@ import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import MessageSitterButton from "@/components/browse/MessageSitterButton";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
-import { formatPetType } from "@/lib/petTypes";
+import { formatPetType, petTypeIcon, dedupePetTypes } from "@/lib/petTypes";
 
 
-const petIcons: Record<string, typeof Dog> = {
-  dog: Dog,
-  cat: Cat,
-  bird: Bird,
-  rabbit: Rabbit,
-  fish: Fish,
-};
 
 interface SitterGridCardProps {
   sitter: SitterWithProfile;
@@ -40,7 +33,7 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
     : null;
 
   const { average, count } = sitter.rating;
-  const petTypes = (sitter.pet_types || []).slice(0, 3);
+  const petTypes = dedupePetTypes(sitter.pet_types).slice(0, 3);
 
   return (
     <Link to={`/sitter/${sitter.user_id}`} className="block h-full">
@@ -101,7 +94,7 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
         {/* Founding Member badge */}
         {sitter.profile?.founding_member && (
           <div className="mb-1.5">
-            <FoundingMemberBadge />
+            <FoundingMemberBadge compact />
           </div>
         )}
 
@@ -109,7 +102,7 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
         {petTypes.length > 0 && (
           <div className="flex flex-wrap gap-1 justify-center mt-auto pt-2">
             {petTypes.map((type) => {
-              const Icon = petIcons[type.toLowerCase()] || Dog;
+              const Icon = petTypeIcon(type);
               return (
                 <Badge
                   key={type}

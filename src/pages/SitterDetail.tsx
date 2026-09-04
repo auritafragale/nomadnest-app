@@ -65,6 +65,7 @@ import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import SitterLocationMap from "@/components/maps/SitterLocationMap";
 import VerificationBadges from "@/components/ui/VerificationBadges";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
+import { formatPetType, petTypeIcon, dedupePetTypes } from "@/lib/petTypes";
 
 interface SitterProfile {
   id: string;
@@ -112,13 +113,6 @@ interface Listing {
   sit_dates: { id: string; start_date: string; end_date: string; status: string }[];
 }
 
-const petIcons: Record<string, typeof Dog> = {
-  dog: Dog,
-  cat: Cat,
-  bird: Bird,
-  rabbit: Rabbit,
-  fish: Fish,
-};
 
 const SitterDetail = () => {
   const { userId } = useParams();
@@ -602,12 +596,12 @@ const SitterDetail = () => {
                   <div className="mb-6">
                     <p className="font-medium mb-2">Experienced with</p>
                     <div className="flex flex-wrap gap-2">
-                      {sitter.pet_types.map((petType) => {
-                        const Icon = petIcons[petType.toLowerCase()] || Dog;
+                      {dedupePetTypes(sitter.pet_types).map((petType) => {
+                        const Icon = petTypeIcon(petType);
                         return (
                           <Badge key={petType} variant="secondary" className="gap-1 capitalize">
                             <Icon className="w-3 h-3" />
-                            {petType}
+                            {formatPetType(petType)}
                           </Badge>
                         );
                       })}
