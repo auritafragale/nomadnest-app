@@ -652,7 +652,7 @@ const SitterDetail = () => {
                   />
                 </div>
 
-                </div>
+
 
                 {/* Pet Types */}
                 {sitter.pet_types && sitter.pet_types.length > 0 && (
