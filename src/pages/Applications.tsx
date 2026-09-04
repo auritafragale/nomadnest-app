@@ -118,7 +118,10 @@ const Applications = () => {
           {/* Status Filter Tabs */}
           <Tabs
             value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as FilterStatus)}
+            onValueChange={(v) => {
+              setStatusFilter(v as FilterStatus);
+              setSearchParams(v === "all" ? {} : { status: v }, { replace: true });
+            }}
             className="mb-6"
           >
             <TabsList className="w-full justify-start overflow-x-auto">
