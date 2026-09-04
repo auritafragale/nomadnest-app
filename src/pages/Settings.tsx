@@ -477,6 +477,10 @@ const Settings = () => {
                     />
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Your city also decides which City Chat you can join. Update it here when you move
+                  on.
+                </p>
 
                 <Button onClick={handleSaveProfile} disabled={saving}>
                   {saving ? (
