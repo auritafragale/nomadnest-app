@@ -650,18 +650,8 @@ const SitterDetail = () => {
                     title={`${name} - Pet Sitter`}
                     description={sitter.headline || `Check out ${name}'s pet sitting profile`}
                   />
-                  {user && user.id !== userId && (
-                    <ReportDialog
-                      targetType="user"
-                      targetId={userId!}
-                      targetLabel="sitter"
-                      trigger={
-                        <Button variant="ghost" size="icon" className="text-muted-foreground">
-                          <Flag className="w-4 h-4" />
-                        </Button>
-                      }
-                    />
-                  )}
+                </div>
+
                 </div>
 
                 {/* Pet Types */}
