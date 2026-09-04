@@ -155,7 +155,14 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
           <Label>Location *</Label>
           <PlacesAutocompleteField
             value={locationQuery}
-            onChange={setLocationQuery}
+            onChange={(v) => {
+              setLocationQuery(v);
+              // Typing invalidates the previously picked place so stale
+              // city/country/coordinates can never linger behind new text.
+              if (formData.city || formData.country || formData.latitude || formData.longitude) {
+                updateFormData({ city: "", country: "", latitude: undefined, longitude: undefined });
+              }
+            }}
             onSelect={(place) => {
               setLocationQuery(place.description);
               updateFormData({
@@ -168,6 +175,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
             placeholder="Search for your city..."
             types={["(cities)"]}
           />
+
           {formData.city && (
             <p className="text-xs text-muted-foreground">
               📍 {[formData.city, formData.country].filter(Boolean).join(", ")}
