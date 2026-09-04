@@ -192,22 +192,6 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                 )}
               </div>
 
-              <div className="flex gap-2">
-                <Link to={`/edit-listing/${listing.id}`}>
-                  <Button size="sm" variant="outline">
-                    <Edit className="w-3 h-3 mr-1" />
-                    Edit
-                  </Button>
-                </Link>
-                {listing.status === "published" && (
-                  <Link to={`/listing/${listing.id}`}>
-                    <Button size="sm" variant="ghost">
-                      <Eye className="w-3 h-3 mr-1" />
-                      View
-                    </Button>
-                  </Link>
-                )}
-              </div>
 
               {/* Closed/Booked Dates - Reopen Option */}
               {closedDates.length > 0 && (
