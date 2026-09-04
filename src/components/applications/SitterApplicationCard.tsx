@@ -111,7 +111,7 @@ export const SitterApplicationCard = ({ application }: SitterApplicationCardProp
               >
                 {listing?.title || "Listing"}
               </Link>
-              <Badge className={statusInfo.className}>{statusInfo.label}</Badge>
+              <Badge className={`${statusInfo.className} shrink-0`}>{statusInfo.label}</Badge>
             </div>
 
             {listing?.city && (
