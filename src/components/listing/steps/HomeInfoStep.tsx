@@ -212,6 +212,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
             value={locationQuery}
             onChange={(v) => {
               setLocationQuery(v);
+              setLocationError(null);
               // Typing invalidates the previously picked place so stale
               // city/country/coordinates can never linger behind new text.
               if (formData.city || formData.country || formData.latitude || formData.longitude) {
@@ -220,6 +221,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
             }}
             onSelect={(place) => {
               setLocationQuery(place.description);
+              setLocationError(null);
               updateFormData({
                 city: place.city,
                 country: place.country,
@@ -227,11 +229,21 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
                 longitude: place.longitude,
               });
             }}
+            onBlur={resolveLocation}
             placeholder="Search for your city..."
             types={["(cities)"]}
           />
 
-          {formData.city && (
+          {resolving && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Looking up that place…
+            </p>
+          )}
+          {locationError && (
+            <p className="text-xs text-destructive">{locationError}</p>
+          )}
+          {formData.city && !locationError && (
             <p className="text-xs text-muted-foreground">
               📍 {[formData.city, formData.country].filter(Boolean).join(", ")}
               {formData.latitude && formData.longitude && ` (${formData.latitude.toFixed(4)}, ${formData.longitude.toFixed(4)})`}
