@@ -9,6 +9,7 @@ import {
   PawPrint,
   type LucideIcon,
 } from "lucide-react";
+import { Horse, Snake } from "@/components/icons/AnimalIcons";
 
 /**
  * Pet type values have been stored in several shapes over time
@@ -53,9 +54,9 @@ const PET_TYPE_ICONS: Record<string, LucideIcon> = {
   birds: Bird,
   fish: Fish,
   rabbits: Rabbit,
-  reptiles: Turtle,
+  reptiles: Snake as unknown as LucideIcon,
   exotics: Turtle,
-  farm: Squirrel,
+  farm: Horse as unknown as LucideIcon,
 };
 
 /** The canonical option list used by pickers. */

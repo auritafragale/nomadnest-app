@@ -173,7 +173,7 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
           {/* Short Notice badge */}
           {isShortNotice && (
             <div className="absolute top-3 left-3">
-              <span className="px-2 py-1 rounded-full text-white text-xs font-semibold" style={{ backgroundColor: "#E8735A" }}>
+              <span className="px-2 py-1 rounded-full text-white text-xs font-semibold" style={{ backgroundColor: "#D926A9" }}>
                 Short Notice
               </span>
             </div>

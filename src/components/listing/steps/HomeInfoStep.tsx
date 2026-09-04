@@ -10,7 +10,7 @@ import {
   Wifi, WifiOff, Bed, Sofa, MapPin, Loader2, Navigation
 } from "lucide-react";
 import ImageUpload from "@/components/listing/ImageUpload";
-import PlacesAutocompleteInput from "@/components/maps/PlacesAutocompleteInput";
+import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 
 interface HomeInfoStepProps {
   formData: ListingFormData;
@@ -144,10 +144,11 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
         {/* Location with Places Autocomplete */}
         <div className="space-y-2">
           <Label>Location *</Label>
-          <PlacesAutocompleteInput
-            value={[formData.city, formData.country].filter(Boolean).join(", ")}
-            onChange={() => {}}
-            onPlaceSelect={(place) => {
+          <PlacesAutocompleteField
+            value={locationQuery}
+            onChange={setLocationQuery}
+            onSelect={(place) => {
+              setLocationQuery(place.description);
               updateFormData({
                 city: place.city,
                 country: place.country,
@@ -179,12 +180,12 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
         {/* Private Address with Places Autocomplete */}
         <div className="space-y-2">
           <Label>Full Address (private — only shared with confirmed nomads)</Label>
-          <PlacesAutocompleteInput
+          <PlacesAutocompleteField
             value={formData.address_private}
             onChange={(v) => updateFormData({ address_private: v })}
-            onPlaceSelect={(place) => {
+            onSelect={(place) => {
               updateFormData({
-                address_private: place.address,
+                address_private: place.formattedAddress || place.description,
                 latitude: place.latitude,
                 longitude: place.longitude,
                 city: place.city || formData.city,

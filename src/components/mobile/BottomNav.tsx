@@ -31,7 +31,7 @@ const BottomNav = () => {
     sitsTab,
     { href: "/find-nomads", label: "Nomads Near Me", icon: MapPin },
     chatsTab,
-    { href: "/settings", label: "Profile", icon: User },
+    { href: "/dashboard", label: "Profile", icon: User },
   ];
 
   let tabs: Tab[];
