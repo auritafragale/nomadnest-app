@@ -279,12 +279,8 @@ const OwnerDetail = () => {
                       <span className="italic">No reviews yet</span>
                     </div>
                   )}
-                  {/* Listing count sits next to the reviews */}
-                  <div className="flex items-center gap-2">
-                    <Home className="w-4 h-4" />
-                    {listings.length} listing{listings.length !== 1 ? "s" : ""}
-                  </div>
                 </div>
+
 
 
                 {/* Action Buttons */}
@@ -341,6 +337,7 @@ const OwnerDetail = () => {
                   <CardTitle className="flex items-center gap-2">
                     <Home className="w-5 h-5" />
                     Active Listings
+                    <Badge variant="secondary" className="ml-auto">{listings.length}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

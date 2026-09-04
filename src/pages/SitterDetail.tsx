@@ -359,7 +359,7 @@ const SitterDetail = () => {
           <div className="max-w-4xl mx-auto space-y-6">
             <Skeleton className="h-10 w-48" />
             <div className="grid md:grid-cols-3 gap-6">
-              <Skeleton className="aspect-square rounded-xl" />
+              <Skeleton className="aspect-[3/2] rounded-xl" />
               <div className="md:col-span-2 space-y-4">
                 <Skeleton className="h-8 w-64" />
                 <Skeleton className="h-4 w-48" />
@@ -437,7 +437,7 @@ const SitterDetail = () => {
             <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">
               {/* Photo Gallery — sit-style arrows, tap to open full size */}
               <div className="space-y-3">
-                <div className="relative aspect-square w-40 sm:w-48 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted">
+                <div className="relative aspect-[3/2] w-56 sm:w-64 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted">
                   {allPhotos.length > 0 ? (
                     <>
                       <button
