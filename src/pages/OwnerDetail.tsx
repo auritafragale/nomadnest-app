@@ -207,9 +207,9 @@ const OwnerDetail = () => {
 
             {/* Header Section */}
             <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-8">
-              {/* Avatar */}
-              <div className="space-y-4">
-                <div className="aspect-square w-28 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted flex items-center justify-center">
+              {/* Avatar + share */}
+              <div className="space-y-3">
+                <div className="relative aspect-square w-28 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted flex items-center justify-center">
                   {profile.avatar_url ? (
                     <img
                       src={profile.avatar_url}
@@ -222,24 +222,43 @@ const OwnerDetail = () => {
                     </Avatar>
                   )}
                 </div>
+                {/* Share sits with the profile image */}
+                <div className="flex justify-center md:justify-start">
+                  <ShareDialog
+                    title={`${name} - Pet Parent`}
+                    description={`Check out ${name}'s Pet Parent profile`}
+                  />
+                </div>
               </div>
 
               {/* Profile Info */}
               <div className="md:col-span-2 min-w-0">
                 <div className="mb-3">
-                  {/* Name and founding badge share a line */}
+                  {/* Name, founding badge and report flag share a line */}
                   <div className="flex items-center gap-2 min-w-0">
                     <h1 className="text-xl md:text-3xl font-bold truncate">{name}</h1>
                     {profile.founding_member && <FoundingMemberBadge />}
+                    {user && user.id !== userId && (
+                      <ReportDialog
+                        targetType="user"
+                        targetId={userId!}
+                        targetLabel="owner"
+                        trigger={
+                          <Button variant="ghost" size="icon" className="text-muted-foreground shrink-0 h-8 w-8">
+                            <Flag className="w-4 h-4" />
+                          </Button>
+                        }
+                      />
+                    )}
                   </div>
                   <p className="text-sm md:text-lg text-muted-foreground">Pet Parent</p>
-                  <div className="flex items-center gap-2 mt-2 overflow-x-auto whitespace-nowrap">
-                    <VerificationBadges
-                      idVerified={profile.id_verified}
-                      emailVerified={profile.email_verified}
-                      phoneVerified={profile.phone_verified}
-                    />
-                  </div>
+                  {/* All verification badges on one wrapping row */}
+                  <VerificationBadges
+                    idVerified={profile.id_verified}
+                    emailVerified={profile.email_verified}
+                    phoneVerified={profile.phone_verified}
+                    className="mt-2"
+                  />
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-sm text-muted-foreground">
@@ -249,10 +268,6 @@ const OwnerDetail = () => {
                       {location}
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
-                    <Home className="w-4 h-4" />
-                    {listings.length} listing{listings.length !== 1 ? "s" : ""}
-                  </div>
                   {ratingData && ratingData.reviewCount > 0 ? (
                     <div className="flex items-center gap-2">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -263,6 +278,14 @@ const OwnerDetail = () => {
                       <Star className="w-4 h-4" />
                       <span className="italic">No reviews yet</span>
                     </div>
+                  )}
+                  {/* Listing count sits next to the reviews */}
+                  <div className="flex items-center gap-2">
+                    <Home className="w-4 h-4" />
+                    {listings.length} listing{listings.length !== 1 ? "s" : ""}
+                  </div>
+                </div>
+
                   )}
                 </div>
 
