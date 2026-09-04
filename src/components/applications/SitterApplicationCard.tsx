@@ -46,7 +46,11 @@ const statusConfig: Record<string, { label: string; className: string }> = {
     label: "Withdrawn",
     className: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
   },
-};
+  cancelled: {
+    label: "Cancelled",
+    className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  },
+
 
 export const SitterApplicationCard = ({ application }: SitterApplicationCardProps) => {
   const { listing, sit_dates, owner, status } = application;
