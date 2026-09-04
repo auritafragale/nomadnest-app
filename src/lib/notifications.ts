@@ -1,7 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
 interface NotificationData {
-  type: "new_application" | "application_status" | "new_message" | "invite" | "review";
+  type:
+    | "new_application"
+    | "application_status"
+    | "new_message"
+    | "invite"
+    | "review"
+    | "sit_cancelled";
   recipientUserId: string;
   data: Record<string, string>;
 }

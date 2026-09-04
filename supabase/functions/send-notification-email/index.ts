@@ -13,7 +13,7 @@ const corsHeaders = {
 };
 
 interface NotificationEmailRequest {
-  type: "new_application" | "application_status" | "new_message" | "invite" | "review" | "review_reminder" | "id_verification_approved";
+  type: "new_application" | "application_status" | "new_message" | "invite" | "review" | "review_reminder" | "sit_cancelled" | "id_verification_approved";
   recipientUserId: string;
   data: Record<string, string>;
 }
@@ -182,6 +182,7 @@ const handler = async (req: Request): Promise<Response> => {
       application_status: "email_application_status",
       new_message: "email_messages",
       invite: "email_sit_updates",
+      sit_cancelled: "email_sit_updates",
       review: "email_reviews",
       review_reminder: "email_reviews",
     };
