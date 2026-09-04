@@ -22,7 +22,6 @@ type FilterStatus = ApplicationStatus | "all";
 
 const statusTabs: { value: FilterStatus; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "applied", label: "New" },
   { value: "shortlisted", label: "Shortlisted" },
   { value: "accepted", label: "Accepted" },
   { value: "declined", label: "Declined" },
