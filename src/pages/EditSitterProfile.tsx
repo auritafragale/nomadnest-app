@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
+import { PET_TYPE_OPTIONS, formatPetType, canonicalPetType } from "@/lib/petTypes";
 
 interface Profile {
   first_name: string;
@@ -78,7 +79,7 @@ const languageOptions = [
   "Dutch", "Japanese", "Mandarin", "Korean", "Arabic", "Russian",
 ];
 
-const petTypeOptions = ["Dog", "Cat", "Bird", "Fish", "Rabbit", "Reptile", "Small mammals", "Other"];
+const petTypeOptions = PET_TYPE_OPTIONS;
 
 const comfortableWithOptions = [
   "Puppies/Kittens",
@@ -768,7 +769,7 @@ const EditSitterProfile = () => {
                             )
                           }
                         />
-                        <span className="text-sm">{type}</span>
+                        <span className="text-sm">{formatPetType(type)}</span>
                       </div>
                     ))}
                   </div>
