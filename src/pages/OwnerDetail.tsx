@@ -233,7 +233,7 @@ const OwnerDetail = () => {
                     {profile.founding_member && <FoundingMemberBadge />}
                   </div>
                   <p className="text-sm md:text-lg text-muted-foreground">Pet Parent</p>
-                  <div className="flex items-center gap-2 mt-2 overflow-x-auto no-scrollbar whitespace-nowrap">
+                  <div className="flex items-center gap-2 mt-2 overflow-x-auto whitespace-nowrap">
                     <VerificationBadges
                       idVerified={profile.id_verified}
                       emailVerified={profile.email_verified}
