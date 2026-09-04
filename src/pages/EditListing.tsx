@@ -230,10 +230,13 @@ const EditListing = () => {
         }
         return true;
       case 4:
-        if (!formData.city.trim() || !formData.country.trim()) {
+        // Location is resolved in handleNext before this runs, so if it's
+        // still empty the member genuinely has no location typed.
+        if (!formData.city.trim() && !formData.country.trim()) {
           toast({
             title: "Location required",
-            description: "Please add your city and country",
+            description:
+              "Please search and pick a city, or type one like 'Dubai, United Arab Emirates'.",
             variant: "destructive",
           });
           return false;
@@ -244,7 +247,38 @@ const EditListing = () => {
     }
   };
 
-  const handleNext = () => {
+  // Resolve a typed-but-not-selected location into city/country/coords before
+  // validating, so a member who just types "Dubai" is never trapped.
+  const resolveLocationIfNeeded = async () => {
+    if (!formData || currentStep !== 4) return;
+    const typed = (formData.locationQuery || "").trim();
+    const hasResolved = formData.city.trim() || formData.country.trim();
+    if (hasResolved || !typed) return;
+    try {
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(typed)}&format=json&limit=1`,
+      );
+      const results = await geoRes.json();
+      if (results?.[0]) {
+        const parts = typed.split(",").map((s: string) => s.trim()).filter(Boolean);
+        const city = parts.length > 1 ? parts[0] : typed;
+        const country = parts.length > 1 ? parts.slice(1).join(", ") : "";
+        updateFormData({
+          city,
+          country: country || formData.country || "",
+          latitude: parseFloat(results[0].lat),
+          longitude: parseFloat(results[0].lon),
+        });
+      }
+    } catch (e) {
+      console.warn("Location resolution failed", e);
+    }
+  };
+
+  const handleNext = async () => {
+    if (currentStep === 4) {
+      await resolveLocationIfNeeded();
+    }
     if (validateCurrentStep()) {
       nextStep();
     }
