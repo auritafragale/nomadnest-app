@@ -517,27 +517,6 @@ const OwnerDashboard = ({
 
       {/* Middle Column */}
       <div className="md:col-span-1 lg:col-span-2 space-y-6">
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 gap-4">
-          <Link to="/create-listing">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Plus className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Create Listing</h3>
-                    <p className="text-sm text-muted-foreground">Post a new sit opportunity</p>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-        </div>
-
         {/* My Listings */}
         <Card>
           <CardHeader>
