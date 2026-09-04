@@ -86,10 +86,13 @@ export const useUpdateSitStatus = () => {
       sitId,
       sitDatesId,
       status,
+      reason,
     }: {
       sitId: string;
       sitDatesId?: string;
       status: "in_progress" | "completed" | "cancelled";
+      /** Required when cancelling — explained to the other party. */
+      reason?: string;
     }) => {
       const updateData: { 
         status: "in_progress" | "completed" | "cancelled"; 
@@ -106,6 +109,27 @@ export const useUpdateSitStatus = () => {
         .eq("id", sitId);
 
       if (error) throw error;
+
+      // Notify the other party with the cancellation reason.
+      if (status === "cancelled") {
+        const { data: sit } = await supabase
+          .from("sits")
+          .select("owner_user_id, sitter_user_id, listing:listings(title)")
+          .eq("id", sitId)
+          .maybeSingle();
+
+        if (sit && user) {
+          const otherUserId =
+            sit.owner_user_id === user.id ? sit.sitter_user_id : sit.owner_user_id;
+          await supabase.from("notifications").insert({
+            user_id: otherUserId,
+            type: "sit_cancelled",
+            title: "Sit cancelled",
+            message: `${(sit.listing as { title?: string } | null)?.title || "A sit"} was cancelled. Reason: ${reason?.trim() || "no reason given"}`,
+            data: { url: "/dashboard", sit_id: sitId },
+          });
+        }
+      }
 
       // Re-open sit dates when cancelled
       if (status === "cancelled" && sitDatesId) {
