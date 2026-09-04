@@ -45,6 +45,8 @@ import { Star } from "lucide-react";
 import ReportDialog from "@/components/reports/ReportDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import ListingLocationMap from "@/components/maps/ListingLocationMap";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatPetType, petTypeIcon, formatPetAge } from "@/lib/petTypes";
 import VerificationBadges from "@/components/ui/VerificationBadges";
 
 interface Pet {
@@ -110,13 +112,6 @@ interface Listing {
   profiles: Profile;
 }
 
-const petIcons: Record<string, typeof Dog> = {
-  dog: Dog,
-  cat: Cat,
-  bird: Bird,
-  fish: Fish,
-  rabbit: Rabbit,
-};
 
 // Owner Card with Message Button
 const OwnerCard = ({
