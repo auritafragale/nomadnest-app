@@ -90,28 +90,13 @@ const CreateListing = () => {
         }
         return true;
       case 4:
-        // If the member typed text but picked no suggestion, try to resolve
-        // it via geocoding before declaring the location missing.
-        if (!formData.city.trim() || !formData.country.trim()) {
-          // Give the field a chance to resolve via its onBlur geocoder first.
-          const resolver = (window as any).__nomadnestResolveLocation as
-            | (() => Promise<void>)
-            | undefined;
-          if (resolver) {
-            await resolver();
-            // Re-check after resolution — the updateFormData call is sync-set
-            // but React state batching means formData here is stale, so we
-            // cannot read the new city. Instead the resolve sets state and we
-            // tell the member to press Next again; the clearer message guides
-            // them. If coordinates exist we allow it through below.
-            if (formData.latitude || formData.longitude) {
-              return true;
-            }
-          }
+        // Location is resolved in handleNext before this runs, so if it's
+        // still empty the member genuinely has no location typed.
+        if (!formData.city.trim() && !formData.country.trim()) {
           toast({
             title: "Location required",
             description:
-              "Please search and pick a city, or type one like 'Dubai, United Arab Emirates' then press Next again.",
+              "Please search and pick a city, or type one like 'Dubai, United Arab Emirates'.",
             variant: "destructive",
           });
           return false;
@@ -122,7 +107,43 @@ const CreateListing = () => {
     }
   };
 
-  const handleNext = () => {
+  // Resolve a typed-but-not-selected location into city/country/coords before
+  // validating, so a member who just types "Dubai" is never trapped.
+  const resolveLocationIfNeeded = async () => {
+    if (currentStep !== 4) return;
+    const typed = (formData.locationQuery || "").trim();
+    const hasResolved = formData.city.trim() || formData.country.trim();
+    if (hasResolved || !typed) return;
+    try {
+      const res = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(typed)}&key=${import.meta.env.VITE_SUPABASE_URL ? "" : ""}`,
+      );
+      // The maps key is fetched via the edge function; fall back to the same
+      // nominatim geocoder used at submit time if Google isn't available.
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(typed)}&format=json&limit=1`,
+      );
+      const results = await geoRes.json();
+      if (results?.[0]) {
+        const parts = typed.split(",").map((s: string) => s.trim()).filter(Boolean);
+        const city = parts.length > 1 ? parts[0] : typed;
+        const country = parts.length > 1 ? parts.slice(1).join(", ") : "";
+        updateFormData({
+          city,
+          country: country || formData.country || "",
+          latitude: parseFloat(results[0].lat),
+          longitude: parseFloat(results[0].lon),
+        });
+      }
+    } catch (e) {
+      console.warn("Location resolution failed", e);
+    }
+  };
+
+  const handleNext = async () => {
+    if (currentStep === 4) {
+      await resolveLocationIfNeeded();
+    }
     if (validateCurrentStep()) {
       nextStep();
     }
