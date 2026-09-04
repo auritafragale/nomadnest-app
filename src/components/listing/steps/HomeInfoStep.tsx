@@ -5,8 +5,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ListingFormData } from "@/hooks/useListingForm";
 import { cn } from "@/lib/utils";
-import { 
-  Home, Building2, Building, TreePine, 
+import { geocodeCityCountry } from "@/lib/geocode";
+import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
+import {
+  Home, Building2, Building, TreePine,
   Wifi, WifiOff, Bed, Sofa, MapPin, Loader2, Navigation
 } from "lucide-react";
 import ImageUpload from "@/components/listing/ImageUpload";
