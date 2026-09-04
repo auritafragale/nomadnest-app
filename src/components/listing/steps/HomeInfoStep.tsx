@@ -193,9 +193,9 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
         <div className="space-y-2">
           <Label>Location *</Label>
           <PlacesAutocompleteField
-            value={locationQuery}
+            value={formData.locationQuery}
             onChange={(v) => {
-              setLocationQuery(v);
+              updateFormData({ locationQuery: v });
               setLocationError(null);
               // Typing invalidates the previously picked place so stale
               // city/country/coordinates can never linger behind new text.
@@ -204,14 +204,14 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
               }
             }}
             onSelect={(place) => {
-              setLocationQuery(place.description);
-              setLocationError(null);
               updateFormData({
+                locationQuery: place.description,
                 city: place.city,
                 country: place.country,
                 latitude: place.latitude,
                 longitude: place.longitude,
               });
+              setLocationError(null);
             }}
             onBlur={resolveLocation}
             placeholder="Search for your city..."
