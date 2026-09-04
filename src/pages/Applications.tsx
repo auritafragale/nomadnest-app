@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
@@ -29,7 +30,11 @@ const statusTabs: { value: FilterStatus; label: string }[] = [
 
 const Applications = () => {
   const { user, loading, role } = useAuth();
-  const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialStatus = (searchParams.get("status") || "all") as FilterStatus;
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>(
+    statusTabs.some((t) => t.value === initialStatus) ? initialStatus : "all",
+  );
   const { toast } = useToast();
 
   const { data: applications = [], isLoading } = useOwnerApplications(statusFilter);
