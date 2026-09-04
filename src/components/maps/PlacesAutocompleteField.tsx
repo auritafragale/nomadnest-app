@@ -37,6 +37,7 @@ const PlacesAutocompleteField = ({
   value,
   onChange,
   onSelect,
+  onBlur,
   types,
   placeholder,
   showIcon = true,
