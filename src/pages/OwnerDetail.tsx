@@ -321,22 +321,8 @@ const OwnerDetail = () => {
                       Message
                     </Button>
                   )}
-                  <ShareDialog 
-                    title={`${name} - Pet Owner`}
-                    description={`Check out ${name}'s pet owner profile`}
-                  />
-                  {user && user.id !== userId && (
-                    <ReportDialog
-                      targetType="user"
-                      targetId={userId!}
-                      targetLabel="owner"
-                      trigger={
-                        <Button variant="ghost" size="icon" className="text-muted-foreground">
-                          <Flag className="w-4 h-4" />
-                        </Button>
-                      }
-                    />
-                  )}
+                </div>
+
                 </div>
 
                 {/* Bio */}
