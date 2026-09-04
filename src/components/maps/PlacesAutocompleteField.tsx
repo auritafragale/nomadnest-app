@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
+import { loadGooglePlaces } from "@/lib/loadGooglePlaces";
+
 
 export interface PlaceSelection {
   description: string;
