@@ -78,8 +78,8 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
       <Card className="hover:shadow-md transition-shadow">
         <CardContent className="p-4">
           <div className="flex gap-3 sm:gap-4">
-            {/* Thumbnail + primary actions */}
-            <div className="w-20 sm:w-24 flex-shrink-0 space-y-2">
+            {/* Thumbnail only */}
+            <div className="w-20 sm:w-24 flex-shrink-0">
               <div className="w-full h-20 sm:h-24 rounded-lg bg-muted overflow-hidden">
                 {listing.photos && listing.photos.length > 0 ? (
                   <img
@@ -93,20 +93,6 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                   </div>
                 )}
               </div>
-              <Link to={`/edit-listing/${listing.id}`} className="block">
-                <Button size="sm" variant="outline" className="w-full h-7 px-1 text-xs">
-                  <Edit className="w-3 h-3 mr-1" />
-                  Edit
-                </Button>
-              </Link>
-              {listing.status === "published" && (
-                <Link to={`/listing/${listing.id}`} className="block">
-                  <Button size="sm" variant="ghost" className="w-full h-7 px-1 text-xs">
-                    <Eye className="w-3 h-3 mr-1" />
-                    View
-                  </Button>
-                </Link>
-              )}
             </div>
 
             {/* Content */}
