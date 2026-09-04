@@ -337,6 +337,7 @@ const OwnerDetail = () => {
                   <CardTitle className="flex items-center gap-2">
                     <Home className="w-5 h-5" />
                     Active Listings
+                    <Badge variant="secondary" className="ml-auto">{listings.length}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
