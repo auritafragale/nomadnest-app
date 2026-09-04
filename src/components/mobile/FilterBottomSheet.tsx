@@ -110,26 +110,8 @@ const FilterBottomSheet = ({ open, onClose, filters, onApply }: FilterBottomShee
             </button>
           </div>
 
-          {/* Reason For Sit */}
-          <div>
-            <p className="text-sm font-semibold text-foreground mb-3">Reason For Sit</p>
-            <div className="flex flex-wrap gap-2">
-              {reasonOptions.map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => toggleReason(value)}
-                  className={cn(
-                    "px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors",
-                    draft.reasons.includes(value)
-                      ? "border-[#E8735A] bg-[#E8735A] text-white"
-                      : "border-border text-foreground"
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+
+
 
           {/* Pet Types */}
           <div>
