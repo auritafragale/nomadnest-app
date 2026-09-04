@@ -77,38 +77,55 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
     <>
       <Card className="hover:shadow-md transition-shadow">
         <CardContent className="p-4">
-          <div className="flex gap-4">
-            {/* Thumbnail */}
-            <div className="w-24 h-24 rounded-lg bg-muted flex-shrink-0 overflow-hidden">
-              {listing.photos && listing.photos.length > 0 ? (
-                <img
-                  src={listing.photos[0]}
-                  alt={listing.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  No image
-                </div>
+          <div className="flex gap-3 sm:gap-4">
+            {/* Thumbnail + primary actions */}
+            <div className="w-20 sm:w-24 flex-shrink-0 space-y-2">
+              <div className="w-full h-20 sm:h-24 rounded-lg bg-muted overflow-hidden">
+                {listing.photos && listing.photos.length > 0 ? (
+                  <img
+                    src={listing.photos[0]}
+                    alt={listing.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[11px] text-muted-foreground">
+                    No image
+                  </div>
+                )}
+              </div>
+              <Link to={`/edit-listing/${listing.id}`} className="block">
+                <Button size="sm" variant="outline" className="w-full h-7 px-1 text-xs">
+                  <Edit className="w-3 h-3 mr-1" />
+                  Edit
+                </Button>
+              </Link>
+              {listing.status === "published" && (
+                <Link to={`/listing/${listing.id}`} className="block">
+                  <Button size="sm" variant="ghost" className="w-full h-7 px-1 text-xs">
+                    <Eye className="w-3 h-3 mr-1" />
+                    View
+                  </Button>
+                </Link>
               )}
             </div>
 
             {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2 mb-2">
-                <div>
+                <div className="min-w-0 flex-1">
                   <h3 className="font-semibold text-foreground truncate">
                     {listing.title}
                   </h3>
                   {listing.city && listing.country && (
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {listing.city}, {listing.country}
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{listing.city}, {listing.country}</span>
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge className={statusColors[listing.status]}>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Badge className={`${statusColors[listing.status]} text-[11px] px-2`}>
+
                     {listing.status}
                   </Badge>
                   <DropdownMenu>
