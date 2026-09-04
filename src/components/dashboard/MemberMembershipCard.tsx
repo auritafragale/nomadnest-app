@@ -52,24 +52,35 @@ const MemberMembershipCard = ({ role, name, subtitle, avatarUrl, userId }: Membe
 
   return (
     <Card variant="elevated">
-      <CardContent className="pt-6 space-y-4">
+      <CardContent className="pt-4 pb-4 space-y-3">
         {/* Member */}
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-14 h-14 shrink-0 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+          <div className="w-12 h-12 shrink-0 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
             {avatarUrl ? (
               <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
             ) : (
-              <User className="w-7 h-7 text-primary" />
+              <User className="w-6 h-6 text-primary" />
             )}
           </div>
           <div className="min-w-0">
             <h3 className="font-semibold truncate">{name}</h3>
-            <p className="text-sm text-muted-foreground truncate">{subtitle}</p>
+            {/* Badges sit directly under the name to save vertical space */}
+            {!loading && subscribed && (
+              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                {planName && (
+                  <Badge variant="default" className="bg-primary/10 text-primary border-0 text-[11px] px-2 py-0">
+                    {planName}
+                  </Badge>
+                )}
+                {foundingMember && <FoundingMemberBadge />}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground truncate mt-0.5">{subtitle}</p>
           </div>
         </div>
 
         {/* Membership */}
-        <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2">
+        <div className="rounded-xl border border-border bg-muted/30 p-2.5 space-y-2">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Crown className="w-4 h-4 text-accent shrink-0" />
             Membership
@@ -83,12 +94,6 @@ const MemberMembershipCard = ({ role, name, subtitle, avatarUrl, userId }: Membe
             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
           ) : subscribed ? (
             <>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="default" className="bg-primary/10 text-primary border-0">
-                  {planName}
-                </Badge>
-                {foundingMember && <FoundingMemberBadge />}
-              </div>
               {subscriptionEnd ? (
                 <p className="text-xs text-muted-foreground">
                   Renews{" "}
@@ -98,9 +103,8 @@ const MemberMembershipCard = ({ role, name, subtitle, avatarUrl, userId }: Membe
                     year: "numeric",
                   })}
                 </p>
-              ) : foundingMember ? (
-                <p className="text-xs text-muted-foreground">Lifetime access — no expiry</p>
               ) : null}
+
               {!foundingMember && (
                 <Button
                   variant="outline"
