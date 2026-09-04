@@ -449,248 +449,241 @@ const ListingDetail = () => {
                 </Card>
               )}
 
-              {/* Pets */}
-              <Card>
-                <CardHeader>
-                  <CardTitle asChild>
-                    <h2 className="flex items-center gap-2">
-                      <Dog className="w-5 h-5" />
-                      Meet the Pets ({listing.pets.length})
-                    </h2>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {listing.pets.map((pet, index) => {
-                    const PetIcon = petIcons[pet.type] || Dog;
-                    return (
-                      <div key={pet.id}>
-                        {index > 0 && <Separator className="mb-6" />}
-                        <div className="flex items-start gap-4">
-                          {pet.photos?.[0] ? (
-                            <img
-                              src={pet.photos[0]}
-                              alt={pet.name}
-                              className="w-20 h-20 rounded-lg object-cover"
-                            />
-                          ) : (
-                            <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center">
-                              <PetIcon className="w-8 h-8 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                              <h3 className="font-semibold text-lg">
-                                {pet.name}
-                              </h3>
-                              <Badge variant="secondary" className="capitalize">
-                                {pet.type}
-                              </Badge>
-                              {pet.age && (
-                                <span className="text-sm text-muted-foreground">
-                                  {pet.age}
-                                </span>
-                              )}
-                              {pet.has_medication && (
-                                <Badge variant="outline" className="gap-1">
-                                  <Pill className="w-3 h-3" />
-                                  Medication
-                                </Badge>
-                              )}
-                            </div>
-                            {pet.personality && (
-                              <p className="text-muted-foreground text-sm mb-2">
-                                {pet.personality}
-                              </p>
-                            )}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                              {pet.feeding_details && (
-                                <div>
-                                  <span className="font-medium">Feeding:</span>{" "}
-                                  <span className="text-muted-foreground">
-                                    {pet.feeding_details}
-                                  </span>
-                                </div>
-                              )}
-                              {pet.daily_routine && (
-                                <div>
-                                  <span className="font-medium">Routine:</span>{" "}
-                                  <span className="text-muted-foreground">
-                                    {pet.daily_routine}
-                                  </span>
-                                </div>
-                              )}
-                              {pet.walks_exercise && (
-                                <div>
-                                  <span className="font-medium">Exercise:</span>{" "}
-                                  <span className="text-muted-foreground">
-                                    {pet.walks_exercise}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
+              {/* Pets — one tab per pet */}
+              {listing.pets.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle asChild>
+                      <h2 className="flex items-center gap-2">
+                        <Dog className="w-5 h-5" />
+                        Meet the Pets ({listing.pets.length})
+                      </h2>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue={listing.pets[0].id}>
+                      <TabsList className="w-full flex-wrap h-auto justify-start">
+                        {listing.pets.map((pet) => {
+                          const PetIcon = petTypeIcon(pet.type);
+                          return (
+                            <TabsTrigger key={pet.id} value={pet.id} className="gap-1.5">
+                              <PetIcon className="w-3.5 h-3.5" />
+                              {pet.name || formatPetType(pet.type)}
+                            </TabsTrigger>
+                          );
+                        })}
+                      </TabsList>
 
-              {/* Home Details */}
+                      {listing.pets.map((pet) => {
+                        const PetIcon = petTypeIcon(pet.type);
+                        const age = formatPetAge(pet.age);
+                        return (
+                          <TabsContent key={pet.id} value={pet.id} className="mt-4">
+                            <div className="flex items-start gap-4">
+                              {pet.photos?.[0] ? (
+                                <img
+                                  src={pet.photos[0]}
+                                  alt={pet.name || formatPetType(pet.type)}
+                                  className="w-20 h-20 rounded-lg object-cover"
+                                />
+                              ) : (
+                                <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center">
+                                  <PetIcon className="w-8 h-8 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div className="flex-1">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                  <h3 className="font-semibold text-lg">{pet.name}</h3>
+                                  <Badge variant="secondary">{formatPetType(pet.type)}</Badge>
+                                  {age && (
+                                    <span className="text-sm text-muted-foreground">{age}</span>
+                                  )}
+                                  {pet.has_medication && (
+                                    <Badge variant="outline" className="gap-1">
+                                      <Pill className="w-3 h-3" />
+                                      Medication
+                                    </Badge>
+                                  )}
+                                </div>
+                                {pet.personality && (
+                                  <p className="text-muted-foreground text-sm mb-2">
+                                    {pet.personality}
+                                  </p>
+                                )}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                                  {pet.feeding_details && (
+                                    <div>
+                                      <span className="font-medium">Feeding:</span>{" "}
+                                      <span className="text-muted-foreground">
+                                        {pet.feeding_details}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {pet.daily_routine && (
+                                    <div>
+                                      <span className="font-medium">Routine:</span>{" "}
+                                      <span className="text-muted-foreground">
+                                        {pet.daily_routine}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {pet.walks_exercise && (
+                                    <div>
+                                      <span className="font-medium">Exercise:</span>{" "}
+                                      <span className="text-muted-foreground">
+                                        {pet.walks_exercise}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </TabsContent>
+                        );
+                      })}
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Home & Requirements — tabbed */}
               <Card>
                 <CardHeader>
                   <CardTitle asChild>
                     <h2 className="flex items-center gap-2">
                       <Home className="w-5 h-5" />
-                      Home Details
+                      The Home &amp; What&apos;s Expected
                     </h2>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {listing.home_type && (
-                      <div className="flex items-center gap-2">
-                        <Home className="w-4 h-4 text-muted-foreground" />
-                        <span className="capitalize">{listing.home_type}</span>
-                      </div>
-                    )}
-                    {listing.wifi_quality && (
-                      <div className="flex items-center gap-2">
-                        <Wifi className="w-4 h-4 text-muted-foreground" />
-                        <span className="capitalize">
-                          {listing.wifi_quality.replace("_", " ")} WiFi
-                        </span>
-                      </div>
-                    )}
-                    {listing.sleeping_arrangement && (
-                      <div className="flex items-center gap-2">
-                        <Bed className="w-4 h-4 text-muted-foreground" />
-                        <span className="capitalize">
-                          {listing.sleeping_arrangement.replace(/_/g, " ")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                <CardContent>
+                  <Tabs defaultValue="home">
+                    <TabsList className="w-full flex-wrap h-auto justify-start">
+                      <TabsTrigger value="home">Home details</TabsTrigger>
+                      <TabsTrigger value="requirements">Requirements &amp; rules</TabsTrigger>
+                    </TabsList>
 
-                  {listing.amenities.length > 0 && (
-                    <>
-                      <Separator />
-                      <div>
-                        <h4 className="font-medium mb-2">Amenities</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {listing.amenities.map((amenity) => (
-                            <Badge key={amenity} variant="secondary">
-                              {amenity}
-                            </Badge>
-                          ))}
-                        </div>
+                    <TabsContent value="home" className="mt-4 space-y-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {listing.home_type && (
+                          <div className="flex items-center gap-2">
+                            <Home className="w-4 h-4 text-muted-foreground" />
+                            <span className="capitalize">{listing.home_type}</span>
+                          </div>
+                        )}
+                        {listing.wifi_quality && (
+                          <div className="flex items-center gap-2">
+                            <Wifi className="w-4 h-4 text-muted-foreground" />
+                            <span className="capitalize">
+                              {listing.wifi_quality.replace("_", " ")} WiFi
+                            </span>
+                          </div>
+                        )}
+                        {listing.sleeping_arrangement && (
+                          <div className="flex items-center gap-2">
+                            <Bed className="w-4 h-4 text-muted-foreground" />
+                            <span className="capitalize">
+                              {listing.sleeping_arrangement.replace(/_/g, " ")}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    </>
-                  )}
+
+                      {listing.amenities.length > 0 && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h4 className="font-medium mb-2">Amenities</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {listing.amenities.map((amenity) => (
+                                <Badge key={amenity} variant="secondary">
+                                  {amenity}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="requirements" className="mt-4 space-y-4">
+                      {listing.requirements.length === 0 &&
+                      listing.house_rules.length === 0 &&
+                      listing.home_care_tasks.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          No specific requirements listed.
+                        </p>
+                      ) : (
+                        <>
+                          {listing.requirements.length > 0 && (
+                            <div>
+                              <h4 className="font-medium mb-2">Nomad Requirements</h4>
+                              <ul className="space-y-1">
+                                {listing.requirements.map((req) => (
+                                  <li key={req} className="flex items-center gap-2 text-sm">
+                                    <Check className="w-4 h-4 text-primary" />
+                                    {req}
+                                  </li>
+                                ))}
+                              </ul>
+                              {listing.requirements_other && (
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  {listing.requirements_other}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {listing.house_rules.length > 0 && (
+                            <>
+                              <Separator />
+                              <div>
+                                <h4 className="font-medium mb-2">House Rules</h4>
+                                <ul className="space-y-1">
+                                  {listing.house_rules.map((rule) => (
+                                    <li key={rule} className="flex items-center gap-2 text-sm">
+                                      <Check className="w-4 h-4 text-primary" />
+                                      {rule}
+                                    </li>
+                                  ))}
+                                </ul>
+                                {listing.house_rules_other && (
+                                  <p className="text-sm text-muted-foreground mt-2">
+                                    {listing.house_rules_other}
+                                  </p>
+                                )}
+                              </div>
+                            </>
+                          )}
+
+                          {listing.home_care_tasks.length > 0 && (
+                            <>
+                              <Separator />
+                              <div>
+                                <h4 className="font-medium mb-2">Home Care Tasks</h4>
+                                <ul className="space-y-1">
+                                  {listing.home_care_tasks.map((task) => (
+                                    <li key={task} className="flex items-center gap-2 text-sm">
+                                      <Check className="w-4 h-4 text-secondary" />
+                                      {task}
+                                    </li>
+                                  ))}
+                                </ul>
+                                {listing.home_care_tasks_other && (
+                                  <p className="text-sm text-muted-foreground mt-2">
+                                    {listing.home_care_tasks_other}
+                                  </p>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
 
-              {/* Requirements & Rules */}
-              {(listing.requirements.length > 0 ||
-                listing.house_rules.length > 0 ||
-                listing.home_care_tasks.length > 0) && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle asChild>
-                      <h2>Requirements & House Rules</h2>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {listing.requirements.length > 0 && (
-                      <div>
-                        <h4 className="font-medium mb-2">Nomad Requirements</h4>
-                        <ul className="space-y-1">
-                          {listing.requirements.map((req) => (
-                            <li
-                              key={req}
-                              className="flex items-center gap-2 text-sm"
-                            >
-                              <Check className="w-4 h-4 text-primary" />
-                              {req}
-                            </li>
-                          ))}
-                        </ul>
-                        {listing.requirements_other && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            {listing.requirements_other}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {listing.house_rules.length > 0 && (
-                      <>
-                        <Separator />
-                        <div>
-                          <h4 className="font-medium mb-2">House Rules</h4>
-                          <ul className="space-y-1">
-                            {listing.house_rules.map((rule) => (
-                              <li
-                                key={rule}
-                                className="flex items-center gap-2 text-sm"
-                              >
-                                <Check className="w-4 h-4 text-primary" />
-                                {rule}
-                              </li>
-                            ))}
-                          </ul>
-                          {listing.house_rules_other && (
-                            <p className="text-sm text-muted-foreground mt-2">
-                              {listing.house_rules_other}
-                            </p>
-                          )}
-                        </div>
-                      </>
-                    )}
-
-                    {listing.home_care_tasks.length > 0 && (
-                      <>
-                        <Separator />
-                        <div>
-                          <h4 className="font-medium mb-2">Home Care Tasks</h4>
-                          <ul className="space-y-1">
-                            {listing.home_care_tasks.map((task) => (
-                              <li
-                                key={task}
-                                className="flex items-center gap-2 text-sm"
-                              >
-                                <Check className="w-4 h-4 text-secondary" />
-                                {task}
-                              </li>
-                            ))}
-                          </ul>
-                          {listing.home_care_tasks_other && (
-                            <p className="text-sm text-muted-foreground mt-2">
-                              {listing.home_care_tasks_other}
-                            </p>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Ideal Sitter */}
-              {listing.ideal_sitter_description && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle asChild>
-                      <h2>Ideal Nomad</h2>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground whitespace-pre-wrap">
-                      {listing.ideal_sitter_description}
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Location Map */}
               {listing.latitude && listing.longitude && (
