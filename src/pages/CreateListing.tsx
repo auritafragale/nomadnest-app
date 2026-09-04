@@ -115,11 +115,6 @@ const CreateListing = () => {
     const hasResolved = formData.city.trim() || formData.country.trim();
     if (hasResolved || !typed) return;
     try {
-      const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(typed)}&key=${import.meta.env.VITE_SUPABASE_URL ? "" : ""}`,
-      );
-      // The maps key is fetched via the edge function; fall back to the same
-      // nominatim geocoder used at submit time if Google isn't available.
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(typed)}&format=json&limit=1`,
       );
