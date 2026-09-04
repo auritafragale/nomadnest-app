@@ -160,7 +160,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
               // Typing invalidates the previously picked place so stale
               // city/country/coordinates can never linger behind new text.
               if (formData.city || formData.country || formData.latitude || formData.longitude) {
-                updateFormData({ city: "", country: "", latitude: undefined, longitude: undefined });
+                updateFormData({ city: "", country: "", latitude: null, longitude: null });
               }
             }}
             onSelect={(place) => {
