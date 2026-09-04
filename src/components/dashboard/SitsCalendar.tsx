@@ -316,6 +316,9 @@ export const SitsCalendar = ({ viewAs }: SitsCalendarProps) => {
   const getSitsForDay = (day: Date) => {
     return filteredSits.filter((sit) => {
       if (!sit.sit_dates) return false;
+      // Cancelled sits never happened, so they must not mark the calendar.
+      if (sit.status === "cancelled") return false;
+
       const startDate = parseISO(sit.sit_dates.start_date);
       const endDate = parseISO(sit.sit_dates.end_date);
       return isWithinInterval(day, { start: startDate, end: endDate }) || 
