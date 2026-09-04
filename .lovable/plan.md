@@ -25,7 +25,7 @@ Fix so the field can never trap a member:
 ## 4. Nomad profile photos and pet pills
 
 - Replace the hero-plus-thumbnails gallery with the same swipeable gallery layout used on listing detail: one scrollable image area with arrows, a counter and tap-to-open full screen. No thumbnail strip.
-- "Experienced with": show a maximum of 4 pills per row; when the nomad has more than 4 pet types, collapse the remainder behind a "+N more" dropdown.
+- "Experienced with": show a maximum of 4 pills per row; when the nomad has more than 4 pet types, collapse the remainder behind a "+" dropdown.
 
 ## 5. Pet Parent dashboard: remove the Create Listing card
 
