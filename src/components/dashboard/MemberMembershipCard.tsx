@@ -111,10 +111,6 @@ const MemberMembershipCard = ({ role, name, subtitle, avatarUrl, userId }: Membe
                 Manage subscription
               </Button>
             )}
-            <HelpTooltip
-              label="About membership"
-              content="Your membership tier gates listing creation and inviting nomads. NomadNest is a barter — free stays for free sitting — so the membership covers running the platform, not the sit."
-            />
           </div>
         ) : (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
