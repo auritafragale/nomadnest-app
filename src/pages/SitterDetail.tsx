@@ -128,6 +128,8 @@ const SitterDetail = () => {
   const [inviteMessage, setInviteMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<number>(0);
+  const [photoOpen, setPhotoOpen] = useState(false);
+
   const [isStartingChat, setIsStartingChat] = useState(false);
   
   const startConversation = useStartConversation();
