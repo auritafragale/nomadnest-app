@@ -494,30 +494,6 @@ const SitterDetail = () => {
                     )}
                   </DialogContent>
                 </Dialog>
-
-                {allPhotos.length > 1 && (
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {allPhotos.map((photo, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedPhoto(index)}
-                        aria-label={`View photo ${index + 1} of ${allPhotos.length}`}
-                        aria-current={selectedPhoto === index}
-                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
-                          selectedPhoto === index
-                            ? "border-primary"
-                            : "border-transparent hover:border-muted-foreground/30"
-                        }`}
-                      >
-                        <img
-                          src={photo}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Profile Info */}
