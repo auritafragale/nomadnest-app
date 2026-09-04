@@ -130,18 +130,19 @@ export const SitterApplicationCard = ({ application }: SitterApplicationCardProp
             )}
 
             {/* Owner */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <Avatar className="h-6 w-6 shrink-0">
                   <AvatarImage src={owner?.avatar_url || undefined} />
                   <AvatarFallback className="text-xs bg-primary/10 text-primary">
                     {ownerInitials.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm text-muted-foreground">
-                  {owner?.first_name} {owner?.last_name}
+                <span className="text-sm text-muted-foreground truncate">
+                  {[owner?.first_name, owner?.last_name].filter(Boolean).join(" ")}
                 </span>
               </div>
+
 
               <div className="flex items-center gap-1">
                 {canWithdraw && (
