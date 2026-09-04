@@ -126,6 +126,8 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
         defaultCenter={{ lat: 30, lng: 0 }}
         defaultZoom={2}
         gestureHandling="greedy"
+        rotateControl={false}
+        tilt={0}
         disableDefaultUI={false}
         streetViewControl={false}
         zoomControl={false}
