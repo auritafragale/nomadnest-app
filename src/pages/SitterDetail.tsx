@@ -426,7 +426,7 @@ const SitterDetail = () => {
             <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">
               {/* Photo Gallery */}
               <div className="space-y-4">
-                <div className="aspect-square rounded-xl overflow-hidden bg-muted">
+                <div className="aspect-square w-32 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted">
                   {allPhotos.length > 0 ? (
                     <img
                       src={allPhotos[selectedPhoto]}
@@ -435,8 +435,8 @@ const SitterDetail = () => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Avatar className="w-32 h-32">
-                        <AvatarFallback className="text-4xl">{initials}</AvatarFallback>
+                      <Avatar className="w-full h-full">
+                        <AvatarFallback className="text-2xl md:text-4xl">{initials}</AvatarFallback>
                       </Avatar>
                     </div>
                   )}
@@ -467,29 +467,31 @@ const SitterDetail = () => {
               </div>
 
               {/* Profile Info */}
-              <div className="md:col-span-2">
-                <div className="mb-4">
-                  <div className="flex flex-wrap items-start gap-2 mb-2">
-                    <h1 className="text-2xl md:text-3xl font-bold flex-1 min-w-0">{name}</h1>
+              <div className="md:col-span-2 min-w-0">
+                <div className="mb-3">
+                  {/* Name + founding badge on one line */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h1 className="text-xl md:text-3xl font-bold truncate">{name}</h1>
+                    {profile.founding_member && <FoundingMemberBadge />}
+                  </div>
+                  {sitter.headline && (
+                    <p className="text-sm md:text-lg text-muted-foreground">
+                      {sitter.headline}
+                    </p>
+                  )}
+                  {/* Verification badges stay contained on their own row */}
+                  <div className="flex items-center gap-2 mt-2 overflow-x-auto whitespace-nowrap">
                     <VerificationBadges
-                      className="mt-1"
                       idVerified={sitter.id_verified}
                       emailVerified={profile?.email_verified}
                       phoneVerified={profile?.phone_verified}
                       backgroundCheck={sitter.background_check}
                     />
                   </div>
-                  {sitter.headline && (
-                    <p className="text-base md:text-lg text-muted-foreground">
-                      {sitter.headline}
-                    </p>
-                  )}
-                  {profile.founding_member && (
-                    <FoundingMemberBadge className="mt-2" />
-                  )}
                 </div>
 
-                <div className="flex flex-wrap gap-4 mb-6 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-sm text-muted-foreground">
+
                   {location && (
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4" />

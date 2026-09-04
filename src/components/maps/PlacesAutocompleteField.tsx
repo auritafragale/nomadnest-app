@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
+import { loadGooglePlaces } from "@/lib/loadGooglePlaces";
+
 
 export interface PlaceSelection {
   description: string;
@@ -47,8 +50,12 @@ const PlacesAutocompleteField = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<number | null>(null);
 
-  // Init Google services once available
+  // The Places library is not guaranteed to be on the page (create listing and
+  // onboarding have no map), so load it here before initialising services.
+  const { data: mapsConfig } = useGoogleMapsKey();
+
   useEffect(() => {
+    let cancelled = false;
     const init = () => {
       const g = (window as any).google?.maps?.places;
       if (!g) return false;
@@ -62,11 +69,17 @@ const PlacesAutocompleteField = ({
       return true;
     };
     if (init()) return;
-    const interval = window.setInterval(() => {
-      if (init()) window.clearInterval(interval);
-    }, 200);
-    return () => window.clearInterval(interval);
-  }, []);
+    if (!mapsConfig?.key) return;
+    loadGooglePlaces(mapsConfig.key)
+      .then(() => {
+        if (!cancelled) init();
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [mapsConfig?.key]);
+
 
   const fetchPredictions = useCallback(
     async (input: string) => {

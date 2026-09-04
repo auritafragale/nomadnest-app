@@ -24,7 +24,7 @@ const MapContent = ({ latitude, longitude, name }: SitterLocationMapProps) => {
   const { nomadMapId } = useGoogleMapsConfig();
 
   return (
-    <div className="w-full h-[45vh] sm:h-[250px] rounded-lg overflow-hidden border border-border">
+    <div className="w-full aspect-[4/3] min-h-[220px] sm:aspect-auto sm:h-[250px] rounded-lg overflow-hidden border border-border">
       <Map
         defaultCenter={{ lat: latitude, lng: longitude }}
         defaultZoom={13}

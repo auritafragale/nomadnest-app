@@ -452,14 +452,16 @@ const EditListing = () => {
           </Card>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <Button
               variant="outline"
               onClick={prevStep}
               disabled={currentStep === 1}
+              aria-label="Previous step"
+              className="px-3 sm:px-4 shrink-0"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Previous
+              <ArrowLeft className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Previous</span>
             </Button>
 
             <div className="flex gap-3">

@@ -122,7 +122,7 @@ const MapContent = ({ listings }: ListingGoogleMapProps) => {
   const selected = listingsWithCoords.find((l) => l.id === selectedId);
 
   return (
-    <div className="w-full h-[70vh] sm:h-[600px] rounded-lg overflow-hidden border border-border relative">
+    <div className="w-full aspect-[3/4] min-h-[420px] max-h-[80vh] sm:aspect-auto sm:h-[600px] sm:max-h-none rounded-lg overflow-hidden border border-border relative">
       <Map
         defaultCenter={{ lat: 30, lng: 0 }}
         defaultZoom={2}
