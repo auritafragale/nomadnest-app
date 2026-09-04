@@ -1404,6 +1404,7 @@ export type Database = {
           total_clicks: number
         }[]
       }
+      advance_sit_statuses: { Args: never; Returns: undefined }
       can_access_city_chat: {
         Args: { p_room_id: string; p_user_id: string }
         Returns: boolean
