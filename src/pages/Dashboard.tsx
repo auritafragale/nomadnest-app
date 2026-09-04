@@ -291,7 +291,17 @@ const SitterDashboard = ({
 }) => {
   const profileCompletion = calculateSitterProfileCompletion(profile, sitterProfile);
   const { data: applications = [], isLoading: applicationsLoading } = useSitterApplications();
-  const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "completed" | "cancelled">("all");
+  const [dashParams] = useSearchParams();
+  const initialAppTab = dashParams.get("appTab");
+  const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "completed" | "cancelled">(
+    initialAppTab === "cancelled" ||
+      initialAppTab === "accepted" ||
+      initialAppTab === "pending" ||
+      initialAppTab === "completed"
+      ? initialAppTab
+      : "all",
+  );
+
   const todayISO = new Date().toISOString().slice(0, 10);
   const visibleApplications = applications.filter((a) => {
     const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
