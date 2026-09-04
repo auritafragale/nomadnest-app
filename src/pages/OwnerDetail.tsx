@@ -206,10 +206,10 @@ const OwnerDetail = () => {
             </Button>
 
             {/* Header Section */}
-            <div className="grid md:grid-cols-3 gap-8 mb-8">
+            <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-8">
               {/* Avatar */}
               <div className="space-y-4">
-                <div className="aspect-square rounded-xl overflow-hidden bg-muted flex items-center justify-center">
+                <div className="aspect-square w-28 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted flex items-center justify-center">
                   {profile.avatar_url ? (
                     <img
                       src={profile.avatar_url}
@@ -217,55 +217,55 @@ const OwnerDetail = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <Avatar className="w-32 h-32">
-                      <AvatarFallback className="text-4xl">{initials}</AvatarFallback>
+                    <Avatar className="w-full h-full">
+                      <AvatarFallback className="text-2xl md:text-4xl">{initials}</AvatarFallback>
                     </Avatar>
                   )}
                 </div>
               </div>
 
               {/* Profile Info */}
-              <div className="md:col-span-2">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div>
-                    <h1 className="text-2xl md:text-3xl font-bold mb-2">{name}</h1>
-                    <p className="text-base md:text-lg text-muted-foreground">Pet Parent</p>
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <VerificationBadges
-                        idVerified={profile.id_verified}
-                        emailVerified={profile.email_verified}
-                        phoneVerified={profile.phone_verified}
-                      />
-                      {profile.founding_member && (
-                        <FoundingMemberBadge />
-                      )}
-                    </div>
+              <div className="md:col-span-2 min-w-0">
+                <div className="mb-3">
+                  {/* Name and founding badge share a line */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h1 className="text-xl md:text-3xl font-bold truncate">{name}</h1>
+                    {profile.founding_member && <FoundingMemberBadge />}
+                  </div>
+                  <p className="text-sm md:text-lg text-muted-foreground">Pet Parent</p>
+                  <div className="flex items-center gap-2 mt-2 overflow-x-auto no-scrollbar whitespace-nowrap">
+                    <VerificationBadges
+                      idVerified={profile.id_verified}
+                      emailVerified={profile.email_verified}
+                      phoneVerified={profile.phone_verified}
+                    />
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-4 mb-6 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-sm text-muted-foreground">
                   {location && (
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4" />
                       {location}
                     </div>
                   )}
+                  <div className="flex items-center gap-2">
+                    <Home className="w-4 h-4" />
+                    {listings.length} listing{listings.length !== 1 ? "s" : ""}
+                  </div>
                   {ratingData && ratingData.reviewCount > 0 ? (
                     <div className="flex items-center gap-2">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                       {ratingData.averageRating.toFixed(1)} ({ratingData.reviewCount} review{ratingData.reviewCount !== 1 ? "s" : ""})
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground/70">
+                    <div className="flex items-center gap-1 text-muted-foreground/70">
                       <Star className="w-4 h-4" />
                       <span className="italic">No reviews yet</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
-                    <Home className="w-4 h-4" />
-                    {listings.length} listing{listings.length !== 1 ? "s" : ""}
-                  </div>
                 </div>
+
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2 mb-6">
