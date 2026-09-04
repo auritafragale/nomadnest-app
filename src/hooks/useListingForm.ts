@@ -38,6 +38,7 @@ export interface ListingFormData {
   home_type: string;
   city: string;
   country: string;
+  locationQuery: string;
   area: string;
   address_private: string;
   latitude: number | null;
@@ -89,6 +90,7 @@ const initialFormData: ListingFormData = {
   home_type: "",
   city: "",
   country: "",
+  locationQuery: "",
   area: "",
   address_private: "",
   latitude: null,

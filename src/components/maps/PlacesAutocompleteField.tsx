@@ -20,6 +20,7 @@ interface PlacesAutocompleteFieldProps {
   value: string;
   onChange: (value: string) => void;
   onSelect: (place: PlaceSelection) => void;
+  onBlur?: () => void;
   types: string[];
   placeholder?: string;
   showIcon?: boolean;
@@ -36,6 +37,7 @@ const PlacesAutocompleteField = ({
   value,
   onChange,
   onSelect,
+  onBlur,
   types,
   placeholder,
   showIcon = true,
@@ -287,6 +289,10 @@ const PlacesAutocompleteField = ({
         value={value}
         onChange={handleChange}
         onFocus={() => predictions.length > 0 && setOpen(true)}
+        onBlur={() => {
+          setOpen(false);
+          onBlur?.();
+        }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         autoComplete="off"

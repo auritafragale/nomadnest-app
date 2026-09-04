@@ -4,7 +4,6 @@ import { Crown, CreditCard, Loader2, User, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
 import { useToast } from "@/hooks/use-toast";
@@ -112,10 +111,6 @@ const MemberMembershipCard = ({ role, name, subtitle, avatarUrl, userId }: Membe
                 Manage subscription
               </Button>
             )}
-            <HelpTooltip
-              label="About membership"
-              content="Your membership tier gates listing creation and inviting nomads. NomadNest is a barter — free stays for free sitting — so the membership covers running the platform, not the sit."
-            />
           </div>
         ) : (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

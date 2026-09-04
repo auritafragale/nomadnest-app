@@ -287,8 +287,6 @@ const OwnerDetail = () => {
                 </div>
 
 
-
-
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2 mb-6">
                   {user && user.id !== userId && (role === "sitter" || role === "both") && (
@@ -322,7 +320,6 @@ const OwnerDetail = () => {
                     </Button>
                   )}
                 </div>
-
 
 
                 {/* Bio */}

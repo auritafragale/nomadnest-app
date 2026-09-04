@@ -26,6 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
@@ -54,6 +60,7 @@ import {
   Phone,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
@@ -494,30 +501,6 @@ const SitterDetail = () => {
                     )}
                   </DialogContent>
                 </Dialog>
-
-                {allPhotos.length > 1 && (
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {allPhotos.map((photo, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedPhoto(index)}
-                        aria-label={`View photo ${index + 1} of ${allPhotos.length}`}
-                        aria-current={selectedPhoto === index}
-                        className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
-                          selectedPhoto === index
-                            ? "border-primary"
-                            : "border-transparent hover:border-muted-foreground/30"
-                        }`}
-                      >
-                        <img
-                          src={photo}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Profile Info */}
@@ -659,15 +642,45 @@ const SitterDetail = () => {
                   <div className="mb-6">
                     <p className="font-medium mb-2">Experienced with</p>
                     <div className="flex flex-wrap gap-2">
-                      {dedupePetTypes(sitter.pet_types).map((petType) => {
-                        const Icon = petTypeIcon(petType);
+                      {(() => {
+                        const pets = dedupePetTypes(sitter.pet_types);
+                        const visible = pets.slice(0, 4);
+                        const hidden = pets.slice(4);
                         return (
-                          <Badge key={petType} variant="secondary" className="gap-1 capitalize">
-                            <Icon className="w-3 h-3" />
-                            {formatPetType(petType)}
-                          </Badge>
+                          <>
+                            {visible.map((petType) => {
+                              const Icon = petTypeIcon(petType);
+                              return (
+                                <Badge key={petType} variant="secondary" className="gap-1 capitalize">
+                                  <Icon className="w-3 h-3" />
+                                  {formatPetType(petType)}
+                                </Badge>
+                              );
+                            })}
+                            {hidden.length > 0 && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button type="button" className="inline-flex items-center gap-1 rounded-full bg-secondary text-secondary-foreground px-2.5 py-1 text-xs font-medium hover:bg-secondary/80">
+                                    +{hidden.length}
+                                    <ChevronDown className="w-3 h-3" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                  {hidden.map((petType) => {
+                                    const Icon = petTypeIcon(petType);
+                                    return (
+                                      <DropdownMenuItem key={petType} className="gap-2 capitalize">
+                                        <Icon className="w-3 h-3" />
+                                        {formatPetType(petType)}
+                                      </DropdownMenuItem>
+                                    );
+                                  })}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </>
                         );
-                      })}
+                      })()}
                     </div>
                   </div>
                 )}

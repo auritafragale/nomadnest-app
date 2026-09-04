@@ -5,8 +5,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ListingFormData } from "@/hooks/useListingForm";
 import { cn } from "@/lib/utils";
-import { 
-  Home, Building2, Building, TreePine, 
+import { geocodeCityCountry } from "@/lib/geocode";
+import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
+import {
+  Home, Building2, Building, TreePine,
   Wifi, WifiOff, Bed, Sofa, MapPin, Loader2, Navigation
 } from "lucide-react";
 import ImageUpload from "@/components/listing/ImageUpload";
@@ -58,13 +60,17 @@ const amenitiesList = [
 
 const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
   const [isGeolocating, setIsGeolocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const { data: mapsConfig } = useGoogleMapsKey();
   const savedLocation = [formData.city, formData.country].filter(Boolean).join(", ");
-  const [locationQuery, setLocationQuery] = useState(savedLocation);
 
   // Keep the visible text in sync when the city is filled in elsewhere
   // (geolocation, editing an existing listing).
   useEffect(() => {
-    if (savedLocation && !locationQuery) setLocationQuery(savedLocation);
+    if (savedLocation && !formData.locationQuery) {
+      updateFormData({ locationQuery: savedLocation });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedLocation]);
 
@@ -75,6 +81,39 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
       : [...current, amenity];
     updateFormData({ amenities: updated });
   };
+
+  // Resolve a typed-but-not-selected location string into city/country/coords
+  // via Google Geocoding, so a member who just types "Dubai" is never trapped.
+  const resolveLocation = useCallback(async () => {
+    setLocationError(null);
+    const typed = (formData.locationQuery || "").trim();
+    if (!typed) return;
+    const alreadyResolved = formData.city && savedLocation.toLowerCase() === typed.toLowerCase();
+    if (alreadyResolved) return;
+    if (!mapsConfig?.key) {
+      setLocationError("We couldn't verify that place — try 'Dubai, United Arab Emirates'.");
+      return;
+    }
+    setResolving(true);
+    try {
+      const coords = await geocodeCityCountry(mapsConfig.key, typed);
+      if (!coords) {
+        setLocationError("We couldn't find that place — try 'Dubai, United Arab Emirates'.");
+        return;
+      }
+      const parts = typed.split(",").map((s) => s.trim()).filter(Boolean);
+      const city = parts.length > 1 ? parts[0] : typed;
+      const country = parts.length > 1 ? parts.slice(1).join(", ") : "";
+      updateFormData({
+        city,
+        country: country || formData.country || "",
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      });
+    } finally {
+      setResolving(false);
+    }
+  }, [formData.locationQuery, formData.city, formData.country, savedLocation, mapsConfig?.key, updateFormData]);
 
   const handleGeolocate = () => {
     if (!navigator.geolocation) return;
@@ -154,9 +193,10 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
         <div className="space-y-2">
           <Label>Location *</Label>
           <PlacesAutocompleteField
-            value={locationQuery}
+            value={formData.locationQuery}
             onChange={(v) => {
-              setLocationQuery(v);
+              updateFormData({ locationQuery: v });
+              setLocationError(null);
               // Typing invalidates the previously picked place so stale
               // city/country/coordinates can never linger behind new text.
               if (formData.city || formData.country || formData.latitude || formData.longitude) {
@@ -164,19 +204,30 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
               }
             }}
             onSelect={(place) => {
-              setLocationQuery(place.description);
               updateFormData({
+                locationQuery: place.description,
                 city: place.city,
                 country: place.country,
                 latitude: place.latitude,
                 longitude: place.longitude,
               });
+              setLocationError(null);
             }}
+            onBlur={resolveLocation}
             placeholder="Search for your city..."
             types={["(cities)"]}
           />
 
-          {formData.city && (
+          {resolving && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Looking up that place…
+            </p>
+          )}
+          {locationError && (
+            <p className="text-xs text-destructive">{locationError}</p>
+          )}
+          {formData.city && !locationError && (
             <p className="text-xs text-muted-foreground">
               📍 {[formData.city, formData.country].filter(Boolean).join(", ")}
               {formData.latitude && formData.longitude && ` (${formData.latitude.toFixed(4)}, ${formData.longitude.toFixed(4)})`}
