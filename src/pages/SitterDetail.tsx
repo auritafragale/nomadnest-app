@@ -641,15 +641,45 @@ const SitterDetail = () => {
                   <div className="mb-6">
                     <p className="font-medium mb-2">Experienced with</p>
                     <div className="flex flex-wrap gap-2">
-                      {dedupePetTypes(sitter.pet_types).map((petType) => {
-                        const Icon = petTypeIcon(petType);
+                      {(() => {
+                        const pets = dedupePetTypes(sitter.pet_types);
+                        const visible = pets.slice(0, 4);
+                        const hidden = pets.slice(4);
                         return (
-                          <Badge key={petType} variant="secondary" className="gap-1 capitalize">
-                            <Icon className="w-3 h-3" />
-                            {formatPetType(petType)}
-                          </Badge>
+                          <>
+                            {visible.map((petType) => {
+                              const Icon = petTypeIcon(petType);
+                              return (
+                                <Badge key={petType} variant="secondary" className="gap-1 capitalize">
+                                  <Icon className="w-3 h-3" />
+                                  {formatPetType(petType)}
+                                </Badge>
+                              );
+                            })}
+                            {hidden.length > 0 && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button type="button" className="inline-flex items-center gap-1 rounded-full bg-secondary text-secondary-foreground px-2.5 py-1 text-xs font-medium hover:bg-secondary/80">
+                                    +{hidden.length}
+                                    <ChevronDown className="w-3 h-3" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                  {hidden.map((petType) => {
+                                    const Icon = petTypeIcon(petType);
+                                    return (
+                                      <DropdownMenuItem key={petType} className="gap-2 capitalize">
+                                        <Icon className="w-3 h-3" />
+                                        {formatPetType(petType)}
+                                      </DropdownMenuItem>
+                                    );
+                                  })}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </>
                         );
-                      })}
+                      })()}
                     </div>
                   </div>
                 )}
