@@ -37,12 +37,8 @@ interface FilterBottomSheetProps {
 const FilterBottomSheet = ({ open, onClose, filters, onApply }: FilterBottomSheetProps) => {
   const [draft, setDraft] = useState<MobileFilters>(filters);
 
-  const toggleReason = (v: string) => {
-    setDraft((d) => ({
-      ...d,
-      reasons: d.reasons.includes(v) ? d.reasons.filter((r) => r !== v) : [...d.reasons, v],
-    }));
-  };
+
+
 
   const togglePet = (v: string) => {
     setDraft((d) => ({
