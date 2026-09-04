@@ -218,6 +218,24 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                   </CollapsibleContent>
                 </Collapsible>
               )}
+
+              {/* Actions — Edit + View on one row, aligned right */}
+              <div className="flex items-center justify-end gap-2 mt-3">
+                <Link to={`/edit-listing/${listing.id}`}>
+                  <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
+                    <Edit className="w-3 h-3 mr-1" />
+                    Edit
+                  </Button>
+                </Link>
+                {listing.status === "published" && (
+                  <Link to={`/listing/${listing.id}`}>
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+                      <Eye className="w-3 h-3 mr-1" />
+                      View
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
