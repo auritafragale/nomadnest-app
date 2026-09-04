@@ -302,6 +302,7 @@ export const convertToFormData = (listing: ListingWithDetails): ListingFormData 
     home_type: listing.home_type || "",
     city: listing.city || "",
     country: listing.country || "",
+    locationQuery: [listing.city, listing.country].filter(Boolean).join(", ") || "",
     area: listing.area || "",
     address_private: listing.address_private || "",
     latitude: listing.latitude || null,
