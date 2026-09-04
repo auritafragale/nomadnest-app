@@ -121,7 +121,7 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
   const selected = nomads.find((n) => n.user_id === selectedId);
 
   return (
-    <div className="h-64 md:h-96 w-full rounded-lg overflow-hidden border border-border">
+    <div className="w-full aspect-[4/5] min-h-[320px] max-h-[75vh] md:aspect-auto md:h-96 md:max-h-none rounded-lg overflow-hidden border border-border">
       <Map
         defaultCenter={{ lat: 30, lng: 0 }}
         defaultZoom={2}
