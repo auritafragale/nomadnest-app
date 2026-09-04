@@ -90,6 +90,7 @@ const initialFormData: ListingFormData = {
   home_type: "",
   city: "",
   country: "",
+  locationQuery: "",
   area: "",
   address_private: "",
   latitude: null,
