@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { sendNotification } from "@/lib/notifications";
 
 export interface Sit {
   id: string;
@@ -114,7 +115,9 @@ export const useUpdateSitStatus = () => {
       if (status === "cancelled") {
         const { data: sit } = await supabase
           .from("sits")
-          .select("owner_user_id, sitter_user_id, listing:listings(title)")
+          .select(
+            "owner_user_id, sitter_user_id, listing:listings(title), sit_dates:sit_dates_id(start_date, end_date)",
+          )
           .eq("id", sitId)
           .maybeSingle();
 
@@ -127,6 +130,25 @@ export const useUpdateSitStatus = () => {
             title: "Sit cancelled",
             message: `${(sit.listing as { title?: string } | null)?.title || "A sit"} was cancelled. Reason: ${reason?.trim() || "no reason given"}`,
             data: { url: "/dashboard", sit_id: sitId },
+          });
+
+          // Email + push for the other party.
+          const { data: me } = await supabase
+            .from("profiles")
+            .select("first_name, last_name")
+            .eq("id", user.id)
+            .maybeSingle();
+          const dates = sit.sit_dates as { start_date?: string; end_date?: string } | null;
+          await sendNotification({
+            type: "sit_cancelled",
+            recipientUserId: otherUserId,
+            data: {
+              listingTitle: (sit.listing as { title?: string } | null)?.title || "a sit",
+              cancelledByName: [me?.first_name, me?.last_name].filter(Boolean).join(" ") || "The other party",
+              reason: reason?.trim() || "",
+              startDate: dates?.start_date || "",
+              endDate: dates?.end_date || "",
+            },
           });
         }
       }
@@ -145,6 +167,10 @@ export const useUpdateSitStatus = () => {
     },
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ["sits", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["sitter-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["owner-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["owner-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
       const statusLabel = status.replace("_", " ");
       toast.success(`Sit marked as ${statusLabel}`);
     },
