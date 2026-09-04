@@ -132,35 +132,8 @@ const OwnerCard = ({
   user: any;
   role: string | null;
 }) => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const startConversation = useStartConversation();
-  const [isStartingChat, setIsStartingChat] = useState(false);
   const { averageRating, reviewCount } = useOwnerAverageRating(listing.owner_user_id);
 
-  const canMessage = user && !isOwner && (role === "sitter" || role === "both");
-
-  const handleMessage = async () => {
-    if (!user || !listing.owner_user_id) return;
-
-    setIsStartingChat(true);
-    try {
-      const { conversationId } = await startConversation.mutateAsync({
-        otherUserId: listing.owner_user_id,
-        listingId: listing.id,
-      });
-
-      navigate(`/inbox?conversation=${conversationId}`);
-    } catch (error: any) {
-      toast({
-        title: "Error starting conversation",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsStartingChat(false);
-    }
-  };
 
   return (
     <Card>
