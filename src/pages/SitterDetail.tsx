@@ -65,6 +65,7 @@ import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import SitterLocationMap from "@/components/maps/SitterLocationMap";
 import VerificationBadges from "@/components/ui/VerificationBadges";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
+import { formatPetType, petTypeIcon, dedupePetTypes } from "@/lib/petTypes";
 
 interface SitterProfile {
   id: string;
