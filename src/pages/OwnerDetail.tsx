@@ -322,7 +322,6 @@ const OwnerDetail = () => {
                 </div>
 
 
-
                 {/* Bio */}
                 {ownerProfile?.bio && (
                   <div>
