@@ -276,6 +276,19 @@ const SitterDashboard = ({
 }) => {
   const profileCompletion = calculateSitterProfileCompletion(profile, sitterProfile);
   const { data: applications = [], isLoading: applicationsLoading } = useSitterApplications();
+  const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "completed">("all");
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const visibleApplications = applications.filter((a) => {
+    const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
+    if (appTab === "accepted") return a.status === "accepted" && !ended;
+    if (appTab === "pending") return a.status === "applied" || a.status === "shortlisted";
+    if (appTab === "completed") return a.status === "accepted" && ended;
+    return true;
+  });
+  const showApplications = (tab: "all" | "accepted" | "pending" | "completed") => {
+    setAppTab(tab);
+    document.getElementById("my-applications")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const applicationStats = {
     total: applications.length,
@@ -344,27 +357,21 @@ const SitterDashboard = ({
             <CardTitle className="text-lg">Your stats</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <Link
-              to="/applications"
-              className="flex justify-between items-center rounded-lg px-2 py-2 -mx-2 hover:bg-muted transition-colors"
-            >
-              <span className="text-sm text-muted-foreground">Applications sent</span>
-              <Badge variant="secondary">{applicationStats.total}</Badge>
-            </Link>
-            <Link
-              to="/applications?status=applied"
-              className="flex justify-between items-center rounded-lg px-2 py-2 -mx-2 hover:bg-muted transition-colors"
-            >
-              <span className="text-sm text-muted-foreground">Awaiting reply</span>
-              <Badge variant="secondary">{applicationStats.pending}</Badge>
-            </Link>
-            <Link
-              to="/applications?status=accepted"
-              className="flex justify-between items-center rounded-lg px-2 py-2 -mx-2 hover:bg-muted transition-colors"
-            >
-              <span className="text-sm text-muted-foreground">Accepted</span>
-              <Badge variant="secondary">{applicationStats.accepted}</Badge>
-            </Link>
+            {[
+              { label: "Applications sent", value: applicationStats.total, tab: "all" as const },
+              { label: "Awaiting reply", value: applicationStats.pending, tab: "pending" as const },
+              { label: "Accepted", value: applicationStats.accepted, tab: "accepted" as const },
+            ].map((stat) => (
+              <button
+                key={stat.label}
+                type="button"
+                onClick={() => showApplications(stat.tab)}
+                className="w-full flex justify-between items-center rounded-lg px-2 py-2 -mx-2 hover:bg-muted transition-colors text-left"
+              >
+                <span className="text-sm text-muted-foreground">{stat.label}</span>
+                <Badge variant="secondary">{stat.value}</Badge>
+              </button>
+            ))}
           </CardContent>
         </Card>
       </div>
@@ -410,7 +417,7 @@ const SitterDashboard = ({
         </div>
 
         {/* My Applications */}
-        <Card>
+        <Card id="my-applications">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />
@@ -424,16 +431,24 @@ const SitterDashboard = ({
             <CardDescription>Track your sit applications</CardDescription>
           </CardHeader>
           <CardContent>
+            <Tabs value={appTab} onValueChange={(v) => setAppTab(v as typeof appTab)} className="mb-4">
+              <TabsList className="w-full justify-start overflow-x-auto">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="accepted">Accepted</TabsTrigger>
+                <TabsTrigger value="pending">Pending</TabsTrigger>
+                <TabsTrigger value="completed">Completed</TabsTrigger>
+              </TabsList>
+            </Tabs>
             {applicationsLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
                   <Skeleton key={i} className="h-24 w-full rounded-lg" />
                 ))}
               </div>
-            ) : applications.length === 0 ? (
+            ) : visibleApplications.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="font-medium">No applications yet</p>
+                <p className="font-medium">No applications here yet</p>
                 <p className="text-sm mt-1">Start browsing sits to apply!</p>
                 <Link to="/browse-sits">
                   <Button className="mt-4">
@@ -444,12 +459,12 @@ const SitterDashboard = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {applications.slice(0, 5).map((application) => (
+                {visibleApplications.slice(0, 5).map((application) => (
                   <SitterApplicationCard key={application.id} application={application} />
                 ))}
-                {applications.length > 5 && (
+                {visibleApplications.length > 5 && (
                   <p className="text-sm text-muted-foreground text-center pt-2">
-                    And {applications.length - 5} more applications...
+                    And {visibleApplications.length - 5} more applications...
                   </p>
                 )}
               </div>
@@ -554,18 +569,20 @@ const OwnerDashboard = ({
             <CardTitle className="text-lg">Your stats</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Active listings</span>
-              <Badge variant="secondary">{listingStats.published}</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Draft listings</span>
-              <Badge variant="secondary">{listingStats.draft}</Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Applications received</span>
-              <Badge variant="secondary">{listingStats.applications}</Badge>
-            </div>
+            {[
+              { label: "Active listings", value: listingStats.published, to: "/dashboard#my-listings" },
+              { label: "Draft listings", value: listingStats.draft, to: "/dashboard#my-listings" },
+              { label: "Applications received", value: listingStats.applications, to: "/applications" },
+            ].map((stat) => (
+              <Link
+                key={stat.label}
+                to={stat.to}
+                className="flex justify-between items-center rounded-lg px-2 py-2 -mx-2 hover:bg-muted transition-colors"
+              >
+                <span className="text-sm text-muted-foreground">{stat.label}</span>
+                <Badge variant="secondary">{stat.value}</Badge>
+              </Link>
+            ))}
           </CardContent>
         </Card>
       </div>
