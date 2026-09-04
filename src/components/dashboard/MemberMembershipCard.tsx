@@ -63,75 +63,74 @@ const MemberMembershipCard = ({ role, name, subtitle, avatarUrl, userId }: Membe
             )}
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold truncate">{name}</h3>
-            {/* Badges sit directly under the name to save vertical space */}
-            {!loading && subscribed && (
-              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                {planName && (
-                  <Badge variant="default" className="bg-primary/10 text-primary border-0 text-[11px] px-2 py-0">
-                    {planName}
-                  </Badge>
-                )}
-                {foundingMember && <FoundingMemberBadge />}
-              </div>
+            {/* Founding Member sits beside the name */}
+            <div className="flex items-center gap-2 min-w-0">
+              <h3 className="font-semibold truncate">{name}</h3>
+              {!loading && foundingMember && <FoundingMemberBadge />}
+            </div>
+            {/* Plan badge directly under the name */}
+            {!loading && subscribed && planName && (
+              <Badge
+                variant="default"
+                className="bg-primary/10 text-primary border-0 text-[11px] px-2 py-0 mt-0.5"
+              >
+                {planName}
+              </Badge>
             )}
             <p className="text-xs text-muted-foreground truncate mt-0.5">{subtitle}</p>
           </div>
         </div>
 
-        {/* Membership */}
-        <div className="rounded-xl border border-border bg-muted/30 p-2.5 space-y-2">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Crown className="w-4 h-4 text-accent shrink-0" />
-            Membership
+        {/* Membership — inline, no boxed section */}
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+        ) : subscribed ? (
+          <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+            {subscriptionEnd && (
+              <span>
+                Renews{" "}
+                {new Date(subscriptionEnd).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            )}
+            {!foundingMember && (
+              <Button
+                variant="link"
+                size="sm"
+                onClick={handleManage}
+                disabled={portalLoading}
+                className="h-auto p-0 text-xs"
+              >
+                {portalLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                ) : (
+                  <CreditCard className="w-3.5 h-3.5 mr-1.5" />
+                )}
+                Manage subscription
+              </Button>
+            )}
             <HelpTooltip
               label="About membership"
               content="Your membership tier gates listing creation and inviting nomads. NomadNest is a barter — free stays for free sitting — so the membership covers running the platform, not the sit."
             />
           </div>
-
-          {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-          ) : subscribed ? (
-            <>
-              {subscriptionEnd ? (
-                <p className="text-xs text-muted-foreground">
-                  Renews{" "}
-                  {new Date(subscriptionEnd).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </p>
-              ) : null}
-
-              {!foundingMember && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleManage}
-                  disabled={portalLoading}
-                  className="w-full"
-                >
-                  {portalLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <CreditCard className="w-4 h-4 mr-2" />
-                  )}
-                  Manage Subscription
-                </Button>
-              )}
-            </>
-          ) : (
-            <>
-              <p className="text-xs text-muted-foreground">No active membership</p>
-              <Button size="sm" onClick={() => navigate("/membership")} className="w-full">
-                <Crown className="w-4 h-4 mr-2" />
-                View Plans
-              </Button>
-            </>
-          )}
-        </div>
+        ) : (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>No active membership</span>
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => navigate("/membership")}
+              className="h-auto p-0 text-xs"
+            >
+              <Crown className="w-3.5 h-3.5 mr-1.5" />
+              View plans
+            </Button>
+          </div>
+        )}
 
         <div className="flex gap-2">
           <Link to={editTo} className="flex-1 min-w-0">
@@ -150,5 +149,6 @@ const MemberMembershipCard = ({ role, name, subtitle, avatarUrl, userId }: Membe
     </Card>
   );
 };
+
 
 export default MemberMembershipCard;
