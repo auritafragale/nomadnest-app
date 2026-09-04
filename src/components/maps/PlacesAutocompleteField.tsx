@@ -96,6 +96,26 @@ const PlacesAutocompleteField = ({
       }
       const requestId = ++requestIdRef.current;
 
+      const legacy = () => {
+        if (!serviceRef.current) {
+          if (g.AutocompleteService) {
+            serviceRef.current = new g.AutocompleteService();
+            placesServiceRef.current = new g.PlacesService(document.createElement("div"));
+          } else {
+            setPredictions([]);
+            return;
+          }
+        }
+        serviceRef.current.getPlacePredictions(
+          { input, types, sessionToken: sessionTokenRef.current },
+          (results: any[] | null) => {
+            if (requestId !== requestIdRef.current) return;
+            setPredictions((results || []).slice(0, 6));
+            setHighlight(0);
+          },
+        );
+      };
+
       if (g.AutocompleteSuggestion?.fetchAutocompleteSuggestions) {
         try {
           const { suggestions } = await g.AutocompleteSuggestion.fetchAutocompleteSuggestions({
@@ -104,29 +124,38 @@ const PlacesAutocompleteField = ({
             sessionToken: sessionTokenRef.current ?? undefined,
           });
           if (requestId !== requestIdRef.current) return;
-          setPredictions(
-            (suggestions || [])
-              .map((s: any) => s.placePrediction)
-              .filter(Boolean)
-              .slice(0, 6)
-              .map((p: any) => ({
-                place_id: p.placeId,
-                description: p.text?.toString?.() || p.text?.text || "",
-                _prediction: p,
-              }))
-              .filter((p: any) => p.description)
-          );
+          const mapped = (suggestions || [])
+            .map((s: any) => s.placePrediction)
+            .filter(Boolean)
+            .slice(0, 6)
+            .map((p: any) => ({
+              place_id: p.placeId,
+              description: p.text?.toString?.() || p.text?.text || "",
+              _prediction: p,
+            }))
+            .filter((p: any) => p.description);
+          // If the new API is not enabled for this key it can return nothing;
+          // fall back to the legacy service so members still get suggestions.
+          if (mapped.length === 0) {
+            legacy();
+            return;
+          }
+          setPredictions(mapped);
           setHighlight(0);
         } catch {
-          if (requestId === requestIdRef.current) setPredictions([]);
+          if (requestId === requestIdRef.current) legacy();
         }
         return;
       }
+
+      legacy();
+      return;
 
       if (!serviceRef.current) {
         setPredictions([]);
         return;
       }
+
       serviceRef.current.getPlacePredictions(
         { input, types, sessionToken: sessionTokenRef.current },
         (results: any[] | null) => {
