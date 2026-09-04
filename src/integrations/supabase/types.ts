@@ -1492,6 +1492,7 @@ export type Database = {
         | "accepted"
         | "declined"
         | "withdrawn"
+        | "cancelled"
       conversation_type: "listing" | "direct" | "city_chat"
       listing_status: "draft" | "published" | "paused"
       report_status: "pending" | "reviewed" | "resolved" | "dismissed"
@@ -1632,6 +1633,7 @@ export const Constants = {
         "accepted",
         "declined",
         "withdrawn",
+        "cancelled",
       ],
       conversation_type: ["listing", "direct", "city_chat"],
       listing_status: ["draft", "published", "paused"],

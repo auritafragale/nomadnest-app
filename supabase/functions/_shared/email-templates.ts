@@ -42,6 +42,7 @@ export type NotificationType =
   | "invite"
   | "review"
   | "review_reminder"
+  | "sit_cancelled"
   | "id_verification_approved";
 
 export function buildNotificationEmail(
@@ -144,6 +145,22 @@ export function buildNotificationEmail(
         pushUrl: "/dashboard",
       };
     }
+    case "sit_cancelled":
+      return {
+        subject: `Your sit at ${data.listingTitle} has been cancelled`,
+        preview: `${data.cancelledByName || "The other party"} cancelled the sit`,
+        heading: "A confirmed sit has been cancelled",
+        body: `
+          <p>Unfortunately the sit at <strong>${data.listingTitle}</strong> (${data.startDate} – ${data.endDate}) has been cancelled by <strong>${data.cancelledByName || "the other party"}</strong>.</p>
+          ${data.reason ? quote(data.reason) : ""}
+          <p>The dates are open again, so you can keep looking for your next match.</p>
+        `,
+        ctaLabel: "Open your dashboard",
+        ctaUrl: `${data.appUrl}/dashboard`,
+        pushTitle: "Sit cancelled",
+        pushBody: `${data.listingTitle} was cancelled${data.reason ? `: ${data.reason}` : ""}`,
+        pushUrl: "/dashboard",
+      };
     case "id_verification_approved":
       return {
         subject: "Your ID has been verified ✓",
@@ -415,6 +432,7 @@ export function getPreviewTemplates(): PreviewTemplate[] {
     { id: "invite", label: "Sit invitation (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("invite", sample) },
     { id: "review", label: "New review", group: "Notifications", build: () => buildNotificationEmail("review", sample) },
     { id: "review_reminder", label: "Review reminder", group: "Notifications", build: () => buildNotificationEmail("review_reminder", sample) },
+    { id: "sit_cancelled", label: "Sit cancelled", group: "Notifications", build: () => buildNotificationEmail("sit_cancelled", sample) },
     { id: "id_verification_approved", label: "ID verified", group: "Notifications", build: () => buildNotificationEmail("id_verification_approved", sample) },
     { id: "membership_activated", label: "Membership activated", group: "Membership", build: () => buildMembershipEmail("activated", { planName: "Combined Membership", endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },
     { id: "membership_renewal_reminder", label: "Renewal reminder", group: "Membership", build: () => buildMembershipEmail("renewal_reminder", { endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },

@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.cancel_applications_on_sit_cancel() FROM anon, authenticated, PUBLIC;

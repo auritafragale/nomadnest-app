@@ -25,11 +25,13 @@ const MapContent = ({ latitude, longitude, title }: ListingLocationMapProps) => 
   const { listingMapId } = useGoogleMapsConfig();
 
   return (
-    <div className="w-full h-[250px] rounded-lg overflow-hidden border border-border">
+    <div className="w-full h-[45vh] sm:h-[250px] rounded-lg overflow-hidden border border-border">
       <Map
         defaultCenter={{ lat: latitude, lng: longitude }}
         defaultZoom={13}
         gestureHandling="cooperative"
+        rotateControl={false}
+        tilt={0}
         disableDefaultUI
         streetViewControl={false}
         zoomControl={false}

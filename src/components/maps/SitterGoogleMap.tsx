@@ -225,11 +225,13 @@ const MapContent = ({ sitters }: SitterGoogleMapProps) => {
   const selected = sittersWithCoords.find((s) => s.user_id === selectedUserId) || null;
 
   return (
-    <div className="w-full h-[600px] rounded-lg overflow-hidden border border-border relative">
+    <div className="w-full h-[70vh] sm:h-[600px] rounded-lg overflow-hidden border border-border relative">
       <Map
         defaultCenter={{ lat: 25, lng: 10 }}
         defaultZoom={2}
         gestureHandling="greedy"
+        rotateControl={false}
+        tilt={0}
         disableDefaultUI={false}
         streetViewControl={false}
         zoomControl={false}

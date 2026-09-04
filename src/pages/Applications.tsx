@@ -25,6 +25,7 @@ const statusTabs: { value: FilterStatus; label: string }[] = [
   { value: "shortlisted", label: "Shortlisted" },
   { value: "accepted", label: "Accepted" },
   { value: "declined", label: "Declined" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 const Applications = () => {

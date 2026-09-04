@@ -27,7 +27,7 @@ import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection"
 import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompletenessCard";
 import { useOwnerApplications } from "@/hooks/useApplications";
 import { OwnerApplicationPreviewCard } from "@/components/dashboard/OwnerApplicationPreviewCard";
-import MembershipStatusCard from "@/components/dashboard/MembershipStatusCard";
+import MemberMembershipCard from "@/components/dashboard/MemberMembershipCard";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import MobileHomeScreen from "@/components/mobile/MobileHomeScreen";
 import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
@@ -183,7 +183,7 @@ const Dashboard = () => {
       </div>
 
       <main className={`pb-12 ${showPushBanner ? "pt-16 md:pt-32" : "pt-4 md:pt-20"}`}>
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-3 sm:px-4 max-w-full">
           <Breadcrumbs />
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
@@ -198,13 +198,28 @@ const Dashboard = () => {
               </p>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              {activeRole === "owner" ? (
+                <Link to="/create-listing">
+                  <Button size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Listing
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/saved">
+                  <Button size="sm" variant="outline">
+                    <Heart className="w-4 h-4 mr-2" />
+                    Saved Sits
+                  </Button>
+                </Link>
+              )}
               <Link to="/settings">
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" aria-label="Settings">
                   <Settings className="w-4 h-4" />
                 </Button>
               </Link>
-              <Button variant="outline" onClick={handleSignOut}>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign out
               </Button>
@@ -276,22 +291,24 @@ const SitterDashboard = ({
 }) => {
   const profileCompletion = calculateSitterProfileCompletion(profile, sitterProfile);
   const { data: applications = [], isLoading: applicationsLoading } = useSitterApplications();
-  const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "completed">("all");
+  const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "completed" | "cancelled">("all");
   const todayISO = new Date().toISOString().slice(0, 10);
   const visibleApplications = applications.filter((a) => {
     const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
     if (appTab === "accepted") return a.status === "accepted" && !ended;
     if (appTab === "pending") return a.status === "applied" || a.status === "shortlisted";
     if (appTab === "completed") return a.status === "accepted" && ended;
+    if (appTab === "cancelled") return a.status === "cancelled";
+    if (appTab === "all") return a.status !== "cancelled";
     return true;
   });
-  const showApplications = (tab: "all" | "accepted" | "pending" | "completed") => {
+  const showApplications = (tab: "all" | "accepted" | "pending" | "completed" | "cancelled") => {
     setAppTab(tab);
     document.getElementById("my-applications")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const applicationStats = {
-    total: applications.length,
+    total: applications.filter((a) => a.status !== "cancelled").length,
     pending: applications.filter((a) => a.status === "applied").length,
     accepted: applications.filter((a) => a.status === "accepted").length,
   };
@@ -307,49 +324,14 @@ const SitterDashboard = ({
           sitterProfile={sitterProfile}
         />
 
-        {/* Membership Status */}
-        <MembershipStatusCard />
-
-        {/* Profile Card */}
-        <Card variant="elevated">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt="Avatar"
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  <User className="w-8 h-8 text-primary" />
-                )}
-              </div>
-              <div>
-                <h3 className="font-semibold">
-                  {profile?.first_name} {profile?.last_name}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {sitterProfile?.headline || "Add a headline to stand out"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Link to="/edit-sitter-profile" className="flex-1">
-                <Button className="w-full">
-                  <User className="w-4 h-4 mr-2" />
-                  Edit Nomad Profile
-                </Button>
-              </Link>
-              <Link to={`/sitter/${userId}`}>
-                <Button variant="ghost" size="icon" title="View as others see it">
-                  <Eye className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Membership + member card (merged) */}
+        <MemberMembershipCard
+          role="sitter"
+          name={`${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim() || "Your profile"}
+          subtitle={sitterProfile?.headline || "Add a headline to stand out"}
+          avatarUrl={profile?.avatar_url}
+          userId={userId}
+        />
 
         {/* Quick Stats */}
         <Card>
@@ -379,24 +361,7 @@ const SitterDashboard = ({
       {/* Middle Column - Actions & Applications */}
       <div className="md:col-span-1 lg:col-span-2 space-y-6">
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link to="/browse-sits">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Search className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Browse Sits</h3>
-                    <p className="text-sm text-muted-foreground">Find your next adventure</p>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
+        <div className="grid grid-cols-1 gap-4">
           <Link to="/saved">
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
               <CardContent className="pt-6">
@@ -437,6 +402,7 @@ const SitterDashboard = ({
                 <TabsTrigger value="accepted">Accepted</TabsTrigger>
                 <TabsTrigger value="pending">Pending</TabsTrigger>
                 <TabsTrigger value="completed">Completed</TabsTrigger>
+                <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
               </TabsList>
             </Tabs>
             {applicationsLoading ? (
@@ -510,6 +476,9 @@ const OwnerDashboard = ({
     (a) => a.status === "applied" || a.status === "shortlisted"
   );
 
+  // Cancelled applications belong in the Cancelled tab, not the dashboard feed.
+  const liveApplications = applications.filter((a) => a.status !== "cancelled");
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {/* Left Column */}
@@ -521,47 +490,14 @@ const OwnerDashboard = ({
           ownerProfile={ownerProfile}
         />
 
-        {/* Membership Status */}
-        <MembershipStatusCard />
-
-        {/* Profile Card */}
-        <Card variant="elevated">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center">
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt="Avatar"
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  <User className="w-8 h-8 text-secondary" />
-                )}
-              </div>
-              <div>
-                <h3 className="font-semibold">
-                  {profile?.first_name} {profile?.last_name}
-                </h3>
-                <p className="text-sm text-muted-foreground">Pet Parent</p>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Link to="/edit-owner-profile" className="flex-1">
-                <Button className="w-full">
-                  <User className="w-4 h-4 mr-2" />
-                  Edit Pet Parent Profile
-                </Button>
-              </Link>
-              <Link to={`/owner/${userId}`}>
-                <Button variant="ghost" size="icon" title="View as others see it">
-                  <Eye className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Membership + member card (merged) */}
+        <MemberMembershipCard
+          role="owner"
+          name={`${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim() || "Your profile"}
+          subtitle="Pet Parent"
+          avatarUrl={profile?.avatar_url}
+          userId={userId}
+        />
 
         {/* Quick Stats */}
         <Card>
@@ -590,7 +526,7 @@ const OwnerDashboard = ({
       {/* Middle Column */}
       <div className="md:col-span-1 lg:col-span-2 space-y-6">
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <Link to="/create-listing">
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
               <CardContent className="pt-6">
@@ -608,22 +544,6 @@ const OwnerDashboard = ({
             </Card>
           </Link>
 
-          <Link to="/browse-sitters">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
-                    <Search className="w-6 h-6 text-secondary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Browse Nomads</h3>
-                    <p className="text-sm text-muted-foreground">Find trusted nomads</p>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-muted-foreground ml-auto" />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
         </div>
 
         {/* My Listings */}
@@ -697,7 +617,7 @@ const OwnerDashboard = ({
                   <Skeleton key={i} className="h-20 w-full rounded-lg" />
                 ))}
               </div>
-            ) : applications.length === 0 ? (
+            ) : liveApplications.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p className="font-medium">No applications yet</p>
@@ -705,13 +625,13 @@ const OwnerDashboard = ({
               </div>
             ) : (
               <div className="space-y-2">
-                {applications.slice(0, 5).map((application) => (
+                {liveApplications.slice(0, 5).map((application) => (
                   <OwnerApplicationPreviewCard key={application.id} application={application} />
                 ))}
-                {applications.length > 5 && (
+                {liveApplications.length > 5 && (
                   <Link to="/applications" className="block">
                     <p className="text-sm text-primary text-center pt-2 hover:underline">
-                      View {applications.length - 5} more applications
+                      View {liveApplications.length - 5} more applications
                     </p>
                   </Link>
                 )}
