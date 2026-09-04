@@ -219,8 +219,8 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                 </Collapsible>
               )}
 
-              {/* Actions — Edit + View on one row, aligned right */}
-              <div className="flex items-center justify-end gap-2 mt-3">
+              {/* Actions — Edit on the left, View on the right */}
+              <div className="flex items-center justify-between gap-2 mt-3">
                 <Link to={`/edit-listing/${listing.id}`}>
                   <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
                     <Edit className="w-3 h-3 mr-1" />
