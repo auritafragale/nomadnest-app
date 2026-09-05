@@ -212,14 +212,6 @@ const EditOwnerProfile = () => {
                 Update your profile information
               </p>
             </div>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Save Changes
-            </Button>
           </div>
 
           <div className="space-y-6">
