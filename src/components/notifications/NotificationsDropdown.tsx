@@ -33,24 +33,8 @@ export const NotificationsDropdown = () => {
       markRead.mutate(notification.id);
     }
 
-    // Navigate based on notification type
-    const data = notification.data as Record<string, string>;
-    switch (notification.type) {
-      case "application_status":
-        navigate("/dashboard");
-        break;
-      case "new_application":
-        navigate("/applications");
-        break;
-      case "new_message":
-        navigate(`/inbox?conversation=${data.conversation_id}`);
-        break;
-      case "invite":
-        navigate("/dashboard");
-        break;
-      default:
-        break;
-    }
+    const target = notificationTarget(notification);
+    if (target) navigate(target);
     setOpen(false);
   };
 
