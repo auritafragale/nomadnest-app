@@ -84,8 +84,8 @@ const formatRange = (start: string, end: string) => {
 const isPast = (end: string) => new Date(end).getTime() < Date.now();
 
 const DemoCard = ({ listing }: { listing: DemoListing }) => (
-  <Link to="/browse-sits" className="group block">
-    <div className="rounded-xl overflow-hidden border border-border bg-surface shadow-soft hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+  <div className="block">
+    <div className="rounded-xl overflow-hidden border border-border bg-surface shadow-soft transition-all duration-300">
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden">
         <img
