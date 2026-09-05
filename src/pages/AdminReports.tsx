@@ -152,7 +152,7 @@ const AdminReports = () => {
                 value={activeTab}
                 onValueChange={(v) => setActiveTab(v as ReportStatus)}
               >
-                <TabsList className="w-full flex overflow-x-auto overflow-y-hidden mb-4">
+                <TabsList className="w-full flex overflow-x-auto overflow-y-hidden justify-start mb-4">
                   {TABS.map((tab) => (
                     <TabsTrigger
                       key={tab}

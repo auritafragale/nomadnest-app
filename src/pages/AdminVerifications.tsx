@@ -213,7 +213,7 @@ const AdminVerifications = () => {
               value={activeTab}
               onValueChange={(v) => setActiveTab(v as "pending" | "approved" | "rejected")}
             >
-              <TabsList className="w-full flex overflow-x-auto overflow-y-hidden mb-4">
+              <TabsList className="w-full flex overflow-x-auto overflow-y-hidden justify-start mb-4">
                 {VERIFICATION_TABS.map(({ key, label }) => (
                   <TabsTrigger key={key} value={key} className="flex-shrink-0 gap-1.5 whitespace-nowrap">
                     <span>{label}</span>
