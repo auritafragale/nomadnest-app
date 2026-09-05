@@ -6,8 +6,9 @@ Build all 8 features from the ideas doc, with the customised 3-strike private-fl
 
 ### 1. Community Integrity Badge (asymmetric reviews)
 - A new `review_windows` tracking table (one row per sit per party: submitted / expired) driven by the existing review window + `review-reminders` cron.
-- When one party reviews and the other lets the 14-day window expire, the reviewer earns the **Community Integrity Badge**.
-- Green checkmark badge shown next to the review count on Nomad and Pet Parent profiles and cards.
+- When one party reviews and the other lets the 14-day window expire, the reviewer is credited in a **Review Response Rate** metric instead of a badge (the green checkmark stays reserved for ID Verification).
+- `total_reviews_written / total_sits_attended` is calculated in the user profile schema and shown as plain text under the member's name on their public profile card: `Review Rate: XX%`.
+- Search results give a slight ranking boost to members with a Review Rate above 80%, to incentivise community participation.
 
 ### 2. Recency-weighted ratings
 - Reviews keep their submission date; rating aggregation weights reviews under 6 months at 1.5× vs reviews older than 12 months.
