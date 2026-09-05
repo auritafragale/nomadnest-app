@@ -67,6 +67,9 @@ interface Pet {
   medication_instructions: string | null;
   vet_info: string | null;
   photos: string[];
+  requires_medication: boolean;
+  reactive_to_animals: boolean;
+  separation_anxiety_tolerance: string | null;
 }
 
 interface SitDate {
