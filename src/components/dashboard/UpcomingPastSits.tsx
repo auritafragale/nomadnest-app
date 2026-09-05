@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { parseISO, isAfter, isBefore, isSameDay, isWithinInterval, startOfToday } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSits } from "@/hooks/useSits";
