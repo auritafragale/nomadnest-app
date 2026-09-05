@@ -23,7 +23,7 @@ Result:
 - Keep the existing status control (Pending / Reviewed / Resolved / Dismissed).
 
 **Report email to founders**
-- Add the reported member's name and a direct link to their profile, plus a link to the report in the admin panel.
+- Add the reported member's name and email address, plus a direct link to their profile and a link to the report in the admin panel.
 - Include any uploaded proof as a link.
 
 **Proof upload (mandatory)**
