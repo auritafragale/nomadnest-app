@@ -4,6 +4,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Star, MapPin } from "lucide-react";
 import { format } from "date-fns";
+import { useState } from "react";
+import { sortReviews, type ReviewSort } from "@/lib/ratingWeights";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SitterReviewsSectionProps {
   sitterUserId: string;
@@ -33,6 +42,7 @@ export const SitterReviewsSection = ({
 }: SitterReviewsSectionProps) => {
   const { data: reviews, isLoading: reviewsLoading } = useSitterReviews(sitterUserId);
   const { data: ratingData, isLoading: ratingLoading } = useSitterAverageRating(sitterUserId);
+  const [sort, setSort] = useState<ReviewSort>("recent");
 
   if (reviewsLoading || ratingLoading) {
     return (
@@ -86,7 +96,16 @@ export const SitterReviewsSection = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {reviews.map((review) => {
+        <Select value={sort} onValueChange={(v) => setSort(v as ReviewSort)}>
+          <SelectTrigger className="w-[170px] h-9 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="recent">Most Recent</SelectItem>
+            <SelectItem value="relevant">Most Relevant</SelectItem>
+          </SelectContent>
+        </Select>
+        {sortReviews(reviews, sort).map((review) => {
           const reviewerName = [review.reviewer.first_name, review.reviewer.last_name]
             .filter(Boolean)
             .join(" ") || "Anonymous";
