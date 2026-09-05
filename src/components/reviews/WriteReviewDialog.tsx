@@ -18,6 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Star, PenLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sendNotification } from "@/lib/notifications";
+import { HOME_FLAG_QUESTIONS, NOMAD_FLAG_QUESTIONS } from "@/lib/trustFlags";
 
 interface WriteReviewDialogProps {
   sitId: string;
