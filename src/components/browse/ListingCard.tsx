@@ -26,6 +26,8 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
 
   const isFavorited = favoriteIds.includes(listing.id);
   const openSitDate = listing.sit_dates.find((d) => d.status === "open");
+  // Set automatically when a sit falls through within 7 days of the start date.
+  const isUrgent = listing.sit_dates.some((d) => d.status === "open" && d.is_urgent);
   const dateRange = openSitDate
     ? `${format(new Date(openSitDate.start_date), "MMM d")} - ${format(new Date(openSitDate.end_date), "MMM d, yyyy")}`
     : "Dates TBD";
@@ -85,8 +87,9 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
               </button>
             )}
             {openSitDate && (
-              <div className="absolute bottom-3 left-3">
+              <div className="absolute bottom-3 left-3 flex gap-1.5">
                 <Badge variant="published">Open</Badge>
+                {isUrgent && <Badge variant="destructive">Urgent</Badge>}
               </div>
             )}
           </div>

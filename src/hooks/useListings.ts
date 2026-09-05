@@ -43,6 +43,7 @@ export interface ListingWithDetails {
     start_date: string;
     end_date: string;
     status: string;
+    is_urgent?: boolean | null;
   }[];
   owner_rating?: { average: number; count: number };
   owner_category_ratings?: CategoryAverage[];
@@ -80,7 +81,8 @@ export const useListings = (filters: ListingFilters = {}) => {
             id,
             start_date,
             end_date,
-            status
+            status,
+            is_urgent
           )
         `)
         .eq("status", "published");

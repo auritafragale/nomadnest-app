@@ -4,6 +4,9 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import { useAuth } from "@/contexts/AuthContext";
+import { useReviewRate } from "@/hooks/useReviewRates";
+import { useCommunityWarning } from "@/hooks/useCommunityWarning";
+import CommunityWarningModal from "@/components/trust/CommunityWarningModal";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -141,6 +144,17 @@ const SitterDetail = () => {
   const [photoOpen, setPhotoOpen] = useState(false);
 
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const { rate: reviewRate } = useReviewRate(userId);
+  const nomadWarning = useCommunityWarning("user", userId);
+  const [warningOpen, setWarningOpen] = useState(false);
+  const isPetParentViewer =
+    !!user && user.id !== userId && (role === "owner" || role === "both");
+
+  // Pet Parents see the cautionary notice as soon as they open a flagged
+  // nomad's profile — once per visit.
+  useEffect(() => {
+    if (isPetParentViewer && nomadWarning.hasWarning) setWarningOpen(true);
+  }, [isPetParentViewer, nomadWarning.hasWarning]);
   
   const startConversation = useStartConversation();
   const { data: ratingData } = useSitterAverageRating(userId);
@@ -519,6 +533,11 @@ const SitterDetail = () => {
                       />
                     )}
                   </div>
+                  {reviewRate?.review_rate !== null && reviewRate?.review_rate !== undefined && (
+                    <p className="text-xs text-muted-foreground">
+                      Review Rate: {reviewRate.review_rate}%
+                    </p>
+                  )}
                   {sitter.headline && (
                     <p className="text-sm md:text-lg text-muted-foreground">
                       {sitter.headline}
@@ -882,6 +901,17 @@ const SitterDetail = () => {
           </div>
         </div>
       </main>
+
+      <CommunityWarningModal
+        open={warningOpen}
+        onOpenChange={setWarningOpen}
+        labels={nomadWarning.labels}
+        audience="nomad"
+        continueLabel="Continue to Nomad Profile"
+        onContinue={() => setWarningOpen(false)}
+      />
+
+
 
       {/* Invite Dialog */}
       <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>

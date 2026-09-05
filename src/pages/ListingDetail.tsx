@@ -36,6 +36,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import { ApplyDialog } from "@/components/applications/ApplyDialog";
+import CommunityWarningModal from "@/components/trust/CommunityWarningModal";
+import { useCommunityWarning } from "@/hooks/useCommunityWarning";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useStartConversation } from "@/hooks/useConversations";
@@ -190,6 +192,8 @@ const ListingDetail = () => {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [selectedDateIds, setSelectedDateIds] = useState<string[]>([]);
+  const [warningOpen, setWarningOpen] = useState(false);
+  const listingWarning = useCommunityWarning("listing", id);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -779,7 +783,11 @@ const ListingDetail = () => {
                   <Button 
                     className="w-full" 
                     size="lg"
-                    onClick={() => setApplyDialogOpen(true)}
+                    onClick={() =>
+                      listingWarning.hasWarning
+                        ? setWarningOpen(true)
+                        : setApplyDialogOpen(true)
+                    }
                     disabled={selectedDateIds.length === 0}
                   >
                     {selectedDateIds.length === 0
@@ -788,6 +796,17 @@ const ListingDetail = () => {
                         ? "Apply for this Sit"
                         : `Apply for ${selectedDateIds.length} date ranges`}
                   </Button>
+                  <CommunityWarningModal
+                    open={warningOpen}
+                    onOpenChange={setWarningOpen}
+                    labels={listingWarning.labels}
+                    audience="listing"
+                    continueLabel="Continue to Application"
+                    onContinue={() => {
+                      setWarningOpen(false);
+                      setApplyDialogOpen(true);
+                    }}
+                  />
                   <ApplyDialog
                     open={applyDialogOpen}
                     onOpenChange={setApplyDialogOpen}

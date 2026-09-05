@@ -70,6 +70,11 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
         <h3 className="font-semibold text-sm leading-tight mb-0.5 group-hover:text-primary transition-colors line-clamp-1 w-full">
           {name}
         </h3>
+        {sitter.review_rate !== null && sitter.review_rate !== undefined && (
+          <p className="text-[11px] text-muted-foreground mb-0.5">
+            Review Rate: {sitter.review_rate}%
+          </p>
+        )}
 
         {/* Location */}
         {location && (

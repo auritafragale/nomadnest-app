@@ -95,6 +95,41 @@ export type Database = {
         }
         Relationships: []
       }
+      cancellation_strikes: {
+        Row: {
+          created_at: string
+          days_before_start: number | null
+          id: string
+          reason: string | null
+          sit_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_before_start?: number | null
+          id?: string
+          reason?: string | null
+          sit_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days_before_start?: number | null
+          id?: string
+          reason?: string | null
+          sit_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cancellation_strikes_sit_id_fkey"
+            columns: ["sit_id"]
+            isOneToOne: false
+            referencedRelation: "sits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       city_chat_message_reactions: {
         Row: {
           created_at: string
@@ -199,6 +234,96 @@ export type Database = {
         }
         Relationships: []
       }
+      community_flags: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          reporter_user_id: string
+          review_id: string | null
+          sit_id: string | null
+          subject_id: string
+          subject_type: string
+          subject_user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          reporter_user_id: string
+          review_id?: string | null
+          sit_id?: string | null
+          subject_id: string
+          subject_type: string
+          subject_user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          reporter_user_id?: string
+          review_id?: string | null
+          sit_id?: string | null
+          subject_id?: string
+          subject_type?: string
+          subject_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_flags_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_flags_sit_id_fkey"
+            columns: ["sit_id"]
+            isOneToOne: false
+            referencedRelation: "sits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_strikes: {
+        Row: {
+          category: string
+          created_at: string
+          flag_count: number
+          id: string
+          show_strike_three_warning: boolean
+          strike_two_email_sent_at: string | null
+          subject_id: string
+          subject_type: string
+          subject_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          flag_count?: number
+          id?: string
+          show_strike_three_warning?: boolean
+          strike_two_email_sent_at?: string | null
+          subject_id: string
+          subject_type: string
+          subject_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          flag_count?: number
+          id?: string
+          show_strike_three_warning?: boolean
+          strike_two_email_sent_at?: string | null
+          subject_id?: string
+          subject_type?: string
+          subject_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           conversation_type: Database["public"]["Enums"]["conversation_type"]
@@ -298,11 +423,13 @@ export type Database = {
           address_private: string | null
           amenities: string[] | null
           area: string | null
+          car_needed: boolean
           city: string | null
           communication_style: string | null
           country: string | null
           created_at: string
           description: string | null
+          heavy_gardening: boolean
           home_care_tasks: string[] | null
           home_care_tasks_other: string | null
           home_type: string | null
@@ -314,6 +441,7 @@ export type Database = {
           longitude: number | null
           owner_user_id: string
           photos: string[] | null
+          remote_location: boolean
           requirements: string[] | null
           requirements_other: string | null
           sleeping_arrangement: string | null
@@ -326,11 +454,13 @@ export type Database = {
           address_private?: string | null
           amenities?: string[] | null
           area?: string | null
+          car_needed?: boolean
           city?: string | null
           communication_style?: string | null
           country?: string | null
           created_at?: string
           description?: string | null
+          heavy_gardening?: boolean
           home_care_tasks?: string[] | null
           home_care_tasks_other?: string | null
           home_type?: string | null
@@ -342,6 +472,7 @@ export type Database = {
           longitude?: number | null
           owner_user_id: string
           photos?: string[] | null
+          remote_location?: boolean
           requirements?: string[] | null
           requirements_other?: string | null
           sleeping_arrangement?: string | null
@@ -354,11 +485,13 @@ export type Database = {
           address_private?: string | null
           amenities?: string[] | null
           area?: string | null
+          car_needed?: boolean
           city?: string | null
           communication_style?: string | null
           country?: string | null
           created_at?: string
           description?: string | null
+          heavy_gardening?: boolean
           home_care_tasks?: string[] | null
           home_care_tasks_other?: string | null
           home_type?: string | null
@@ -370,6 +503,7 @@ export type Database = {
           longitude?: number | null
           owner_user_id?: string
           photos?: string[] | null
+          remote_location?: boolean
           requirements?: string[] | null
           requirements_other?: string | null
           sleeping_arrangement?: string | null
@@ -687,6 +821,9 @@ export type Database = {
           name: string | null
           personality: string | null
           photos: string[] | null
+          reactive_to_animals: boolean
+          requires_medication: boolean
+          separation_anxiety_tolerance: string | null
           type: string
           updated_at: string
           vet_info: string | null
@@ -704,6 +841,9 @@ export type Database = {
           name?: string | null
           personality?: string | null
           photos?: string[] | null
+          reactive_to_animals?: boolean
+          requires_medication?: boolean
+          separation_anxiety_tolerance?: string | null
           type: string
           updated_at?: string
           vet_info?: string | null
@@ -721,6 +861,9 @@ export type Database = {
           name?: string | null
           personality?: string | null
           photos?: string[] | null
+          reactive_to_animals?: boolean
+          requires_medication?: boolean
+          separation_anxiety_tolerance?: string | null
           type?: string
           updated_at?: string
           vet_info?: string | null
@@ -746,6 +889,7 @@ export type Database = {
           email: string
           email_verified: boolean
           first_name: string | null
+          flagged_for_admin_review: boolean
           founding_member: boolean | null
           full_name: string | null
           id: string
@@ -762,6 +906,7 @@ export type Database = {
           phone_number: string | null
           phone_verified: boolean
           phone_verified_at: string | null
+          reliability_score: number
           updated_at: string
         }
         Insert: {
@@ -773,6 +918,7 @@ export type Database = {
           email: string
           email_verified?: boolean
           first_name?: string | null
+          flagged_for_admin_review?: boolean
           founding_member?: boolean | null
           full_name?: string | null
           id: string
@@ -789,6 +935,7 @@ export type Database = {
           phone_number?: string | null
           phone_verified?: boolean
           phone_verified_at?: string | null
+          reliability_score?: number
           updated_at?: string
         }
         Update: {
@@ -800,6 +947,7 @@ export type Database = {
           email?: string
           email_verified?: boolean
           first_name?: string | null
+          flagged_for_admin_review?: boolean
           founding_member?: boolean | null
           full_name?: string | null
           id?: string
@@ -816,6 +964,7 @@ export type Database = {
           phone_number?: string | null
           phone_verified?: boolean
           phone_verified_at?: string | null
+          reliability_score?: number
           updated_at?: string
         }
         Relationships: []
@@ -921,6 +1070,12 @@ export type Database = {
       reviews: {
         Row: {
           created_at: string
+          flag_abandonment: boolean
+          flag_home_cleanliness: boolean
+          flag_pet_aggression: boolean
+          flag_pet_neglect: boolean
+          flag_sitter_cleanliness: boolean
+          flag_undisclosed_cameras: boolean
           id: string
           rating: number
           rating_cleanliness: number | null
@@ -939,6 +1094,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          flag_abandonment?: boolean
+          flag_home_cleanliness?: boolean
+          flag_pet_aggression?: boolean
+          flag_pet_neglect?: boolean
+          flag_sitter_cleanliness?: boolean
+          flag_undisclosed_cameras?: boolean
           id?: string
           rating: number
           rating_cleanliness?: number | null
@@ -957,6 +1118,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          flag_abandonment?: boolean
+          flag_home_cleanliness?: boolean
+          flag_pet_aggression?: boolean
+          flag_pet_neglect?: boolean
+          flag_sitter_cleanliness?: boolean
+          flag_undisclosed_cameras?: boolean
           id?: string
           rating?: number
           rating_cleanliness?: number | null
@@ -983,6 +1150,44 @@ export type Database = {
           },
         ]
       }
+      sit_checkins: {
+        Row: {
+          author_user_id: string
+          created_at: string
+          id: string
+          kind: string
+          note: string | null
+          photo_url: string | null
+          sit_id: string
+        }
+        Insert: {
+          author_user_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          note?: string | null
+          photo_url?: string | null
+          sit_id: string
+        }
+        Update: {
+          author_user_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          photo_url?: string | null
+          sit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sit_checkins_sit_id_fkey"
+            columns: ["sit_id"]
+            isOneToOne: false
+            referencedRelation: "sits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sit_dates: {
         Row: {
           created_at: string
@@ -990,6 +1195,7 @@ export type Database = {
           flexibility: string | null
           handover_preference: string | null
           id: string
+          is_urgent: boolean
           listing_id: string
           start_date: string
           status: Database["public"]["Enums"]["sit_date_status"]
@@ -1001,6 +1207,7 @@ export type Database = {
           flexibility?: string | null
           handover_preference?: string | null
           id?: string
+          is_urgent?: boolean
           listing_id: string
           start_date: string
           status?: Database["public"]["Enums"]["sit_date_status"]
@@ -1012,6 +1219,7 @@ export type Database = {
           flexibility?: string | null
           handover_preference?: string | null
           id?: string
+          is_urgent?: boolean
           listing_id?: string
           start_date?: string
           status?: Database["public"]["Enums"]["sit_date_status"]
@@ -1261,6 +1469,50 @@ export type Database = {
         }
         Relationships: []
       }
+      welcome_guides: {
+        Row: {
+          created_at: string
+          emergency_contacts: string | null
+          feeding_schedule: string | null
+          house_notes: string | null
+          id: string
+          listing_id: string
+          updated_at: string
+          vet_info: string | null
+          wifi_info: string | null
+        }
+        Insert: {
+          created_at?: string
+          emergency_contacts?: string | null
+          feeding_schedule?: string | null
+          house_notes?: string | null
+          id?: string
+          listing_id: string
+          updated_at?: string
+          vet_info?: string | null
+          wifi_info?: string | null
+        }
+        Update: {
+          created_at?: string
+          emergency_contacts?: string | null
+          feeding_schedule?: string | null
+          house_notes?: string | null
+          id?: string
+          listing_id?: string
+          updated_at?: string
+          vet_info?: string | null
+          wifi_info?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "welcome_guides_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       public_profiles: {
@@ -1331,6 +1583,22 @@ export type Database = {
           total_members: number
         }[]
       }
+      admin_list_community_strikes: {
+        Args: never
+        Returns: {
+          category: string
+          flag_count: number
+          id: string
+          listing_title: string
+          show_strike_three_warning: boolean
+          strike_two_email_sent_at: string
+          subject_id: string
+          subject_name: string
+          subject_type: string
+          subject_user_id: string
+          updated_at: string
+        }[]
+      }
       admin_list_id_verifications: {
         Args: never
         Returns: {
@@ -1395,6 +1663,17 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      admin_list_reliability_reviews: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          last_strike_at: string
+          reliability_score: number
+          strike_count: number
+          user_id: string
+        }[]
       }
       admin_perk_click_stats: {
         Args: never
@@ -1467,6 +1746,15 @@ export type Database = {
       mark_conversation_messages_read: {
         Args: { _conversation_id: string }
         Returns: undefined
+      }
+      member_review_rates: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          review_rate: number
+          reviews_written: number
+          sits_attended: number
+          user_id: string
+        }[]
       }
       redeem_founding_member_code: {
         Args: { p_code: string; p_user_id: string }

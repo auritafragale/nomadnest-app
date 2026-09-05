@@ -178,6 +178,11 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
             <div
               className={`space-y-2 ${viewMode === "list" ? "" : "text-center"}`}
             >
+              {sitter.review_rate !== null && sitter.review_rate !== undefined && (
+                <p className="text-xs text-muted-foreground">
+                  Review Rate: {sitter.review_rate}%
+                </p>
+              )}
               {location && (
                 <div
                   className={`flex items-center gap-2 text-sm text-muted-foreground ${

@@ -50,6 +50,7 @@ import AdminHub from "./pages/AdminHub";
 import AdminVerifications from "./pages/AdminVerifications";
 import AdminPerks from "./pages/AdminPerks";
 import AdminEmails from "./pages/AdminEmails";
+import AdminTrust from "./pages/AdminTrust";
 
 import Perks from "./pages/Perks";
 import CityChat from "./pages/CityChat";
@@ -150,6 +151,7 @@ const AppShell = () => {
         <Route path="/admin" element={<AdminRoute><AdminHub /></AdminRoute>} />
         <Route path="/admin/perks" element={<AdminRoute><AdminPerks /></AdminRoute>} />
         <Route path="/admin/verifications" element={<AdminRoute><AdminVerifications /></AdminRoute>} />
+        <Route path="/admin/trust" element={<AdminRoute><AdminTrust /></AdminRoute>} />
         <Route path="/admin/emails" element={<AdminRoute><AdminEmails /></AdminRoute>} />
 
         <Route path="/city-chat/:roomId" element={<ProtectedRoute><CityChat /></ProtectedRoute>} />

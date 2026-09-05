@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, ShieldCheck, Gift, Mail } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Gift, Mail, AlertTriangle } from "lucide-react";
 
 const items = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/verifications", label: "Verifications", icon: ShieldCheck },
   { href: "/admin/perks", label: "Perks", icon: Gift },
+  { href: "/admin/trust", label: "Flags & Strikes", icon: AlertTriangle },
   { href: "/admin/emails", label: "Emails", icon: Mail },
 ];
 

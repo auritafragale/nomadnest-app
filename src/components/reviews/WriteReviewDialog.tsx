@@ -18,6 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Star, PenLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sendNotification } from "@/lib/notifications";
+import { HOME_FLAG_QUESTIONS, NOMAD_FLAG_QUESTIONS } from "@/lib/trustFlags";
 
 interface WriteReviewDialogProps {
   sitId: string;
@@ -93,6 +94,20 @@ const WriteReviewDialog = ({
   const categories = reviewType === "sitter" ? NOMAD_CATEGORIES : OWNER_CATEGORIES;
   const allRated = categories.every((c) => ratings[c.key] > 0);
 
+  // `reviewType === "sitter"` means a Pet Parent is reviewing a Nomad.
+  const flagQuestions = reviewType === "sitter" ? NOMAD_FLAG_QUESTIONS : HOME_FLAG_QUESTIONS;
+  const [flagAnswers, setFlagAnswers] = useState<Record<string, "yes" | "no" | undefined>>({});
+  const flagPayload = () => {
+    const payload: Record<string, boolean> = {};
+    for (const q of flagQuestions) {
+      const answer = flagAnswers[q.column];
+      if (!answer) continue;
+      // A flag is raised when the unhealthy answer is given.
+      payload[q.column] = q.yesIsGood ? answer === "no" : answer === "yes";
+    }
+    return payload;
+  };
+
   const handleSubmit = async () => {
     if (!user || !allRated) return;
 
@@ -113,6 +128,7 @@ const WriteReviewDialog = ({
       for (const c of categories) {
         insertPayload[c.key] = ratings[c.key];
       }
+      Object.assign(insertPayload, flagPayload());
 
       const { error } = await supabase
         .from("reviews")
@@ -252,6 +268,43 @@ const WriteReviewDialog = ({
               );
             })}
           </div>
+
+          {/* Private community questions — never shown publicly */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-sm font-semibold">Private questions</Label>
+              <HelpTooltip
+                label="About private questions"
+                content="These answers are never shown on anyone's profile. They only help our community team spot repeated patterns."
+              />
+            </div>
+            {flagQuestions.map((q) => {
+              const answer = flagAnswers[q.column];
+              return (
+                <div key={q.column} className="space-y-1.5">
+                  <Label className="text-sm font-medium">{q.question}</Label>
+                  <div className="flex gap-2">
+                    {(["yes", "no"] as const).map((option) => (
+                      <Button
+                        key={option}
+                        type="button"
+                        size="sm"
+                        variant={answer === option ? "default" : "outline"}
+                        className="flex-1 capitalize"
+                        onClick={() =>
+                          setFlagAnswers((prev) => ({ ...prev, [q.column]: option }))
+                        }
+                      >
+                        {option}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+
 
           {/* Review Text */}
           <div className="space-y-2">
