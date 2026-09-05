@@ -78,7 +78,7 @@ export function buildNotificationEmail(
         ctaUrl: `${data.appUrl}/dashboard`,
         pushTitle: `Application ${data.status === "accepted" ? "Accepted!" : "Updated"}`,
         pushBody: `Your application for ${data.listingTitle} was ${data.status}`,
-        pushUrl: "/dashboard",
+        pushUrl: data.status === "accepted" ? "/dashboard?appTab=accepted" : "/dashboard",
       };
     case "new_message":
       return {
@@ -157,7 +157,7 @@ export function buildNotificationEmail(
         `,
         ctaLabel: "See the cancelled sit",
         ctaUrl: `${data.appUrl}${data.url || "/dashboard"}`,
-        pushTitle: "Sit cancelled",
+        pushTitle: "Sit Cancelled",
         pushBody: `${data.listingTitle} was cancelled${data.reason ? `: ${data.reason}` : ""}`,
         pushUrl: data.url || "/dashboard",
 

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { parseISO, isAfter, isBefore, isSameDay, isWithinInterval, startOfToday } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSits } from "@/hooks/useSits";
@@ -66,71 +67,75 @@ export const UpcomingPastSits = ({ viewAs }: UpcomingPastSitsProps) => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Upcoming Sits */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Upcoming Sits
-            {upcomingSits.length > 0 && (
-              <Badge variant="secondary" className="ml-auto">{upcomingSits.length}</Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {upcomingSits.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground">
-              <Calendar className="w-10 h-10 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No upcoming sits</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {upcomingSits.slice(0, 5).map((sit) => (
-                <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} />
-              ))}
-              {upcomingSits.length > 5 && (
-                <p className="text-sm text-muted-foreground text-center">
-                  +{upcomingSits.length - 5} more upcoming sits
-                </p>
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Calendar className="w-5 h-5" />
+          Sits
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="upcoming">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="upcoming" className="gap-1.5">
+              Upcoming
+              {upcomingSits.length > 0 && (
+                <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                  {upcomingSits.length}
+                </Badge>
               )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Past Sits */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Past Sits
-            {pastSits.length > 0 && (
-              <Badge variant="outline" className="ml-auto">{pastSits.length}</Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {pastSits.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground">
-              <Calendar className="w-10 h-10 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No past sits yet</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {pastSits.slice(0, 3).map((sit) => (
-                <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} />
-              ))}
-              {pastSits.length > 3 && (
-                <p className="text-sm text-muted-foreground text-center">
-                  +{pastSits.length - 3} more past sits
-                </p>
+            </TabsTrigger>
+            <TabsTrigger value="past" className="gap-1.5">
+              Past
+              {pastSits.length > 0 && (
+                <Badge variant="outline" className="h-5 px-1.5 text-xs">
+                  {pastSits.length}
+                </Badge>
               )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </TabsTrigger>
+          </TabsList>
 
-    </div>
+          <TabsContent value="upcoming" className="mt-0">
+            {upcomingSits.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <Calendar className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No upcoming sits</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {upcomingSits.slice(0, 5).map((sit) => (
+                  <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} />
+                ))}
+                {upcomingSits.length > 5 && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    +{upcomingSits.length - 5} more upcoming sits
+                  </p>
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="past" className="mt-0">
+            {pastSits.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <Calendar className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No past sits yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {pastSits.slice(0, 3).map((sit) => (
+                  <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} />
+                ))}
+                {pastSits.length > 3 && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    +{pastSits.length - 3} more past sits
+                  </p>
+                )}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };

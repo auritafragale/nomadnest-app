@@ -18,6 +18,8 @@ import {
   useMarkAllNotificationsRead,
 } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
+import { notificationTarget, notificationTitleClass } from "@/lib/notificationDisplay";
+import { cn } from "@/lib/utils";
 
 export const NotificationsDropdown = () => {
   const navigate = useNavigate();
@@ -33,24 +35,8 @@ export const NotificationsDropdown = () => {
       markRead.mutate(notification.id);
     }
 
-    // Navigate based on notification type
-    const data = notification.data as Record<string, string>;
-    switch (notification.type) {
-      case "application_status":
-        navigate("/dashboard");
-        break;
-      case "new_application":
-        navigate("/applications");
-        break;
-      case "new_message":
-        navigate(`/inbox?conversation=${data.conversation_id}`);
-        break;
-      case "invite":
-        navigate("/dashboard");
-        break;
-      default:
-        break;
-    }
+    const target = notificationTarget(notification);
+    if (target) navigate(target);
     setOpen(false);
   };
 
@@ -112,7 +98,14 @@ export const NotificationsDropdown = () => {
                 }`}
               >
                 <div className="flex items-start justify-between w-full gap-2">
-                  <span className="font-medium text-sm">{notification.title}</span>
+                  <span
+                    className={cn(
+                      "font-medium text-sm",
+                      notificationTitleClass(notification),
+                    )}
+                  >
+                    {notification.title}
+                  </span>
                   {!notification.read_at && (
                     <span className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />
                   )}

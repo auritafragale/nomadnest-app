@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
+import PetTypeIcons from "@/components/browse/PetTypeIcons";
 import {
   Calendar,
   MapPin,
@@ -154,15 +155,7 @@ export const ApplicationCard = ({
           <p className="text-sm text-muted-foreground">{sitterProfile.headline}</p>
         )}
 
-        {sitterProfile?.pet_types && sitterProfile.pet_types.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {sitterProfile.pet_types.map((type) => (
-              <Badge key={type} variant="secondary" className="text-xs">
-                {type}
-              </Badge>
-            ))}
-          </div>
-        )}
+        <PetTypeIcons petTypes={sitterProfile?.pet_types} />
 
         {/* Application Message */}
         {application.message && (

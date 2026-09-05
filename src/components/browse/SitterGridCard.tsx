@@ -1,14 +1,12 @@
 import { Link } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { MapPin, Star, CheckCircle, Dog, Cat, Bird, Rabbit, Fish } from "lucide-react";
+import { MapPin, Star, CheckCircle } from "lucide-react";
 import { SitterWithProfile } from "@/hooks/useSitters";
-import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import MessageSitterButton from "@/components/browse/MessageSitterButton";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
-import { formatPetType, petTypeIcon, dedupePetTypes } from "@/lib/petTypes";
+import PetTypeIcons from "@/components/browse/PetTypeIcons";
 
 
 
@@ -33,14 +31,24 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
     : null;
 
   const { average, count } = sitter.rating;
-  const petTypes = dedupePetTypes(sitter.pet_types).slice(0, 3);
 
   return (
     <Link to={`/sitter/${sitter.user_id}`} className="block h-full">
       <Card
         variant="interactive"
-        className="h-full overflow-hidden group flex flex-col items-center text-center p-3 md:p-4"
+        className="relative h-full overflow-hidden group flex flex-col items-center text-center p-3 md:p-4"
       >
+        {/* Founding Member star (top-left) */}
+        {sitter.profile?.founding_member && (
+          <span
+            className="absolute top-2 left-2 flex items-center justify-center w-6 h-6 rounded-full bg-accent/15 border border-accent"
+            title="Founding Member"
+            aria-label="Founding Member"
+          >
+            <Star className="w-3.5 h-3.5 fill-accent text-accent" />
+          </span>
+        )}
+
         {/* Avatar with verified badge */}
         <div className="relative mb-2.5">
           <Avatar className="w-16 h-16 md:w-20 md:h-20 ring-2 ring-background shadow-sm">
@@ -91,31 +99,11 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
           <RatingPlaceholder className="mb-1.5 justify-center" />
         )}
 
-        {/* Founding Member badge */}
-        {sitter.profile?.founding_member && (
-          <div className="mb-1.5">
-            <FoundingMemberBadge compact />
-          </div>
-        )}
-
-        {/* Pet type tags */}
-        {petTypes.length > 0 && (
-          <div className="flex flex-wrap gap-1 justify-center mt-auto pt-2">
-            {petTypes.map((type) => {
-              const Icon = petTypeIcon(type);
-              return (
-                <Badge
-                  key={type}
-                  variant="muted"
-                  className="gap-0.5 text-[10px] px-1.5 h-5 capitalize"
-                >
-                  <Icon className="w-2.5 h-2.5" />
-                  {formatPetType(type)}
-                </Badge>
-              );
-            })}
-          </div>
-        )}
+        {/* Pet experience — icons only, max 4 then "+" */}
+        <PetTypeIcons
+          petTypes={sitter.pet_types}
+          className="justify-center mt-auto pt-2"
+        />
         {/* Message button */}
         <div className="w-full mt-2" onClick={(e) => e.preventDefault()}>
           <MessageSitterButton

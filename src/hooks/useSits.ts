@@ -131,7 +131,7 @@ export const useUpdateSitStatus = () => {
           await supabase.from("notifications").insert({
             user_id: otherUserId,
             type: "sit_cancelled",
-            title: "Sit cancelled",
+            title: "Sit Cancelled",
             message: `${(sit.listing as { title?: string } | null)?.title || "A sit"} was cancelled. Reason: ${reason?.trim() || "no reason given"}`,
             data: { url, sit_id: sitId },
           });

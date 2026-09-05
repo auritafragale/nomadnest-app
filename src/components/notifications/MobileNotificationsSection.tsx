@@ -11,6 +11,7 @@ import {
 } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { notificationTarget, notificationTitleClass } from "@/lib/notificationDisplay";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -43,25 +44,11 @@ export const MobileNotificationsSection = ({ onNavigate }: MobileNotificationsSe
       markRead.mutate(notification.id);
     }
 
-    const data = notification.data as Record<string, string>;
-    switch (notification.type) {
-      case "application_status":
-        navigate("/dashboard");
-        break;
-      case "new_application":
-        navigate("/applications");
-        break;
-      case "new_message":
-        navigate(`/inbox?conversation=${data.conversation_id}`);
-        break;
-      case "invite":
-        navigate("/dashboard");
-        break;
-      default:
-        break;
-    }
+    const target = notificationTarget(notification);
+    if (target) navigate(target);
     onNavigate?.();
   };
+
 
   return (
     <div className="border-t border-border pt-2">
@@ -149,7 +136,14 @@ export const MobileNotificationsSection = ({ onNavigate }: MobileNotificationsSe
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="font-medium text-sm">{notification.title}</span>
+                  <span
+                    className={cn(
+                      "font-medium text-sm",
+                      notificationTitleClass(notification),
+                    )}
+                  >
+                    {notification.title}
+                  </span>
                   {!notification.read_at && (
                     <span className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />
                   )}

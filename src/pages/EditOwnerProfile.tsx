@@ -212,14 +212,6 @@ const EditOwnerProfile = () => {
                 Update your profile information
               </p>
             </div>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Save Changes
-            </Button>
           </div>
 
           <div className="space-y-6">
@@ -393,7 +385,7 @@ const EditOwnerProfile = () => {
           </div>
 
           {/* Bottom Save Button */}
-          <div className="mt-8 flex justify-end">
+          <div className="mt-8 flex justify-center">
             <Button onClick={handleSave} disabled={saving} size="lg">
               {saving ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

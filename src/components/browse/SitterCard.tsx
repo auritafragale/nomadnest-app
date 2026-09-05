@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
-import { formatPetType, petTypeIcon, dedupePetTypes } from "@/lib/petTypes";
+import PetTypeIcons from "@/components/browse/PetTypeIcons";
 
 interface SitterCardProps {
   sitter: SitterWithProfile;
@@ -206,15 +206,7 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
                 viewMode === "list" ? "" : "justify-center"
               }`}
             >
-              {dedupePetTypes(sitter.pet_types).slice(0, 3).map((petType) => {
-                const Icon = petTypeIcon(petType);
-                return (
-                  <Badge key={petType} variant="muted" className="gap-1 capitalize">
-                    <Icon className="w-3 h-3" />
-                    {formatPetType(petType)}
-                  </Badge>
-                );
-              })}
+              <PetTypeIcons petTypes={sitter.pet_types} />
               <Badge variant={isAvailable() ? "success" : "muted"}>
                 {isAvailable() ? "Available" : "Booked"}
               </Badge>

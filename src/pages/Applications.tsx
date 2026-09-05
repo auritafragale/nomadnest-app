@@ -124,7 +124,7 @@ const Applications = () => {
             }}
             className="mb-6"
           >
-            <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsList className="w-full justify-start flex-nowrap overflow-x-auto overflow-y-hidden">
               {statusTabs.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value}>
                   {tab.label}

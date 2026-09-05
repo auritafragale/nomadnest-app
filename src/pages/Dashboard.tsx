@@ -302,6 +302,17 @@ const SitterDashboard = ({
       : "all",
   );
 
+  // Deep links (e.g. from an "Application Accepted" notification) land on the list.
+  useEffect(() => {
+    if (!initialAppTab) return;
+    const t = setTimeout(() => {
+      document
+        .getElementById("my-applications")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [initialAppTab]);
+
   const todayISO = new Date().toISOString().slice(0, 10);
   const visibleApplications = applications.filter((a) => {
     const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
@@ -389,7 +400,7 @@ const SitterDashboard = ({
           </CardHeader>
           <CardContent>
             <Tabs value={appTab} onValueChange={(v) => setAppTab(v as typeof appTab)} className="mb-4">
-              <TabsList className="w-full justify-start overflow-x-auto">
+              <TabsList className="w-full justify-start flex-nowrap overflow-x-auto overflow-y-hidden">
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="accepted">Accepted</TabsTrigger>
                 <TabsTrigger value="pending">Pending</TabsTrigger>
