@@ -18,6 +18,8 @@ import {
   useMarkAllNotificationsRead,
 } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
+import { notificationTarget, notificationTitleClass } from "@/lib/notificationDisplay";
+import { cn } from "@/lib/utils";
 
 export const NotificationsDropdown = () => {
   const navigate = useNavigate();
