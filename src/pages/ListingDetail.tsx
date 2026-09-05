@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 import { useStartConversation } from "@/hooks/useConversations";
 import OwnerReviewsSection from "@/components/reviews/OwnerReviewsSection";
 import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
-import { Star } from "lucide-react";
+import { Star, BookOpen } from "lucide-react";
 import ReportDialog from "@/components/reports/ReportDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import ListingLocationMap from "@/components/maps/ListingLocationMap";
