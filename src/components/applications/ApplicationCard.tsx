@@ -183,12 +183,23 @@ export const ApplicationCard = ({
           <div className="flex gap-2 pt-2">
             <Button
               className="flex-1"
-              onClick={onAccept}
+              onClick={() => (nomadWarning.hasWarning ? setWarningOpen(true) : onAccept())}
               disabled={isUpdating}
             >
               <Check className="h-4 w-4 mr-2" />
               Accept
             </Button>
+            <CommunityWarningModal
+              open={warningOpen}
+              onOpenChange={setWarningOpen}
+              labels={nomadWarning.labels}
+              audience="nomad"
+              continueLabel="Accept Nomad"
+              onContinue={() => {
+                setWarningOpen(false);
+                onAccept();
+              }}
+            />
             <Button variant="outline" asChild>
               <Link to={`/sitter/${application.sitter_user_id}`}>
                 <User className="h-4 w-4 mr-2" />
