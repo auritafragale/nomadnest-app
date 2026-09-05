@@ -6,7 +6,7 @@ The data for all three Phase 3 features is already in the database (pet behaviou
 
 **Pet Parent side (listing create + edit)**
 - Pets step gains, per pet: "Medication required" (yes/no), "How long can they be left alone?" (never / 1–4 hours / 4–8 hours), "Reactive to other animals" (yes/no).
-- Home step gains three switches: "Remote location", "Car needed", "Heavy gardening involved".
+- Home step gains three switches: "Remote location", "Car needed", "Plant Care".
 - Saved on create and edit, and shown on the listing page as small labelled chips so Nomads see them before applying.
 
 **Nomad side (Browse Sits)**
