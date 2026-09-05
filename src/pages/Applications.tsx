@@ -195,44 +195,29 @@ const Applications = () => {
             </TabsList>
           </Tabs>
 
-          {/* Sort and filter */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6">
-            <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-              <SelectTrigger aria-label="Sort applications">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">Most recent</SelectItem>
-                <SelectItem value="reviews">Most reviews</SelectItem>
-                <SelectItem value="rating">Highest rating</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={placeKey} onValueChange={(v) => setPlaceKey(v as PlaceKey)}>
-              <SelectTrigger aria-label="Filter by where the Nomad is based">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Anywhere</SelectItem>
-                <SelectItem value="local">Local Nomads</SelectItem>
-                <SelectItem value="international">International Nomads</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={petFilter} onValueChange={setPetFilter}>
-              <SelectTrigger aria-label="Filter by animal experience">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any animal experience</SelectItem>
-                {PET_TYPE_OPTIONS.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    Experience with {formatPetType(t).toLowerCase()}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Filters */}
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              className="w-full relative"
+              onClick={() => setFiltersOpen(true)}
+            >
+              <SlidersHorizontal className="w-4 h-4 mr-2" />
+              Filters
+              {applicationFiltersActive(filters) && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#E8735A]" />
+              )}
+            </Button>
           </div>
+
+          <ApplicationFilterSheet
+            open={filtersOpen}
+            onClose={() => setFiltersOpen(false)}
+            filters={filters}
+            dateOptions={dateOptions}
+            onApply={setFilters}
+          />
+
 
           {/* Applications List */}
           {isLoading ? (
