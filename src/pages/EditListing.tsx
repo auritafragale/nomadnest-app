@@ -53,6 +53,8 @@ const initialPet: Pet = {
   medication_instructions: "",
   vet_info: "",
   photos: [],
+  separation_anxiety_tolerance: "",
+  reactive_to_animals: false,
 };
 
 const initialSitDate: SitDate = {
