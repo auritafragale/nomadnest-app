@@ -91,7 +91,7 @@ const InlineWelcomeGuide = ({
                   </div>
                 ))}
               </div>
-              <Link to={`/listing/${listingId}/welcome-guide`}>
+              <Link to={`/listing/${listingId}/welcome-guide`} className="print-hidden">
                 <Button variant="ghost" size="sm">
                   Open full guide
                 </Button>
