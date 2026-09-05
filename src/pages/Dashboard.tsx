@@ -342,7 +342,7 @@ const SitterDashboard = ({
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="accepted">Accepted</TabsTrigger>
                 <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
+                
                 <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
               </TabsList>
             </Tabs>
