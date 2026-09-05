@@ -1,6 +1,4 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, ArrowRight, Cat, Dog, CheckCircle2, Clock } from "lucide-react";
+import { MapPin, Calendar, Cat, Dog, CheckCircle2, Clock } from "lucide-react";
 
 interface DemoListing {
   id: number;
