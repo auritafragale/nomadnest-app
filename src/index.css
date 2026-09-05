@@ -218,3 +218,28 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+/* Print: isolate the Welcome Guide so only it goes on paper */
+@media print {
+  body.printing-guide * {
+    visibility: hidden !important;
+  }
+  body.printing-guide .print-guide-root,
+  body.printing-guide .print-guide-root * {
+    visibility: visible !important;
+  }
+  body.printing-guide .print-guide-root {
+    position: absolute !important;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+  body.printing-guide .print-hidden,
+  body.printing-guide .print-hidden * {
+    display: none !important;
+  }
+}
