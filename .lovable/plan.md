@@ -21,6 +21,7 @@ The data for all three Phase 3 features is already in the database (pet behaviou
 
 ## 3. Structured check-in updates
 - During an active sit (status in progress) the Nomad sees three quick buttons on the sit: Pets Fed · Meds Given · Walk Completed, each optionally with one photo and a short note.
+- On the first day of the sit the Nomad gets a notification explaining that these check-ins should be sent daily, with a link straight to the sit.
 - Each tap posts a timestamped entry into a shared check-in feed on the sit, sends the entry as a message into the existing conversation with the Pet Parent, and creates an in-app notification for them.
 - The Pet Parent sees the same feed, newest first, on the sit.
 
