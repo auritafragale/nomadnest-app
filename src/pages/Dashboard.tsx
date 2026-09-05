@@ -33,6 +33,8 @@ import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import MobileHomeScreen from "@/components/mobile/MobileHomeScreen";
 import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
 import { UpcomingPastSits } from "@/components/dashboard/UpcomingPastSits";
+import StatsTabsCard from "@/components/dashboard/StatsTabsCard";
+import OwnerWelcomeGuideCard from "@/components/dashboard/OwnerWelcomeGuideCard";
 
 interface Profile {
   first_name: string | null;
@@ -286,6 +288,11 @@ const SitterDashboard = ({
     if (appTab === "cancelled") return a.status === "cancelled";
     if (appTab === "all") return a.status !== "cancelled";
     return true;
+  }).sort((a, b) => {
+    // chronological — earliest sit start date first
+    const aStart = a.sit_dates?.start_date ?? "";
+    const bStart = b.sit_dates?.start_date ?? "";
+    return aStart.localeCompare(bStart);
   });
   const showApplications = (tab: "all" | "accepted" | "pending" | "completed" | "cancelled") => {
     setAppTab(tab);
@@ -311,29 +318,21 @@ const SitterDashboard = ({
 
         {/* Membership details live on the Membership page; the header shows status pills */}
 
-        {/* Quick Stats */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Your stats</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {[
-              { label: "Applications sent", value: applicationStats.total, tab: "all" as const },
-              { label: "Awaiting reply", value: applicationStats.pending, tab: "pending" as const },
-              { label: "Accepted", value: applicationStats.accepted, tab: "accepted" as const },
-            ].map((stat) => (
-              <button
-                key={stat.label}
-                type="button"
-                onClick={() => showApplications(stat.tab)}
-                className="w-full flex justify-between items-center rounded-lg px-2 py-2 -mx-2 hover:bg-muted transition-colors text-left"
-              >
-                <span className="text-sm text-muted-foreground">{stat.label}</span>
-                <Badge variant="secondary">{stat.value}</Badge>
-              </button>
-            ))}
-          </CardContent>
-        </Card>
+        {/* Quick Stats — tabbed */}
+        <StatsTabsCard
+          tabs={[
+            {
+              id: "applications",
+              label: "Applications",
+              count: applicationStats.total,
+              items: [
+                { label: "Applications sent", value: applicationStats.total, to: "/dashboard#my-applications" },
+                { label: "Awaiting reply", value: applicationStats.pending, to: "/dashboard#my-applications" },
+                { label: "Accepted", value: applicationStats.accepted, to: "/dashboard#my-applications" },
+              ],
+            },
+          ]}
+        />
       </div>
 
       {/* Middle Column - Actions & Applications */}
@@ -446,28 +445,31 @@ const OwnerDashboard = ({
 
         {/* Membership details live on the Membership page; the header shows status pills */}
 
-        {/* Quick Stats */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Your stats</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              { label: "Active listings", value: listingStats.published, to: "/dashboard#my-listings" },
-              { label: "Draft listings", value: listingStats.draft, to: "/dashboard#my-listings" },
-              { label: "Applications received", value: listingStats.applications, to: "/applications" },
-            ].map((stat) => (
-              <Link
-                key={stat.label}
-                to={stat.to}
-                className="flex justify-between items-center rounded-lg px-2 py-2 -mx-2 hover:bg-muted transition-colors"
-              >
-                <span className="text-sm text-muted-foreground">{stat.label}</span>
-                <Badge variant="secondary">{stat.value}</Badge>
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
+        {/* Welcome Guide — one reusable guide per Pet Parent */}
+        <OwnerWelcomeGuideCard />
+
+        {/* Quick Stats — tabbed */}
+        <StatsTabsCard
+          tabs={[
+            {
+              id: "listings",
+              label: "Listings",
+              count: listingStats.total,
+              items: [
+                { label: "Active listings", value: listingStats.published, to: "/dashboard#my-listings" },
+                { label: "Draft listings", value: listingStats.draft, to: "/dashboard#my-listings" },
+              ],
+            },
+            {
+              id: "applications",
+              label: "Applications",
+              count: listingStats.applications,
+              items: [
+                { label: "Applications received", value: listingStats.applications, to: "/applications" },
+              ],
+            },
+          ]}
+        />
       </div>
 
       {/* Middle Column */}

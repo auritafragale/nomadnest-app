@@ -50,6 +50,9 @@ import ListingLocationMap from "@/components/maps/ListingLocationMap";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatPetType, petTypeIcon, formatPetAge } from "@/lib/petTypes";
 import VerificationBadges from "@/components/ui/VerificationBadges";
+import InlineWelcomeGuide from "@/components/listing/InlineWelcomeGuide";
+import { useAcceptedSitter } from "@/hooks/useAcceptedSitter";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Pet {
   id: string;
@@ -64,6 +67,9 @@ interface Pet {
   medication_instructions: string | null;
   vet_info: string | null;
   photos: string[];
+  requires_medication: boolean;
+  reactive_to_animals: boolean;
+  separation_anxiety_tolerance: string | null;
 }
 
 interface SitDate {
@@ -287,6 +293,8 @@ const ListingDetail = () => {
       prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id],
     );
   const isOwner = user?.id === listing?.owner_user_id;
+  const { data: acceptedSitter = false } = useAcceptedSitter(listing?.id);
+  const [petDialogId, setPetDialogId] = useState<string | null>(null);
   const canApply = user && !isOwner && (role === "sitter" || role === "both");
 
   if (loading) {
@@ -440,6 +448,11 @@ const ListingDetail = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Welcome Guide — shown to the owner or an accepted Nomad */}
+              {(isOwner || acceptedSitter) && (
+                <InlineWelcomeGuide ownerUserId={listing.owner_user_id} listingId={listing.id} />
+              )}
+
               {/* Description */}
               {listing.description && (
                 <Card>
@@ -486,7 +499,11 @@ const ListingDetail = () => {
                         const age = formatPetAge(pet.age);
                         return (
                           <TabsContent key={pet.id} value={pet.id} className="mt-4">
-                            <div className="flex items-start gap-4">
+                            <button
+                              type="button"
+                              onClick={() => setPetDialogId(pet.id)}
+                              className="w-full text-left flex items-start gap-4 rounded-lg p-2 -m-2 hover:bg-muted/50 transition-colors"
+                            >
                               {pet.photos?.[0] ? (
                                 <img
                                   src={pet.photos[0]}
@@ -517,34 +534,11 @@ const ListingDetail = () => {
                                     {pet.personality}
                                   </p>
                                 )}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                                  {pet.feeding_details && (
-                                    <div>
-                                      <span className="font-medium">Feeding:</span>{" "}
-                                      <span className="text-muted-foreground">
-                                        {pet.feeding_details}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {pet.daily_routine && (
-                                    <div>
-                                      <span className="font-medium">Routine:</span>{" "}
-                                      <span className="text-muted-foreground">
-                                        {pet.daily_routine}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {pet.walks_exercise && (
-                                    <div>
-                                      <span className="font-medium">Exercise:</span>{" "}
-                                      <span className="text-muted-foreground">
-                                        {pet.walks_exercise}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
+                                <span className="text-xs text-[#E8735A] font-medium">
+                                  Tap to view full profile & photos
+                                </span>
                               </div>
-                            </div>
+                            </button>
                           </TabsContent>
                         );
                       })}
@@ -552,6 +546,95 @@ const ListingDetail = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Pet detail dialog */}
+              <Dialog open={!!petDialogId} onOpenChange={(o) => !o && setPetDialogId(null)}>
+                <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+                  {(() => {
+                    const pet = listing.pets.find((p) => p.id === petDialogId);
+                    if (!pet) return null;
+                    const PetIcon = petTypeIcon(pet.type);
+                    return (
+                      <>
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <PetIcon className="w-5 h-5 text-[#E8735A]" />
+                            {pet.name || formatPetType(pet.type)}
+                          </DialogTitle>
+                        </DialogHeader>
+                        {pet.photos?.length > 0 && (
+                          <div className="grid grid-cols-2 gap-2 mb-4">
+                            {pet.photos.map((photo, i) => (
+                              <img
+                                key={i}
+                                src={photo}
+                                alt={`${pet.name || "Pet"} ${i + 1}`}
+                                className="w-full h-32 rounded-lg object-cover"
+                              />
+                            ))}
+                          </div>
+                        )}
+                        <div className="space-y-3 text-sm">
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="secondary">{formatPetType(pet.type)}</Badge>
+                            {pet.age && <Badge variant="outline">{pet.age}</Badge>}
+                            {pet.has_medication && (
+                              <Badge variant="outline" className="gap-1">
+                                <Pill className="w-3 h-3" /> Medication
+                              </Badge>
+                            )}
+                            {pet.reactive_to_animals && (
+                              <Badge variant="outline">Reactive to animals</Badge>
+                            )}
+                          </div>
+                          {pet.personality && (
+                            <div>
+                              <p className="font-medium mb-1">Personality</p>
+                              <p className="text-muted-foreground">{pet.personality}</p>
+                            </div>
+                          )}
+                          {pet.daily_routine && (
+                            <div>
+                              <p className="font-medium mb-1">Daily routine</p>
+                              <p className="text-muted-foreground">{pet.daily_routine}</p>
+                            </div>
+                          )}
+                          {pet.feeding_details && (
+                            <div>
+                              <p className="font-medium mb-1">Feeding details</p>
+                              <p className="text-muted-foreground">{pet.feeding_details}</p>
+                            </div>
+                          )}
+                          {pet.walks_exercise && (
+                            <div>
+                              <p className="font-medium mb-1">Walks & exercise</p>
+                              <p className="text-muted-foreground">{pet.walks_exercise}</p>
+                            </div>
+                          )}
+                          {pet.requires_medication && pet.medication_instructions && (
+                            <div>
+                              <p className="font-medium mb-1">Medication instructions</p>
+                              <p className="text-muted-foreground">{pet.medication_instructions}</p>
+                            </div>
+                          )}
+                          {pet.vet_info && (
+                            <div>
+                              <p className="font-medium mb-1">Vet info</p>
+                              <p className="text-muted-foreground">{pet.vet_info}</p>
+                            </div>
+                          )}
+                          {pet.separation_anxiety_tolerance && (
+                            <div>
+                              <p className="font-medium mb-1">Separation anxiety tolerance</p>
+                              <p className="text-muted-foreground">{pet.separation_anxiety_tolerance}</p>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </DialogContent>
+              </Dialog>
 
               {/* Home & Requirements — tabbed */}
               <Card>

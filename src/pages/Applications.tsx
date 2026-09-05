@@ -51,19 +51,24 @@ const Applications = () => {
   const { data: applications = [], isLoading } = useOwnerApplications(statusFilter);
 
   const dateOptions = useMemo(() => {
-    const map = new Map<string, string>();
+    const map = new Map<string, { label: string; start: string }>();
     applications.forEach((app) => {
       if (app.sit_dates?.id && !map.has(app.sit_dates.id)) {
         map.set(
           app.sit_dates.id,
-          `${format(new Date(app.sit_dates.start_date), "MMM d")} – ${format(
-            new Date(app.sit_dates.end_date),
-            "MMM d, yyyy",
-          )}`,
+          {
+            label: `${format(new Date(app.sit_dates.start_date), "MMM d")} – ${format(
+              new Date(app.sit_dates.end_date),
+              "MMM d, yyyy",
+            )}`,
+            start: app.sit_dates.start_date,
+          },
         );
       }
     });
-    return Array.from(map, ([id, label]) => ({ id, label }));
+    return Array.from(map, ([id, { label, start }]) => ({ id, label, start })).sort(
+      (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
+    );
   }, [applications]);
 
 
@@ -116,7 +121,12 @@ const Applications = () => {
     .sort((a, b) => {
       if (filters.sortKey === "reviews") return b.review_count - a.review_count;
       if (filters.sortKey === "rating") return (b.avg_rating ?? -1) - (a.avg_rating ?? -1);
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (filters.sortKey === "recent")
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      // default: chronological — earliest sit start date first
+      const aStart = a.sit_dates?.start_date ?? "";
+      const bStart = b.sit_dates?.start_date ?? "";
+      return aStart.localeCompare(bStart);
     });
 
 
