@@ -779,7 +779,11 @@ const ListingDetail = () => {
                   <Button 
                     className="w-full" 
                     size="lg"
-                    onClick={() => setApplyDialogOpen(true)}
+                    onClick={() =>
+                      listingWarning.hasWarning
+                        ? setWarningOpen(true)
+                        : setApplyDialogOpen(true)
+                    }
                     disabled={selectedDateIds.length === 0}
                   >
                     {selectedDateIds.length === 0
@@ -788,6 +792,17 @@ const ListingDetail = () => {
                         ? "Apply for this Sit"
                         : `Apply for ${selectedDateIds.length} date ranges`}
                   </Button>
+                  <CommunityWarningModal
+                    open={warningOpen}
+                    onOpenChange={setWarningOpen}
+                    labels={listingWarning.labels}
+                    audience="listing"
+                    continueLabel="Continue to Application"
+                    onContinue={() => {
+                      setWarningOpen(false);
+                      setApplyDialogOpen(true);
+                    }}
+                  />
                   <ApplyDialog
                     open={applyDialogOpen}
                     onOpenChange={setApplyDialogOpen}
