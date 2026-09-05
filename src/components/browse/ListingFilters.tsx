@@ -38,6 +38,16 @@ const petTypeOptions = [
   { value: "other", label: "Other" },
 ];
 
+const sitDetailOptions: { key: keyof FilterType; label: string }[] = [
+  { key: "noPets", label: "No Pets (plant care only)" },
+  { key: "noMedication", label: "No medication needed" },
+  { key: "aloneFourToEight", label: "Pet can be left 4–8 hours" },
+  { key: "notReactive", label: "Not reactive to other animals" },
+  { key: "noCarNeeded", label: "No car needed" },
+  { key: "noPlantCare", label: "No Plant Care" },
+  { key: "remoteOk", label: "Remote location OK" },
+];
+
 const ListingFilters = ({
   filters,
   onFiltersChange,
@@ -82,11 +92,23 @@ const ListingFilters = ({
     });
   };
 
+  const toggleSitDetail = (key: keyof FilterType) => {
+    onFiltersChange({ ...filters, [key]: filters[key] ? undefined : true });
+  };
+
+  const activeSitDetailCount = sitDetailOptions.filter((o) => filters[o.key]).length;
+
   const clearFilters = () => {
     onFiltersChange({ search: filters.search });
   };
 
-  const hasActiveFilters = filters.petTypes?.length || filters.startDate || filters.endDate || filters.countries?.length || filters.cities?.length;
+  const hasActiveFilters =
+    filters.petTypes?.length ||
+    filters.startDate ||
+    filters.endDate ||
+    filters.countries?.length ||
+    filters.cities?.length ||
+    activeSitDetailCount > 0;
   const hasPreferredLocations = preferredLocations && (
     (preferredLocations.preferred_countries?.length || 0) > 0 ||
     (preferredLocations.preferred_cities?.length || 0) > 0
@@ -189,6 +211,34 @@ const ListingFilters = ({
                         htmlFor={option.value}
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                       >
+                        {option.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Sit Details Filter */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex-shrink-0">
+                  <SlidersHorizontal className="w-4 h-4 mr-2" />
+                  Sit Details
+                  {activeSitDetailCount ? ` (${activeSitDetailCount})` : ""}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64" align="start">
+                <div className="space-y-3">
+                  <p className="font-medium text-sm">Pets &amp; home</p>
+                  {sitDetailOptions.map((option) => (
+                    <div key={String(option.key)} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={String(option.key)}
+                        checked={Boolean(filters[option.key])}
+                        onCheckedChange={() => toggleSitDetail(option.key)}
+                      />
+                      <label htmlFor={String(option.key)} className="text-sm font-medium leading-none">
                         {option.label}
                       </label>
                     </div>
