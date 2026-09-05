@@ -385,7 +385,7 @@ const EditOwnerProfile = () => {
           </div>
 
           {/* Bottom Save Button */}
-          <div className="mt-8 flex justify-end">
+          <div className="mt-8 flex justify-center">
             <Button onClick={handleSave} disabled={saving} size="lg">
               {saving ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
