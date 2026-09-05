@@ -107,6 +107,12 @@ export const ApplicationCard = ({
                   {sitter.city}{sitter.country ? `, ${sitter.country}` : ""}
                 </p>
               )}
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                <Star className="h-3 w-3" />
+                {application.review_count > 0
+                  ? `${application.avg_rating?.toFixed(1)} · ${application.review_count} review${application.review_count === 1 ? "" : "s"}`
+                  : "No reviews yet"}
+              </p>
             </div>
           </div>
 

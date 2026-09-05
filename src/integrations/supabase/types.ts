@@ -1675,6 +1675,22 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_reports: {
+        Args: never
+        Returns: {
+          created_at: string
+          details: string
+          id: string
+          reason: string
+          reporter_email: string
+          reporter_name: string
+          reporter_user_id: string
+          status: Database["public"]["Enums"]["report_status"]
+          target_id: string
+          target_type: Database["public"]["Enums"]["report_target_type"]
+          updated_at: string
+        }[]
+      }
       admin_perk_click_stats: {
         Args: never
         Returns: {
@@ -1682,6 +1698,13 @@ export type Database = {
           perk_id: string
           total_clicks: number
         }[]
+      }
+      admin_set_report_status: {
+        Args: {
+          p_report_id: string
+          p_status: Database["public"]["Enums"]["report_status"]
+        }
+        Returns: undefined
       }
       advance_sit_statuses: { Args: never; Returns: undefined }
       can_access_city_chat: {

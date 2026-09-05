@@ -30,6 +30,15 @@ export const useSubmitReport = () => {
       });
 
       if (error) throw error;
+
+      // Give the founders an email heads-up so reports are never missed
+      try {
+        await supabase.functions.invoke("notify-new-report", {
+          body: { targetType, targetId, reason, details: details || null },
+        });
+      } catch (e) {
+        console.error("Could not alert the admin team about this report", e);
+      }
     },
     onSuccess: () => {
       toast({

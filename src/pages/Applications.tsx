@@ -15,7 +15,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ClipboardList, Inbox } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { canonicalPetType, formatPetType, PET_TYPE_OPTIONS } from "@/lib/petTypes";
+import { publicProfiles } from "@/lib/publicProfile";
+import { useQuery } from "@tanstack/react-query";
 import type { Database } from "@/integrations/supabase/types";
+
+type SortKey = "recent" | "reviews" | "rating";
+type PlaceKey = "any" | "local" | "international";
 
 type ApplicationStatus = Database["public"]["Enums"]["application_status"];
 type FilterStatus = ApplicationStatus | "all";
@@ -36,8 +49,22 @@ const Applications = () => {
     statusTabs.some((t) => t.value === initialStatus) ? initialStatus : "all",
   );
   const { toast } = useToast();
+  const [sortKey, setSortKey] = useState<SortKey>("recent");
+  const [placeKey, setPlaceKey] = useState<PlaceKey>("any");
+  const [petFilter, setPetFilter] = useState<string>("any");
 
   const { data: applications = [], isLoading } = useOwnerApplications(statusFilter);
+
+  // Your own country decides what counts as a local Nomad
+  const { data: ownCountry } = useQuery({
+    queryKey: ["own-country", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await publicProfiles("country").eq("id", user.id).maybeSingle();
+      return ((data as unknown as { country: string | null } | null)?.country) ?? null;
+    },
+    enabled: !!user,
+  });
   const updateStatus = useUpdateApplicationStatus();
   const acceptApplication = useAcceptApplication();
 
@@ -57,6 +84,27 @@ const Applications = () => {
   if (role !== "owner" && role !== "both") {
     return <Navigate to="/dashboard" replace />;
   }
+
+  const visibleApplications = applications
+    .filter((app) => {
+      if (placeKey === "any") return true;
+      const sameCountry =
+        !!ownCountry &&
+        !!app.sitter_user?.country &&
+        app.sitter_user.country.toLowerCase() === ownCountry.toLowerCase();
+      return placeKey === "local" ? sameCountry : !sameCountry;
+    })
+    .filter((app) => {
+      if (petFilter === "any") return true;
+      return (app.sitter_profile?.pet_types || []).some(
+        (t) => canonicalPetType(t) === petFilter,
+      );
+    })
+    .sort((a, b) => {
+      if (sortKey === "reviews") return b.review_count - a.review_count;
+      if (sortKey === "rating") return (b.avg_rating ?? -1) - (a.avg_rating ?? -1);
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   const handleStatusChange = async (
     application: (typeof applications)[0],
@@ -133,6 +181,45 @@ const Applications = () => {
             </TabsList>
           </Tabs>
 
+          {/* Sort and filter */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6">
+            <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+              <SelectTrigger aria-label="Sort applications">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">Most recent</SelectItem>
+                <SelectItem value="reviews">Most reviews</SelectItem>
+                <SelectItem value="rating">Highest rating</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={placeKey} onValueChange={(v) => setPlaceKey(v as PlaceKey)}>
+              <SelectTrigger aria-label="Filter by where the Nomad is based">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Anywhere</SelectItem>
+                <SelectItem value="local">Local Nomads</SelectItem>
+                <SelectItem value="international">International Nomads</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={petFilter} onValueChange={setPetFilter}>
+              <SelectTrigger aria-label="Filter by animal experience">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any animal experience</SelectItem>
+                {PET_TYPE_OPTIONS.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    Experience with {formatPetType(t).toLowerCase()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Applications List */}
           {isLoading ? (
             <div className="space-y-4">
@@ -140,19 +227,21 @@ const Applications = () => {
                 <Skeleton key={i} className="h-64 w-full rounded-lg" />
               ))}
             </div>
-          ) : applications.length === 0 ? (
+          ) : visibleApplications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Inbox className="h-16 w-16 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium text-foreground">No applications yet</h3>
               <p className="text-muted-foreground mt-1 max-w-md">
-                {statusFilter === "all"
-                  ? "When nomads apply to your listings, they'll appear here."
-                  : `No ${statusFilter} applications found.`}
+                {applications.length > 0
+                  ? "No applications match these filters yet."
+                  : statusFilter === "all"
+                    ? "When nomads apply to your listings, they'll appear here."
+                    : `No ${statusFilter} applications found.`}
               </p>
             </div>
           ) : (
             <div className="grid gap-4">
-              {applications.map((application) => (
+              {visibleApplications.map((application) => (
                 <ApplicationCard
                   key={application.id}
                   application={application}
