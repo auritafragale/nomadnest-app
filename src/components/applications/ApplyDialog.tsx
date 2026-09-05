@@ -115,9 +115,8 @@ export const ApplyDialog = ({
         ["applied", "shortlisted", "accepted"].includes(a.status),
       );
       setAlreadyApplied(new Set(live.map((a) => a.sit_dates_id)));
-      setHadPastApplication(
-        (mine || []).length > live.length && live.length < (mine || []).length,
-      );
+      setHadPastApplication((mine || []).length > live.length);
+
 
       setFullDates(new Set(ids.filter((id) => (counts.get(id) || 0) >= MAX_ACTIVE_APPLICANTS)));
       setCheckingApplication(false);
