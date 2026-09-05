@@ -190,6 +190,8 @@ const ListingDetail = () => {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [selectedDateIds, setSelectedDateIds] = useState<string[]>([]);
+  const [warningOpen, setWarningOpen] = useState(false);
+  const listingWarning = useCommunityWarning("listing", id);
 
   useEffect(() => {
     const fetchListing = async () => {
