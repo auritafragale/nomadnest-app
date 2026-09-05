@@ -17,6 +17,14 @@ export interface ListingFilters {
   sortBy?: "newest" | "soonest";
   lastMinute?: boolean;
   reasonsForSit?: string[];
+  /** Sit-detail filters */
+  noMedication?: boolean;
+  aloneFourToEight?: boolean;
+  notReactive?: boolean;
+  noCarNeeded?: boolean;
+  noPlantCare?: boolean;
+  remoteOk?: boolean;
+  noPets?: boolean;
 }
 
 export interface ListingWithDetails {
@@ -37,7 +45,13 @@ export interface ListingWithDetails {
     id: string;
     name: string | null;
     type: string;
+    has_medication?: boolean | null;
+    separation_anxiety_tolerance?: string | null;
+    reactive_to_animals?: boolean | null;
   }[];
+  remote_location?: boolean | null;
+  car_needed?: boolean | null;
+  heavy_gardening?: boolean | null;
   sit_dates: {
     id: string;
     start_date: string;
@@ -72,10 +86,16 @@ export const useListings = (filters: ListingFilters = {}) => {
           latitude,
           longitude,
           owner_user_id,
+          remote_location,
+          car_needed,
+          heavy_gardening,
           pets (
             id,
             name,
-            type
+            type,
+            has_medication,
+            separation_anxiety_tolerance,
+            reactive_to_animals
           ),
           sit_dates (
             id,
@@ -175,6 +195,31 @@ export const useListings = (filters: ListingFilters = {}) => {
             filters.petTypes!.some((type) => pet.type.toLowerCase() === type.toLowerCase())
           )
         );
+      }
+
+      // Sit-detail filters (client-side)
+      if (filters.noPets) {
+        results = results.filter((l) => l.pets.length === 0 && l.heavy_gardening === true);
+      }
+      if (filters.noMedication) {
+        results = results.filter((l) => l.pets.every((p) => !p.has_medication));
+      }
+      if (filters.aloneFourToEight) {
+        results = results.filter((l) =>
+          l.pets.length === 0 || l.pets.every((p) => p.separation_anxiety_tolerance === "4-8")
+        );
+      }
+      if (filters.notReactive) {
+        results = results.filter((l) => l.pets.every((p) => !p.reactive_to_animals));
+      }
+      if (filters.noCarNeeded) {
+        results = results.filter((l) => !l.car_needed);
+      }
+      if (filters.noPlantCare) {
+        results = results.filter((l) => !l.heavy_gardening);
+      }
+      if (filters.remoteOk) {
+        results = results.filter((l) => l.remote_location === true);
       }
 
       // Filter by date range (client-side)
