@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useWelcomeGuide, useSaveWelcomeGuide } from "@/hooks/useWelcomeGuide";
-import { ArrowLeft, WifiOff, BookOpen } from "lucide-react";
+import { ArrowLeft, WifiOff, BookOpen, Printer } from "lucide-react";
 
 const FIELDS = [
   { key: "wifi_info", label: "WiFi", placeholder: "Network name and password, any quirks" },
@@ -35,10 +35,9 @@ const emptyValues: GuideValues = {
 const WelcomeGuidePage = () => {
   const { id } = useParams<{ id: string }>();
   const { user, loading: authLoading } = useAuth();
-  const { guide, isLoading, isOffline, cachedAt } = useWelcomeGuide(id);
-  const save = useSaveWelcomeGuide(id);
   const [values, setValues] = useState<GuideValues>(emptyValues);
 
+  // Resolve the listing so we know whose (owner-keyed) guide to load.
   const { data: listing } = useQuery({
     queryKey: ["welcome-guide-listing", id],
     queryFn: async () => {
@@ -47,10 +46,14 @@ const WelcomeGuidePage = () => {
         .select("id, title, owner_user_id")
         .eq("id", id!)
         .maybeSingle();
-      return data;
+      return data as { id: string; title: string; owner_user_id: string } | null;
     },
     enabled: !!id,
   });
+
+  const ownerUserId = listing?.owner_user_id;
+  const { guide, isLoading, isOffline, cachedAt } = useWelcomeGuide(ownerUserId);
+  const save = useSaveWelcomeGuide(ownerUserId);
 
   useEffect(() => {
     if (guide) {
@@ -66,7 +69,7 @@ const WelcomeGuidePage = () => {
 
   if (!authLoading && !user) return <Navigate to="/auth" replace />;
 
-  const isOwner = !!user && !!listing && listing.owner_user_id === user.id;
+  const isOwner = !!user && ownerUserId === user.id;
   const hasContent = FIELDS.some((f) => (guide?.[f.key] || "").trim().length > 0);
 
   return (
@@ -86,12 +89,24 @@ const WelcomeGuidePage = () => {
         </h1>
         <p className="text-muted-foreground mb-6">{listing?.title || "Everything a Nomad needs on arrival"}</p>
 
-        {isOffline && (
+        {(isOffline || cachedAt) && (
           <p className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
             <WifiOff className="w-4 h-4" />
             Saved for offline — last updated{" "}
             {cachedAt ? new Date(cachedAt).toLocaleDateString() : "recently"}
           </p>
+        )}
+
+        {hasContent && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="mb-4"
+            onClick={() => window.print()}
+          >
+            <Printer className="w-4 h-4 mr-2" />
+            Download / Print
+          </Button>
         )}
 
         {isLoading && !guide ? (
@@ -100,6 +115,9 @@ const WelcomeGuidePage = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Edit your guide</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                This guide is shared across all your listings — update it once and every sit uses the same details.
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               {FIELDS.map((field) => (
