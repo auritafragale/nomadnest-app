@@ -152,12 +152,12 @@ const AdminReports = () => {
                 value={activeTab}
                 onValueChange={(v) => setActiveTab(v as ReportStatus)}
               >
-                <TabsList className="w-full flex overflow-x-auto mb-4">
+                <TabsList className="w-full flex overflow-x-auto overflow-y-hidden mb-4">
                   {TABS.map((tab) => (
                     <TabsTrigger
                       key={tab}
                       value={tab}
-                      className="flex-1 capitalize gap-1.5"
+                      className="flex-shrink-0 capitalize gap-1.5 whitespace-nowrap"
                     >
                       <span>{tab}</span>
                       <Badge
