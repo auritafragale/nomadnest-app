@@ -47,7 +47,7 @@ const InlineWelcomeGuide = ({
             <BookOpen className="w-5 h-5 text-[#E8735A]" />
             Welcome Guide
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 print-hidden">
             {isOffline && (
               <Badge variant="outline" className="gap-1 text-xs">
                 <WifiOff className="w-3 h-3" /> Offline
