@@ -93,6 +93,20 @@ const WriteReviewDialog = ({
   const categories = reviewType === "sitter" ? NOMAD_CATEGORIES : OWNER_CATEGORIES;
   const allRated = categories.every((c) => ratings[c.key] > 0);
 
+  // `reviewType === "sitter"` means a Pet Parent is reviewing a Nomad.
+  const flagQuestions = reviewType === "sitter" ? NOMAD_FLAG_QUESTIONS : HOME_FLAG_QUESTIONS;
+  const [flagAnswers, setFlagAnswers] = useState<Record<string, "yes" | "no" | undefined>>({});
+  const flagPayload = () => {
+    const payload: Record<string, boolean> = {};
+    for (const q of flagQuestions) {
+      const answer = flagAnswers[q.column];
+      if (!answer) continue;
+      // A flag is raised when the unhealthy answer is given.
+      payload[q.column] = q.yesIsGood ? answer === "no" : answer === "yes";
+    }
+    return payload;
+  };
+
   const handleSubmit = async () => {
     if (!user || !allRated) return;
 
