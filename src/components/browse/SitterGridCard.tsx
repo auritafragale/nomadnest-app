@@ -31,14 +31,24 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
     : null;
 
   const { average, count } = sitter.rating;
-  const petTypes = dedupePetTypes(sitter.pet_types).slice(0, 3);
 
   return (
     <Link to={`/sitter/${sitter.user_id}`} className="block h-full">
       <Card
         variant="interactive"
-        className="h-full overflow-hidden group flex flex-col items-center text-center p-3 md:p-4"
+        className="relative h-full overflow-hidden group flex flex-col items-center text-center p-3 md:p-4"
       >
+        {/* Founding Member star (top-left) */}
+        {sitter.profile?.founding_member && (
+          <span
+            className="absolute top-2 left-2 flex items-center justify-center w-6 h-6 rounded-full bg-accent/15 border border-accent"
+            title="Founding Member"
+            aria-label="Founding Member"
+          >
+            <Star className="w-3.5 h-3.5 fill-accent text-accent" />
+          </span>
+        )}
+
         {/* Avatar with verified badge */}
         <div className="relative mb-2.5">
           <Avatar className="w-16 h-16 md:w-20 md:h-20 ring-2 ring-background shadow-sm">
