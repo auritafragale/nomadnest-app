@@ -60,6 +60,19 @@ const AdminVerifications = () => {
   const [rejectingSub, setRejectingSub] = useState<Submission | null>(null);
   const [rejectReason, setRejectReason] = useState<string>("");
   const [rejectNotes, setRejectNotes] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected">("pending");
+
+  const grouped = useMemo(() => ({
+    pending: submissions.filter((s) => s.status === "pending"),
+    approved: submissions.filter((s) => s.status === "approved"),
+    rejected: submissions.filter((s) => s.status === "rejected"),
+  }), [submissions]);
+
+  const VERIFICATION_TABS: { key: "pending" | "approved" | "rejected"; label: string }[] = [
+    { key: "pending", label: "Pending" },
+    { key: "approved", label: "Reviewed" },
+    { key: "rejected", label: "Declined" },
+  ];
 
   // Access is already enforced by AdminRoute
   useEffect(() => {
