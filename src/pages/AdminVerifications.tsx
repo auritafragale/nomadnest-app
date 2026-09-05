@@ -202,21 +202,41 @@ const AdminVerifications = () => {
             <div className="space-y-4">
               {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
             </div>
-          ) : pending.length === 0 && reviewed.length === 0 ? (
+          ) : submissions.length === 0 ? (
             <Card>
               <CardContent className="py-16 text-center text-muted-foreground">
                 No submissions yet.
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-6">
-              {pending.length > 0 && (
-                <section>
-                  <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Clock className="w-4 h-4" /> Pending ({pending.length})
-                  </h2>
-                  <div className="space-y-4">
-                    {pending.map(sub => (
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as "pending" | "approved" | "rejected")}
+            >
+              <TabsList className="w-full flex overflow-x-auto mb-4">
+                {VERIFICATION_TABS.map(({ key, label }) => (
+                  <TabsTrigger key={key} value={key} className="flex-1 gap-1.5">
+                    <span>{label}</span>
+                    <Badge
+                      variant={key === "pending" ? "destructive" : "muted"}
+                      className="ml-1 tabular-nums px-1.5 py-0 text-xs"
+                    >
+                      {grouped[key].length}
+                    </Badge>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {VERIFICATION_TABS.map(({ key, label }) => (
+                <TabsContent key={key} value={key} className="space-y-4">
+                  {grouped[key].length === 0 ? (
+                    <Card>
+                      <CardContent className="py-12 text-center text-muted-foreground">
+                        No {label.toLowerCase()} submissions yet.
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    grouped[key].map(sub => (
                       <SubmissionCard
                         key={sub.id}
                         sub={sub}
@@ -225,32 +245,13 @@ const AdminVerifications = () => {
                         onDecision={(d) => d === "approved" ? handleDecision(sub.id, sub.user_id, "approved") : openRejectDialog(sub)}
                         acting={acting === sub.id}
                         getSignedUrl={getSignedUrl}
+                        readOnly={key !== "pending"}
                       />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {reviewed.length > 0 && (
-                <section>
-                  <h2 className="text-lg font-semibold mb-3">Reviewed ({reviewed.length})</h2>
-                  <div className="space-y-4">
-                    {reviewed.map(sub => (
-                      <SubmissionCard
-                        key={sub.id}
-                        sub={sub}
-                        notes={notes[sub.id] ?? ""}
-                        onNotesChange={() => {}}
-                        onDecision={() => {}}
-                        acting={false}
-                        getSignedUrl={getSignedUrl}
-                        readOnly
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-            </div>
+                    ))
+                  )}
+                </TabsContent>
+              ))}
+            </Tabs>
           )}
         </div>
       </main>
