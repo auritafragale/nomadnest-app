@@ -213,9 +213,9 @@ const AdminVerifications = () => {
               value={activeTab}
               onValueChange={(v) => setActiveTab(v as "pending" | "approved" | "rejected")}
             >
-              <TabsList className="w-full flex overflow-x-auto mb-4">
+              <TabsList className="w-full flex overflow-x-auto overflow-y-hidden justify-start mb-4">
                 {VERIFICATION_TABS.map(({ key, label }) => (
-                  <TabsTrigger key={key} value={key} className="flex-1 gap-1.5">
+                  <TabsTrigger key={key} value={key} className="flex-shrink-0 gap-1.5 whitespace-nowrap">
                     <span>{label}</span>
                     <Badge
                       variant={key === "pending" ? "destructive" : "muted"}
@@ -349,7 +349,7 @@ const SubmissionCard = ({ sub, notes, onNotesChange, onDecision, acting, getSign
               Submitted {new Date(sub.created_at).toLocaleString()}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-end gap-2">
             {statusBadge(sub.status)}
             <Button variant="ghost" size="sm" onClick={expand}>
               {loadingUrls ? <Loader2 className="w-4 h-4 animate-spin" /> : expanded ? "Hide" : "View docs"}
