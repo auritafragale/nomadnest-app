@@ -139,7 +139,13 @@ const SitDetail = () => {
                         rows={2}
                         placeholder="Add a short note (optional)"
                       />
-                      <ImageUpload images={photos} onChange={setPhotos} maxImages={1} />
+                      <ImageUpload
+                        images={photos}
+                        onImagesChange={setPhotos}
+                        maxImages={1}
+                        folder="checkins"
+                        label="Add a photo (optional)"
+                      />
                       <Button onClick={submit} disabled={addCheckin.isPending} className="w-full sm:w-auto">
                         {addCheckin.isPending ? "Posting…" : `Post ${CHECKIN_LABELS[activeKind]}`}
                       </Button>

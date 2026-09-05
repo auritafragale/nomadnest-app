@@ -29,6 +29,8 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import CreateListing from "./pages/CreateListing";
 import EditListing from "./pages/EditListing";
+import WelcomeGuidePage from "./pages/WelcomeGuidePage";
+import SitDetail from "./pages/SitDetail";
 import ListingDetail from "./pages/ListingDetail";
 import EditSitterProfile from "./pages/EditSitterProfile";
 import EditOwnerProfile from "./pages/EditOwnerProfile";
@@ -131,6 +133,8 @@ const AppShell = () => {
         <Route path="/create-listing" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
         <Route path="/edit-listing/:id" element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
         <Route path="/listing/:id" element={<ListingDetail />} />
+        <Route path="/listing/:id/welcome-guide" element={<WelcomeGuidePage />} />
+        <Route path="/sits/:id" element={<SitDetail />} />
         <Route path="/edit-sitter-profile" element={<ProtectedRoute><EditSitterProfile /></ProtectedRoute>} />
         <Route path="/edit-owner-profile" element={<ProtectedRoute><EditOwnerProfile /></ProtectedRoute>} />
         <Route path="/sitter/:userId" element={<SitterDetail />} />
