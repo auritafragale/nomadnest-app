@@ -1,14 +1,12 @@
 import { Link } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { MapPin, Star, CheckCircle, Dog, Cat, Bird, Rabbit, Fish } from "lucide-react";
+import { MapPin, Star, CheckCircle } from "lucide-react";
 import { SitterWithProfile } from "@/hooks/useSitters";
-import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import MessageSitterButton from "@/components/browse/MessageSitterButton";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
-import { formatPetType, petTypeIcon, dedupePetTypes } from "@/lib/petTypes";
+import PetTypeIcons from "@/components/browse/PetTypeIcons";
 
 
 
