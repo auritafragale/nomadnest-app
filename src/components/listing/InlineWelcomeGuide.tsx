@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, WifiOff, Printer, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { useWelcomeGuide } from "@/hooks/useWelcomeGuide";
+import { printWelcomeGuide } from "@/lib/printGuide";
 
 const FIELDS = [
   { key: "wifi_info", label: "WiFi" },
