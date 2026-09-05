@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
-import { formatPetType, petTypeIcon, dedupePetTypes } from "@/lib/petTypes";
+import PetTypeIcons from "@/components/browse/PetTypeIcons";
 
 interface SitterCardProps {
   sitter: SitterWithProfile;
