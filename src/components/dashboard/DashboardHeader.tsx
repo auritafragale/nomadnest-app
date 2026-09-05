@@ -53,10 +53,10 @@ const DashboardHeader = ({
           </h1>
 
           {!loading && (foundingMember || (subscribed && planName)) && (
-            <div className="flex items-center gap-2 flex-wrap mt-1">
-              {foundingMember && <FoundingMemberBadge />}
+            <div className="flex items-center gap-1.5 flex-nowrap mt-1 overflow-hidden">
+              {foundingMember && <FoundingMemberBadge compact />}
               {subscribed && planName && (
-                <Badge className="bg-primary/10 text-primary border-0 text-[11px] px-2 py-0">
+                <Badge className="bg-primary/10 text-primary border-0 text-[10px] px-1.5 py-0 whitespace-nowrap">
                   {planName}
                 </Badge>
               )}
