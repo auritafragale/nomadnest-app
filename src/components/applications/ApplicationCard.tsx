@@ -27,6 +27,8 @@ import {
 import type { Application } from "@/hooks/useApplications";
 import { useStartConversation } from "@/hooks/useConversations";
 import { useToast } from "@/hooks/use-toast";
+import CommunityWarningModal from "@/components/trust/CommunityWarningModal";
+import { useCommunityWarning } from "@/hooks/useCommunityWarning";
 
 interface ApplicationCardProps {
   application: Application;
