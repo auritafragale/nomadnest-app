@@ -55,6 +55,8 @@ export const ApplicationCard = ({
   const { toast } = useToast();
   const startConversation = useStartConversation();
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const [warningOpen, setWarningOpen] = useState(false);
+  const nomadWarning = useCommunityWarning("user", application.sitter_user_id);
 
   const sitter = application.sitter_user;
   const sitterProfile = application.sitter_profile;
