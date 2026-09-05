@@ -288,6 +288,11 @@ const SitterDashboard = ({
     if (appTab === "cancelled") return a.status === "cancelled";
     if (appTab === "all") return a.status !== "cancelled";
     return true;
+  }).sort((a, b) => {
+    // chronological — earliest sit start date first
+    const aStart = a.sit_dates?.start_date ?? "";
+    const bStart = b.sit_dates?.start_date ?? "";
+    return aStart.localeCompare(bStart);
   });
   const showApplications = (tab: "all" | "accepted" | "pending" | "completed" | "cancelled") => {
     setAppTab(tab);
