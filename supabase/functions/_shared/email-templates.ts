@@ -78,7 +78,7 @@ export function buildNotificationEmail(
         ctaUrl: `${data.appUrl}/dashboard`,
         pushTitle: `Application ${data.status === "accepted" ? "Accepted!" : "Updated"}`,
         pushBody: `Your application for ${data.listingTitle} was ${data.status}`,
-        pushUrl: "/dashboard",
+        pushUrl: data.status === "accepted" ? "/dashboard?appTab=accepted" : "/dashboard",
       };
     case "new_message":
       return {
