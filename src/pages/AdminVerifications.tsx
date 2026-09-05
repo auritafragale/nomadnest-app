@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle2, XCircle, Clock, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -59,6 +60,19 @@ const AdminVerifications = () => {
   const [rejectingSub, setRejectingSub] = useState<Submission | null>(null);
   const [rejectReason, setRejectReason] = useState<string>("");
   const [rejectNotes, setRejectNotes] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected">("pending");
+
+  const grouped = useMemo(() => ({
+    pending: submissions.filter((s) => s.status === "pending"),
+    approved: submissions.filter((s) => s.status === "approved"),
+    rejected: submissions.filter((s) => s.status === "rejected"),
+  }), [submissions]);
+
+  const VERIFICATION_TABS: { key: "pending" | "approved" | "rejected"; label: string }[] = [
+    { key: "pending", label: "Pending" },
+    { key: "approved", label: "Reviewed" },
+    { key: "rejected", label: "Declined" },
+  ];
 
   // Access is already enforced by AdminRoute
   useEffect(() => {
@@ -166,8 +180,6 @@ const AdminVerifications = () => {
     await handleDecision(sub.id, sub.user_id, "rejected", rejectReason, rejectNotes);
   };
 
-  const pending   = submissions.filter(s => s.status === "pending");
-  const reviewed  = submissions.filter(s => s.status !== "pending");
 
   return (
     <div className="min-h-screen bg-background">
@@ -180,7 +192,9 @@ const AdminVerifications = () => {
             <ShieldCheck className="w-7 h-7 text-primary" />
             <div>
               <h1 className="text-2xl font-bold">ID Verification Review</h1>
-              <p className="text-sm text-muted-foreground">{pending.length} pending · {reviewed.length} reviewed</p>
+              <p className="text-sm text-muted-foreground">
+                {grouped.pending.length} pending · {grouped.approved.length} reviewed · {grouped.rejected.length} declined
+              </p>
             </div>
           </div>
 
@@ -188,21 +202,41 @@ const AdminVerifications = () => {
             <div className="space-y-4">
               {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
             </div>
-          ) : pending.length === 0 && reviewed.length === 0 ? (
+          ) : submissions.length === 0 ? (
             <Card>
               <CardContent className="py-16 text-center text-muted-foreground">
                 No submissions yet.
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-6">
-              {pending.length > 0 && (
-                <section>
-                  <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Clock className="w-4 h-4" /> Pending ({pending.length})
-                  </h2>
-                  <div className="space-y-4">
-                    {pending.map(sub => (
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as "pending" | "approved" | "rejected")}
+            >
+              <TabsList className="w-full flex overflow-x-auto mb-4">
+                {VERIFICATION_TABS.map(({ key, label }) => (
+                  <TabsTrigger key={key} value={key} className="flex-1 gap-1.5">
+                    <span>{label}</span>
+                    <Badge
+                      variant={key === "pending" ? "destructive" : "muted"}
+                      className="ml-1 tabular-nums px-1.5 py-0 text-xs"
+                    >
+                      {grouped[key].length}
+                    </Badge>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {VERIFICATION_TABS.map(({ key, label }) => (
+                <TabsContent key={key} value={key} className="space-y-4">
+                  {grouped[key].length === 0 ? (
+                    <Card>
+                      <CardContent className="py-12 text-center text-muted-foreground">
+                        No {label.toLowerCase()} submissions yet.
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    grouped[key].map(sub => (
                       <SubmissionCard
                         key={sub.id}
                         sub={sub}
@@ -211,32 +245,13 @@ const AdminVerifications = () => {
                         onDecision={(d) => d === "approved" ? handleDecision(sub.id, sub.user_id, "approved") : openRejectDialog(sub)}
                         acting={acting === sub.id}
                         getSignedUrl={getSignedUrl}
+                        readOnly={key !== "pending"}
                       />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {reviewed.length > 0 && (
-                <section>
-                  <h2 className="text-lg font-semibold mb-3">Reviewed ({reviewed.length})</h2>
-                  <div className="space-y-4">
-                    {reviewed.map(sub => (
-                      <SubmissionCard
-                        key={sub.id}
-                        sub={sub}
-                        notes={notes[sub.id] ?? ""}
-                        onNotesChange={() => {}}
-                        onDecision={() => {}}
-                        acting={false}
-                        getSignedUrl={getSignedUrl}
-                        readOnly
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-            </div>
+                    ))
+                  )}
+                </TabsContent>
+              ))}
+            </Tabs>
           )}
         </div>
       </main>

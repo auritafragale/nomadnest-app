@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -44,10 +45,24 @@ const statusVariant: Record<ReportStatus, "muted" | "destructive"> = {
   dismissed: "muted",
 };
 
+const TABS: ReportStatus[] = ["pending", "reviewed", "resolved", "dismissed"];
+
 const AdminReports = () => {
   const { toast } = useToast();
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<ReportStatus>("pending");
+
+  const grouped = useMemo(() => {
+    const map: Record<ReportStatus, ReportRow[]> = {
+      pending: [],
+      reviewed: [],
+      resolved: [],
+      dismissed: [],
+    };
+    for (const r of reports) map[r.status].push(r);
+    return map;
+  }, [reports]);
 
   const load = async () => {
     setLoading(true);
@@ -122,101 +137,134 @@ const AdminReports = () => {
               Member safety reports
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent>
             {loading ? (
-              <>
+              <div className="space-y-3">
                 <Skeleton className="h-20 w-full" />
                 <Skeleton className="h-20 w-full" />
-              </>
+              </div>
             ) : reports.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No reports have been submitted. Nothing to review.
               </p>
             ) : (
-              reports.map((r) => {
-                const link = targetLink(r);
-                const evidence = r.evidence_paths ?? [];
-                return (
-                  <div key={r.id} className="rounded-xl border border-border p-3 space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-medium truncate">
-                          {r.reason} · <span className="capitalize">{r.target_type}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          From {r.reporter_name || r.reporter_email || "a member"} ·{" "}
-                          {format(new Date(r.created_at), "d MMM yyyy")}
-                        </p>
-                      </div>
-                      <Badge variant={statusVariant[r.status]} className="capitalize">
-                        {r.status}
+              <Tabs
+                value={activeTab}
+                onValueChange={(v) => setActiveTab(v as ReportStatus)}
+              >
+                <TabsList className="w-full flex overflow-x-auto mb-4">
+                  {TABS.map((tab) => (
+                    <TabsTrigger
+                      key={tab}
+                      value={tab}
+                      className="flex-1 capitalize gap-1.5"
+                    >
+                      <span>{tab}</span>
+                      <Badge
+                        variant={tab === "pending" ? "destructive" : "muted"}
+                        className="ml-1 tabular-nums px-1.5 py-0 text-xs"
+                      >
+                        {grouped[tab].length}
                       </Badge>
-                    </div>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
 
-                    {/* Reported member / target */}
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Reported: </span>
-                      {link ? (
-                        <Link
-                          to={link.to}
-                          className="font-medium text-primary hover:underline inline-flex items-center gap-1"
-                        >
-                          {link.label}
-                          {r.target_email && (
-                            <span className="text-muted-foreground font-normal">
-                              {" "}
-                              ({r.target_email})
-                            </span>
-                          )}
-                          <ExternalLink className="w-3 h-3" />
-                        </Link>
-                      ) : (
-                        <span className="text-muted-foreground">
-                          {r.target_name || r.target_email || r.target_id}
-                        </span>
-                      )}
-                    </div>
-
-                    {r.details && (
-                      <p className="text-sm text-muted-foreground whitespace-pre-line">
-                        {r.details}
+                {TABS.map((tab) => (
+                  <TabsContent key={tab} value={tab} className="space-y-3">
+                    {grouped[tab].length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-6 text-center">
+                        No {tab} reports yet.
                       </p>
-                    )}
+                    ) : (
+                      grouped[tab].map((r) => {
+                        const link = targetLink(r);
+                        const evidence = r.evidence_paths ?? [];
+                        return (
+                          <div key={r.id} className="rounded-xl border border-border p-3 space-y-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="font-medium truncate">
+                                  {r.reason} · <span className="capitalize">{r.target_type}</span>
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  From {r.reporter_name || r.reporter_email || "a member"} ·{" "}
+                                  {format(new Date(r.created_at), "d MMM yyyy")}
+                                </p>
+                              </div>
+                              <Badge variant={statusVariant[r.status]} className="capitalize">
+                                {r.status}
+                              </Badge>
+                            </div>
 
-                    {evidence.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {evidence.map((path) => {
-                          const name = path.split("/").pop() || "Proof";
-                          return (
-                            <Button
-                              key={path}
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEvidence(path)}
-                              className="gap-1.5"
-                            >
-                              <FileText className="w-3.5 h-3.5" />
-                              {name.length > 24 ? name.slice(0, 21) + "…" : name}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    )}
+                            {/* Reported member / target */}
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Reported: </span>
+                              {link ? (
+                                <Link
+                                  to={link.to}
+                                  className="font-medium text-primary hover:underline inline-flex items-center gap-1"
+                                >
+                                  {link.label}
+                                  {r.target_email && (
+                                    <span className="text-muted-foreground font-normal">
+                                      {" "}
+                                      ({r.target_email})
+                                    </span>
+                                  )}
+                                  <ExternalLink className="w-3 h-3" />
+                                </Link>
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  {r.target_name || r.target_email || r.target_id}
+                                </span>
+                              )}
+                            </div>
 
-                    <Select value={r.status} onValueChange={(v) => setStatus(r.id, v as ReportStatus)}>
-                      <SelectTrigger className="w-full sm:w-56" aria-label="Change report status">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="reviewed">Reviewed</SelectItem>
-                        <SelectItem value="resolved">Resolved</SelectItem>
-                        <SelectItem value="dismissed">Dismissed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                );
-              })
+                            {r.details && (
+                              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                                {r.details}
+                              </p>
+                            )}
+
+                            {evidence.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {evidence.map((path) => {
+                                  const name = path.split("/").pop() || "Proof";
+                                  return (
+                                    <Button
+                                      key={path}
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openEvidence(path)}
+                                      className="gap-1.5"
+                                    >
+                                      <FileText className="w-3.5 h-3.5" />
+                                      {name.length > 24 ? name.slice(0, 21) + "…" : name}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            <Select value={r.status} onValueChange={(v) => setStatus(r.id, v as ReportStatus)}>
+                              <SelectTrigger className="w-full sm:w-56" aria-label="Change report status">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="reviewed">Reviewed</SelectItem>
+                                <SelectItem value="resolved">Resolved</SelectItem>
+                                <SelectItem value="dismissed">Dismissed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      })
+                    )}
+                  </TabsContent>
+                ))}
+              </Tabs>
             )}
           </CardContent>
         </Card>
