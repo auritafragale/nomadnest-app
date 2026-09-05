@@ -36,6 +36,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import { ApplyDialog } from "@/components/applications/ApplyDialog";
+import CommunityWarningModal from "@/components/trust/CommunityWarningModal";
+import { useCommunityWarning } from "@/hooks/useCommunityWarning";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useStartConversation } from "@/hooks/useConversations";
