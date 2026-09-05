@@ -544,6 +544,95 @@ const ListingDetail = () => {
                 </Card>
               )}
 
+              {/* Pet detail dialog */}
+              <Dialog open={!!petDialogId} onOpenChange={(o) => !o && setPetDialogId(null)}>
+                <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+                  {(() => {
+                    const pet = listing.pets.find((p) => p.id === petDialogId);
+                    if (!pet) return null;
+                    const PetIcon = petTypeIcon(pet.type);
+                    return (
+                      <>
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <PetIcon className="w-5 h-5 text-[#E8735A]" />
+                            {pet.name || formatPetType(pet.type)}
+                          </DialogTitle>
+                        </DialogHeader>
+                        {pet.photos?.length > 0 && (
+                          <div className="grid grid-cols-2 gap-2 mb-4">
+                            {pet.photos.map((photo, i) => (
+                              <img
+                                key={i}
+                                src={photo}
+                                alt={`${pet.name || "Pet"} ${i + 1}`}
+                                className="w-full h-32 rounded-lg object-cover"
+                              />
+                            ))}
+                          </div>
+                        )}
+                        <div className="space-y-3 text-sm">
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="secondary">{formatPetType(pet.type)}</Badge>
+                            {pet.age && <Badge variant="outline">{pet.age}</Badge>}
+                            {pet.has_medication && (
+                              <Badge variant="outline" className="gap-1">
+                                <Pill className="w-3 h-3" /> Medication
+                              </Badge>
+                            )}
+                            {pet.reactive_to_animals && (
+                              <Badge variant="outline">Reactive to animals</Badge>
+                            )}
+                          </div>
+                          {pet.personality && (
+                            <div>
+                              <p className="font-medium mb-1">Personality</p>
+                              <p className="text-muted-foreground">{pet.personality}</p>
+                            </div>
+                          )}
+                          {pet.daily_routine && (
+                            <div>
+                              <p className="font-medium mb-1">Daily routine</p>
+                              <p className="text-muted-foreground">{pet.daily_routine}</p>
+                            </div>
+                          )}
+                          {pet.feeding_details && (
+                            <div>
+                              <p className="font-medium mb-1">Feeding details</p>
+                              <p className="text-muted-foreground">{pet.feeding_details}</p>
+                            </div>
+                          )}
+                          {pet.walks_exercise && (
+                            <div>
+                              <p className="font-medium mb-1">Walks & exercise</p>
+                              <p className="text-muted-foreground">{pet.walks_exercise}</p>
+                            </div>
+                          )}
+                          {pet.requires_medication && pet.medication_instructions && (
+                            <div>
+                              <p className="font-medium mb-1">Medication instructions</p>
+                              <p className="text-muted-foreground">{pet.medication_instructions}</p>
+                            </div>
+                          )}
+                          {pet.vet_info && (
+                            <div>
+                              <p className="font-medium mb-1">Vet info</p>
+                              <p className="text-muted-foreground">{pet.vet_info}</p>
+                            </div>
+                          )}
+                          {pet.separation_anxiety_tolerance && (
+                            <div>
+                              <p className="font-medium mb-1">Separation anxiety tolerance</p>
+                              <p className="text-muted-foreground">{pet.separation_anxiety_tolerance}</p>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </DialogContent>
+              </Dialog>
+
               {/* Home & Requirements — tabbed */}
               <Card>
                 <CardHeader>
