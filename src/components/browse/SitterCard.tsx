@@ -206,15 +206,7 @@ const SitterCard = ({ sitter, viewMode }: SitterCardProps) => {
                 viewMode === "list" ? "" : "justify-center"
               }`}
             >
-              {dedupePetTypes(sitter.pet_types).slice(0, 3).map((petType) => {
-                const Icon = petTypeIcon(petType);
-                return (
-                  <Badge key={petType} variant="muted" className="gap-1 capitalize">
-                    <Icon className="w-3 h-3" />
-                    {formatPetType(petType)}
-                  </Badge>
-                );
-              })}
+              <PetTypeIcons petTypes={sitter.pet_types} />
               <Badge variant={isAvailable() ? "success" : "muted"}>
                 {isAvailable() ? "Available" : "Booked"}
               </Badge>
