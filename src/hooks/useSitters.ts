@@ -43,6 +43,7 @@ export interface SitterWithProfile {
   } | null;
   rating: { average: number; count: number };
   category_ratings: CategoryAverage[];
+  review_rate: number | null;
 }
 
 interface UseSittersOptions {
