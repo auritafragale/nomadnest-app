@@ -10,7 +10,7 @@ On the Dashboard welcome header, put the "Founding Member" pill and the membersh
 On a listing, each pet in "Meet the Pets" becomes tappable and opens a full pet view (dialog) with: photo gallery (swipe through all pet photos), name, type, age, personality, daily routine, feeding, walks/exercise, medication details, reactive-to-animals and separation-anxiety notes, and vet info. Keeps the existing tab strip for quick switching; tapping the pet row opens the detail.
 
 ## 3. Welcome Guide made findable
-- Pet Parent dashboard: a new "Welcome Guide" card listing each of your listings with a status (Not started / Complete) and an Edit button that opens the guide editor for that listing.
+- Pet Parent dashboard: a new "Welcome Guide" card holding your single reusable guide — one guide per Pet Parent, editable any time, automatically attached to every listing you create now or later — with a status (Not started / Complete) and an Edit button that opens the guide editor for that listing.
 - Nomad side: on the listing page for a sit you were accepted for, the Welcome Guide appears as the first card, above "About this sit", showing the guide content inline (WiFi, feeding, vet, emergency contacts, house notes).
 - Offline + download: the guide is already cached on the device after first view; add a clear "Available offline" note and a Download button that saves it as a PDF/print sheet so it works with no signal.
 
