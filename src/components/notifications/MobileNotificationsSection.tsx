@@ -136,7 +136,14 @@ export const MobileNotificationsSection = ({ onNavigate }: MobileNotificationsSe
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="font-medium text-sm">{notification.title}</span>
+                  <span
+                    className={cn(
+                      "font-medium text-sm",
+                      notificationTitleClass(notification),
+                    )}
+                  >
+                    {notification.title}
+                  </span>
                   {!notification.read_at && (
                     <span className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />
                   )}
