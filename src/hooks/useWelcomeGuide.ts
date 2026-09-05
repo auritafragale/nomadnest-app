@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export interface WelcomeGuide {
-  listing_id: string;
+  owner_user_id: string | null;
   wifi_info: string | null;
   vet_info: string | null;
   feeding_schedule: string | null;
@@ -13,42 +13,45 @@ export interface WelcomeGuide {
   updated_at?: string | null;
 }
 
-const cacheKey = (listingId: string) => `nn_welcome_guide_${listingId}`;
+const cacheKey = (ownerId: string) => `nn_welcome_guide_${ownerId}`;
 
-/** Reads the guide, keeping a copy on the device so it still opens with no signal. */
-export const useWelcomeGuide = (listingId: string | undefined) => {
+/**
+ * One reusable Welcome Guide per Pet Parent. Reads by owner_user_id, keeping a
+ * copy on the device so it still opens with no signal.
+ */
+export const useWelcomeGuide = (ownerUserId: string | undefined) => {
   const [cached, setCached] = useState<WelcomeGuide | null>(null);
 
   useEffect(() => {
-    if (!listingId) return;
+    if (!ownerUserId) return;
     try {
-      const raw = localStorage.getItem(cacheKey(listingId));
+      const raw = localStorage.getItem(cacheKey(ownerUserId));
       if (raw) setCached(JSON.parse(raw) as WelcomeGuide);
     } catch {
       /* ignore unreadable cache */
     }
-  }, [listingId]);
+  }, [ownerUserId]);
 
   const query = useQuery({
-    queryKey: ["welcome-guide", listingId],
+    queryKey: ["welcome-guide", ownerUserId],
     queryFn: async (): Promise<WelcomeGuide | null> => {
-      if (!listingId) return null;
+      if (!ownerUserId) return null;
       const { data, error } = await supabase
         .from("welcome_guides")
-        .select("listing_id, wifi_info, vet_info, feeding_schedule, emergency_contacts, house_notes, updated_at")
-        .eq("listing_id", listingId)
+        .select("owner_user_id, wifi_info, vet_info, feeding_schedule, emergency_contacts, house_notes, updated_at")
+        .eq("owner_user_id", ownerUserId)
         .maybeSingle();
       if (error) throw error;
       if (data) {
         try {
-          localStorage.setItem(cacheKey(listingId), JSON.stringify(data));
+          localStorage.setItem(cacheKey(ownerUserId), JSON.stringify(data));
         } catch {
           /* storage full or blocked — online view still works */
         }
       }
       return (data as WelcomeGuide) || null;
     },
-    enabled: !!listingId,
+    enabled: !!ownerUserId,
   });
 
   return {
@@ -59,22 +62,22 @@ export const useWelcomeGuide = (listingId: string | undefined) => {
   };
 };
 
-export const useSaveWelcomeGuide = (listingId: string | undefined) => {
+export const useSaveWelcomeGuide = (ownerUserId: string | undefined) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (values: Omit<WelcomeGuide, "listing_id" | "updated_at">) => {
-      if (!listingId) throw new Error("Missing listing");
+    mutationFn: async (values: Omit<WelcomeGuide, "owner_user_id" | "updated_at">) => {
+      if (!ownerUserId) throw new Error("Missing Pet Parent");
       const { error } = await supabase
         .from("welcome_guides")
         .upsert(
-          { listing_id: listingId, ...values, updated_at: new Date().toISOString() },
-          { onConflict: "listing_id" },
+          { owner_user_id: ownerUserId, ...values, updated_at: new Date().toISOString() },
+          { onConflict: "owner_user_id" },
         );
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["welcome-guide", listingId] });
+      queryClient.invalidateQueries({ queryKey: ["welcome-guide", ownerUserId] });
       toast.success("Welcome Guide saved");
     },
     onError: (error: Error) => {
