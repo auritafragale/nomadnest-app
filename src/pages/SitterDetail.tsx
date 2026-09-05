@@ -70,6 +70,7 @@ import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary"
 import { aggregateCategoryRatings, SITTER_RATING_CATEGORIES } from "@/lib/categoryRatings";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
+import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import SitterLocationMap from "@/components/maps/SitterLocationMap";
 import VerificationBadges from "@/components/ui/VerificationBadges";
