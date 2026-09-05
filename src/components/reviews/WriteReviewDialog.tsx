@@ -253,6 +253,43 @@ const WriteReviewDialog = ({
             })}
           </div>
 
+          {/* Private community questions — never shown publicly */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-sm font-semibold">Private questions</Label>
+              <HelpTooltip
+                label="About private questions"
+                content="These answers are never shown on anyone's profile. They only help our community team spot repeated patterns."
+              />
+            </div>
+            {flagQuestions.map((q) => {
+              const answer = flagAnswers[q.column];
+              return (
+                <div key={q.column} className="space-y-1.5">
+                  <Label className="text-sm font-medium">{q.question}</Label>
+                  <div className="flex gap-2">
+                    {(["yes", "no"] as const).map((option) => (
+                      <Button
+                        key={option}
+                        type="button"
+                        size="sm"
+                        variant={answer === option ? "default" : "outline"}
+                        className="flex-1 capitalize"
+                        onClick={() =>
+                          setFlagAnswers((prev) => ({ ...prev, [q.column]: option }))
+                        }
+                      >
+                        {option}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+
+
           {/* Review Text */}
           <div className="space-y-2">
             <Label htmlFor="review-text">Your Review (optional)</Label>
