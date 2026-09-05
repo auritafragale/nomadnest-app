@@ -161,15 +161,6 @@ const FeaturedStaysSection = () => (
           <DemoCard key={listing.id} listing={listing} />
         ))}
       </div>
-
-      <div className="flex justify-center mt-10">
-        <Link to="/browse-sits">
-          <Button variant="hero" size="lg" className="group">
-            View All Sits
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Button>
-        </Link>
-      </div>
     </div>
   </section>
 );
