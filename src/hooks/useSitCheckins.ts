@@ -48,14 +48,12 @@ export const useAddSitCheckin = (sitId: string | undefined) => {
       photoUrl,
       ownerUserId,
       listingId,
-      listingTitle,
     }: {
       kind: CheckinKind;
       note?: string;
       photoUrl?: string | null;
       ownerUserId: string;
       listingId: string | null;
-      listingTitle: string;
     }) => {
       if (!sitId || !user) throw new Error("Not authenticated");
 
@@ -105,13 +103,7 @@ export const useAddSitCheckin = (sitId: string | undefined) => {
           .eq("id", conversationId);
       }
 
-      await supabase.from("notifications").insert({
-        user_id: ownerUserId,
-        type: "sit_checkin",
-        title: `${label} — ${listingTitle}`,
-        message: note?.trim() || `Your Nomad posted a "${label}" update.`,
-        data: { url: `/sits/${sitId}`, sit_id: sitId },
-      });
+      // The Pet Parent's in-app notification is created by a database trigger.
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sit-checkins", sitId] });
