@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
+import PetTypeIcons from "@/components/browse/PetTypeIcons";
 import {
   Calendar,
   MapPin,
