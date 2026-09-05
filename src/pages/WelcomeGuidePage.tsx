@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useWelcomeGuide, useSaveWelcomeGuide } from "@/hooks/useWelcomeGuide";
 import { ArrowLeft, WifiOff, BookOpen, Printer } from "lucide-react";
+import { printWelcomeGuide } from "@/lib/printGuide";
 
 const FIELDS = [
   { key: "wifi_info", label: "WiFi", placeholder: "Network name and password, any quirks" },
@@ -75,10 +76,10 @@ const WelcomeGuidePage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <main className="flex-1 pt-20 container py-8 max-w-3xl">
+      <main className="flex-1 pt-20 container py-8 max-w-3xl print-guide-root">
         <Link
           to={id ? `/listing/${id}` : "/browse-sits"}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-4"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-4 print-hidden"
         >
           <ArrowLeft className="w-4 h-4" /> Back to listing
         </Link>
@@ -101,8 +102,8 @@ const WelcomeGuidePage = () => {
           <Button
             variant="outline"
             size="sm"
-            className="mb-4"
-            onClick={() => window.print()}
+            className="mb-4 print-hidden"
+            onClick={printWelcomeGuide}
           >
             <Printer className="w-4 h-4 mr-2" />
             Download / Print

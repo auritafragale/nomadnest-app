@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, WifiOff, Printer, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { useWelcomeGuide } from "@/hooks/useWelcomeGuide";
+import { printWelcomeGuide } from "@/lib/printGuide";
 
 const FIELDS = [
   { key: "wifi_info", label: "WiFi" },
@@ -34,7 +35,7 @@ const InlineWelcomeGuide = ({
   const hasContent = filled.length > 0;
 
   return (
-    <Card id="welcome-guide">
+    <Card id="welcome-guide" className="print-guide-root">
       <CardHeader
         className="cursor-pointer select-none"
         onClick={() => setOpen((o) => !o)}
@@ -46,7 +47,7 @@ const InlineWelcomeGuide = ({
             <BookOpen className="w-5 h-5 text-[#E8735A]" />
             Welcome Guide
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 print-hidden">
             {isOffline && (
               <Badge variant="outline" className="gap-1 text-xs">
                 <WifiOff className="w-3 h-3" /> Offline
@@ -69,10 +70,15 @@ const InlineWelcomeGuide = ({
           ) : hasContent ? (
             <>
               <div className="flex items-center justify-between gap-2">
-                <Badge variant="secondary" className="gap-1">
+                <Badge variant="secondary" className="gap-1 print-hidden">
                   {filled.length}/5 fields
                 </Badge>
-                <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="print-hidden"
+                  onClick={printWelcomeGuide}
+                >
                   <Printer className="w-4 h-4 mr-2" />
                   Download / Print
                 </Button>
@@ -85,7 +91,7 @@ const InlineWelcomeGuide = ({
                   </div>
                 ))}
               </div>
-              <Link to={`/listing/${listingId}/welcome-guide`}>
+              <Link to={`/listing/${listingId}/welcome-guide`} className="print-hidden">
                 <Button variant="ghost" size="sm">
                   Open full guide
                 </Button>
