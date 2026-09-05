@@ -440,28 +440,31 @@ const OwnerDashboard = ({
 
         {/* Membership details live on the Membership page; the header shows status pills */}
 
-        {/* Quick Stats */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Your stats</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              { label: "Active listings", value: listingStats.published, to: "/dashboard#my-listings" },
-              { label: "Draft listings", value: listingStats.draft, to: "/dashboard#my-listings" },
-              { label: "Applications received", value: listingStats.applications, to: "/applications" },
-            ].map((stat) => (
-              <Link
-                key={stat.label}
-                to={stat.to}
-                className="flex justify-between items-center rounded-lg px-2 py-2 -mx-2 hover:bg-muted transition-colors"
-              >
-                <span className="text-sm text-muted-foreground">{stat.label}</span>
-                <Badge variant="secondary">{stat.value}</Badge>
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
+        {/* Welcome Guide — one reusable guide per Pet Parent */}
+        <OwnerWelcomeGuideCard />
+
+        {/* Quick Stats — tabbed */}
+        <StatsTabsCard
+          tabs={[
+            {
+              id: "listings",
+              label: "Listings",
+              count: listingStats.total,
+              items: [
+                { label: "Active listings", value: listingStats.published, to: "/dashboard#my-listings" },
+                { label: "Draft listings", value: listingStats.draft, to: "/dashboard#my-listings" },
+              ],
+            },
+            {
+              id: "applications",
+              label: "Applications",
+              count: listingStats.applications,
+              items: [
+                { label: "Applications received", value: listingStats.applications, to: "/applications" },
+              ],
+            },
+          ]}
+        />
       </div>
 
       {/* Middle Column */}
