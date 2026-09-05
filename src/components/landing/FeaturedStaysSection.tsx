@@ -127,25 +127,20 @@ const DemoCard = ({ listing }: { listing: DemoListing }) => (
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex flex-wrap gap-1 min-w-0">
-            {listing.pets.map((pet, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] sm:text-xs font-medium"
-              >
-                {pet.type === "cat" ? <Cat className="w-2.5 h-2.5" /> : <Dog className="w-2.5 h-2.5" />}
-                <span className="truncate max-w-[60px] sm:max-w-none">{pet.name}</span>
-              </span>
-            ))}
-          </div>
-          <span className="text-[10px] sm:text-xs font-semibold text-primary group-hover:underline whitespace-nowrap">
-            View
-          </span>
+        <div className="flex flex-wrap gap-1 min-w-0">
+          {listing.pets.map((pet, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] sm:text-xs font-medium"
+            >
+              {pet.type === "cat" ? <Cat className="w-2.5 h-2.5" /> : <Dog className="w-2.5 h-2.5" />}
+              <span className="truncate max-w-[60px] sm:max-w-none">{pet.name}</span>
+            </span>
+          ))}
         </div>
       </div>
     </div>
-  </Link>
+  </div>
 );
 
 const FeaturedStaysSection = () => (
