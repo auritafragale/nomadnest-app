@@ -7,6 +7,8 @@ import {
   SITTER_RATING_CATEGORIES,
   type CategoryAverage,
 } from "@/lib/categoryRatings";
+import { weightedAverage } from "@/lib/ratingWeights";
+import { REVIEW_RATE_BOOST_THRESHOLD } from "@/hooks/useReviewRates";
 
 export interface SitterWithProfile {
   id: string;
