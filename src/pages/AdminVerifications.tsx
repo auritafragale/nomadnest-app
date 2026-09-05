@@ -194,7 +194,9 @@ const AdminVerifications = () => {
             <ShieldCheck className="w-7 h-7 text-primary" />
             <div>
               <h1 className="text-2xl font-bold">ID Verification Review</h1>
-              <p className="text-sm text-muted-foreground">{pending.length} pending · {reviewed.length} reviewed</p>
+              <p className="text-sm text-muted-foreground">
+                {grouped.pending.length} pending · {grouped.approved.length} reviewed · {grouped.rejected.length} declined
+              </p>
             </div>
           </div>
 
