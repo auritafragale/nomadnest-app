@@ -309,8 +309,7 @@ const SitterDashboard = ({
           sitterProfile={sitterProfile}
         />
 
-        {/* Membership + member card (merged) */}
-        <MembershipStatusCard />
+        {/* Membership details live on the Membership page; the header shows status pills */}
 
         {/* Quick Stats */}
         <Card>
@@ -451,8 +450,7 @@ const OwnerDashboard = ({
           ownerProfile={ownerProfile}
         />
 
-        {/* Membership + member card (merged) */}
-        <MembershipStatusCard />
+        {/* Membership details live on the Membership page; the header shows status pills */}
 
         {/* Quick Stats */}
         <Card>
