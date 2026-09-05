@@ -82,16 +82,22 @@ export const useSitters = (options: UseSittersOptions = {}) => {
 
         const userIds = sitterData.map((s) => s.user_id);
 
-        const [profilesResult, ratingsResult] = await Promise.all([
+        const [profilesResult, ratingsResult, reviewRatesResult] = await Promise.all([
           publicProfiles("id, first_name, last_name, avatar_url, city, country, founding_member")
             .in("id", userIds) as unknown as Promise<{ data: PublicProfile[] | null; error: { message: string } | null }>,
           supabase
             .from("reviews")
             .select(
-              "reviewee_user_id, rating, rating_pet_care, rating_communication, rating_cleanliness, rating_reliability, rating_respect_home"
+              "reviewee_user_id, rating, created_at, rating_pet_care, rating_communication, rating_cleanliness, rating_reliability, rating_respect_home"
             )
             .in("reviewee_user_id", userIds),
+          supabase.rpc("member_review_rates" as never, { p_user_ids: userIds } as never),
         ]);
+
+        const reviewRateMap = new Map(
+          ((reviewRatesResult.data || []) as { user_id: string; review_rate: number | null }[])
+            .map((r) => [r.user_id, r.review_rate])
+        );
 
         if (profilesResult.error) throw profilesResult.error;
 
@@ -100,14 +106,20 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         );
 
         // Compute per-sitter average ratings
-        const ratingsMap = new Map<string, { sum: number; count: number }>();
+        const ratingsMap = new Map<string, { average: number; count: number }>();
         const reviewsByUser = new Map<string, Record<string, unknown>[]>();
+        const rawByUser = new Map<string, { rating: number; created_at: string }[]>();
         (ratingsResult.data || []).forEach((r) => {
-          const cur = ratingsMap.get(r.reviewee_user_id) || { sum: 0, count: 0 };
-          ratingsMap.set(r.reviewee_user_id, { sum: cur.sum + r.rating, count: cur.count + 1 });
+          const raw = rawByUser.get(r.reviewee_user_id) || [];
+          raw.push({ rating: r.rating, created_at: (r as { created_at: string }).created_at });
+          rawByUser.set(r.reviewee_user_id, raw);
           const list = reviewsByUser.get(r.reviewee_user_id) || [];
           list.push(r as Record<string, unknown>);
           reviewsByUser.set(r.reviewee_user_id, list);
+        });
+        // Recent feedback describes a nomad as they are today, so it counts for more.
+        rawByUser.forEach((list, userId) => {
+          ratingsMap.set(userId, weightedAverage(list));
         });
 
         let filteredData: SitterWithProfile[] = sitterData
@@ -117,9 +129,8 @@ export const useSitters = (options: UseSittersOptions = {}) => {
             return {
               ...sitter,
               profile: profilesMap.get(sitter.user_id) || null,
-              rating: ratingData
-                ? { average: ratingData.sum / ratingData.count, count: ratingData.count }
-                : { average: 0, count: 0 },
+              rating: ratingData || { average: 0, count: 0 },
+              review_rate: reviewRateMap.get(sitter.user_id) ?? null,
               category_ratings: aggregateCategoryRatings(
                 reviewsByUser.get(sitter.user_id) || [],
                 SITTER_RATING_CATEGORIES
