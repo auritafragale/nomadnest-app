@@ -400,7 +400,7 @@ const SitterDashboard = ({
           </CardHeader>
           <CardContent>
             <Tabs value={appTab} onValueChange={(v) => setAppTab(v as typeof appTab)} className="mb-4">
-              <TabsList className="w-full justify-start overflow-x-auto">
+              <TabsList className="w-full justify-start flex-nowrap overflow-x-auto overflow-y-hidden">
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="accepted">Accepted</TabsTrigger>
                 <TabsTrigger value="pending">Pending</TabsTrigger>
