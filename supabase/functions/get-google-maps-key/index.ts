@@ -14,10 +14,18 @@ serve(async (req) => {
   // (Supabase JS always sends it), so random bots/crawlers cannot harvest it.
   const authHeader = req.headers.get("Authorization") ?? "";
   const apikey = req.headers.get("apikey") ?? "";
-  const expectedKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
 
-  if (!expectedKey || (token !== expectedKey && apikey !== expectedKey)) {
+  // Accept any of this project's published API keys (legacy JWT or new format).
+  const allowed = [
+    Deno.env.get("SUPABASE_ANON_KEY"),
+    Deno.env.get("SUPABASE_PUBLISHABLE_KEYS"),
+  ]
+    .filter(Boolean)
+    .flatMap((v) => (v as string).split(","))
+    .map((v) => v.trim());
+
+  if (!allowed.includes(token) && !allowed.includes(apikey)) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
