@@ -12,6 +12,7 @@ import {
   Wifi, WifiOff, Bed, Sofa, MapPin, Loader2, Navigation
 } from "lucide-react";
 import ImageUpload from "@/components/listing/ImageUpload";
+import { Switch } from "@/components/ui/switch";
 import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 
 interface HomeInfoStepProps {
@@ -339,6 +340,27 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Practical details */}
+        <div className="space-y-3">
+          <Label>Practical details</Label>
+          {([
+            { key: "remote_location" as const, title: "Remote location", desc: "The home is rural or far from a town centre" },
+            { key: "car_needed" as const, title: "Car needed", desc: "A car is needed to get around day to day" },
+            { key: "heavy_gardening" as const, title: "Plant Care", desc: "Plants or a garden need watering and care" },
+          ]).map((item) => (
+            <div key={item.key} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div>
+                <Label className="text-base">{item.title}</Label>
+                <p className="text-sm text-muted-foreground">{item.desc}</p>
+              </div>
+              <Switch
+                checked={Boolean(formData[item.key])}
+                onCheckedChange={(checked) => updateFormData({ [item.key]: checked })}
+              />
+            </div>
+          ))}
         </div>
 
         {/* Home Photos */}
