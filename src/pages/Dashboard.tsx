@@ -27,7 +27,7 @@ import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection"
 import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompletenessCard";
 import { useOwnerApplications } from "@/hooks/useApplications";
 import { OwnerApplicationPreviewCard } from "@/components/dashboard/OwnerApplicationPreviewCard";
-import MembershipStatusCard from "@/components/dashboard/MembershipStatusCard";
+
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import MobileHomeScreen from "@/components/mobile/MobileHomeScreen";
@@ -309,8 +309,7 @@ const SitterDashboard = ({
           sitterProfile={sitterProfile}
         />
 
-        {/* Membership + member card (merged) */}
-        <MembershipStatusCard />
+        {/* Membership details live on the Membership page; the header shows status pills */}
 
         {/* Quick Stats */}
         <Card>
@@ -451,8 +450,7 @@ const OwnerDashboard = ({
           ownerProfile={ownerProfile}
         />
 
-        {/* Membership + member card (merged) */}
-        <MembershipStatusCard />
+        {/* Membership details live on the Membership page; the header shows status pills */}
 
         {/* Quick Stats */}
         <Card>

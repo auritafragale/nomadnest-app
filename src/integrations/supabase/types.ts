@@ -1003,6 +1003,7 @@ export type Database = {
         Row: {
           created_at: string
           details: string | null
+          evidence_paths: string[] | null
           id: string
           reason: string
           reporter_user_id: string
@@ -1014,6 +1015,7 @@ export type Database = {
         Insert: {
           created_at?: string
           details?: string | null
+          evidence_paths?: string[] | null
           id?: string
           reason: string
           reporter_user_id: string
@@ -1025,6 +1027,7 @@ export type Database = {
         Update: {
           created_at?: string
           details?: string | null
+          evidence_paths?: string[] | null
           id?: string
           reason?: string
           reporter_user_id?: string
@@ -1680,13 +1683,17 @@ export type Database = {
         Returns: {
           created_at: string
           details: string
+          evidence_paths: string[]
           id: string
           reason: string
           reporter_email: string
           reporter_name: string
           reporter_user_id: string
           status: Database["public"]["Enums"]["report_status"]
+          target_email: string
           target_id: string
+          target_name: string
+          target_profile_user_id: string
           target_type: Database["public"]["Enums"]["report_target_type"]
           updated_at: string
         }[]
