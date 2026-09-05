@@ -283,7 +283,7 @@ const SitterDashboard = ({
     const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
     if (appTab === "accepted") return a.status === "accepted" && !ended;
     if (appTab === "pending") return a.status === "applied" || a.status === "shortlisted";
-    if (appTab === "completed") return a.status === "accepted" && ended;
+    if (appTab === "accepted") return a.status === "accepted" && !ended;
     if (appTab === "cancelled") return a.status === "cancelled";
     if (appTab === "all") return a.status !== "cancelled";
     return true;
