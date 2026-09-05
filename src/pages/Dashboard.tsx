@@ -33,6 +33,8 @@ import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import MobileHomeScreen from "@/components/mobile/MobileHomeScreen";
 import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
 import { UpcomingPastSits } from "@/components/dashboard/UpcomingPastSits";
+import StatsTabsCard from "@/components/dashboard/StatsTabsCard";
+import OwnerWelcomeGuideCard from "@/components/dashboard/OwnerWelcomeGuideCard";
 
 interface Profile {
   first_name: string | null;
