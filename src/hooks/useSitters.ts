@@ -180,6 +180,15 @@ export const useSitters = (options: UseSittersOptions = {}) => {
           });
         }
 
+        // Small nudge up the results for members who keep reviewing.
+        filteredData = [...filteredData].sort((a, b) => {
+          const boost = (s: SitterWithProfile) =>
+            (s.review_rate ?? 0) > REVIEW_RATE_BOOST_THRESHOLD ? 1 : 0;
+          const diff = boost(b) - boost(a);
+          if (diff !== 0) return diff;
+          return b.rating.average - a.rating.average;
+        });
+
         setSitters(filteredData);
       } catch (err: any) {
         console.error("Error fetching sitters:", err);
