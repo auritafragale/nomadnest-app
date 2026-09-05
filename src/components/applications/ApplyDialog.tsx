@@ -74,6 +74,7 @@ export const ApplyDialog = ({
   const [alreadyApplied, setAlreadyApplied] = useState<Set<string>>(new Set());
   const [fullDates, setFullDates] = useState<Set<string>>(new Set());
   const [checkingApplication, setCheckingApplication] = useState(false);
+  const [hadPastApplication, setHadPastApplication] = useState(false);
 
   const applicableDates = sitDates.filter(
     (d) => !alreadyApplied.has(d.id) && !fullDates.has(d.id),
@@ -88,12 +89,16 @@ export const ApplyDialog = ({
       setCheckingApplication(true);
       const ids = sitDates.map((d) => d.id);
 
+      // Only LIVE applications block re-applying. Cancelled / declined /
+      // withdrawn rounds are free to apply for again (dates can be re-opened
+      // or edited in place by the Pet Parent).
       const { data: mine } = await supabase
         .from("applications")
-        .select("sit_dates_id")
+        .select("sit_dates_id, status")
         .eq("listing_id", listingId)
         .eq("sitter_user_id", user.id)
         .in("sit_dates_id", ids);
+
 
       const { data: active } = await supabase
         .from("applications")
@@ -106,7 +111,13 @@ export const ApplyDialog = ({
         counts.set(a.sit_dates_id, (counts.get(a.sit_dates_id) || 0) + 1);
       });
 
-      setAlreadyApplied(new Set((mine || []).map((a) => a.sit_dates_id)));
+      const live = (mine || []).filter((a) =>
+        ["applied", "shortlisted", "accepted"].includes(a.status),
+      );
+      setAlreadyApplied(new Set(live.map((a) => a.sit_dates_id)));
+      setHadPastApplication((mine || []).length > live.length);
+
+
       setFullDates(new Set(ids.filter((id) => (counts.get(id) || 0) >= MAX_ACTIVE_APPLICANTS)));
       setCheckingApplication(false);
     };
@@ -283,7 +294,13 @@ export const ApplyDialog = ({
                   A separate application is sent for each date range.
                 </p>
               )}
+              {hadPastApplication && (
+                <p className="text-xs text-muted-foreground">
+                  Your earlier application for these dates was cancelled or declined — you're welcome to apply again.
+                </p>
+              )}
             </div>
+
 
             {/* Who's Applying */}
             <div className="space-y-2">

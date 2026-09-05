@@ -70,6 +70,7 @@ import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary"
 import { aggregateCategoryRatings, SITTER_RATING_CATEGORIES } from "@/lib/categoryRatings";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
+import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import SitterLocationMap from "@/components/maps/SitterLocationMap";
 import VerificationBadges from "@/components/ui/VerificationBadges";
@@ -487,20 +488,15 @@ const SitterDetail = () => {
                   )}
                 </div>
 
-                <Dialog open={photoOpen} onOpenChange={setPhotoOpen}>
-                  <DialogContent className="max-w-3xl p-2">
-                    <DialogHeader className="sr-only">
-                      <DialogTitle>{name}</DialogTitle>
-                    </DialogHeader>
-                    {allPhotos.length > 0 && (
-                      <img
-                        src={allPhotos[selectedPhoto]}
-                        alt={name}
-                        className="w-full max-h-[80vh] object-contain rounded-lg"
-                      />
-                    )}
-                  </DialogContent>
-                </Dialog>
+                <PhotoLightbox
+                  open={photoOpen}
+                  onOpenChange={setPhotoOpen}
+                  photos={allPhotos}
+                  startIndex={selectedPhoto}
+                  alt={name}
+                  onIndexChange={setSelectedPhoto}
+                />
+
               </div>
 
               {/* Profile Info */}
