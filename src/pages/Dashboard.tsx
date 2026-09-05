@@ -283,7 +283,6 @@ const SitterDashboard = ({
     const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
     if (appTab === "accepted") return a.status === "accepted" && !ended;
     if (appTab === "pending") return a.status === "applied" || a.status === "shortlisted";
-    if (appTab === "accepted") return a.status === "accepted" && !ended;
     if (appTab === "cancelled") return a.status === "cancelled";
     if (appTab === "all") return a.status !== "cancelled";
     return true;
@@ -293,7 +292,7 @@ const SitterDashboard = ({
     const bStart = b.sit_dates?.start_date ?? "";
     return aStart.localeCompare(bStart);
   });
-  const showApplications = (tab: "all" | "accepted" | "pending" | "completed" | "cancelled") => {
+  const showApplications = (tab: "all" | "accepted" | "pending" | "cancelled") => {
     setAppTab(tab);
     document.getElementById("my-applications")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
