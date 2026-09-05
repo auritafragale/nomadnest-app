@@ -18,7 +18,7 @@ On a listing, each pet in "Meet the Pets" becomes tappable and opens a full pet 
 Replace the stacked stat rows with a tab strip, each tab label carrying its count (e.g. "Active listings 1", "Draft 0", "Applications 2"). Selecting a tab shows a short line plus the link/action for that stat. Tabs scroll horizontally only on small screens. Applies to the Pet Parent stats card and the Nomad stats card.
 
 ## 5. Applications in date order
-On the Applications page (Pet Parent), the default order becomes earliest sit start date first, and each date group in the filter is listed chronologically. Existing sort options (most recent, most reviews, highest rating) remain available in the Filters panel.
+On the Applications page (Pet Parent) and in the "My Applications" section on the Nomad dashboard, the default order becomes earliest sit start date first, and each date group in the filter is listed chronologically. Existing sort options (most recent, most reviews, highest rating) remain available in the Filters panel.
 
 ## Technical notes
 - `src/components/dashboard/DashboardHeader.tsx` — single flex row for `FoundingMemberBadge` + plan `Badge`, reduced text/padding, `flex-nowrap` with truncation.
