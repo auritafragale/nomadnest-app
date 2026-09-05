@@ -11,7 +11,7 @@ import BackToTopButton from "@/components/ui/BackToTopButton";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import Pagination from "@/components/browse/Pagination";
 import { usePagination } from "@/hooks/usePagination";
-import FilterBottomSheet, { MobileFilters } from "@/components/mobile/FilterBottomSheet";
+import FilterBottomSheet, { MobileFilters, sitDetailKeys } from "@/components/mobile/FilterBottomSheet";
 
 const ListingGoogleMap = lazy(() => import("@/components/maps/ListingGoogleMap"));
 
@@ -29,6 +29,7 @@ const BrowseSits = () => {
     lastMinute: false,
     reasons: [],
     petTypes: [],
+    sitDetails: [],
   });
 
   const handleMobileFiltersApply = (mf: MobileFilters) => {
@@ -37,6 +38,9 @@ const BrowseSits = () => {
       ...prev,
       lastMinute: mf.lastMinute || undefined,
       petTypes: mf.petTypes.length > 0 ? mf.petTypes : undefined,
+      ...Object.fromEntries(
+        sitDetailKeys.map((k) => [k, mf.sitDetails.includes(k) ? true : undefined])
+      ),
       startDate: mf.dateRange?.from ? mf.dateRange.from.toISOString().split("T")[0] : undefined,
       endDate: mf.dateRange?.to ? mf.dateRange.to.toISOString().split("T")[0] : undefined,
     }));
@@ -75,6 +79,7 @@ const BrowseSits = () => {
     mobileFilters.lastMinute ||
     mobileFilters.reasons.length > 0 ||
     mobileFilters.petTypes.length > 0 ||
+    mobileFilters.sitDetails.length > 0 ||
     !!mobileFilters.dateRange?.from;
 
   return (

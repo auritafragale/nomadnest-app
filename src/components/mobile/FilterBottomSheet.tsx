@@ -20,8 +20,31 @@ const petOptions = ["Dog", "Cat", "Bird", "Fish", "Rabbit", "Other"];
 
 
 
+export const sitDetailKeys = [
+  "noPets",
+  "noMedication",
+  "aloneFourToEight",
+  "notReactive",
+  "noCarNeeded",
+  "noPlantCare",
+  "remoteOk",
+] as const;
+
+export type SitDetailKey = (typeof sitDetailKeys)[number];
+
+const sitDetailLabels: Record<SitDetailKey, string> = {
+  noPets: "No Pets (plant care only)",
+  noMedication: "No medication needed",
+  aloneFourToEight: "Left 4–8 hours",
+  notReactive: "Not reactive to animals",
+  noCarNeeded: "No car needed",
+  noPlantCare: "No Plant Care",
+  remoteOk: "Remote location OK",
+};
+
 export interface MobileFilters {
   lastMinute: boolean;
+  sitDetails: SitDetailKey[];
   reasons: string[];
   petTypes: string[];
   dateRange?: DateRange;
@@ -47,13 +70,22 @@ const FilterBottomSheet = ({ open, onClose, filters, onApply }: FilterBottomShee
     }));
   };
 
+  const toggleSitDetail = (key: SitDetailKey) => {
+    setDraft((d) => ({
+      ...d,
+      sitDetails: d.sitDetails.includes(key)
+        ? d.sitDetails.filter((k) => k !== key)
+        : [...d.sitDetails, key],
+    }));
+  };
+
   const handleApply = () => {
     onApply(draft);
     onClose();
   };
 
   const handleClear = () => {
-    const empty: MobileFilters = { lastMinute: false, reasons: [], petTypes: [], dateRange: undefined };
+    const empty: MobileFilters = { lastMinute: false, reasons: [], petTypes: [], sitDetails: [], dateRange: undefined };
     setDraft(empty);
     onApply(empty);
     onClose();
@@ -63,6 +95,7 @@ const FilterBottomSheet = ({ open, onClose, filters, onApply }: FilterBottomShee
     (draft.lastMinute ? 1 : 0) +
     draft.reasons.length +
     draft.petTypes.length +
+    draft.sitDetails.length +
     (draft.dateRange?.from ? 1 : 0);
 
   return (
@@ -121,6 +154,27 @@ const FilterBottomSheet = ({ open, onClose, filters, onApply }: FilterBottomShee
                   )}
                 >
                   {pet}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Sit Details */}
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-3">Pets &amp; Home</p>
+            <div className="flex flex-wrap gap-2">
+              {sitDetailKeys.map((key) => (
+                <button
+                  key={key}
+                  onClick={() => toggleSitDetail(key)}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors",
+                    draft.sitDetails.includes(key)
+                      ? "border-[#E8735A] bg-[#E8735A] text-white"
+                      : "border-border text-foreground"
+                  )}
+                >
+                  {sitDetailLabels[key]}
                 </button>
               ))}
             </div>
