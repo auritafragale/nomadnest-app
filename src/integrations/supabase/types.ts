@@ -1583,6 +1583,22 @@ export type Database = {
           total_members: number
         }[]
       }
+      admin_list_community_strikes: {
+        Args: never
+        Returns: {
+          category: string
+          flag_count: number
+          id: string
+          listing_title: string
+          show_strike_three_warning: boolean
+          strike_two_email_sent_at: string
+          subject_id: string
+          subject_name: string
+          subject_type: string
+          subject_user_id: string
+          updated_at: string
+        }[]
+      }
       admin_list_id_verifications: {
         Args: never
         Returns: {
@@ -1647,6 +1663,17 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      admin_list_reliability_reviews: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          last_strike_at: string
+          reliability_score: number
+          strike_count: number
+          user_id: string
+        }[]
       }
       admin_perk_click_stats: {
         Args: never
