@@ -294,7 +294,13 @@ export const ApplyDialog = ({
                   A separate application is sent for each date range.
                 </p>
               )}
+              {hadPastApplication && (
+                <p className="text-xs text-muted-foreground">
+                  Your earlier application for these dates was cancelled or declined — you're welcome to apply again.
+                </p>
+              )}
             </div>
+
 
             {/* Who's Applying */}
             <div className="space-y-2">
