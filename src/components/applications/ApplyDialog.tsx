@@ -88,12 +88,16 @@ export const ApplyDialog = ({
       setCheckingApplication(true);
       const ids = sitDates.map((d) => d.id);
 
+      // Only LIVE applications block re-applying. Cancelled / declined /
+      // withdrawn rounds are free to apply for again (dates can be re-opened
+      // or edited in place by the Pet Parent).
       const { data: mine } = await supabase
         .from("applications")
-        .select("sit_dates_id")
+        .select("sit_dates_id, status")
         .eq("listing_id", listingId)
         .eq("sitter_user_id", user.id)
         .in("sit_dates_id", ids);
+
 
       const { data: active } = await supabase
         .from("applications")

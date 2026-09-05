@@ -487,20 +487,15 @@ const SitterDetail = () => {
                   )}
                 </div>
 
-                <Dialog open={photoOpen} onOpenChange={setPhotoOpen}>
-                  <DialogContent className="max-w-3xl p-2">
-                    <DialogHeader className="sr-only">
-                      <DialogTitle>{name}</DialogTitle>
-                    </DialogHeader>
-                    {allPhotos.length > 0 && (
-                      <img
-                        src={allPhotos[selectedPhoto]}
-                        alt={name}
-                        className="w-full max-h-[80vh] object-contain rounded-lg"
-                      />
-                    )}
-                  </DialogContent>
-                </Dialog>
+                <PhotoLightbox
+                  open={photoOpen}
+                  onOpenChange={setPhotoOpen}
+                  photos={allPhotos}
+                  startIndex={selectedPhoto}
+                  alt={name}
+                  onIndexChange={setSelectedPhoto}
+                />
+
               </div>
 
               {/* Profile Info */}
