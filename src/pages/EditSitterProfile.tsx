@@ -382,14 +382,6 @@ const EditSitterProfile = () => {
                 Make your profile stand out to attract pet owners
               </p>
             </div>
-            <Button onClick={handleSave} disabled={saving} className="flex-shrink-0">
-              {saving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Save Changes
-            </Button>
           </div>
 
           <Tabs defaultValue="basics" className="space-y-6">
