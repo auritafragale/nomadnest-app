@@ -45,10 +45,24 @@ const statusVariant: Record<ReportStatus, "muted" | "destructive"> = {
   dismissed: "muted",
 };
 
+const TABS: ReportStatus[] = ["pending", "reviewed", "resolved", "dismissed"];
+
 const AdminReports = () => {
   const { toast } = useToast();
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<ReportStatus>("pending");
+
+  const grouped = useMemo(() => {
+    const map: Record<ReportStatus, ReportRow[]> = {
+      pending: [],
+      reviewed: [],
+      resolved: [],
+      dismissed: [],
+    };
+    for (const r of reports) map[r.status].push(r);
+    return map;
+  }, [reports]);
 
   const load = async () => {
     setLoading(true);
