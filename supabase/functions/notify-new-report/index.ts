@@ -18,13 +18,18 @@ interface Payload {
 }
 
 /** Escape untrusted report text before interpolating into HTML. */
+const AMP = String.fromCharCode(38) + "amp;"; // &
+const LT = String.fromCharCode(38) + "lt;"; // <
+const GT = String.fromCharCode(38) + "gt;"; // >
+const QUOT = String.fromCharCode(38) + "quot;"; // "
+const APOS = String.fromCharCode(38) + "#039;"; // '
 const esc = (s: string | null | undefined): string =>
   (s ?? "")
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">")
-    .replace(/"/g, """)
-    .replace(/'/g, "&#039;");
+    .replace(/&/g, AMP)
+    .replace(/</g, LT)
+    .replace(/>/g, GT)
+    .replace(/"/g, QUOT)
+    .replace(/'/g, APOS);
 
 const buildHtml = (
   p: Payload,
