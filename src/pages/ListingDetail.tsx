@@ -50,6 +50,9 @@ import ListingLocationMap from "@/components/maps/ListingLocationMap";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatPetType, petTypeIcon, formatPetAge } from "@/lib/petTypes";
 import VerificationBadges from "@/components/ui/VerificationBadges";
+import InlineWelcomeGuide from "@/components/listing/InlineWelcomeGuide";
+import { useAcceptedSitter } from "@/hooks/useAcceptedSitter";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Pet {
   id: string;
@@ -287,6 +290,8 @@ const ListingDetail = () => {
       prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id],
     );
   const isOwner = user?.id === listing?.owner_user_id;
+  const { data: acceptedSitter = false } = useAcceptedSitter(listing?.id);
+  const [petDialogId, setPetDialogId] = useState<string | null>(null);
   const canApply = user && !isOwner && (role === "sitter" || role === "both");
 
   if (loading) {
