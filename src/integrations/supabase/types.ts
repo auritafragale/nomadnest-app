@@ -1480,7 +1480,7 @@ export type Database = {
           house_notes: string | null
           id: string
           listing_id: string | null
-          owner_user_id: string | null
+          owner_user_id: string
           updated_at: string
           vet_info: string | null
           wifi_info: string | null
@@ -1492,7 +1492,7 @@ export type Database = {
           house_notes?: string | null
           id?: string
           listing_id?: string | null
-          owner_user_id?: string | null
+          owner_user_id: string
           updated_at?: string
           vet_info?: string | null
           wifi_info?: string | null
@@ -1504,7 +1504,7 @@ export type Database = {
           house_notes?: string | null
           id?: string
           listing_id?: string | null
-          owner_user_id?: string | null
+          owner_user_id?: string
           updated_at?: string
           vet_info?: string | null
           wifi_info?: string | null

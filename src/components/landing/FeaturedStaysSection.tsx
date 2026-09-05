@@ -1,6 +1,4 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, ArrowRight, Cat, Dog, CheckCircle2, Clock } from "lucide-react";
+import { MapPin, Calendar, Cat, Dog, CheckCircle2, Clock } from "lucide-react";
 
 interface DemoListing {
   id: number;
@@ -86,8 +84,8 @@ const formatRange = (start: string, end: string) => {
 const isPast = (end: string) => new Date(end).getTime() < Date.now();
 
 const DemoCard = ({ listing }: { listing: DemoListing }) => (
-  <Link to="/browse-sits" className="group block">
-    <div className="rounded-xl overflow-hidden border border-border bg-surface shadow-soft hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+  <div className="block">
+    <div className="rounded-xl overflow-hidden border border-border bg-surface shadow-soft transition-all duration-300">
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden">
         <img
@@ -129,25 +127,20 @@ const DemoCard = ({ listing }: { listing: DemoListing }) => (
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex flex-wrap gap-1 min-w-0">
-            {listing.pets.map((pet, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] sm:text-xs font-medium"
-              >
-                {pet.type === "cat" ? <Cat className="w-2.5 h-2.5" /> : <Dog className="w-2.5 h-2.5" />}
-                <span className="truncate max-w-[60px] sm:max-w-none">{pet.name}</span>
-              </span>
-            ))}
-          </div>
-          <span className="text-[10px] sm:text-xs font-semibold text-primary group-hover:underline whitespace-nowrap">
-            View
-          </span>
+        <div className="flex flex-wrap gap-1 min-w-0">
+          {listing.pets.map((pet, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] sm:text-xs font-medium"
+            >
+              {pet.type === "cat" ? <Cat className="w-2.5 h-2.5" /> : <Dog className="w-2.5 h-2.5" />}
+              <span className="truncate max-w-[60px] sm:max-w-none">{pet.name}</span>
+            </span>
+          ))}
         </div>
       </div>
     </div>
-  </Link>
+  </div>
 );
 
 const FeaturedStaysSection = () => (
@@ -167,15 +160,6 @@ const FeaturedStaysSection = () => (
         {DEMO_LISTINGS.map((listing) => (
           <DemoCard key={listing.id} listing={listing} />
         ))}
-      </div>
-
-      <div className="flex justify-center mt-10">
-        <Link to="/browse-sits">
-          <Button variant="hero" size="lg" className="group">
-            View All Sits
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Button>
-        </Link>
       </div>
     </div>
   </section>
