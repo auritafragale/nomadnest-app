@@ -4,6 +4,15 @@ Build all 8 features from the ideas doc, with the customised 3-strike private-fl
 
 ## Phase 1 — Review & Trust
 
+**The whole review / flag / strike system is fully symmetric — Pet Parents and Nomads get matching private flags, 3-strike escalation, redemption engine and in-app alerts.**
+
+- **Private flags against a home / Pet Parent (filled in by the Nomad):** `flag_home_cleanliness`, `flag_undisclosed_cameras`, `flag_pet_aggression`.
+- **Private flags against a Nomad (filled in by the Pet Parent):** `flag_sitter_cleanliness` (home left filthy/damaged), `flag_pet_neglect` (pet left dirty, unmedicated or stressed), `flag_abandonment` (left the assignment early without permission).
+- **Escalation, identical for both roles:** Strike 1 silent backend marker, no visible change. Strike 2 sends the supportive automated email — Pet Parents get the host email below; Nomads get the matching version naming the pattern (Cleanliness / Pet Care / Reliability) and offering support. Strike 3 activates the in-app amber confirmation notice.
+- **Strike 3 surfaces:** a flagged home shows the notice to Nomads just before "Apply to Sit"; a flagged Nomad shows the notice to Pet Parents when they open that Nomad's profile and when they click "Accept Nomad / Confirm Booking".
+- **Strike 3 copy for Pet Parents viewing a flagged Nomad:** "⚠️ Community Information Notice — To help you plan your upcoming sit, please note that multiple recent pet parents have privately shared feedback regarding this nomad's: *[active flag categories, e.g. Home Cleanliness / Pet Care Protocol / Timeline Reliability]*. Every sitting style is unique. We highly encourage you to discuss your specific home rules and pet care schedules directly with the nomad during your initial chat to ensure expectations are perfectly aligned." Buttons: "Continue to Nomad Profile / Accept Nomad" (primary) and "Go Back" (ghost).
+- **Symmetric redemption:** if a flagged Nomad completes their very next confirmed sit and the new Pet Parent does not tick the same private flag, that flag count resets to 0 and the alert is wiped — mirroring the host redemption path.
+
 ### 1. Community Integrity Badge (asymmetric reviews)
 - A new `review_windows` tracking table (one row per sit per party: submitted / expired) driven by the existing review window + `review-reminders` cron.
 - When one party reviews and the other lets the 14-day window expire, the reviewer is credited in a **Review Response Rate** metric instead of a badge (the green checkmark stays reserved for ID Verification).
