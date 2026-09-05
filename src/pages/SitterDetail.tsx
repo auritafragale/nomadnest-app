@@ -141,6 +141,17 @@ const SitterDetail = () => {
   const [photoOpen, setPhotoOpen] = useState(false);
 
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const { rate: reviewRate } = useReviewRate(userId);
+  const nomadWarning = useCommunityWarning("user", userId);
+  const [warningOpen, setWarningOpen] = useState(false);
+  const isPetParentViewer =
+    !!user && user.id !== userId && (role === "owner" || role === "both");
+
+  // Pet Parents see the cautionary notice as soon as they open a flagged
+  // nomad's profile — once per visit.
+  useEffect(() => {
+    if (isPetParentViewer && nomadWarning.hasWarning) setWarningOpen(true);
+  }, [isPetParentViewer, nomadWarning.hasWarning]);
   
   const startConversation = useStartConversation();
   const { data: ratingData } = useSitterAverageRating(userId);
