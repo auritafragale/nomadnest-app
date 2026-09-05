@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatPetType, PET_TYPE_OPTIONS } from "@/lib/petTypes";
 
-export type SortKey = "recent" | "reviews" | "rating";
+export type SortKey = "soonest" | "recent" | "reviews" | "rating";
 export type PlaceKey = "any" | "local" | "international";
 
 export interface ApplicationFilters {
@@ -20,14 +20,14 @@ export interface ApplicationFilters {
 }
 
 export const defaultApplicationFilters: ApplicationFilters = {
-  sortKey: "recent",
+  sortKey: "soonest",
   placeKey: "any",
   petFilter: "any",
   sitDatesId: "all",
 };
 
 export const applicationFiltersActive = (f: ApplicationFilters) =>
-  f.sortKey !== "recent" ||
+  f.sortKey !== "soonest" ||
   f.placeKey !== "any" ||
   f.petFilter !== "any" ||
   f.sitDatesId !== "all";
@@ -86,6 +86,7 @@ const ApplicationFilterSheet = ({ open, onClose, filters, dateOptions, onApply }
             <p className="text-sm font-medium mb-2">Sort by</p>
             <div className="flex flex-wrap gap-2">
               {([
+                ["soonest", "Soonest sit"],
                 ["recent", "Most recent"],
                 ["reviews", "Most reviews"],
                 ["rating", "Highest rating"],
@@ -141,7 +142,7 @@ const ApplicationFilterSheet = ({ open, onClose, filters, dateOptions, onApply }
             </div>
           </div>
 
-          {dateOptions.length > 1 && (
+          {dateOptions.length >= 1 && (
             <div>
               <p className="text-sm font-medium mb-2">Sit dates</p>
               <div className="flex flex-wrap gap-2">
