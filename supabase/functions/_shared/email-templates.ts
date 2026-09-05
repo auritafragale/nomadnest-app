@@ -157,7 +157,7 @@ export function buildNotificationEmail(
         `,
         ctaLabel: "See the cancelled sit",
         ctaUrl: `${data.appUrl}${data.url || "/dashboard"}`,
-        pushTitle: "Sit cancelled",
+        pushTitle: "Sit Cancelled",
         pushBody: `${data.listingTitle} was cancelled${data.reason ? `: ${data.reason}` : ""}`,
         pushUrl: data.url || "/dashboard",
 
