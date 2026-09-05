@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import { ApplicationCard } from "@/components/applications/ApplicationCard";
+import ApplicationFilterSheet, {
+  ApplicationFilters,
+  applicationFiltersActive,
+  defaultApplicationFilters,
+} from "@/components/applications/ApplicationFilterSheet";
 import {
   useOwnerApplications,
   useUpdateApplicationStatus,
@@ -14,21 +19,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ClipboardList, Inbox } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { canonicalPetType, formatPetType, PET_TYPE_OPTIONS } from "@/lib/petTypes";
+import { ClipboardList, Inbox, SlidersHorizontal } from "lucide-react";
+import { canonicalPetType } from "@/lib/petTypes";
 import { publicProfiles } from "@/lib/publicProfile";
 import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
-
-type SortKey = "recent" | "reviews" | "rating";
-type PlaceKey = "any" | "local" | "international";
 
 type ApplicationStatus = Database["public"]["Enums"]["application_status"];
 type FilterStatus = ApplicationStatus | "all";
@@ -49,11 +45,27 @@ const Applications = () => {
     statusTabs.some((t) => t.value === initialStatus) ? initialStatus : "all",
   );
   const { toast } = useToast();
-  const [sortKey, setSortKey] = useState<SortKey>("recent");
-  const [placeKey, setPlaceKey] = useState<PlaceKey>("any");
-  const [petFilter, setPetFilter] = useState<string>("any");
+  const [filters, setFilters] = useState<ApplicationFilters>(defaultApplicationFilters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const { data: applications = [], isLoading } = useOwnerApplications(statusFilter);
+
+  const dateOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    applications.forEach((app) => {
+      if (app.sit_dates?.id && !map.has(app.sit_dates.id)) {
+        map.set(
+          app.sit_dates.id,
+          `${format(new Date(app.sit_dates.start_date), "MMM d")} – ${format(
+            new Date(app.sit_dates.end_date),
+            "MMM d, yyyy",
+          )}`,
+        );
+      }
+    });
+    return Array.from(map, ([id, label]) => ({ id, label }));
+  }, [applications]);
+
 
   // Your own country decides what counts as a local Nomad
   const { data: ownCountry } = useQuery({
