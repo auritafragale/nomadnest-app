@@ -48,13 +48,6 @@ export const MobileNotificationsSection = ({ onNavigate }: MobileNotificationsSe
     onNavigate?.();
   };
 
-  const unusedHandler = () => {
-    switch ("") {
-      default:
-        break;
-    }
-    onNavigate?.();
-  };
 
   return (
     <div className="border-t border-border pt-2">
