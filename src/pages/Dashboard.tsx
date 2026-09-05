@@ -302,6 +302,17 @@ const SitterDashboard = ({
       : "all",
   );
 
+  // Deep links (e.g. from an "Application Accepted" notification) land on the list.
+  useEffect(() => {
+    if (!initialAppTab) return;
+    const t = setTimeout(() => {
+      document
+        .getElementById("my-applications")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [initialAppTab]);
+
   const todayISO = new Date().toISOString().slice(0, 10);
   const visibleApplications = applications.filter((a) => {
     const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
