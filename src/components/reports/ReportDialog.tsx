@@ -12,7 +12,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Flag, Loader2 } from "lucide-react";
+import { Flag, Loader2, Paperclip, X } from "lucide-react";
 import { useSubmitReport } from "@/hooks/useReports";
 import { useAuth } from "@/contexts/AuthContext";
 import { Database } from "@/integrations/supabase/types";
@@ -56,6 +56,9 @@ const TARGET_LABELS: Record<ReportTargetType, string> = {
   message: "message",
 };
 
+const ACCEPTED = "image/*,application/pdf";
+const MAX_FILES = 6;
+
 const ReportDialog = ({
   targetType,
   targetId,
@@ -66,13 +69,24 @@ const ReportDialog = ({
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const submitReport = useSubmitReport();
 
   const reasons = REPORT_REASONS[targetType];
   const label = targetLabel || TARGET_LABELS[targetType];
 
+  const handleFiles = (incoming: FileList | null) => {
+    if (!incoming) return;
+    const next = [...files, ...Array.from(incoming)].slice(0, MAX_FILES);
+    setFiles(next);
+  };
+
+  const removeFile = (idx: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   const handleSubmit = () => {
-    if (!reason) return;
+    if (!reason || files.length === 0) return;
 
     submitReport.mutate(
       {
@@ -80,12 +94,14 @@ const ReportDialog = ({
         targetId,
         reason,
         details: details.trim() || undefined,
+        evidenceFiles: files,
       },
       {
         onSuccess: () => {
           setOpen(false);
           setReason("");
           setDetails("");
+          setFiles([]);
         },
       }
     );
@@ -140,6 +156,48 @@ const ReportDialog = ({
               {details.length}/1000
             </p>
           </div>
+
+          <div className="space-y-2">
+            <Label>
+              Proof (required) <span className="text-destructive">*</span>
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Attach at least one screenshot or document. Images and PDFs up to 15 MB each.
+            </p>
+
+            <label className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors">
+              <Paperclip className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Add file</span>
+              <input
+                type="file"
+                accept={ACCEPTED}
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+            </label>
+
+            {files.length > 0 && (
+              <ul className="space-y-1.5">
+                {files.map((f, i) => (
+                  <li
+                    key={`${f.name}-${i}`}
+                    className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-2.5 py-1.5"
+                  >
+                    <span className="text-xs truncate min-w-0">{f.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      aria-label={`Remove ${f.name}`}
+                      className="text-muted-foreground hover:text-foreground shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
         <DialogFooter>
@@ -148,7 +206,7 @@ const ReportDialog = ({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!reason || submitReport.isPending}
+            disabled={!reason || files.length === 0 || submitReport.isPending}
           >
             {submitReport.isPending ? (
               <>
