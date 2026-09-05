@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { weightedAverage } from "@/lib/ratingWeights";
 
 export interface SitterReview {
   id: string;
@@ -124,17 +125,14 @@ export const useSitterAverageRating = (sitterUserId: string | undefined) => {
 
       const { data, error } = await supabase
         .from("reviews")
-        .select("rating")
+        .select("rating, created_at")
         .eq("reviewee_user_id", sitterUserId);
 
       if (error) throw error;
       if (!data || data.length === 0) return { average: 0, count: 0 };
 
-      const sum = data.reduce((acc, r) => acc + r.rating, 0);
-      return {
-        average: sum / data.length,
-        count: data.length,
-      };
+      // Recency-weighted: reviews under 6 months count 1.5x, 6-12 months 1.2x.
+      return weightedAverage(data);
     },
     enabled: !!sitterUserId,
   });
