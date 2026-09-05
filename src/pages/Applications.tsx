@@ -98,25 +98,27 @@ const Applications = () => {
   }
 
   const visibleApplications = applications
+    .filter((app) => filters.sitDatesId === "all" || app.sit_dates?.id === filters.sitDatesId)
     .filter((app) => {
-      if (placeKey === "any") return true;
+      if (filters.placeKey === "any") return true;
       const sameCountry =
         !!ownCountry &&
         !!app.sitter_user?.country &&
         app.sitter_user.country.toLowerCase() === ownCountry.toLowerCase();
-      return placeKey === "local" ? sameCountry : !sameCountry;
+      return filters.placeKey === "local" ? sameCountry : !sameCountry;
     })
     .filter((app) => {
-      if (petFilter === "any") return true;
+      if (filters.petFilter === "any") return true;
       return (app.sitter_profile?.pet_types || []).some(
-        (t) => canonicalPetType(t) === petFilter,
+        (t) => canonicalPetType(t) === filters.petFilter,
       );
     })
     .sort((a, b) => {
-      if (sortKey === "reviews") return b.review_count - a.review_count;
-      if (sortKey === "rating") return (b.avg_rating ?? -1) - (a.avg_rating ?? -1);
+      if (filters.sortKey === "reviews") return b.review_count - a.review_count;
+      if (filters.sortKey === "rating") return (b.avg_rating ?? -1) - (a.avg_rating ?? -1);
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
+
 
   const handleStatusChange = async (
     application: (typeof applications)[0],
