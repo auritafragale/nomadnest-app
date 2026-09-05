@@ -35,7 +35,7 @@ const InlineWelcomeGuide = ({
   const hasContent = filled.length > 0;
 
   return (
-    <Card id="welcome-guide">
+    <Card id="welcome-guide" className="print-guide-root">
       <CardHeader
         className="cursor-pointer select-none"
         onClick={() => setOpen((o) => !o)}
