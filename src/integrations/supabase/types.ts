@@ -553,13 +553,6 @@ export type Database = {
             foreignKeyName: "manual_id_verifications_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
-            referencedRelation: "member_review_rates"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "manual_id_verifications_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -569,13 +562,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "manual_id_verifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "member_review_rates"
-            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "manual_id_verifications_user_id_fkey"
@@ -1529,15 +1515,6 @@ export type Database = {
       }
     }
     Views: {
-      member_review_rates: {
-        Row: {
-          review_rate: number | null
-          reviews_written: number | null
-          sits_attended: number | null
-          user_id: string | null
-        }
-        Relationships: []
-      }
       public_profiles: {
         Row: {
           avatar_url: string | null
@@ -1742,6 +1719,15 @@ export type Database = {
       mark_conversation_messages_read: {
         Args: { _conversation_id: string }
         Returns: undefined
+      }
+      member_review_rates: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          review_rate: number
+          reviews_written: number
+          sits_attended: number
+          user_id: string
+        }[]
       }
       redeem_founding_member_code: {
         Args: { p_code: string; p_user_id: string }
