@@ -1479,7 +1479,8 @@ export type Database = {
           feeding_schedule: string | null
           house_notes: string | null
           id: string
-          listing_id: string
+          listing_id: string | null
+          owner_user_id: string | null
           updated_at: string
           vet_info: string | null
           wifi_info: string | null
@@ -1490,7 +1491,8 @@ export type Database = {
           feeding_schedule?: string | null
           house_notes?: string | null
           id?: string
-          listing_id: string
+          listing_id?: string | null
+          owner_user_id?: string | null
           updated_at?: string
           vet_info?: string | null
           wifi_info?: string | null
@@ -1501,20 +1503,13 @@ export type Database = {
           feeding_schedule?: string | null
           house_notes?: string | null
           id?: string
-          listing_id?: string
+          listing_id?: string | null
+          owner_user_id?: string | null
           updated_at?: string
           vet_info?: string | null
           wifi_info?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "welcome_guides_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: true
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
