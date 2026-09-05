@@ -178,66 +178,68 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                 )}
               </div>
 
-
-              {/* Closed/Booked Dates - Reopen Option */}
-              {closedDates.length > 0 && (
-                <Collapsible open={showDatesOpen} onOpenChange={setShowDatesOpen}>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="sm" className="w-full mt-2 text-muted-foreground">
-                      <ChevronDown className={`w-3 h-3 mr-1 transition-transform ${showDatesOpen ? 'rotate-180' : ''}`} />
-                      {closedDates.length} closed date{closedDates.length !== 1 ? 's' : ''}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-2 space-y-2">
-                    {closedDates.map((date) => (
-                      <div key={date.id} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-3 h-3 text-muted-foreground" />
-                          <span>
-                            {format(new Date(date.start_date), "MMM d")} - {format(new Date(date.end_date), "MMM d, yyyy")}
-                          </span>
-                          <Badge variant="outline" className="text-xs">
-                            {date.status}
-                          </Badge>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => reopenSitDate.mutate(date.id)}
-                          disabled={reopenSitDate.isPending}
-                        >
-                          {reopenSitDate.isPending ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <RotateCcw className="w-3 h-3 mr-1" />
-                          )}
-                          Reopen
-                        </Button>
-                      </div>
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-
-              {/* Actions — Edit on the left, View on the right */}
-              <div className="flex items-center justify-between gap-2 mt-3">
-                <Link to={`/edit-listing/${listing.id}`}>
-                  <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                    <Edit className="w-3 h-3 mr-1" />
-                    Edit
-                  </Button>
-                </Link>
-                {listing.status === "published" && (
-                  <Link to={`/listing/${listing.id}`}>
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
-                      <Eye className="w-3 h-3 mr-1" />
-                      View
-                    </Button>
-                  </Link>
-                )}
-              </div>
             </div>
           </div>
+
+          {/* Closed/Booked Dates - Reopen Option (full width, uses space under the photo) */}
+          {closedDates.length > 0 && (
+            <Collapsible open={showDatesOpen} onOpenChange={setShowDatesOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="w-full mt-2 text-muted-foreground">
+                  <ChevronDown className={`w-3 h-3 mr-1 transition-transform ${showDatesOpen ? 'rotate-180' : ''}`} />
+                  {closedDates.length} closed date{closedDates.length !== 1 ? 's' : ''}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 space-y-2">
+                {closedDates.map((date) => (
+                  <div key={date.id} className="text-sm p-2 bg-muted/50 rounded">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
+                      <span>
+                        {format(new Date(date.start_date), "MMM d")} - {format(new Date(date.end_date), "MMM d, yyyy")}
+                      </span>
+                      <Badge variant="outline" className="text-xs">
+                        {date.status}
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1 h-7 px-2 text-xs"
+                      onClick={() => reopenSitDate.mutate(date.id)}
+                      disabled={reopenSitDate.isPending}
+                    >
+                      {reopenSitDate.isPending ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <RotateCcw className="w-3 h-3 mr-1" />
+                      )}
+                      Reopen
+                    </Button>
+                  </div>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* Actions — Edit on the left, View on the right */}
+          <div className="flex items-center justify-between gap-2 mt-3">
+            <Link to={`/edit-listing/${listing.id}`}>
+              <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
+                <Edit className="w-3 h-3 mr-1" />
+                Edit
+              </Button>
+            </Link>
+            {listing.status === "published" && (
+              <Link to={`/listing/${listing.id}`}>
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+                  <Eye className="w-3 h-3 mr-1" />
+                  View
+                </Button>
+              </Link>
+            )}
+          </div>
+
         </CardContent>
       </Card>
 
