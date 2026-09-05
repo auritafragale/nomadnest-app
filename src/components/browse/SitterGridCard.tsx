@@ -91,31 +91,11 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
           <RatingPlaceholder className="mb-1.5 justify-center" />
         )}
 
-        {/* Founding Member badge */}
-        {sitter.profile?.founding_member && (
-          <div className="mb-1.5">
-            <FoundingMemberBadge compact />
-          </div>
-        )}
-
-        {/* Pet type tags */}
-        {petTypes.length > 0 && (
-          <div className="flex flex-wrap gap-1 justify-center mt-auto pt-2">
-            {petTypes.map((type) => {
-              const Icon = petTypeIcon(type);
-              return (
-                <Badge
-                  key={type}
-                  variant="muted"
-                  className="gap-0.5 text-[10px] px-1.5 h-5 capitalize"
-                >
-                  <Icon className="w-2.5 h-2.5" />
-                  {formatPetType(type)}
-                </Badge>
-              );
-            })}
-          </div>
-        )}
+        {/* Pet experience — icons only, max 4 then "+" */}
+        <PetTypeIcons
+          petTypes={sitter.pet_types}
+          className="justify-center mt-auto pt-2"
+        />
         {/* Message button */}
         <div className="w-full mt-2" onClick={(e) => e.preventDefault()}>
           <MessageSitterButton
