@@ -259,11 +259,10 @@ const SitterDashboard = ({
   const { data: applications = [], isLoading: applicationsLoading } = useSitterApplications();
   const [dashParams] = useSearchParams();
   const initialAppTab = dashParams.get("appTab");
-  const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "completed" | "cancelled">(
+  const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "cancelled">(
     initialAppTab === "cancelled" ||
       initialAppTab === "accepted" ||
-      initialAppTab === "pending" ||
-      initialAppTab === "completed"
+      initialAppTab === "pending"
       ? initialAppTab
       : "all",
   );
