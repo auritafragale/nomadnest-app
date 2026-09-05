@@ -902,6 +902,17 @@ const SitterDetail = () => {
         </div>
       </main>
 
+      <CommunityWarningModal
+        open={warningOpen}
+        onOpenChange={setWarningOpen}
+        labels={nomadWarning.labels}
+        audience="nomad"
+        continueLabel="Continue to Nomad Profile"
+        onContinue={() => setWarningOpen(false)}
+      />
+
+
+
       {/* Invite Dialog */}
       <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
         <DialogContent>
