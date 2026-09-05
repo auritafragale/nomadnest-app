@@ -519,6 +519,11 @@ const SitterDetail = () => {
                       />
                     )}
                   </div>
+                  {reviewRate?.review_rate !== null && reviewRate?.review_rate !== undefined && (
+                    <p className="text-xs text-muted-foreground">
+                      Review Rate: {reviewRate.review_rate}%
+                    </p>
+                  )}
                   {sitter.headline && (
                     <p className="text-sm md:text-lg text-muted-foreground">
                       {sitter.headline}
