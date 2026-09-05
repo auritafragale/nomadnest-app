@@ -74,6 +74,7 @@ export const ApplyDialog = ({
   const [alreadyApplied, setAlreadyApplied] = useState<Set<string>>(new Set());
   const [fullDates, setFullDates] = useState<Set<string>>(new Set());
   const [checkingApplication, setCheckingApplication] = useState(false);
+  const [hadPastApplication, setHadPastApplication] = useState(false);
 
   const applicableDates = sitDates.filter(
     (d) => !alreadyApplied.has(d.id) && !fullDates.has(d.id),
@@ -110,7 +111,14 @@ export const ApplyDialog = ({
         counts.set(a.sit_dates_id, (counts.get(a.sit_dates_id) || 0) + 1);
       });
 
-      setAlreadyApplied(new Set((mine || []).map((a) => a.sit_dates_id)));
+      const live = (mine || []).filter((a) =>
+        ["applied", "shortlisted", "accepted"].includes(a.status),
+      );
+      setAlreadyApplied(new Set(live.map((a) => a.sit_dates_id)));
+      setHadPastApplication(
+        (mine || []).length > live.length && live.length < (mine || []).length,
+      );
+
       setFullDates(new Set(ids.filter((id) => (counts.get(id) || 0) >= MAX_ACTIVE_APPLICANTS)));
       setCheckingApplication(false);
     };
