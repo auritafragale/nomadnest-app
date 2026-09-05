@@ -315,22 +315,6 @@ const SitterDashboard = ({
         />
 
         {/* Membership details live on the Membership page; the header shows status pills */}
-
-        {/* Quick Stats — tabbed */}
-        <StatsTabsCard
-          tabs={[
-            {
-              id: "applications",
-              label: "Applications",
-              count: applicationStats.total,
-              items: [
-                { label: "Applications sent", value: applicationStats.total, to: "/dashboard#my-applications" },
-                { label: "Awaiting reply", value: applicationStats.pending, to: "/dashboard#my-applications" },
-                { label: "Accepted", value: applicationStats.accepted, to: "/dashboard#my-applications" },
-              ],
-            },
-          ]}
-        />
       </div>
 
       {/* Middle Column - Actions & Applications */}
