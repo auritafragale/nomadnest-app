@@ -496,7 +496,11 @@ const ListingDetail = () => {
                         const age = formatPetAge(pet.age);
                         return (
                           <TabsContent key={pet.id} value={pet.id} className="mt-4">
-                            <div className="flex items-start gap-4">
+                            <button
+                              type="button"
+                              onClick={() => setPetDialogId(pet.id)}
+                              className="w-full text-left flex items-start gap-4 rounded-lg p-2 -m-2 hover:bg-muted/50 transition-colors"
+                            >
                               {pet.photos?.[0] ? (
                                 <img
                                   src={pet.photos[0]}
@@ -527,34 +531,11 @@ const ListingDetail = () => {
                                     {pet.personality}
                                   </p>
                                 )}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                                  {pet.feeding_details && (
-                                    <div>
-                                      <span className="font-medium">Feeding:</span>{" "}
-                                      <span className="text-muted-foreground">
-                                        {pet.feeding_details}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {pet.daily_routine && (
-                                    <div>
-                                      <span className="font-medium">Routine:</span>{" "}
-                                      <span className="text-muted-foreground">
-                                        {pet.daily_routine}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {pet.walks_exercise && (
-                                    <div>
-                                      <span className="font-medium">Exercise:</span>{" "}
-                                      <span className="text-muted-foreground">
-                                        {pet.walks_exercise}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
+                                <span className="text-xs text-[#E8735A] font-medium">
+                                  Tap to view full profile & photos
+                                </span>
                               </div>
-                            </div>
+                            </button>
                           </TabsContent>
                         );
                       })}
