@@ -2,7 +2,7 @@
 
 ## What you get
 
-### Reports tabs — no more cropping
+### Reports tabs — no more cropping, horizontal scroll only
 
 On the Reports admin page the tab row currently clips the first tab on the left (only half a red "0" pill shows) and the last tab "Dismissed" is cut to "Dis". This happens because the triggers use `flex-1`, which forces all four tabs to squeeze into the row width, and text overflows/crops.
 
