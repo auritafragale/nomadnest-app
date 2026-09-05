@@ -27,7 +27,8 @@ import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection"
 import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompletenessCard";
 import { useOwnerApplications } from "@/hooks/useApplications";
 import { OwnerApplicationPreviewCard } from "@/components/dashboard/OwnerApplicationPreviewCard";
-import MemberMembershipCard from "@/components/dashboard/MemberMembershipCard";
+import MembershipStatusCard from "@/components/dashboard/MembershipStatusCard";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import MobileHomeScreen from "@/components/mobile/MobileHomeScreen";
 import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
@@ -128,11 +129,6 @@ const Dashboard = () => {
     fetchProfiles();
   }, [user, role]);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -185,46 +181,14 @@ const Dashboard = () => {
       <main className={`pb-12 ${showPushBanner ? "pt-16 md:pt-32" : "pt-4 md:pt-20"}`}>
         <div className="container mx-auto px-3 sm:px-4 max-w-full">
           <Breadcrumbs />
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-                Welcome back, {displayName}!
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                {profile?.city && profile?.country 
-                  ? `${profile.city}, ${profile.country}` 
-                  : "Complete your profile to get better matches"
-                }
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-2 flex-wrap">
-              {activeRole === "owner" ? (
-                <Link to="/create-listing">
-                  <Button size="sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Listing
-                  </Button>
-                </Link>
-              ) : (
-                <Link to="/saved">
-                  <Button size="sm" variant="outline">
-                    <Heart className="w-4 h-4 mr-2" />
-                    Saved Sits
-                  </Button>
-                </Link>
-              )}
-              <Link to="/settings">
-                <Button variant="outline" size="icon" aria-label="Settings">
-                  <Settings className="w-4 h-4" />
-                </Button>
-              </Link>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign out
-              </Button>
-            </div>
-          </div>
+          <DashboardHeader
+            role={activeRole === "owner" ? "owner" : "sitter"}
+            userId={user?.id || ""}
+            displayName={displayName}
+            avatarUrl={profile?.avatar_url}
+            city={profile?.city}
+            country={profile?.country}
+          />
 
           {/* Role Toggle for combined users */}
           {role === "both" && (
@@ -346,13 +310,7 @@ const SitterDashboard = ({
         />
 
         {/* Membership + member card (merged) */}
-        <MemberMembershipCard
-          role="sitter"
-          name={`${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim() || "Your profile"}
-          subtitle={sitterProfile?.headline || "Add a headline to stand out"}
-          avatarUrl={profile?.avatar_url}
-          userId={userId}
-        />
+        <MembershipStatusCard />
 
         {/* Quick Stats */}
         <Card>
@@ -494,13 +452,7 @@ const OwnerDashboard = ({
         />
 
         {/* Membership + member card (merged) */}
-        <MemberMembershipCard
-          role="owner"
-          name={`${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim() || "Your profile"}
-          subtitle="Pet Parent"
-          avatarUrl={profile?.avatar_url}
-          userId={userId}
-        />
+        <MembershipStatusCard />
 
         {/* Quick Stats */}
         <Card>

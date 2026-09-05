@@ -30,7 +30,7 @@ import { useOwnerAverageRating, useOwnerReviews } from "@/hooks/useOwnerReviews"
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 import { aggregateCategoryRatings, OWNER_RATING_CATEGORIES } from "@/lib/categoryRatings";
 import ReportDialog from "@/components/reports/ReportDialog";
-import { ShareDialog } from "@/components/share/ShareDialog";
+
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import VerificationBadges from "@/components/ui/VerificationBadges";
 import { OWNER_PROFILE_COLUMNS } from "@/lib/profileColumns";
@@ -222,13 +222,7 @@ const OwnerDetail = () => {
                     </Avatar>
                   )}
                 </div>
-                {/* Share sits with the profile image */}
-                <div className="flex justify-center md:justify-start">
-                  <ShareDialog
-                    title={`${name} - Pet Parent`}
-                    description={`Check out ${name}'s Pet Parent profile`}
-                  />
-                </div>
+                {/* Sharing lives on the listing page, which links here */}
               </div>
 
               {/* Profile Info */}

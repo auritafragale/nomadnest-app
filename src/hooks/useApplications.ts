@@ -36,6 +36,9 @@ export interface Application {
     experience_level: string | null;
     pet_types: string[] | null;
   } | null;
+  /** How many reviews this Nomad has received, and their average score */
+  review_count: number;
+  avg_rating: number | null;
   sitter_user: {
     id: string;
     first_name: string | null;
@@ -83,6 +86,22 @@ export const useOwnerApplications = (statusFilter?: ApplicationStatus | "all") =
       const { data: applications, error } = await query;
       if (error) throw error;
 
+      // One trip for every review score these Nomads have received
+      const sitterIds = Array.from(new Set((applications || []).map((a) => a.sitter_user_id)));
+      const { data: reviewRows } = await supabase
+        .from("reviews")
+        .select("reviewee_user_id, rating")
+        .in("reviewee_user_id", sitterIds.length ? sitterIds : ["00000000-0000-0000-0000-000000000000"]);
+
+      const reviewStats = new Map<string, { count: number; total: number }>();
+      (reviewRows || []).forEach((r) => {
+        const current = reviewStats.get(r.reviewee_user_id) || { count: 0, total: 0 };
+        reviewStats.set(r.reviewee_user_id, {
+          count: current.count + 1,
+          total: current.total + (r.rating || 0),
+        });
+      });
+
       // Enrich with sitter profiles and user data
       const enrichedApplications = await Promise.all(
         (applications || []).map(async (app) => {
@@ -96,8 +115,12 @@ export const useOwnerApplications = (statusFilter?: ApplicationStatus | "all") =
             .eq("id", app.sitter_user_id)
             .maybeSingle() as { data: PublicProfile | null };
 
+          const stats = reviewStats.get(app.sitter_user_id);
+
           return {
             ...app,
+            review_count: stats?.count ?? 0,
+            avg_rating: stats && stats.count > 0 ? stats.total / stats.count : null,
             listing: app.listings,
             sit_dates: app.sit_dates,
             sitter_profile: sitterProfile,

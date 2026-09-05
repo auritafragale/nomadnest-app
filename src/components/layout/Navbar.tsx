@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Search, User, Menu, X, LayoutDashboard, MessageCircle, FileText, Heart, MapPin, Moon, Sun, Crown, Info, BookOpen, HelpCircle, Shield, Mail, Lock, Cookie, Users, ChevronRight, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,12 @@ const Navbar = () => {
   const location = useLocation();
   const { unreadCount } = useUnreadMessages();
   const { newApplicationsCount } = useNewApplicationsCount();
-  const { user, loading, role } = useAuth();
+  const { user, loading, role, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    closeMenu();
+    await signOut();
+  };
   const { isAdmin } = useIsAdmin();
   const { theme, toggleTheme } = useTheme();
   const logo = theme === "dark" ? whiteLogo : blackLogo;
@@ -149,6 +154,9 @@ const Navbar = () => {
                     Dashboard
                   </Button>
                 </Link>
+                <Button variant="ghost" onClick={handleSignOut} aria-label="Sign out">
+                  <LogOut className="w-4 h-4" />
+                </Button>
 
               </>
             ) : (
@@ -314,12 +322,18 @@ const Navbar = () => {
 
               <div className="pt-4 space-y-2 border-t border-border">
                 {user ? (
-                  <Link to="/dashboard" onClick={closeMenu}>
-                    <Button className="w-full">
-                      <LayoutDashboard className="w-4 h-4 mr-2" />
-                      Dashboard
+                  <>
+                    <Link to="/dashboard" onClick={closeMenu}>
+                      <Button className="w-full">
+                        <LayoutDashboard className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button variant="outline" className="w-full" onClick={handleSignOut}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign out
                     </Button>
-                  </Link>
+                  </>
                 ) : (
                   <>
                     <Link to="/auth" onClick={closeMenu}>

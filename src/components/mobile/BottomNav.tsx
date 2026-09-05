@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Search, MessageCircle, User, MapPin, LayoutDashboard } from "lucide-react";
+import { Search, MessageCircle, User, MapPin, LayoutDashboard, ClipboardList } from "lucide-react";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
@@ -20,9 +20,10 @@ const BottomNav = () => {
   const sitsTab: Tab = { href: "/browse-sits", label: "Sits", icon: Search };
   const chatsTab: Tab = { href: "/inbox", label: "Chats", icon: MessageCircle };
 
+  // Pet Parent mode is about finding Nomads and reviewing applicants
   const ownerTabs: Tab[] = [
-    sitsTab,
     { href: "/browse-sitters", label: "Browse Nomads", icon: User },
+    { href: "/applications", label: "Applicants", icon: ClipboardList },
     chatsTab,
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   ];

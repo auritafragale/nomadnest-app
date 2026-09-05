@@ -22,16 +22,14 @@ const FLAG_LABELS: Record<string, string> = {
 const label = (category: string) =>
   FLAG_LABELS[category] || category.replace(/_/g, " ");
 
-const buildBody = (firstName: string, category: string, isHost: boolean) => {
-  const who = isHost ? "sitters" : "pet parents";
-  const subject = isHost ? "your home" : "your recent sits";
-  return `
+/** Pet Parent (homeowner) wording — feedback left by sitters about a home. */
+const buildHostBody = (firstName: string, category: string) => `
     <p>Hi ${firstName},</p>
     <p>We hope you're well. As part of our commitment to keeping the NomadNest
     community transparent and safe for everyone, we wanted to reach out privately.</p>
-    <p>Two independent ${who} have now shared feedback regarding
-    <strong>${label(category)}</strong> after ${subject}. This feedback is completely
-    private — it is not shown on your profile and no one else can see it.</p>
+    <p>Two independent sitters have now shared feedback regarding
+    <strong>${label(category)}</strong> after staying in your home. This feedback is
+    completely private — it is not shown on your listing and no one else can see it.</p>
     <p>We're sharing it early so you have the chance to address it before it becomes
     something future members see. If a third independent report mentions the same
     thing, a short cautionary note about this topic will be shown to members
@@ -42,7 +40,27 @@ const buildBody = (firstName: string, category: string, isHost: boolean) => {
     <p>If you'd like to talk it through, just reply to this email — we're here to help.</p>
     <p>Warmly,<br/>The NomadNest Team</p>
   `;
-};
+
+/** Nomad (sitter) wording — feedback left by Pet Parents about recent sits. */
+const buildNomadBody = (firstName: string, category: string) => `
+    <p>Hi ${firstName},</p>
+    <p>We hope your travels are going well. As part of our commitment to keeping the
+    NomadNest community transparent and safe for everyone, we wanted to reach out
+    privately.</p>
+    <p>Two independent Pet Parents have now shared feedback regarding
+    <strong>${label(category)}</strong> following your recent sits. This feedback is
+    completely private — it is not shown on your Nomad profile and no one else can
+    see it.</p>
+    <p>We're sharing it early so you have the chance to address it before it becomes
+    something future Pet Parents see. If a third independent report mentions the same
+    thing, a short cautionary note about this topic will be shown to Pet Parents
+    considering you for a sit.</p>
+    <p>The good news: this clears itself. If your next completed sit passes without
+    the same feedback, everything is automatically reset and your good standing is
+    fully restored.</p>
+    <p>If you'd like to talk it through, just reply to this email — we're here to help.</p>
+    <p>Warmly,<br/>The NomadNest Team</p>
+  `;
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -94,11 +112,18 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (!profile?.email) continue;
 
+      // Listing flags belong to the Pet Parent; user flags belong to the Nomad
       const isHost = strike.subject_type === "listing";
+      const firstName = profile.first_name || "there";
+      const heading = isHost
+        ? "An important update regarding your recent stay"
+        : "An important update regarding your recent sits";
       const html = renderBrandedEmail(
         {
-          heading: "An important update regarding your recent stay",
-          body: buildBody(profile.first_name || "there", strike.category, isHost),
+          heading,
+          body: isHost
+            ? buildHostBody(firstName, strike.category)
+            : buildNomadBody(firstName, strike.category),
         },
         {
           preview: "Private feedback from the NomadNest community",
@@ -110,7 +135,9 @@ const handler = async (req: Request): Promise<Response> => {
       try {
         await sendBrandedEmail(
           profile.email,
-          "An important update regarding your recent stay on NomadNest",
+          isHost
+            ? "An important update regarding your recent stay on NomadNest"
+            : "An important update regarding your recent sits on NomadNest",
           html,
         );
         await supabase
