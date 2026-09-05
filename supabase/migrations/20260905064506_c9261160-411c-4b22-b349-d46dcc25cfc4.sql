@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.notify_sitter_sit_started() FROM PUBLIC, anon, authenticated;
