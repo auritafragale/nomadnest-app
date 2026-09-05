@@ -70,10 +70,15 @@ const InlineWelcomeGuide = ({
           ) : hasContent ? (
             <>
               <div className="flex items-center justify-between gap-2">
-                <Badge variant="secondary" className="gap-1">
+                <Badge variant="secondary" className="gap-1 print-hidden">
                   {filled.length}/5 fields
                 </Badge>
-                <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="print-hidden"
+                  onClick={printWelcomeGuide}
+                >
                   <Printer className="w-4 h-4 mr-2" />
                   Download / Print
                 </Button>
