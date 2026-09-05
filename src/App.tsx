@@ -50,6 +50,7 @@ import AdminHub from "./pages/AdminHub";
 import AdminVerifications from "./pages/AdminVerifications";
 import AdminPerks from "./pages/AdminPerks";
 import AdminEmails from "./pages/AdminEmails";
+import AdminTrust from "./pages/AdminTrust";
 
 import Perks from "./pages/Perks";
 import CityChat from "./pages/CityChat";
