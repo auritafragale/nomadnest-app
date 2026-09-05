@@ -18,7 +18,7 @@ Result:
 ## 2. Reports: show who was reported, link to their profile, require proof
 
 **Admin Reports page**
-- Show the reported member's name (as on their profile) instead of a raw ID, and make it a link that opens their full profile, so you can message them from there.
+- Show the reported member's name and email address (as on their profile) instead of a raw ID, and make it a link that opens their full profile, so you can message them from there.
 - For listing reports, show the listing title linking to the listing; for message reports, show the sender's name linking to their profile.
 - Keep the existing status control (Pending / Reviewed / Resolved / Dismissed).
 
