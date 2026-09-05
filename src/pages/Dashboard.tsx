@@ -259,11 +259,10 @@ const SitterDashboard = ({
   const { data: applications = [], isLoading: applicationsLoading } = useSitterApplications();
   const [dashParams] = useSearchParams();
   const initialAppTab = dashParams.get("appTab");
-  const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "completed" | "cancelled">(
+  const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "cancelled">(
     initialAppTab === "cancelled" ||
       initialAppTab === "accepted" ||
-      initialAppTab === "pending" ||
-      initialAppTab === "completed"
+      initialAppTab === "pending"
       ? initialAppTab
       : "all",
   );
@@ -284,7 +283,6 @@ const SitterDashboard = ({
     const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
     if (appTab === "accepted") return a.status === "accepted" && !ended;
     if (appTab === "pending") return a.status === "applied" || a.status === "shortlisted";
-    if (appTab === "completed") return a.status === "accepted" && ended;
     if (appTab === "cancelled") return a.status === "cancelled";
     if (appTab === "all") return a.status !== "cancelled";
     return true;
@@ -294,7 +292,7 @@ const SitterDashboard = ({
     const bStart = b.sit_dates?.start_date ?? "";
     return aStart.localeCompare(bStart);
   });
-  const showApplications = (tab: "all" | "accepted" | "pending" | "completed" | "cancelled") => {
+  const showApplications = (tab: "all" | "accepted" | "pending" | "cancelled") => {
     setAppTab(tab);
     document.getElementById("my-applications")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -317,22 +315,6 @@ const SitterDashboard = ({
         />
 
         {/* Membership details live on the Membership page; the header shows status pills */}
-
-        {/* Quick Stats — tabbed */}
-        <StatsTabsCard
-          tabs={[
-            {
-              id: "applications",
-              label: "Applications",
-              count: applicationStats.total,
-              items: [
-                { label: "Applications sent", value: applicationStats.total, to: "/dashboard#my-applications" },
-                { label: "Awaiting reply", value: applicationStats.pending, to: "/dashboard#my-applications" },
-                { label: "Accepted", value: applicationStats.accepted, to: "/dashboard#my-applications" },
-              ],
-            },
-          ]}
-        />
       </div>
 
       {/* Middle Column - Actions & Applications */}
@@ -360,7 +342,7 @@ const SitterDashboard = ({
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="accepted">Accepted</TabsTrigger>
                 <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
+                
                 <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
               </TabsList>
             </Tabs>
