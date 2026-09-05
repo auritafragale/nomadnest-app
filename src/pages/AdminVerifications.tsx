@@ -180,8 +180,6 @@ const AdminVerifications = () => {
     await handleDecision(sub.id, sub.user_id, "rejected", rejectReason, rejectNotes);
   };
 
-  const pending   = submissions.filter(s => s.status === "pending");
-  const reviewed  = submissions.filter(s => s.status !== "pending");
 
   return (
     <div className="min-h-screen bg-background">
