@@ -11,6 +11,7 @@ The data for all three Phase 3 features is already in the database (pet behaviou
 
 **Nomad side (Browse Sits)**
 - New filter group in both the desktop filter bar and the mobile filter sheet: No medication needed · Pet can be left 4–8 hours · Not reactive to other animals · No car needed · No Plant Care · Remote location OK.
+- Also a "No Pets" option: Pet Parents can tick "Plant Care" and add no pets when creating a listing, and Nomads can filter Browse Sits for these plant-only, pet-free sits.
 - Filters combine with the existing ones and clear with "Clear all".
 
 ## 2. Offline Welcome Guide
