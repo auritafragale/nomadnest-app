@@ -10,7 +10,7 @@ The data for all three Phase 3 features is already in the database (pet behaviou
 - Saved on create and edit, and shown on the listing page as small labelled chips so Nomads see them before applying.
 
 **Nomad side (Browse Sits)**
-- New filter group in both the desktop filter bar and the mobile filter sheet: No medication needed · Pet can be left 4–8 hours · Not reactive to other animals · No car needed · No heavy gardening · Remote location OK.
+- New filter group in both the desktop filter bar and the mobile filter sheet: No medication needed · Pet can be left 4–8 hours · Not reactive to other animals · No car needed · No Plant Care · Remote location OK.
 - Filters combine with the existing ones and clear with "Clear all".
 
 ## 2. Offline Welcome Guide
