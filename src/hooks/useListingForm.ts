@@ -13,6 +13,9 @@ export interface Pet {
   medication_instructions: string;
   vet_info: string;
   photos: string[];
+  /** never | 1-4 | 4-8 */
+  separation_anxiety_tolerance: string;
+  reactive_to_animals: boolean;
 }
 
 export interface SitDate {
@@ -47,6 +50,9 @@ export interface ListingFormData {
   sleeping_arrangement: string;
   amenities: string[];
   photos: string[];
+  remote_location: boolean;
+  car_needed: boolean;
+  heavy_gardening: boolean;
   
   // Step 5: Requirements
   requirements: string[];
@@ -72,6 +78,8 @@ const initialPet: Pet = {
   medication_instructions: "",
   vet_info: "",
   photos: [],
+  separation_anxiety_tolerance: "",
+  reactive_to_animals: false,
 };
 
 const initialSitDate: SitDate = {
@@ -99,6 +107,9 @@ const initialFormData: ListingFormData = {
   sleeping_arrangement: "",
   amenities: [],
   photos: [],
+  remote_location: false,
+  car_needed: false,
+  heavy_gardening: false,
   requirements: [],
   requirements_other: "",
   house_rules: [],

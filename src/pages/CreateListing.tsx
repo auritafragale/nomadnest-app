@@ -213,6 +213,9 @@ const CreateListing = () => {
           home_care_tasks_other: formData.home_care_tasks_other || null,
           ideal_sitter_description: formData.ideal_sitter_description || null,
           communication_style: formData.communication_style || null,
+          remote_location: formData.remote_location,
+          car_needed: formData.car_needed,
+          heavy_gardening: formData.heavy_gardening,
         })
         .select()
         .single();
@@ -230,9 +233,12 @@ const CreateListing = () => {
         daily_routine: pet.daily_routine || null,
         walks_exercise: pet.walks_exercise || null,
         has_medication: pet.has_medication,
+        requires_medication: pet.has_medication,
         medication_instructions: pet.medication_instructions || null,
         vet_info: pet.vet_info || null,
         photos: pet.photos,
+        separation_anxiety_tolerance: pet.separation_anxiety_tolerance || null,
+        reactive_to_animals: pet.reactive_to_animals,
       }));
 
       const { error: petsError } = await supabase

@@ -8,6 +8,13 @@ import { Plus, Trash2, Dog, Cat, Bird, Fish, Rabbit, Bug, Tractor, HelpCircle } 
 import { Pet, ListingFormData } from "@/hooks/useListingForm";
 import { cn } from "@/lib/utils";
 import ImageUpload from "@/components/listing/ImageUpload";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PetsStepProps {
   formData: ListingFormData;
@@ -177,6 +184,36 @@ const PetsStep = ({ formData, addPet, updatePet, removePet }: PetsStepProps) => 
                   />
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label>How long can they be left alone?</Label>
+                <Select
+                  value={pet.separation_anxiety_tolerance || ""}
+                  onValueChange={(v) => updatePet(pet.id, { separation_anxiety_tolerance: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select how long" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="never">Never left alone</SelectItem>
+                    <SelectItem value="1-4">1–4 hours</SelectItem>
+                    <SelectItem value="4-8">4–8 hours</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div>
+                  <Label className="text-base">Reactive to other animals?</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Does this pet react badly to other animals?
+                  </p>
+                </div>
+                <Switch
+                  checked={pet.reactive_to_animals}
+                  onCheckedChange={(checked) => updatePet(pet.id, { reactive_to_animals: checked })}
+                />
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor={`pet-vet-${pet.id}`}>Vet Information</Label>

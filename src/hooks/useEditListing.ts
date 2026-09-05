@@ -17,6 +17,8 @@ export interface DatabasePet {
   medication_instructions: string | null;
   vet_info: string | null;
   photos: string[] | null;
+  separation_anxiety_tolerance?: string | null;
+  reactive_to_animals?: boolean | null;
 }
 
 export interface DatabaseSitDate {
@@ -52,6 +54,9 @@ export interface ListingWithDetails {
   home_care_tasks_other: string | null;
   ideal_sitter_description: string | null;
   communication_style: string | null;
+  remote_location?: boolean | null;
+  car_needed?: boolean | null;
+  heavy_gardening?: boolean | null;
   pets: DatabasePet[];
   sit_dates: DatabaseSitDate[];
 }
@@ -148,6 +153,9 @@ export const useUpdateListing = () => {
           home_care_tasks_other: formData.home_care_tasks_other || null,
           ideal_sitter_description: formData.ideal_sitter_description || null,
           communication_style: formData.communication_style || null,
+          remote_location: formData.remote_location,
+          car_needed: formData.car_needed,
+          heavy_gardening: formData.heavy_gardening,
         })
         .eq("id", listingId);
 
@@ -183,9 +191,12 @@ export const useUpdateListing = () => {
               daily_routine: pet.daily_routine || null,
               walks_exercise: pet.walks_exercise || null,
               has_medication: pet.has_medication,
+              requires_medication: pet.has_medication,
               medication_instructions: pet.medication_instructions || null,
               vet_info: pet.vet_info || null,
               photos: pet.photos,
+              separation_anxiety_tolerance: pet.separation_anxiety_tolerance || null,
+              reactive_to_animals: pet.reactive_to_animals,
             })
             .eq("id", pet.id);
           if (updatePetError) throw updatePetError;
@@ -201,9 +212,12 @@ export const useUpdateListing = () => {
             daily_routine: pet.daily_routine || null,
             walks_exercise: pet.walks_exercise || null,
             has_medication: pet.has_medication,
+            requires_medication: pet.has_medication,
             medication_instructions: pet.medication_instructions || null,
             vet_info: pet.vet_info || null,
             photos: pet.photos,
+            separation_anxiety_tolerance: pet.separation_anxiety_tolerance || null,
+            reactive_to_animals: pet.reactive_to_animals,
           });
           if (insertPetError) throw insertPetError;
         }
@@ -291,6 +305,8 @@ export const convertToFormData = (listing: ListingWithDetails): ListingFormData 
       medication_instructions: pet.medication_instructions || "",
       vet_info: pet.vet_info || "",
       photos: pet.photos || [],
+      separation_anxiety_tolerance: pet.separation_anxiety_tolerance || "",
+      reactive_to_animals: pet.reactive_to_animals || false,
     })),
     sit_dates: listing.sit_dates.map((date) => ({
       id: date.id,
@@ -311,6 +327,9 @@ export const convertToFormData = (listing: ListingWithDetails): ListingFormData 
     sleeping_arrangement: listing.sleeping_arrangement || "",
     amenities: listing.amenities || [],
     photos: listing.photos || [],
+    remote_location: listing.remote_location || false,
+    car_needed: listing.car_needed || false,
+    heavy_gardening: listing.heavy_gardening || false,
     requirements: listing.requirements || [],
     requirements_other: listing.requirements_other || "",
     house_rules: listing.house_rules || [],

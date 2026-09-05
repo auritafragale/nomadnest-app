@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 import { useStartConversation } from "@/hooks/useConversations";
 import OwnerReviewsSection from "@/components/reviews/OwnerReviewsSection";
 import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
-import { Star } from "lucide-react";
+import { Star, BookOpen } from "lucide-react";
 import ReportDialog from "@/components/reports/ReportDialog";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import ListingLocationMap from "@/components/maps/ListingLocationMap";
@@ -107,6 +107,9 @@ interface Listing {
   ideal_sitter_description: string | null;
   communication_style: string | null;
   owner_user_id: string;
+  remote_location?: boolean | null;
+  car_needed?: boolean | null;
+  heavy_gardening?: boolean | null;
   latitude: number | null;
   longitude: number | null;
   pets: Pet[];
@@ -209,6 +212,7 @@ const ListingDetail = () => {
             "house_rules, house_rules_other, home_care_tasks, home_care_tasks_other, " +
             "requirements, requirements_other, communication_style, " +
             "ideal_sitter_description, photos, status, latitude, longitude, " +
+            "remote_location, car_needed, heavy_gardening, " +
             "created_at, updated_at"
           )
           .eq("id", id)
@@ -592,6 +596,20 @@ const ListingDetail = () => {
                         )}
                       </div>
 
+                      {(listing.remote_location || listing.car_needed || listing.heavy_gardening) && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h4 className="font-medium mb-2">Good to know</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {listing.remote_location && <Badge variant="secondary">Remote location</Badge>}
+                              {listing.car_needed && <Badge variant="secondary">Car needed</Badge>}
+                              {listing.heavy_gardening && <Badge variant="secondary">Plant Care</Badge>}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
                       {listing.amenities.length > 0 && (
                         <>
                           <Separator />
@@ -827,9 +845,17 @@ const ListingDetail = () => {
               )}
 
               {isOwner && (
-                <Button className="w-full" size="lg" variant="outline" disabled>
-                  This is your listing
-                </Button>
+                <>
+                  <Button className="w-full" size="lg" variant="outline" disabled>
+                    This is your listing
+                  </Button>
+                  <Link to={`/listing/${listing.id}/welcome-guide`}>
+                    <Button className="w-full mt-2" size="lg" variant="secondary">
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Welcome Guide
+                    </Button>
+                  </Link>
+                </>
               )}
 
               {/* Report Button */}
