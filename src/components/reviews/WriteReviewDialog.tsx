@@ -128,6 +128,7 @@ const WriteReviewDialog = ({
       for (const c of categories) {
         insertPayload[c.key] = ratings[c.key];
       }
+      Object.assign(insertPayload, flagPayload());
 
       const { error } = await supabase
         .from("reviews")
