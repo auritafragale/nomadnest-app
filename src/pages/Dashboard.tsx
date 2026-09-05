@@ -311,29 +311,21 @@ const SitterDashboard = ({
 
         {/* Membership details live on the Membership page; the header shows status pills */}
 
-        {/* Quick Stats */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Your stats</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {[
-              { label: "Applications sent", value: applicationStats.total, tab: "all" as const },
-              { label: "Awaiting reply", value: applicationStats.pending, tab: "pending" as const },
-              { label: "Accepted", value: applicationStats.accepted, tab: "accepted" as const },
-            ].map((stat) => (
-              <button
-                key={stat.label}
-                type="button"
-                onClick={() => showApplications(stat.tab)}
-                className="w-full flex justify-between items-center rounded-lg px-2 py-2 -mx-2 hover:bg-muted transition-colors text-left"
-              >
-                <span className="text-sm text-muted-foreground">{stat.label}</span>
-                <Badge variant="secondary">{stat.value}</Badge>
-              </button>
-            ))}
-          </CardContent>
-        </Card>
+        {/* Quick Stats — tabbed */}
+        <StatsTabsCard
+          tabs={[
+            {
+              id: "applications",
+              label: "Applications",
+              count: applicationStats.total,
+              items: [
+                { label: "Applications sent", value: applicationStats.total, to: "/dashboard#my-applications" },
+                { label: "Awaiting reply", value: applicationStats.pending, to: "/dashboard#my-applications" },
+                { label: "Accepted", value: applicationStats.accepted, to: "/dashboard#my-applications" },
+              ],
+            },
+          ]}
+        />
       </div>
 
       {/* Middle Column - Actions & Applications */}
