@@ -43,6 +43,70 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
   const { mutate: updateStatus, isPending } = useUpdateSitStatus();
   const [hasReviewed, setHasReviewed] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [openingChat, setOpeningChat] = useState(false);
+  const navigate = useNavigate();
+
+  // Open the conversation between this sit's Pet Parent and Nomad directly,
+  // creating it if none exists yet (same pattern as useSitCheckins).
+  const openConversation = async () => {
+    if (openingChat) return;
+    setOpeningChat(true);
+    try {
+      const pairs: Array<{ owner: string; sitter: string }> = [
+        { owner: sit.owner_user_id, sitter: sit.sitter_user_id },
+        { owner: sit.sitter_user_id, sitter: sit.owner_user_id },
+      ];
+      let conversationId: string | null = null;
+      for (const pair of pairs) {
+        const { data } = await supabase
+          .from("conversations")
+          .select("id")
+          .eq("owner_user_id", pair.owner)
+          .eq("sitter_user_id", pair.sitter)
+          .eq("listing_id", sit.listing_id)
+          .maybeSingle();
+        if (data?.id) {
+          conversationId = data.id;
+          break;
+        }
+      }
+      // Fallback: any conversation between the two members, regardless of listing.
+      if (!conversationId) {
+        for (const pair of pairs) {
+          const { data } = await supabase
+            .from("conversations")
+            .select("id")
+            .eq("owner_user_id", pair.owner)
+            .eq("sitter_user_id", pair.sitter)
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (data?.id) {
+            conversationId = data.id;
+            break;
+          }
+        }
+      }
+      if (!conversationId) {
+        const { data: created } = await supabase
+          .from("conversations")
+          .insert({
+            owner_user_id: sit.owner_user_id,
+            sitter_user_id: sit.sitter_user_id,
+            listing_id: sit.listing_id,
+            conversation_type: "listing",
+          })
+          .select("id")
+          .maybeSingle();
+        conversationId = created?.id ?? null;
+      }
+      navigate(conversationId ? `/inbox?conversation=${conversationId}` : "/inbox");
+    } catch {
+      navigate("/inbox");
+    } finally {
+      setOpeningChat(false);
+    }
+  };
 
   // Status is derived live from the dates so the badge is right even before the
   // nightly job promotes the row (confirmed -> in progress -> completed).
