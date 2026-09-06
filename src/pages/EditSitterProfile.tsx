@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
 import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
+import { useQueryClient } from "@tanstack/react-query";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 import { PET_TYPE_OPTIONS, formatPetType, canonicalPetType } from "@/lib/petTypes";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
@@ -121,6 +122,7 @@ const EditSitterProfile = () => {
   const navigate = useNavigate();
   const { user, role } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: mapsConfig } = useGoogleMapsKey();
   // Coordinates captured when a city is chosen from the suggestions; saved
   // directly so the nomad map does not depend on a later lookup.
@@ -318,6 +320,10 @@ const EditSitterProfile = () => {
         p_phone: sitterProfile.phone || null,
       });
       if (phoneError) throw phoneError;
+
+      // The map and nomad list read these rows, so refresh them right away.
+      queryClient.invalidateQueries({ queryKey: ["nomads-map"] });
+      queryClient.invalidateQueries({ queryKey: ["sitters"] });
 
       toast({
         title: "Profile saved!",
