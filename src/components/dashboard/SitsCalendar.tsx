@@ -134,12 +134,28 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
 
       {/* Sit actions */}
       {(canCompleteSit || canCancelSit || isCurrent || sit.status === "confirmed") && (
-        <div className="mt-3 pt-2 border-t flex gap-2">
+        <div className="mt-3 pt-2 border-t flex gap-2 flex-wrap">
           {(sit.status === "confirmed" || sit.status === "in_progress") && (
             <Button size="sm" variant="secondary" className="flex-1" asChild>
               <Link to="/inbox">
                 <MessageSquare className="w-3 h-3 mr-1" />
                 Message {isOwner ? "nomad" : "pet parent"}
+              </Link>
+            </Button>
+          )}
+          {isCurrent && isSitter && (
+            <Button size="sm" variant="outline" className="flex-1" asChild>
+              <Link to="/inbox">
+                <Bone className="w-3 h-3 mr-1" />
+                Daily check-in
+              </Link>
+            </Button>
+          )}
+          {isCurrent && isOwner && (
+            <Button size="sm" variant="outline" className="flex-1" asChild>
+              <Link to={`/sits/${sit.id}`}>
+                <Bone className="w-3 h-3 mr-1" />
+                Care log
               </Link>
             </Button>
           )}
