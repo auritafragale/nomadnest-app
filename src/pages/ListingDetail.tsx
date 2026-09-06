@@ -988,20 +988,29 @@ const ListingDetail = () => {
                 </>
               )}
 
-              {/* Report Button */}
-              {user && !isOwner && (
-                <div className="flex justify-center pt-2">
-                  <ReportDialog
-                    targetType="listing"
-                    targetId={listing.id}
-                    targetLabel="listing"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
+               {/* Report Button */}
+               {user && !isOwner && (
+                 <div className="flex justify-center pt-2">
+                   <ReportDialog
+                     targetType="listing"
+                     targetId={listing.id}
+                     targetLabel="listing"
+                   />
+                 </div>
+               )}
+             </div>
+           </div>
+         </div>
+
+         <PhotoLightbox
+           open={lightboxOpen}
+           onOpenChange={setLightboxOpen}
+           photos={allPhotos}
+           startIndex={currentPhotoIndex}
+           alt={listing.title}
+           onIndexChange={setCurrentPhotoIndex}
+         />
+       </main>
     </div>
   );
 };
