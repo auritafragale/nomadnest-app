@@ -48,12 +48,16 @@ export const useActiveSitForConversation = (conversationId: string | null) => {
       if (error || !convo) return null;
 
       // Find the active sit matching this owner/sitter pair (and listing if present).
+      // The conversation's owner/sitter roles may be swapped relative to the sit,
+      // so query both directions with an OR filter.
       let sitQuery = supabase
         .from("sits")
-        .select("id, owner_user_id, sitter_user_id, listing_id, status, listing:listings(id, title)")
-        .eq("owner_user_id", convo.owner_user_id)
-        .eq("sitter_user_id", convo.sitter_user_id)
-        .in("status", ["confirmed", "in_progress"]);
+        .select("id, owner_user_id, sitter_user_id, listing_id, status, sit_dates_id, listing:listings(id, title)")
+        .in("status", ["confirmed", "in_progress"])
+        .or(
+          `and(owner_user_id.eq.${convo.owner_user_id},sitter_user_id.eq.${convo.sitter_user_id}),` +
+          `and(owner_user_id.eq.${convo.sitter_user_id},sitter_user_id.eq.${convo.owner_user_id})`
+        );
 
       if (convo.listing_id) {
         sitQuery = sitQuery.eq("listing_id", convo.listing_id);
