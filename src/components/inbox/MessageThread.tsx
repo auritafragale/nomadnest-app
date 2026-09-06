@@ -399,7 +399,7 @@ export const MessageThread = ({
       )}
 
       {/* Care bar / Today's care strip */}
-      {activeSit && isCurrentUserSitter && (
+      {activeSit && activeSit.sitterUserId === user?.id && (
         <CheckinBar
           sitId={activeSit.sitId}
           ownerUserId={activeSit.ownerUserId}
@@ -412,7 +412,7 @@ export const MessageThread = ({
           }}
         />
       )}
-      {activeSit && isCurrentUserOwner && (
+      {activeSit && activeSit.ownerUserId === user?.id && (
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30 overflow-x-auto">
           <span className="text-xs text-muted-foreground whitespace-nowrap mr-1">
             Today:

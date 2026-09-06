@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveListingConversation } from "@/lib/conversations";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useReviewRate } from "@/hooks/useReviewRates";
@@ -282,44 +283,25 @@ const SitterDetail = () => {
 
 
 
-      // Find or create a DIRECT conversation (listing_id = null)
-      const { data: existingConvo } = await supabase
-        .from("conversations")
-        .select("id")
-        .eq("owner_user_id", user.id)
-        .eq("sitter_user_id", userId)
-        .eq("conversation_type", "direct")
-        .is("listing_id", null)
-        .maybeSingle();
-
-      let conversationId = existingConvo?.id;
-
-      if (!conversationId) {
-        const { data: newConvo, error: convoError } = await supabase
-          .from("conversations")
-          .insert({
-            owner_user_id: user.id,
-            sitter_user_id: userId,
-            listing_id: null,
-            conversation_type: "direct",
-          })
-          .select("id")
-          .single();
-
-        if (convoError) throw convoError;
-        conversationId = newConvo.id;
-      }
-
-      await supabase.from("messages").insert({
-        conversation_id: conversationId,
-        sender_user_id: user.id,
-        body: "Hi! I'd love to invite you to sit at my home. I've sent you a formal invitation — please check your notifications.",
+      // Find or create the single chat thread for this home + Nomad
+      const conversationId = await resolveListingConversation({
+        listingId: selectedListing,
+        ownerUserId: user.id,
+        sitterUserId: userId,
       });
 
-      await supabase
-        .from("conversations")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", conversationId);
+      if (conversationId) {
+        await supabase.from("messages").insert({
+          conversation_id: conversationId,
+          sender_user_id: user.id,
+          body: "Hi! I'd love to invite you to sit at my home. I've sent you a formal invitation — please check your notifications.",
+        });
+
+        await supabase
+          .from("conversations")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", conversationId);
+      }
 
       toast({
         title: "Invitation sent!",

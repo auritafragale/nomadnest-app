@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { resolveListingConversation } from "@/lib/conversations";
 
 export type CheckinKind = "pets_fed" | "meds_given" | "walk_completed";
 
@@ -104,30 +105,14 @@ export const useAddSitCheckin = (sitId: string | undefined) => {
       });
       if (error) throw error;
 
-      // Mirror the update into the existing conversation with the Pet Parent.
+      // Mirror the update into the one chat thread for this sit's home.
       const body = buildCheckinMessageBody(kind, note, photoUrl);
-      let convoQuery = supabase
-        .from("conversations")
-        .select("id")
-        .eq("owner_user_id", ownerUserId)
-        .eq("sitter_user_id", user.id);
-      convoQuery = listingId ? convoQuery.eq("listing_id", listingId) : convoQuery.is("listing_id", null);
-      const { data: existing } = await convoQuery.maybeSingle();
+      const conversationId = await resolveListingConversation({
+        listingId,
+        ownerUserId,
+        sitterUserId: user.id,
+      });
 
-      let conversationId = existing?.id;
-      if (!conversationId) {
-        const { data: created } = await supabase
-          .from("conversations")
-          .insert({
-            owner_user_id: ownerUserId,
-            sitter_user_id: user.id,
-            listing_id: listingId,
-            conversation_type: listingId ? "listing" : "direct",
-          })
-          .select("id")
-          .maybeSingle();
-        conversationId = created?.id;
-      }
 
       if (conversationId) {
         await supabase.from("messages").insert({
