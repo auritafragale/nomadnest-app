@@ -203,10 +203,15 @@ const ListingDetail = () => {
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [selectedDateIds, setSelectedDateIds] = useState<string[]>([]);
   const [warningOpen, setWarningOpen] = useState(false);
   const listingWarning = useCommunityWarning("listing", id);
+
+  const { data: favoriteIds = [] } = useFavorites();
+  const toggleFavorite = useToggleFavorite();
+  const isFavorited = listing ? favoriteIds.includes(listing.id) : false;
 
   useEffect(() => {
     const fetchListing = async () => {
