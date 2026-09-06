@@ -54,6 +54,8 @@ import { formatPetType, petTypeIcon, formatPetAge } from "@/lib/petTypes";
 import VerificationBadges from "@/components/ui/VerificationBadges";
 import InlineWelcomeGuide from "@/components/listing/InlineWelcomeGuide";
 import { useAcceptedSitter } from "@/hooks/useAcceptedSitter";
+import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
+import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Pet {
