@@ -21,7 +21,7 @@ Changes:
 - After the switch is saved, refresh the map data straight away, and also refresh the nomad directory list, so pins appear or disappear immediately in both places.
 - Keep the existing confirmation message and the safe rollback if saving fails.
 
-Also worth knowing: the test account `aurita.fragale91+paytest@gmail.com` is currently set to visible but has no saved location, so it can never show a pin. Adding a city to that profile (which saves coordinates) is needed before it appears on the map. The two founder accounts do have coordinates, so they will behave correctly once the instant refresh is in.
+Also worth knowing: the test account `aurita.fragale91+paytest@gmail.com` is currently set to visible but has no saved location, so it can never show a pin. You mentioned no city/country suggestions appeared when editing your profile, so the location was typed by hand and no coordinates were stored — I'll check the profile location field uses the same suggestion box as elsewhere, and save coordinates for a typed location as a fallback, so a pin appears either way. The two founder accounts do have coordinates, so they will behave correctly once the instant refresh is in.
 
 ## Technical notes
 
