@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
+import { Upload, X, Loader2, Image as ImageIcon, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,8 @@ interface ImageUploadProps {
   maxImages?: number;
   folder: string;
   label?: string;
+  /** When true, also shows a "Take Photo" tile that opens the device camera on mobile. */
+  allowCamera?: boolean;
 }
 
 const ImageUpload = ({
@@ -20,11 +22,13 @@ const ImageUpload = ({
   maxImages = 5,
   folder,
   label = "Upload Images",
+  allowCamera = false,
 }: ImageUploadProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -106,6 +110,9 @@ const ImageUpload = ({
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+      if (cameraInputRef.current) {
+        cameraInputRef.current.value = "";
+      }
     }
   };
 
@@ -158,6 +165,30 @@ const ImageUpload = ({
           </div>
         ))}
 
+        {/* Camera Button */}
+        {allowCamera && images.length < maxImages && (
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={isUploading}
+            className={cn(
+              "aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors",
+              isUploading
+                ? "border-muted cursor-not-allowed"
+                : "border-border hover:border-primary hover:bg-primary/5 cursor-pointer"
+            )}
+          >
+            {isUploading ? (
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <Camera className="w-6 h-6 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Take Photo</span>
+              </>
+            )}
+          </button>
+        )}
+
         {/* Upload Button */}
         {images.length < maxImages && (
           <button
@@ -191,6 +222,16 @@ const ImageUpload = ({
         onChange={handleFileSelect}
         className="hidden"
       />
+      {allowCamera && (
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+      )}
 
       <p className="text-xs text-muted-foreground">
         Supported: JPG, PNG, WebP. Max 5MB each.

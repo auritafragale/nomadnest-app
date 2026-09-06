@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import { sendNotification } from "@/lib/notifications";
+import { messagePreviewText } from "@/lib/chatImage";
 
 const conversationsQueryKey = (userId?: string) => ["conversations", userId] as const;
 const unreadMessagesQueryKey = (userId?: string) => ["unread-messages", userId] as const;
@@ -250,7 +251,7 @@ export const useSendMessage = () => {
           recipientUserId: recipientId,
           data: {
             senderName: [senderProfile?.first_name, senderProfile?.last_name].filter(Boolean).join(" ") || "Someone",
-            messagePreview: body.substring(0, 150),
+            messagePreview: messagePreviewText(body).substring(0, 150),
             conversationId,
           },
         });

@@ -7,7 +7,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, isToday, isYesterday } from "date-fns";
-import { Send, ArrowLeft, Check, CheckCheck, Flag, Bone, Pill, Footprints } from "lucide-react";
+import { Send, ArrowLeft, Check, CheckCheck, Flag, Bone, Pill, Footprints, Camera, ImagePlus, Loader2, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { buildImageMessageBody, parseImageMessage } from "@/lib/chatImage";
 import type { Message, Conversation } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
 import ReportDialog from "@/components/reports/ReportDialog";
@@ -52,6 +61,10 @@ export const MessageThread = ({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
+  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoLibraryRef = useRef<HTMLInputElement>(null);
+  const photoCameraRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -92,15 +105,49 @@ export const MessageThread = ({
     }
   };
 
+  const handlePhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    setPhotoUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/chat-photos/${Date.now()}-${Math.random().toString(36).slice(7)}.${ext}`;
+      const { error } = await supabase.storage.from("listing-images").upload(path, file);
+      if (error) throw error;
+      const { data } = supabase.storage.from("listing-images").getPublicUrl(path);
+      setPendingPhoto(data.publicUrl);
+    } catch (err: any) {
+      toast.error(err.message || "Photo upload failed");
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim() && !isSending) {
-      onSend(newMessage.trim());
-      setNewMessage("");
-      sendTypingIndicator(false);
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
+    if ((!newMessage.trim() && !pendingPhoto) || isSending) return;
+
+    onSend(
+      pendingPhoto
+        ? buildImageMessageBody(pendingPhoto, newMessage)
+        : newMessage.trim()
+    );
+    setNewMessage("");
+    setPendingPhoto(null);
+    sendTypingIndicator(false);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
     }
   };
 
@@ -222,6 +269,62 @@ export const MessageThread = ({
                           className="w-full max-h-60 object-cover"
                         />
                       )}
+                    </div>
+                  </div>
+              );
+              }
+
+              const imageMsg = parseImageMessage(message.body);
+              if (imageMsg) {
+                return (
+                  <div key={message.id} className={cn("flex group", isOwn ? "justify-end" : "justify-start")}>
+                    {!isOwn && (
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center mr-1">
+                        <ReportDialog
+                          targetType="message"
+                          targetId={message.id}
+                          trigger={
+                            <button className="p-1 text-muted-foreground hover:text-foreground rounded">
+                              <Flag className="h-3 w-3" />
+                            </button>
+                          }
+                        />
+                      </div>
+                    )}
+                    <div
+                      className={cn(
+                        "max-w-[80%] rounded-lg overflow-hidden",
+                        isOwn ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                      )}
+                    >
+                      <a href={imageMsg.url} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={imageMsg.url}
+                          alt={imageMsg.caption || "Shared photo"}
+                          loading="lazy"
+                          className="w-full max-h-72 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                        />
+                      </a>
+                      <div className="px-4 py-2">
+                        {imageMsg.caption && (
+                          <p className="text-sm whitespace-pre-wrap break-words">{imageMsg.caption}</p>
+                        )}
+                        <div
+                          className={cn(
+                            "flex items-center justify-end gap-1 mt-1",
+                            isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                          )}
+                        >
+                          <span className="text-xs">{formatMessageDate(message.created_at)}</span>
+                          {isOwn && (
+                            isRead ? (
+                              <CheckCheck className="h-3.5 w-3.5 text-primary-foreground/90" />
+                            ) : (
+                              <Check className="h-3.5 w-3.5" />
+                            )
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
@@ -347,15 +450,76 @@ export const MessageThread = ({
 
       {/* Input */}
       <form onSubmit={handleSubmit} className="p-4 border-t border-border">
+        {pendingPhoto && (
+          <div className="flex items-center gap-2 mb-2">
+            <div className="relative">
+              <img
+                src={pendingPhoto}
+                alt="Photo to send"
+                className="h-16 w-16 rounded-lg object-cover border border-border"
+              />
+              <button
+                type="button"
+                onClick={() => setPendingPhoto(null)}
+                className="absolute -top-2 -right-2 p-0.5 bg-background border border-border rounded-full text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">Add a caption or just send the photo</p>
+          </div>
+        )}
         <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={isSending || photoUploading}
+                aria-label="Add a photo"
+              >
+                {photoUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ImagePlus className="h-4 w-4" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top">
+              <DropdownMenuItem onClick={() => photoCameraRef.current?.click()}>
+                <Camera className="h-4 w-4 mr-2" />
+                Take Photo
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => photoLibraryRef.current?.click()}>
+                <ImagePlus className="h-4 w-4 mr-2" />
+                Upload from Library
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <input
+            ref={photoCameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoFile}
+            className="hidden"
+          />
+          <input
+            ref={photoLibraryRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoFile}
+            className="hidden"
+          />
           <Input
             value={newMessage}
             onChange={handleInputChange}
-            placeholder="Type a message..."
+            placeholder={pendingPhoto ? "Add a caption..." : "Type a message..."}
             disabled={isSending}
             className="flex-1"
           />
-          <Button type="submit" disabled={!newMessage.trim() || isSending}>
+          <Button type="submit" disabled={(!newMessage.trim() && !pendingPhoto) || isSending}>
             <Send className="h-4 w-4" />
           </Button>
         </div>
