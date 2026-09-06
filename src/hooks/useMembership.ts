@@ -57,7 +57,7 @@ export const MEMBERSHIP_PLANS = {
 } as const;
 
 export const useMembership = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [state, setState] = useState<MembershipState>({
     subscribed: false,
     membershipType: null,
@@ -67,7 +67,7 @@ export const useMembership = () => {
   });
 
   const checkSubscription = useCallback(async () => {
-    if (!user) {
+    if (!user || !session?.access_token) {
       setState((s) => ({ ...s, loading: false }));
       return;
     }
@@ -97,7 +97,7 @@ export const useMembership = () => {
       });
 
     }
-  }, [user]);
+  }, [user, session?.access_token]);
 
   useEffect(() => {
     checkSubscription();
