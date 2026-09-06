@@ -7,7 +7,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, isToday, isYesterday } from "date-fns";
-import { Send, ArrowLeft, Check, CheckCheck, Flag, Bone, Pill, Footprints } from "lucide-react";
+import { Send, ArrowLeft, Check, CheckCheck, Flag, Bone, Pill, Footprints, Camera, ImagePlus, Loader2, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { buildImageMessageBody, parseImageMessage } from "@/lib/chatImage";
 import type { Message, Conversation } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
 import ReportDialog from "@/components/reports/ReportDialog";
@@ -52,6 +61,10 @@ export const MessageThread = ({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
+  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoLibraryRef = useRef<HTMLInputElement>(null);
+  const photoCameraRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -92,15 +105,49 @@ export const MessageThread = ({
     }
   };
 
+  const handlePhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    setPhotoUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/chat-photos/${Date.now()}-${Math.random().toString(36).slice(7)}.${ext}`;
+      const { error } = await supabase.storage.from("listing-images").upload(path, file);
+      if (error) throw error;
+      const { data } = supabase.storage.from("listing-images").getPublicUrl(path);
+      setPendingPhoto(data.publicUrl);
+    } catch (err: any) {
+      toast.error(err.message || "Photo upload failed");
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim() && !isSending) {
-      onSend(newMessage.trim());
-      setNewMessage("");
-      sendTypingIndicator(false);
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
+    if ((!newMessage.trim() && !pendingPhoto) || isSending) return;
+
+    onSend(
+      pendingPhoto
+        ? buildImageMessageBody(pendingPhoto, newMessage)
+        : newMessage.trim()
+    );
+    setNewMessage("");
+    setPendingPhoto(null);
+    sendTypingIndicator(false);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
     }
   };
 
