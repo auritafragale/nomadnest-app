@@ -97,7 +97,7 @@ export const useActiveSitForConversation = (conversationId: string | null) => {
         .from("sit_checkins")
         .select("kind, created_at")
         .eq("sit_id", sit.id)
-        .order("created_at", { ascending: desc })
+        .order("created_at", { ascending: false })
         .limit(50);
 
       const todayKinds = ((checkins ?? []) as { kind: CheckinKind; created_at: string }[])
