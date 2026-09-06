@@ -6,7 +6,7 @@
 
 ## 2. Simplify the Welcome Guide card
 - Keep the completion pill beside “Welcome Guide,” but give it the same readable text sizing and weight as the “Edit guide” button.
-- Remove “One guide shared across all your listings” and “Nomads you confirm…” from completed guides.
+- Remove “One guide shared across all your listings” and “Nomads you confirm…” from the card body, and place that information inside an “i” tooltip next to the “Welcome Guide” heading.
 - Keep loading, offline, empty-guide and create-listing states functional.
 
 ## 3. Remove Pet Parent stats and badge Applicants
