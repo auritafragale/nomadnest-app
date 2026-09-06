@@ -7,9 +7,12 @@ interface NotificationData {
     | "new_message"
     | "invite"
     | "review"
-    | "sit_cancelled";
+    | "sit_cancelled"
+    | "sit_checkin";
   recipientUserId: string;
   data: Record<string, string>;
+  /** Skip the in-app notifications row when a DB trigger already created it. */
+  skipInAppNotification?: boolean;
 }
 
 export const sendNotification = async (notification: NotificationData) => {

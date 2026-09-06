@@ -194,15 +194,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Write the in-app notification first: the bell/notification list reads this
     // table, and clients are not allowed to insert rows for other members.
-    const { error: notifError } = await supabaseClient.from("notifications").insert({
-      user_id: recipientUserId,
-      type,
-      title: emailContent.pushTitle ?? emailContent.subject,
-      message: emailContent.pushBody ?? "",
-      data: { ...data, url: emailContent.pushUrl },
-    });
-    if (notifError) {
-      console.error("Could not create in-app notification:", notifError);
+    // Skipped when a database trigger already created the row (e.g. sit_checkin).
+    if (!skipInAppNotification) {
+      const { error: notifError } = await supabaseClient.from("notifications").insert({
+        user_id: recipientUserId,
+        type,
+        title: emailContent.pushTitle ?? emailContent.subject,
+        message: emailContent.pushBody ?? "",
+        data: { ...data, url: emailContent.pushUrl },
+      });
+      if (notifError) {
+        console.error("Could not create in-app notification:", notifError);
+      }
     }
 
     // Always send push notification (regardless of email preferences)
