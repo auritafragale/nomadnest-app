@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
@@ -26,9 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
-  Save,
   Loader2,
-  User,
   Bell,
   Shield,
   Compass,
@@ -53,7 +50,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
-import ImageUpload from "@/components/listing/ImageUpload";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
 import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useNotificationPreferences";
@@ -64,11 +60,6 @@ import { useVerification } from "@/hooks/useVerification";
 import { PhoneVerification } from "@/components/settings/PhoneVerification";
 
 interface Profile {
-  first_name: string;
-  last_name: string;
-  avatar_url: string;
-  city: string;
-  country: string;
   email: string;
 }
 
@@ -79,13 +70,7 @@ const Settings = () => {
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<Profile>({
-    first_name: "",
-    last_name: "",
-    avatar_url: "",
-    city: "",
-    country: "",
     email: "",
   });
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -127,65 +112,14 @@ const Settings = () => {
     if (!user) return;
 
     try {
-      const [{ data }, { data: contact }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("first_name, last_name, avatar_url, city, country")
-          .eq("id", user.id)
-          .maybeSingle(),
-        supabase.rpc("get_my_contact_info").maybeSingle(),
-      ]);
-
-      if (data) {
-        setProfile({
-          first_name: data.first_name || "",
-          last_name: data.last_name || "",
-          avatar_url: data.avatar_url || "",
-          city: data.city || "",
-          country: data.country || "",
-          email: (contact as any)?.email || user.email || "",
-        });
-      }
+      const { data: contact } = await supabase.rpc("get_my_contact_info").maybeSingle();
+      setProfile({ email: (contact as any)?.email || user.email || "" });
       setPhoneVerified(!!(contact as any)?.phone_verified);
       setPhoneNumber((contact as any)?.phone_number ?? null);
     } catch (error) {
       console.error("Error fetching profile:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSaveProfile = async () => {
-    if (!user) return;
-
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          avatar_url: profile.avatar_url,
-          city: profile.city,
-          country: profile.country,
-        })
-        .eq("id", user.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Settings saved!",
-        description: "Your changes have been saved successfully",
-      });
-    } catch (error: any) {
-      console.error("Error saving profile:", error);
-      toast({
-        title: "Error saving settings",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -330,156 +264,27 @@ const Settings = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Account Settings */}
-            <Collapsible asChild>
-              <Card className="group">
-                <CardHeader className="flex-row items-center gap-2 space-y-0">
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="h-auto min-w-0 flex-1 justify-between p-0 text-left hover:bg-transparent" aria-label="Toggle account settings">
-                      <CardTitle className="flex items-center gap-2"><User className="w-5 h-5" />Account</CardTitle>
-                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
-                    </Button>
-                  </CollapsibleTrigger>
-                  <HelpTooltip label="About account settings" content="Your personal information and profile" />
+            {(role === "sitter" || role === "owner") && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Crown className="w-5 h-5 text-primary" />
+                    Membership
+                  </CardTitle>
                 </CardHeader>
-                <CollapsibleContent>
-                  <CardContent className="space-y-6">
-                {/* Avatar */}
-                <div className="flex items-center gap-6">
-                  <Avatar className="w-20 h-20">
-                    <AvatarImage src={profile.avatar_url} />
-                    <AvatarFallback>
-                      <User className="w-8 h-8" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <ImageUpload
-                      images={profile.avatar_url ? [profile.avatar_url] : []}
-                      onImagesChange={(urls) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          avatar_url: urls[0] || "",
-                        }))
-                      }
-                      maxImages={1}
-                      folder="avatar"
-                      label="Profile Photo"
-                    />
+                <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="font-medium">Upgrade to Combined</p>
+                    <p className="text-sm text-muted-foreground">
+                      {role === "sitter"
+                        ? "Add Pet Parent access to list your home and pets."
+                        : "Add Nomad access to browse and apply for sits."}
+                    </p>
                   </div>
-                </div>
-
-                <Separator />
-
-                {/* Name */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="first_name">First Name</Label>
-                    <Input
-                      id="first_name"
-                      value={profile.first_name}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          first_name: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="last_name">Last Name</Label>
-                    <Input
-                      id="last_name"
-                      value={profile.last_name}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          last_name: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                {/* Email (display only) */}
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profile.email}
-                    disabled
-                    className="bg-muted"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    To change your email, use the "Change Email" section below
-                  </p>
-                </div>
-
-                {/* Location */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      value={profile.city}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          city: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
-                    <Input
-                      id="country"
-                      value={profile.country}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          country: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Your city also decides which City Chat you can join. Update it here when you move
-                  on.
-                </p>
-
-                <Button onClick={handleSaveProfile} disabled={saving}>
-                  {saving ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4 mr-2" />
-                  )}
-                  Save Changes
-                </Button>
-
-                <Separator />
-
-                {(role === "sitter" || role === "owner") && (
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-1">
-                      <p className="font-medium">Upgrade to Combined</p>
-                      <p className="text-sm text-muted-foreground">
-                        {role === "sitter"
-                          ? "Add Pet Parent access to list your home and pets."
-                          : "Add Nomad access to browse and apply for sits."}
-                      </p>
-                    </div>
-                    <UpgradeRoleDialog
-                      currentRole={role}
-                      onUpgrade={() => refreshRole()}
-                    />
-                  </div>
-                )}
-                  </CardContent>
-                </CollapsibleContent>
+                  <UpgradeRoleDialog currentRole={role} onUpgrade={() => refreshRole()} />
+                </CardContent>
               </Card>
-            </Collapsible>
+            )}
 
             {/* Login & Security */}
             <Card>
