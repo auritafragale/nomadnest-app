@@ -30,9 +30,16 @@ const OwnerWelcomeGuideCard = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-primary" />
-          Welcome Guide
+        <CardTitle className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-primary" />
+            Welcome Guide
+          </span>
+          {complete && (
+            <Badge variant="secondary" className="gap-1">
+              {filled}/5 fields filled
+            </Badge>
+          )}
         </CardTitle>
         <CardDescription>One guide shared across all your listings</CardDescription>
       </CardHeader>
@@ -41,16 +48,11 @@ const OwnerWelcomeGuideCard = () => {
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : complete ? (
           <>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="gap-1">
-                {filled}/5 fields filled
-              </Badge>
-              {isOffline && (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <WifiOff className="w-3 h-3" /> Offline copy
-                </span>
-              )}
-            </div>
+            {isOffline && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <WifiOff className="w-3 h-3" /> Offline copy
+              </span>
+            )}
             <p className="text-sm text-muted-foreground">
               Nomads you confirm will see this guide on the listing and can open it offline.
             </p>

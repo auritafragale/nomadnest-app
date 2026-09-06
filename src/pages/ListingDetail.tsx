@@ -28,6 +28,7 @@ import {
   User,
   Loader2,
   Flag,
+  Heart,
 } from "lucide-react";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +53,8 @@ import { formatPetType, petTypeIcon, formatPetAge } from "@/lib/petTypes";
 import VerificationBadges from "@/components/ui/VerificationBadges";
 import InlineWelcomeGuide from "@/components/listing/InlineWelcomeGuide";
 import { useAcceptedSitter } from "@/hooks/useAcceptedSitter";
+import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
+import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Pet {
@@ -199,10 +202,15 @@ const ListingDetail = () => {
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [selectedDateIds, setSelectedDateIds] = useState<string[]>([]);
   const [warningOpen, setWarningOpen] = useState(false);
   const listingWarning = useCommunityWarning("listing", id);
+
+  const { data: favoriteIds = [] } = useFavorites();
+  const toggleFavorite = useToggleFavorite();
+  const isFavorited = listing ? favoriteIds.includes(listing.id) : false;
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -372,12 +380,37 @@ const ListingDetail = () => {
 
           {/* Photo Gallery */}
           {allPhotos.length > 0 ? (
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-muted mb-6">
+            <div className="relative aspect-video rounded-xl overflow-hidden bg-muted mb-6 group">
               <img
                 src={allPhotos[currentPhotoIndex]}
                 alt={`Photo ${currentPhotoIndex + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover cursor-zoom-in"
+                onClick={() => setLightboxOpen(true)}
               />
+              {/* Share — top left, plain icon */}
+              <div className="absolute top-3 left-3">
+                <ShareDialog
+                  title={listing.title}
+                  description={`Check out this pet sitting opportunity in ${listing.city}, ${listing.country}`}
+                  triggerClassName="bg-background/80 hover:bg-background backdrop-blur-sm rounded-full shadow-sm border-0"
+                />
+              </div>
+              {/* Favourite — top right */}
+              {user && !isOwner && (
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite.mutate({ listingId: listing.id, isFavorited })}
+                  aria-label={isFavorited ? "Remove from saved" : "Save listing"}
+                  className="absolute top-3 right-3 p-2 bg-background/80 hover:bg-background backdrop-blur-sm rounded-full shadow-sm transition-colors"
+                >
+                  <Heart
+                    className={cn(
+                      "w-5 h-5 transition-colors",
+                      isFavorited ? "fill-primary text-primary" : "text-foreground",
+                    )}
+                  />
+                </button>
+              )}
               {allPhotos.length > 1 && (
               <>
                   <button
@@ -438,10 +471,23 @@ const ListingDetail = () => {
                   )}
                 </div>
               </div>
-              <ShareDialog
-                title={listing.title}
-                description={`Check out this pet sitting opportunity in ${listing.city}, ${listing.country}`}
-              />
+              {user && !isOwner && (
+                <ReportDialog
+                  targetType="listing"
+                  targetId={listing.id}
+                  targetLabel={listing.title}
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="Report listing"
+                    >
+                      <Flag className="h-5 w-5" />
+                    </Button>
+                  }
+                />
+              )}
             </div>
           </div>
 
@@ -941,20 +987,29 @@ const ListingDetail = () => {
                 </>
               )}
 
-              {/* Report Button */}
-              {user && !isOwner && (
-                <div className="flex justify-center pt-2">
-                  <ReportDialog
-                    targetType="listing"
-                    targetId={listing.id}
-                    targetLabel="listing"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
+               {/* Report Button */}
+               {user && !isOwner && (
+                 <div className="flex justify-center pt-2">
+                   <ReportDialog
+                     targetType="listing"
+                     targetId={listing.id}
+                     targetLabel="listing"
+                   />
+                 </div>
+               )}
+             </div>
+           </div>
+         </div>
+
+         <PhotoLightbox
+           open={lightboxOpen}
+           onOpenChange={setLightboxOpen}
+           photos={allPhotos}
+           startIndex={currentPhotoIndex}
+           alt={listing.title}
+           onIndexChange={setCurrentPhotoIndex}
+         />
+       </main>
     </div>
   );
 };

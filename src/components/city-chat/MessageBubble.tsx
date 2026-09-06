@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Flag } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import ReportDialog from "@/components/reports/ReportDialog";
 import ReactionBar from "@/components/city-chat/ReactionBar";
 import type { MessageReactionSummary } from "@/hooks/useMessageReactions";
 
@@ -132,6 +133,21 @@ const MessageBubble = ({
             onToggle={onToggleReaction}
             align={isOwn ? "end" : "start"}
           />
+          {!isOwn && (
+            <ReportDialog
+              targetType="message"
+              targetId={message.id}
+              trigger={
+                <button
+                  type="button"
+                  aria-label="Report message"
+                  className="mt-1 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Flag className="w-3.5 h-3.5" />
+                </button>
+              }
+            />
+          )}
           {onOpenThread && (thread?.replyCount ?? 0) === 0 && (
             <button
               type="button"

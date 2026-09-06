@@ -289,36 +289,8 @@ const Settings = () => {
     }
   };
 
-  const getRoleLabel = () => {
-    switch (role) {
-      case "sitter":
-        return "Nomad";
-      case "owner":
-        return "Pet Parent";
-      case "both":
-        return "Nomad & Pet Parent";
-      default:
-        return "Unknown";
-    }
-  };
 
-  const getRoleIcon = () => {
-    switch (role) {
-      case "sitter":
-        return <Briefcase className="w-4 h-4" />;
-      case "owner":
-        return <Home className="w-4 h-4" />;
-      case "both":
-        return (
-          <div className="flex items-center gap-1">
-            <Briefcase className="w-4 h-4" />
-            <Home className="w-4 h-4" />
-          </div>
-        );
-      default:
-        return <User className="w-4 h-4" />;
-    }
-  };
+
 
   if (loading) {
     return (
@@ -490,6 +462,59 @@ const Settings = () => {
                   )}
                   Save Changes
                 </Button>
+
+                <Separator />
+
+                {/* Role */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="font-medium">Current Role</p>
+                    <p className="text-sm text-muted-foreground">
+                      Your account type determines what features you can access
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="gap-2 text-sm py-1.5 px-3 whitespace-nowrap">
+                    {role === "sitter" ? (
+                      <><Briefcase className="w-4 h-4" /> Nomad</>
+                    ) : role === "owner" ? (
+                      <><Home className="w-4 h-4" /> Pet Parent</>
+                    ) : role === "both" ? (
+                      <span className="flex items-center gap-1">
+                        <Briefcase className="w-4 h-4" />
+                        <Home className="w-4 h-4" />
+                        Combined
+                      </span>
+                    ) : (
+                      <><User className="w-4 h-4" /> Unknown</>
+                    )}
+                  </Badge>
+                </div>
+
+                {(role === "sitter" || role === "owner") && (
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="font-medium">Expand Your Role</p>
+                      <p className="text-sm text-muted-foreground">
+                        {role === "sitter"
+                          ? "Add pet owner capabilities to find sitters for your own pets"
+                          : "Add sitter capabilities to browse and apply for sits"}
+                      </p>
+                    </div>
+                    <UpgradeRoleDialog
+                      currentRole={role}
+                      onUpgrade={() => refreshRole()}
+                    />
+                  </div>
+                )}
+
+                {role === "both" && (
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="text-sm text-muted-foreground">
+                      You have full access to both Nomad and Pet Parent features. Use the
+                      toggle on your dashboard to switch between modes.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -672,95 +697,6 @@ const Settings = () => {
                 </CardContent>
               </Card>
             )}
-
-            {/* Role Management */}
-            <Card>
-
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  Role & Access
-                  <HelpTooltip
-                    label="About role & access"
-                    content="Your role sets what you can do: Nomads care for pets, Pet Parents host sitters, and Combined members can do both. Switch modes from the dashboard."
-                  />
-                </CardTitle>
-                <CardDescription>
-                  Manage how you use NomadNest
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="font-medium">Current Role</p>
-                    <p className="text-sm text-muted-foreground">
-                      Your account type determines what features you can access
-                    </p>
-                  </div>
-                  <Badge variant="secondary" className="gap-2 text-sm py-1.5 px-3">
-                    {getRoleIcon()}
-                    {getRoleLabel()}
-                  </Badge>
-                </div>
-
-                <Separator />
-
-                {/* Upgrade option for single-role users */}
-                {(role === "sitter" || role === "owner") && (
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="font-medium">Expand Your Role</p>
-                      <p className="text-sm text-muted-foreground">
-                        {role === "sitter"
-                          ? "Add pet owner capabilities to find sitters for your own pets"
-                          : "Add sitter capabilities to browse and apply for sits"}
-                      </p>
-                    </div>
-                    <UpgradeRoleDialog
-                      currentRole={role}
-                      onUpgrade={() => refreshRole()}
-                    />
-                  </div>
-                )}
-
-                {role === "both" && (
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <p className="text-sm text-muted-foreground">
-                      You have full access to both sitter and owner features. Use the
-                      toggle on your dashboard to switch between modes.
-                    </p>
-                  </div>
-                )}
-
-                {/* Profile links */}
-                <Separator />
-                <div className="space-y-2">
-                  <p className="font-medium text-sm">Edit Detailed Profiles</p>
-                  <div className="flex flex-wrap gap-2">
-                    {((role === "sitter") || (role === "both" && activeRole === "sitter")) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate("/edit-sitter-profile")}
-                      >
-                        <Briefcase className="w-4 h-4 mr-2" />
-                        Nomad Profile
-                      </Button>
-                    )}
-                    {((role === "owner") || (role === "both" && activeRole === "owner")) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate("/edit-owner-profile")}
-                      >
-                        <Home className="w-4 h-4 mr-2" />
-                        Pet Parent Profile
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Profile Visibility */}
             <Card>
