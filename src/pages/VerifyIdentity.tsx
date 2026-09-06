@@ -3,7 +3,7 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft, Upload, Clock } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -102,8 +102,6 @@ const VerifyIdentity = () => {
   const [fileError, setFileError] = useState<string>("");
   const [manualUploading, setManualUploading] = useState(false);
   const [manualSubmitted, setManualSubmitted] = useState(false);
-  const idInputRef = useRef<HTMLInputElement>(null);
-  const selfieInputRef = useRef<HTMLInputElement>(null);
 
   // Phone cameras often hand over a file with an empty or generic MIME type and
   // no extension, so anything the picker returns is accepted unless it is
@@ -140,6 +138,13 @@ const VerifyIdentity = () => {
     setFile(file);
     setPreview(type.startsWith("image/") ? URL.createObjectURL(file) : null);
   };
+
+  useEffect(() => {
+    return () => {
+      if (idPreview) URL.revokeObjectURL(idPreview);
+      if (selfiePreview) URL.revokeObjectURL(selfiePreview);
+    };
+  }, [idPreview, selfiePreview]);
 
 
   // Teardown on unmount
@@ -410,26 +415,24 @@ const VerifyIdentity = () => {
                       )}
                       <div className="space-y-2">
                         <Label htmlFor="id_photo">Photo ID (passport, driving licence, national ID)</Label>
-                        <input
-                          ref={idInputRef}
-                          id="id_photo"
-                          type="file"
-                          accept="image/*,application/pdf"
-                          className="hidden"
-                          onChange={(e) => {
-                            pickFile(e.target.files?.[0] ?? null, "id");
-                            e.target.value = "";
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => idInputRef.current?.click()}
+                        <label
+                          htmlFor="id_photo"
+                          className={buttonVariants({ variant: "outline", className: "relative w-full cursor-pointer" })}
                         >
                           <Upload className="w-4 h-4 mr-2" />
                           {idFile ? "Change Photo ID" : "Choose Photo ID"}
-                        </Button>
+                          <input
+                            id="id_photo"
+                            type="file"
+                            accept="image/*,application/pdf"
+                            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                            aria-label="Choose photo ID"
+                            onChange={(e) => {
+                              pickFile(e.target.files?.[0] ?? null, "id");
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
                         {idFile && (
                           <div className="flex items-center gap-3">
                             {idPreview && (
@@ -444,26 +447,24 @@ const VerifyIdentity = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="selfie">Selfie (holding your ID or looking at camera)</Label>
-                        <input
-                          ref={selfieInputRef}
-                          id="selfie"
-                          type="file"
-                          accept="image/*,application/pdf"
-                          className="hidden"
-                          onChange={(e) => {
-                            pickFile(e.target.files?.[0] ?? null, "selfie");
-                            e.target.value = "";
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => selfieInputRef.current?.click()}
+                        <label
+                          htmlFor="selfie"
+                          className={buttonVariants({ variant: "outline", className: "relative w-full cursor-pointer" })}
                         >
                           <Upload className="w-4 h-4 mr-2" />
                           {selfieFile ? "Change Selfie" : "Choose Selfie"}
-                        </Button>
+                          <input
+                            id="selfie"
+                            type="file"
+                            accept="image/*"
+                            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                            aria-label="Choose selfie"
+                            onChange={(e) => {
+                              pickFile(e.target.files?.[0] ?? null, "selfie");
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
                         {selfieFile && (
                           <div className="flex items-center gap-3">
                             {selfiePreview && (
