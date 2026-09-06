@@ -15,7 +15,7 @@ The Pet Parent sees the same care bar area replaced by a read-only "Today's care
 
 ## 2. Daily reminders that actually arrive
 
-- A new daily scheduled job (runs each morning) looks at every sit in progress and, for any Nomad who has not posted a check-in yet that day, creates a notification: "Time for today's check-in for [home] — tap to log Fed, Meds and Walk." It links straight into the chat with the Pet Parent.
+- A new scheduled job (runs hourly) looks at every sit in progress and, in the early evening (about 6pm) in the timezone where that sit's home is located, for any Nomad who has not posted a check-in yet that day, creates a notification: "Time for today's check-in for [home] — tap to log Fed, Meds and Walk." It links straight into the chat with the Pet Parent.
 - One reminder per day maximum, nothing sent once that day's check-ins are done, and nothing on the first day if a check-in is already posted.
 - The existing sit-started message is reworded to explain the daily routine and also links to the chat.
 - Reminders also flow through push notifications for anyone who has them turned on, and the notification bell.
