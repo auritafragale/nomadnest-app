@@ -4,7 +4,7 @@
 
 - Only **one** check-in has ever been saved in the whole app: a "Pets Fed" posted by Clare on Aurita's "Cute home with a puppy" sit. That one worked end to end — Aurita got the alert and the card appeared in that chat.
 - For Aurita's Delhi sit there is **no saved check-in at all**. So nothing was sent to Clare because nothing was ever recorded.
-- Why nothing was recorded: tapping Fed / Walk / Meds does **not** post anything. It only opens a small panel, and the check-in is saved only when the extra "Send … update" button at the bottom is pressed. Closing or swiping that panel away silently loses the check-in — which is what happened.
+- Why nothing was recorded: the Fed / Walk / Meds pills do **not** post anything on tap, and there is no send button to confirm with — so a Nomad has no working way to record a check-in at all. That is exactly what the fix below changes.
 - Second gap, confirmed in the data: when a check-in is saved, the Pet Parent gets an in-app alert only. There is no push or email for it, unlike a normal message, so Clare would not be pinged on her phone.
 
 ## The fix
