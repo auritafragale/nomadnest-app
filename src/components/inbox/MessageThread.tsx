@@ -222,6 +222,23 @@ export const MessageThread = ({
             </div>
           </>
         )}
+        {otherUser?.id && (
+          <ReportDialog
+            targetType="user"
+            targetId={otherUser.id}
+            targetLabel={`${otherUser.first_name || ""} ${otherUser.last_name || ""}`.trim() || undefined}
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-auto text-muted-foreground hover:text-foreground"
+                aria-label="Report user"
+              >
+                <Flag className="h-4 w-4" />
+              </Button>
+            }
+          />
+        )}
       </div>
 
       {/* Messages */}
