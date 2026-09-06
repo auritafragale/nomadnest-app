@@ -97,10 +97,50 @@ const VerifyIdentity = () => {
   // Manual ID review state
   const [idFile, setIdFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const [idPreview, setIdPreview] = useState<string | null>(null);
+  const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string>("");
   const [manualUploading, setManualUploading] = useState(false);
   const [manualSubmitted, setManualSubmitted] = useState(false);
   const idInputRef = useRef<HTMLInputElement>(null);
   const selfieInputRef = useRef<HTMLInputElement>(null);
+
+  // Phone cameras often hand over a file with an empty or generic MIME type and
+  // no extension, so anything the picker returns is accepted unless it is
+  // clearly unusable. Previews make it obvious the photo actually arrived.
+  const pickFile = (file: File | null, target: "id" | "selfie") => {
+    const setFile = target === "id" ? setIdFile : setSelfieFile;
+    const setPreview = target === "id" ? setIdPreview : setSelfiePreview;
+    const currentPreview = target === "id" ? idPreview : selfiePreview;
+
+    if (currentPreview) URL.revokeObjectURL(currentPreview);
+
+    if (!file) {
+      setFile(null);
+      setPreview(null);
+      setFileError("");
+      return;
+    }
+
+    if (file.size === 0) {
+      setFileError("That photo came through empty — please try again.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setFileError("That file is larger than 10MB — please choose a smaller photo.");
+      return;
+    }
+    const type = (file.type || "").toLowerCase();
+    if (type && !type.startsWith("image/") && type !== "application/pdf") {
+      setFileError("Please choose a photo or a PDF.");
+      return;
+    }
+
+    setFileError("");
+    setFile(file);
+    setPreview(type.startsWith("image/") ? URL.createObjectURL(file) : null);
+  };
+
 
   // Teardown on unmount
   useEffect(() => {
