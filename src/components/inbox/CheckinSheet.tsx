@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Camera, Loader2, Upload } from "lucide-react";
@@ -35,9 +35,12 @@ export const CheckinSheet = ({
   const [note, setNote] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const libraryInputRef = useRef<HTMLInputElement>(null);
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file || !user) return;
 
     // Camera captures can arrive with an empty/generic MIME type; the input
@@ -67,7 +70,6 @@ export const CheckinSheet = ({
       toast.error(err.message || "Upload failed");
     } finally {
       setUploading(false);
-      if (e.target.value) e.target.value = "";
     }
   };
 
@@ -79,10 +81,14 @@ export const CheckinSheet = ({
   };
 
   return (
-    <div className="fixed inset-x-0 top-0 bottom-16 z-[60] flex items-end justify-center bg-black/50 md:bottom-0 md:items-center" onClick={onClose}>
+    <div
+      className="fixed inset-x-0 top-0 bottom-16 z-[60] flex items-end justify-center bg-black/50 md:bottom-0 md:items-center"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
       <div
         className="flex max-h-[calc(100svh-5rem)] w-full flex-col overflow-hidden rounded-t-2xl border border-border bg-card shadow-lg sm:max-w-md sm:rounded-2xl md:max-h-[calc(100svh-1rem)]"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
           <h4 className="font-medium text-sm flex items-center gap-2">
@@ -114,35 +120,50 @@ export const CheckinSheet = ({
               </div>
             ) : (
               <>
-                <label className="flex-1 cursor-pointer">
-                  <div className="flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors text-sm text-muted-foreground">
-                    <Camera className="w-4 h-4" />
-                    Take Photo
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handlePhoto}
-                    className="hidden"
-                  />
-                </label>
-                <label className="flex-1 cursor-pointer">
-                  <div className="flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors text-sm text-muted-foreground">
-                    <Upload className="w-4 h-4" />
-                    Upload
-                  </div>
-                  <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
-                </label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-auto flex-1 border-2 border-dashed border-border py-2 font-normal text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-muted-foreground"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <Camera className="w-4 h-4" />
+                  Take Photo
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-auto flex-1 border-2 border-dashed border-border py-2 font-normal text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-muted-foreground"
+                  onClick={() => libraryInputRef.current?.click()}
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload
+                </Button>
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhoto}
+                  className="hidden"
+                />
+                <input
+                  ref={libraryInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhoto}
+                  className="hidden"
+                />
               </>
             )}
             {photoUrl && (
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => setPhotoUrl(null)}
-                className="px-3 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground"
+                className="h-auto border border-border px-3 text-xs font-normal text-muted-foreground hover:text-foreground"
               >
                 Remove
-              </button>
+              </Button>
             )}
           </div>
 

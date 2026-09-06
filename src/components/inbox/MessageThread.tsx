@@ -493,11 +493,21 @@ export const MessageThread = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" side="top">
-              <DropdownMenuItem onClick={() => photoCameraRef.current?.click()}>
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  photoCameraRef.current?.click();
+                }}
+              >
                 <Camera className="h-4 w-4 mr-2" />
                 Take Photo
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => photoLibraryRef.current?.click()}>
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  photoLibraryRef.current?.click();
+                }}
+              >
                 <ImagePlus className="h-4 w-4 mr-2" />
                 Upload from Library
               </DropdownMenuItem>
