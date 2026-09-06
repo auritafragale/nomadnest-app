@@ -356,15 +356,21 @@ const VerifyIdentity = () => {
                     </div>
                   ) : (
                     <>
+                      {fileError && (
+                        <p className="text-sm text-destructive" role="alert">{fileError}</p>
+                      )}
                       <div className="space-y-2">
                         <Label htmlFor="id_photo">Photo ID (passport, driving licence, national ID)</Label>
                         <input
                           ref={idInputRef}
                           id="id_photo"
                           type="file"
-                          accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                          accept="image/*,application/pdf"
                           className="hidden"
-                          onChange={(e) => setIdFile(e.target.files?.[0] ?? null)}
+                          onChange={(e) => {
+                            pickFile(e.target.files?.[0] ?? null, "id");
+                            e.target.value = "";
+                          }}
                         />
                         <Button
                           type="button"
@@ -376,7 +382,15 @@ const VerifyIdentity = () => {
                           {idFile ? "Change Photo ID" : "Choose Photo ID"}
                         </Button>
                         {idFile && (
-                          <p className="text-xs text-muted-foreground truncate">Selected: {idFile.name}</p>
+                          <div className="flex items-center gap-3">
+                            {idPreview && (
+                              <img src={idPreview} alt="Selected photo ID preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
+                            )}
+                            <p className="text-xs text-muted-foreground truncate flex-1">Selected: {idFile.name}</p>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "id")}>
+                              Remove
+                            </Button>
+                          </div>
                         )}
                       </div>
                       <div className="space-y-2">
@@ -385,9 +399,12 @@ const VerifyIdentity = () => {
                           ref={selfieInputRef}
                           id="selfie"
                           type="file"
-                          accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                          accept="image/*,application/pdf"
                           className="hidden"
-                          onChange={(e) => setSelfieFile(e.target.files?.[0] ?? null)}
+                          onChange={(e) => {
+                            pickFile(e.target.files?.[0] ?? null, "selfie");
+                            e.target.value = "";
+                          }}
                         />
                         <Button
                           type="button"
@@ -399,9 +416,18 @@ const VerifyIdentity = () => {
                           {selfieFile ? "Change Selfie" : "Choose Selfie"}
                         </Button>
                         {selfieFile && (
-                          <p className="text-xs text-muted-foreground truncate">Selected: {selfieFile.name}</p>
+                          <div className="flex items-center gap-3">
+                            {selfiePreview && (
+                              <img src={selfiePreview} alt="Selected selfie preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
+                            )}
+                            <p className="text-xs text-muted-foreground truncate flex-1">Selected: {selfieFile.name}</p>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "selfie")}>
+                              Remove
+                            </Button>
+                          </div>
                         )}
                       </div>
+
                       <Button
                         className="w-full"
                         onClick={handleManualSubmit}
