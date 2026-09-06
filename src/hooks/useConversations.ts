@@ -387,44 +387,34 @@ export const useStartConversation = () => {
     }) => {
       if (!user) throw new Error("Not authenticated");
 
-      // Determine who is owner and who is sitter based on role
-      const isCurrentUserOwner = role === "owner" || role === "both";
-      const ownerUserId = isCurrentUserOwner ? user.id : otherUserId;
-      const sitterUserId = isCurrentUserOwner ? otherUserId : user.id;
-
-      // Check for existing conversation
-      let query = supabase
-        .from("conversations")
-        .select("id")
-        .eq("owner_user_id", ownerUserId)
-        .eq("sitter_user_id", sitterUserId)
-        .eq("conversation_type", conversationType);
+      // For a home chat the Pet Parent side is always the home's owner, so the
+      // thread is identical no matter who opens it. For a person-to-person chat
+      // we fall back to the current member's mode for the row's orientation.
+      let ownerUserId: string;
+      let sitterUserId: string;
 
       if (listingId) {
-        query = query.eq("listing_id", listingId);
+        const { data: listing } = await supabase
+          .from("listings")
+          .select("owner_user_id")
+          .eq("id", listingId)
+          .maybeSingle();
+        ownerUserId = listing?.owner_user_id ?? user.id;
+        sitterUserId = ownerUserId === user.id ? otherUserId : user.id;
       } else {
-        query = query.is("listing_id", null);
+        const isCurrentUserOwner = role === "owner" || role === "both";
+        ownerUserId = isCurrentUserOwner ? user.id : otherUserId;
+        sitterUserId = isCurrentUserOwner ? otherUserId : user.id;
       }
 
-      const { data: existingConvo } = await query.maybeSingle();
+      const conversationId = await resolveListingConversation({
+        listingId: listingId || null,
+        ownerUserId,
+        sitterUserId,
+      });
 
-      let conversationId = existingConvo?.id;
+      if (!conversationId) throw new Error("Could not open the conversation");
 
-      if (!conversationId) {
-        const { data: newConvo, error: convoError } = await supabase
-          .from("conversations")
-          .insert({
-            owner_user_id: ownerUserId,
-            sitter_user_id: sitterUserId,
-            listing_id: listingId || null,
-            conversation_type: conversationType,
-          })
-          .select("id")
-          .single();
-
-        if (convoError) throw convoError;
-        conversationId = newConvo.id;
-      }
 
 
       // Send initial message if provided
