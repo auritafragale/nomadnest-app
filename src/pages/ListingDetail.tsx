@@ -29,7 +29,6 @@ import {
   Loader2,
   Flag,
   Heart,
-  Share2,
 } from "lucide-react";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import { supabase } from "@/integrations/supabase/client";
