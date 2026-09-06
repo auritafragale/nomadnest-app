@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { startWalkthrough } from "@/components/walkthrough/GuidedWalkthrough";
 import {
   AlertDialog,
@@ -29,7 +31,6 @@ import {
   User,
   Bell,
   Shield,
-  LogOut,
   Compass,
   Briefcase,
   Home,
@@ -45,10 +46,10 @@ import {
   ShieldCheck,
   Phone,
   Crown,
+  ChevronDown,
 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/contexts/AuthContext";
-import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
@@ -73,9 +74,8 @@ interface Profile {
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { user, role, signOut, refreshRole } = useAuth();
+  const { user, role, refreshRole } = useAuth();
   const { isAdmin } = useIsAdmin();
-  const { activeRole } = useActiveRole();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -95,7 +95,6 @@ const Settings = () => {
   const [emailChangeLoading, setEmailChangeLoading] = useState(false);
   
   // Password change state
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
@@ -190,11 +189,6 @@ const Settings = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
   const handleNotificationChange = (key: string, value: boolean) => {
     updateNotifications.mutate({ [key]: value });
   };
@@ -274,7 +268,6 @@ const Settings = () => {
         title: "Password updated",
         description: "Your password has been changed successfully",
       });
-      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error: any) {
