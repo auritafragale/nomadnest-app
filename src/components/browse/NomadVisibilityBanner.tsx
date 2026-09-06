@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 const NomadVisibilityBanner = () => {
   const { user, role } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -70,6 +71,10 @@ const NomadVisibilityBanner = () => {
       });
       return;
     }
+    // Refresh the map and the nomad directory so the pin appears or disappears
+    // straight away, without leaving and re-entering the section.
+    queryClient.invalidateQueries({ queryKey: ["nomads-map"] });
+    queryClient.invalidateQueries({ queryKey: ["sitters"] });
     toast({
       title: next ? "You're now visible" : "You're now hidden",
       description: next
