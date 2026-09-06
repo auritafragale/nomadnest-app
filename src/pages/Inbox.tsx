@@ -19,15 +19,18 @@ import { useToast } from "@/hooks/use-toast";
 
 
 const Inbox = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, role } = useAuth();
+  const { activeRole } = useActiveRole();
   const { toast } = useToast();
+
+  const canUseCityChats = role !== "owner" && activeRole !== "owner";
 
   const [searchParams, setSearchParams] = useSearchParams();
   const conversationParam = searchParams.get("conversation");
   const [selectedId, setSelectedId] = useState<string | null>(conversationParam);
   const tabParam = searchParams.get("tab");
   const activeTab: "messages" | "city-chats" =
-    tabParam === "city-chats" && !conversationParam ? "city-chats" : "messages";
+    canUseCityChats && tabParam === "city-chats" && !conversationParam ? "city-chats" : "messages";
 
   const setActiveTab = (tab: "messages" | "city-chats") => {
     if (tab === "city-chats") {
