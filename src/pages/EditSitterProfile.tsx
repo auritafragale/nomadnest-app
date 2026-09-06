@@ -515,16 +515,31 @@ const EditSitterProfile = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="city">City</Label>
-                      <Input
+                      <PlacesAutocompleteField
                         id="city"
                         value={profile.city}
-                        onChange={(e) =>
+                        types={["(cities)"]}
+                        placeholder="Start typing your city…"
+                        onChange={(value) =>
+                          setProfile((prev) => ({ ...prev, city: value }))
+                        }
+                        onSelect={(place) => {
                           setProfile((prev) => ({
                             ...prev,
-                            city: e.target.value,
-                          }))
-                        }
+                            city: place.city || place.description,
+                            country: place.country || prev.country,
+                          }));
+                          if (place.latitude != null && place.longitude != null) {
+                            setPickedCoords({
+                              latitude: place.latitude,
+                              longitude: place.longitude,
+                            });
+                          }
+                        }}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Pick your city from the suggestions so you appear on the nomad map.
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="country">Country</Label>
@@ -541,6 +556,7 @@ const EditSitterProfile = () => {
                     </div>
                   </div>
                 </CardContent>
+
               </Card>
 
               {/* About */}
