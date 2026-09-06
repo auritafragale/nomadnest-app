@@ -271,6 +271,62 @@ export const MessageThread = ({
                       )}
                     </div>
                   </div>
+              );
+              }
+
+              const imageMsg = parseImageMessage(message.body);
+              if (imageMsg) {
+                return (
+                  <div key={message.id} className={cn("flex group", isOwn ? "justify-end" : "justify-start")}>
+                    {!isOwn && (
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center mr-1">
+                        <ReportDialog
+                          targetType="message"
+                          targetId={message.id}
+                          trigger={
+                            <button className="p-1 text-muted-foreground hover:text-foreground rounded">
+                              <Flag className="h-3 w-3" />
+                            </button>
+                          }
+                        />
+                      </div>
+                    )}
+                    <div
+                      className={cn(
+                        "max-w-[80%] rounded-lg overflow-hidden",
+                        isOwn ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                      )}
+                    >
+                      <a href={imageMsg.url} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={imageMsg.url}
+                          alt={imageMsg.caption || "Shared photo"}
+                          loading="lazy"
+                          className="w-full max-h-72 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                        />
+                      </a>
+                      <div className="px-4 py-2">
+                        {imageMsg.caption && (
+                          <p className="text-sm whitespace-pre-wrap break-words">{imageMsg.caption}</p>
+                        )}
+                        <div
+                          className={cn(
+                            "flex items-center justify-end gap-1 mt-1",
+                            isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                          )}
+                        >
+                          <span className="text-xs">{formatMessageDate(message.created_at)}</span>
+                          {isOwn && (
+                            isRead ? (
+                              <CheckCheck className="h-3.5 w-3.5 text-primary-foreground/90" />
+                            ) : (
+                              <Check className="h-3.5 w-3.5" />
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 );
               }
 
