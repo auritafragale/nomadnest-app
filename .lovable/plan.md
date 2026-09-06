@@ -30,7 +30,7 @@
 
 ## Technical notes
 
-- `CheckinBar.tsx`: pills call `useAddSitCheckin` directly (optimistic tick, revert on error); the sheet moves behind a secondary "note or photo" trigger. `CheckinSheet.tsx` keeps its submit path.
+- `CheckinBar.tsx`: pills open `CheckinSheet`; the green/tick state comes only from `sit_checkins` rows (todayKinds) after the sheet's Send succeeds. `CheckinSheet.tsx`: block Send until any photo upload has completed, keep the sheet open and show the error on failure.
 - `useSitCheckins.ts`: keep `resolveListingConversation` mirroring, but surface a warning toast when no conversation id resolves or the message insert errors; invalidate `["messages", id]`, `["conversations"]`, `["sit-checkins", sitId]`, and `["active-sit-for-conversation"]`.
 - Push/email: after the mirrored message insert, call the existing `send-push-notification` and `send-notification-email` functions for the Pet Parent (guarded by `notification_preferences.email_sit_updates`), mirroring the pattern already used in `useConversations.sendMessage`.
 - No schema change needed: `sit_checkins` insert policy and `trg_notify_owner_on_sit_checkin` are correct and verified working.
