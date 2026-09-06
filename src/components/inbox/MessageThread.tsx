@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, isToday, isYesterday } from "date-fns";
-import { Send, ArrowLeft, Check, CheckCheck, Flag, Bone, Pill, Footprints, Camera, ImagePlus, Loader2, X } from "lucide-react";
+import { Send, ArrowLeft, Check, CheckCheck, Flag, Bone, Pill, Footprints, ImagePlus, Loader2, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,7 +64,6 @@ export const MessageThread = ({
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoLibraryRef = useRef<HTMLInputElement>(null);
-  const photoCameraRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -496,15 +495,6 @@ export const MessageThread = ({
               <DropdownMenuItem
                 onSelect={(event) => {
                   event.preventDefault();
-                  photoCameraRef.current?.click();
-                }}
-              >
-                <Camera className="h-4 w-4 mr-2" />
-                Take Photo
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={(event) => {
-                  event.preventDefault();
                   photoLibraryRef.current?.click();
                 }}
               >
@@ -513,14 +503,6 @@ export const MessageThread = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <input
-            ref={photoCameraRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handlePhotoFile}
-            className="hidden"
-          />
           <input
             ref={photoLibraryRef}
             type="file"

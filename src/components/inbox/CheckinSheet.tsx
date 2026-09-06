@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Camera, Loader2, Upload } from "lucide-react";
+import { X, Loader2, Upload } from "lucide-react";
 import { useAddSitCheckin, CHECKIN_LABELS, type CheckinKind } from "@/hooks/useSitCheckins";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,7 +35,6 @@ export const CheckinSheet = ({
   const [note, setNote] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
 
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,28 +123,11 @@ export const CheckinSheet = ({
                   type="button"
                   variant="ghost"
                   className="h-auto flex-1 border-2 border-dashed border-border py-2 font-normal text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-muted-foreground"
-                  onClick={() => cameraInputRef.current?.click()}
-                >
-                  <Camera className="w-4 h-4" />
-                  Take Photo
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-auto flex-1 border-2 border-dashed border-border py-2 font-normal text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-muted-foreground"
                   onClick={() => libraryInputRef.current?.click()}
                 >
                   <Upload className="w-4 h-4" />
                   Upload
                 </Button>
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handlePhoto}
-                  className="hidden"
-                />
                 <input
                   ref={libraryInputRef}
                   type="file"
