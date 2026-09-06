@@ -289,36 +289,8 @@ const Settings = () => {
     }
   };
 
-  const getRoleLabel = () => {
-    switch (role) {
-      case "sitter":
-        return "Nomad";
-      case "owner":
-        return "Pet Parent";
-      case "both":
-        return "Nomad & Pet Parent";
-      default:
-        return "Unknown";
-    }
-  };
 
-  const getRoleIcon = () => {
-    switch (role) {
-      case "sitter":
-        return <Briefcase className="w-4 h-4" />;
-      case "owner":
-        return <Home className="w-4 h-4" />;
-      case "both":
-        return (
-          <div className="flex items-center gap-1">
-            <Briefcase className="w-4 h-4" />
-            <Home className="w-4 h-4" />
-          </div>
-        );
-      default:
-        return <User className="w-4 h-4" />;
-    }
-  };
+
 
   if (loading) {
     return (
