@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { resolveListingConversation } from "@/lib/conversations";
 
 export type CheckinKind = "pets_fed" | "meds_given" | "walk_completed";
 
