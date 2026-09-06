@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { resolveListingConversation } from "@/lib/conversations";
+import { sendNotification } from "@/lib/notifications";
 
 export type CheckinKind = "pets_fed" | "meds_given" | "walk_completed";
 
@@ -106,6 +107,8 @@ export const useAddSitCheckin = (sitId: string | undefined) => {
       if (error) throw error;
 
       // Mirror the update into the one chat thread for this sit's home.
+      // This must succeed — a check-in the Pet Parent never sees is no
+      // check-in at all.
       const body = buildCheckinMessageBody(kind, note, photoUrl);
       const conversationId = await resolveListingConversation({
         listingId,
@@ -113,25 +116,46 @@ export const useAddSitCheckin = (sitId: string | undefined) => {
         sitterUserId: user.id,
       });
 
-
-      if (conversationId) {
-        await supabase.from("messages").insert({
-          conversation_id: conversationId,
-          sender_user_id: user.id,
-          body,
-        });
-        await supabase
-          .from("conversations")
-          .update({ updated_at: new Date().toISOString() })
-          .eq("id", conversationId);
+      if (!conversationId) {
+        throw new Error("Could not open the sit chat to post the update.");
       }
 
-      // The Pet Parent's in-app notification is created by a database trigger.
+      const { error: mirrorError } = await supabase.from("messages").insert({
+        conversation_id: conversationId,
+        sender_user_id: user.id,
+        body,
+      });
+      if (mirrorError) throw mirrorError;
+
+      await supabase
+        .from("conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", conversationId);
+
+      // The Pet Parent's in-app notification is created by a database
+      // trigger; here we add push + email (respecting their settings).
+      const [{ data: listing }, { data: sitterProfile }] = await Promise.all([
+        supabase.from("listings").select("title").eq("id", listingId).single(),
+        supabase.from("profiles").select("first_name, last_name").eq("id", user.id).single(),
+      ]);
+      sendNotification({
+        type: "sit_checkin",
+        recipientUserId: ownerUserId,
+        skipInAppNotification: true,
+        data: {
+          sitterName: [sitterProfile?.first_name, sitterProfile?.last_name].filter(Boolean).join(" ") || "Your Nomad",
+          listingTitle: listing?.title || "your sit",
+          checkinLabel: CHECKIN_LABELS[kind],
+          note: note?.trim() || "",
+          url: `/inbox?conversation=${conversationId}`,
+        },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sit-checkins", sitId] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       queryClient.invalidateQueries({ queryKey: ["messages"] });
+      queryClient.invalidateQueries({ queryKey: ["active-sit-for-conversation"] });
       toast.success("Check-in posted");
     },
     onError: (error: Error) => {
