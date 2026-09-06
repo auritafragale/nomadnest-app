@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
@@ -57,16 +57,17 @@ interface UseSittersOptions {
 }
 
 export const useSitters = (options: UseSittersOptions = {}) => {
-  const [sitters, setSitters] = useState<SitterWithProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchSitters = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
+  const query = useQuery({
+    queryKey: [
+      "sitters",
+      options.searchQuery,
+      options.petTypes?.join(","),
+      options.languages?.join(","),
+      options.experienceLevels?.join(","),
+      options.availableOnly,
+    ],
+    queryFn: async (): Promise<SitterWithProfile[]> => {
+      {
         // Only nomads who opted into being discoverable are listed — their
         // display details also only exist in the safe public profile view when
         // they are visible, so unfiltered rows render as empty placeholders.
@@ -78,8 +79,7 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         if (sitterError) throw sitterError;
 
         if (!sitterData || sitterData.length === 0) {
-          setSitters([]);
-          return;
+          return [];
         }
 
         const userIds = sitterData.map((s) => s.user_id);
@@ -189,23 +189,14 @@ export const useSitters = (options: UseSittersOptions = {}) => {
           return b.rating.average - a.rating.average;
         });
 
-        setSitters(filteredData);
-      } catch (err: any) {
-        console.error("Error fetching sitters:", err);
-        setError(err.message || "Failed to load sitters");
-      } finally {
-        setLoading(false);
+        return filteredData;
       }
-    };
+    },
+  });
 
-    fetchSitters();
-  }, [
-    options.searchQuery,
-    options.petTypes?.join(","),
-    options.languages?.join(","),
-    options.experienceLevels?.join(","),
-    options.availableOnly,
-  ]);
-
-  return { sitters, loading, error };
+  return {
+    sitters: query.data ?? [],
+    loading: query.isLoading,
+    error: query.error ? (query.error as Error).message : null,
+  };
 };

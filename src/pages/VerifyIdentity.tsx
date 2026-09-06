@@ -97,10 +97,50 @@ const VerifyIdentity = () => {
   // Manual ID review state
   const [idFile, setIdFile] = useState<File | null>(null);
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const [idPreview, setIdPreview] = useState<string | null>(null);
+  const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string>("");
   const [manualUploading, setManualUploading] = useState(false);
   const [manualSubmitted, setManualSubmitted] = useState(false);
   const idInputRef = useRef<HTMLInputElement>(null);
   const selfieInputRef = useRef<HTMLInputElement>(null);
+
+  // Phone cameras often hand over a file with an empty or generic MIME type and
+  // no extension, so anything the picker returns is accepted unless it is
+  // clearly unusable. Previews make it obvious the photo actually arrived.
+  const pickFile = (file: File | null, target: "id" | "selfie") => {
+    const setFile = target === "id" ? setIdFile : setSelfieFile;
+    const setPreview = target === "id" ? setIdPreview : setSelfiePreview;
+    const currentPreview = target === "id" ? idPreview : selfiePreview;
+
+    if (currentPreview) URL.revokeObjectURL(currentPreview);
+
+    if (!file) {
+      setFile(null);
+      setPreview(null);
+      setFileError("");
+      return;
+    }
+
+    if (file.size === 0) {
+      setFileError("That photo came through empty — please try again.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setFileError("That file is larger than 10MB — please choose a smaller photo.");
+      return;
+    }
+    const type = (file.type || "").toLowerCase();
+    if (type && !type.startsWith("image/") && type !== "application/pdf") {
+      setFileError("Please choose a photo or a PDF.");
+      return;
+    }
+
+    setFileError("");
+    setFile(file);
+    setPreview(type.startsWith("image/") ? URL.createObjectURL(file) : null);
+  };
+
 
   // Teardown on unmount
   useEffect(() => {
@@ -200,12 +240,19 @@ const VerifyIdentity = () => {
       return;
     }
     setManualUploading(true);
+    setFileError("");
     try {
       const uploadFile = async (file: File, name: string) => {
-        const path = `${user.id}/${name}-${Date.now()}.${file.name.split(".").pop()}`;
+        const nameExt = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
+        const typeExt = (file.type || "").split("/").pop()?.toLowerCase() || "";
+        const ext = nameExt || (typeExt === "pdf" ? "pdf" : typeExt) || "jpg";
+        const path = `${user.id}/${name}-${Date.now()}.${ext}`;
         const { error } = await supabase.storage
           .from("id-verification-documents")
-          .upload(path, file, { upsert: false });
+          .upload(path, file, {
+            upsert: false,
+            contentType: file.type || "image/jpeg",
+          });
         if (error) throw error;
         return path;
       };
@@ -224,7 +271,9 @@ const VerifyIdentity = () => {
       setManualSubmitted(true);
       toast({ title: "Submitted for review", description: "We'll notify you once reviewed, usually within 24-48 hours." });
     } catch (err: any) {
+      setFileError(err?.message || "Upload failed — please try again.");
       toast({ variant: "destructive", title: "Upload failed", description: err.message });
+
     } finally {
       setManualUploading(false);
     }
@@ -356,15 +405,21 @@ const VerifyIdentity = () => {
                     </div>
                   ) : (
                     <>
+                      {fileError && (
+                        <p className="text-sm text-destructive" role="alert">{fileError}</p>
+                      )}
                       <div className="space-y-2">
                         <Label htmlFor="id_photo">Photo ID (passport, driving licence, national ID)</Label>
                         <input
                           ref={idInputRef}
                           id="id_photo"
                           type="file"
-                          accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                          accept="image/*,application/pdf"
                           className="hidden"
-                          onChange={(e) => setIdFile(e.target.files?.[0] ?? null)}
+                          onChange={(e) => {
+                            pickFile(e.target.files?.[0] ?? null, "id");
+                            e.target.value = "";
+                          }}
                         />
                         <Button
                           type="button"
@@ -376,7 +431,15 @@ const VerifyIdentity = () => {
                           {idFile ? "Change Photo ID" : "Choose Photo ID"}
                         </Button>
                         {idFile && (
-                          <p className="text-xs text-muted-foreground truncate">Selected: {idFile.name}</p>
+                          <div className="flex items-center gap-3">
+                            {idPreview && (
+                              <img src={idPreview} alt="Selected photo ID preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
+                            )}
+                            <p className="text-xs text-muted-foreground truncate flex-1">Selected: {idFile.name}</p>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "id")}>
+                              Remove
+                            </Button>
+                          </div>
                         )}
                       </div>
                       <div className="space-y-2">
@@ -385,9 +448,12 @@ const VerifyIdentity = () => {
                           ref={selfieInputRef}
                           id="selfie"
                           type="file"
-                          accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                          accept="image/*,application/pdf"
                           className="hidden"
-                          onChange={(e) => setSelfieFile(e.target.files?.[0] ?? null)}
+                          onChange={(e) => {
+                            pickFile(e.target.files?.[0] ?? null, "selfie");
+                            e.target.value = "";
+                          }}
                         />
                         <Button
                           type="button"
@@ -399,9 +465,18 @@ const VerifyIdentity = () => {
                           {selfieFile ? "Change Selfie" : "Choose Selfie"}
                         </Button>
                         {selfieFile && (
-                          <p className="text-xs text-muted-foreground truncate">Selected: {selfieFile.name}</p>
+                          <div className="flex items-center gap-3">
+                            {selfiePreview && (
+                              <img src={selfiePreview} alt="Selected selfie preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
+                            )}
+                            <p className="text-xs text-muted-foreground truncate flex-1">Selected: {selfieFile.name}</p>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "selfie")}>
+                              Remove
+                            </Button>
+                          </div>
                         )}
                       </div>
+
                       <Button
                         className="w-full"
                         onClick={handleManualSubmit}

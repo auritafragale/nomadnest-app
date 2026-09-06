@@ -33,6 +33,8 @@ import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
+import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
+import { useQueryClient } from "@tanstack/react-query";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 import { PET_TYPE_OPTIONS, formatPetType, canonicalPetType } from "@/lib/petTypes";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
@@ -120,7 +122,11 @@ const EditSitterProfile = () => {
   const navigate = useNavigate();
   const { user, role } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: mapsConfig } = useGoogleMapsKey();
+  // Coordinates captured when a city is chosen from the suggestions; saved
+  // directly so the nomad map does not depend on a later lookup.
+  const [pickedCoords, setPickedCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -272,9 +278,11 @@ const EditSitterProfile = () => {
       }
 
       // Geocode city/country so the nomad shows up on the Browse Nomads map.
-      const coords = mapsConfig?.key
-        ? await geocodeCityCountry(mapsConfig.key, profile.city, profile.country)
-        : null;
+      const coords =
+        pickedCoords ??
+        (mapsConfig?.key
+          ? await geocodeCityCountry(mapsConfig.key, profile.city, profile.country)
+          : null);
 
       // Upsert sitter profile
       const { error: sitterError } = await supabase
@@ -312,6 +320,10 @@ const EditSitterProfile = () => {
         p_phone: sitterProfile.phone || null,
       });
       if (phoneError) throw phoneError;
+
+      // The map and nomad list read these rows, so refresh them right away.
+      queryClient.invalidateQueries({ queryKey: ["nomads-map"] });
+      queryClient.invalidateQueries({ queryKey: ["sitters"] });
 
       toast({
         title: "Profile saved!",
@@ -515,16 +527,31 @@ const EditSitterProfile = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="city">City</Label>
-                      <Input
+                      <PlacesAutocompleteField
                         id="city"
                         value={profile.city}
-                        onChange={(e) =>
+                        types={["(cities)"]}
+                        placeholder="Start typing your city…"
+                        onChange={(value) =>
+                          setProfile((prev) => ({ ...prev, city: value }))
+                        }
+                        onSelect={(place) => {
                           setProfile((prev) => ({
                             ...prev,
-                            city: e.target.value,
-                          }))
-                        }
+                            city: place.city || place.description,
+                            country: place.country || prev.country,
+                          }));
+                          if (place.latitude != null && place.longitude != null) {
+                            setPickedCoords({
+                              latitude: place.latitude,
+                              longitude: place.longitude,
+                            });
+                          }
+                        }}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Pick your city from the suggestions so you appear on the nomad map.
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="country">Country</Label>
@@ -541,6 +568,7 @@ const EditSitterProfile = () => {
                     </div>
                   </div>
                 </CardContent>
+
               </Card>
 
               {/* About */}

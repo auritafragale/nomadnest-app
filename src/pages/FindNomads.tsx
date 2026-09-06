@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -33,13 +34,11 @@ export interface NomadOnMap {
 }
 
 const FindNomads = () => {
-  const [nomads, setNomads] = useState<NomadOnMap[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    const fetchNomads = async () => {
-      setLoading(true);
+  const { data: nomads = [], isLoading: loading } = useQuery({
+    queryKey: ["nomads-map"],
+    queryFn: async (): Promise<NomadOnMap[]> => {
       const { data, error } = await supabase
         .from("sitter_profiles")
         .select("user_id, latitude, longitude, headline, experience_level, pet_types")
@@ -48,41 +47,39 @@ const FindNomads = () => {
         .not("latitude", "is", null)
         .not("longitude", "is", null);
 
-      if (!error && data && data.length > 0) {
-        const userIds = data.map((d) => d.user_id);
-        const { data: profiles } = await publicProfiles("id, first_name, last_name, avatar_url, city, country, founding_member")
-          .in("id", userIds) as { data: PublicProfile[] | null };
+      if (error) throw error;
+      if (!data || data.length === 0) return [];
 
-        const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+      const userIds = data.map((d) => d.user_id);
+      const { data: profiles } = await publicProfiles(
+        "id, first_name, last_name, avatar_url, city, country, founding_member",
+      ).in("id", userIds) as { data: PublicProfile[] | null };
 
-        const mapped = data.map((item) => {
-          const profile = profileMap.get(item.user_id) || null;
-          return {
-            user_id: item.user_id,
-            latitude: item.latitude!,
-            longitude: item.longitude!,
-            headline: item.headline,
-            experience_level: item.experience_level,
-            pet_types: item.pet_types,
-            profile: profile
-              ? {
-                  first_name: profile.first_name,
-                  last_name: profile.last_name,
-                  avatar_url: profile.avatar_url,
-                  city: profile.city,
-                  country: profile.country,
-                  founding_member: profile.founding_member,
-                }
-              : null,
-          };
-        });
-        setNomads(mapped);
-      }
-      setLoading(false);
-    };
+      const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 
-    fetchNomads();
-  }, []);
+      return data.map((item) => {
+        const profile = profileMap.get(item.user_id) || null;
+        return {
+          user_id: item.user_id,
+          latitude: item.latitude!,
+          longitude: item.longitude!,
+          headline: item.headline,
+          experience_level: item.experience_level,
+          pet_types: item.pet_types,
+          profile: profile
+            ? {
+                first_name: profile.first_name,
+                last_name: profile.last_name,
+                avatar_url: profile.avatar_url,
+                city: profile.city,
+                country: profile.country,
+                founding_member: profile.founding_member,
+              }
+            : null,
+        };
+      });
+    },
+  });
 
   const filteredNomads = searchQuery
     ? nomads.filter((n) => {
