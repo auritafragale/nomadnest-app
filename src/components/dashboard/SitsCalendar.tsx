@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, ChevronLeft, ChevronRight, MapPin, User, MessageSquare, CheckCircle, XCircle, Star, Bone } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSits, Sit, useUpdateSitStatus } from "@/hooks/useSits";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -43,6 +43,70 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
   const { mutate: updateStatus, isPending } = useUpdateSitStatus();
   const [hasReviewed, setHasReviewed] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [openingChat, setOpeningChat] = useState(false);
+  const navigate = useNavigate();
+
+  // Open the conversation between this sit's Pet Parent and Nomad directly,
+  // creating it if none exists yet (same pattern as useSitCheckins).
+  const openConversation = async () => {
+    if (openingChat) return;
+    setOpeningChat(true);
+    try {
+      const pairs: Array<{ owner: string; sitter: string }> = [
+        { owner: sit.owner_user_id, sitter: sit.sitter_user_id },
+        { owner: sit.sitter_user_id, sitter: sit.owner_user_id },
+      ];
+      let conversationId: string | null = null;
+      for (const pair of pairs) {
+        const { data } = await supabase
+          .from("conversations")
+          .select("id")
+          .eq("owner_user_id", pair.owner)
+          .eq("sitter_user_id", pair.sitter)
+          .eq("listing_id", sit.listing_id)
+          .maybeSingle();
+        if (data?.id) {
+          conversationId = data.id;
+          break;
+        }
+      }
+      // Fallback: any conversation between the two members, regardless of listing.
+      if (!conversationId) {
+        for (const pair of pairs) {
+          const { data } = await supabase
+            .from("conversations")
+            .select("id")
+            .eq("owner_user_id", pair.owner)
+            .eq("sitter_user_id", pair.sitter)
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (data?.id) {
+            conversationId = data.id;
+            break;
+          }
+        }
+      }
+      if (!conversationId) {
+        const { data: created } = await supabase
+          .from("conversations")
+          .insert({
+            owner_user_id: sit.owner_user_id,
+            sitter_user_id: sit.sitter_user_id,
+            listing_id: sit.listing_id,
+            conversation_type: "listing",
+          })
+          .select("id")
+          .maybeSingle();
+        conversationId = created?.id ?? null;
+      }
+      navigate(conversationId ? `/inbox?conversation=${conversationId}` : "/inbox");
+    } catch {
+      navigate("/inbox");
+    } finally {
+      setOpeningChat(false);
+    }
+  };
 
   // Status is derived live from the dates so the badge is right even before the
   // nightly job promotes the row (confirmed -> in progress -> completed).
@@ -134,21 +198,30 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
 
       {/* Sit actions */}
       {(canCompleteSit || canCancelSit || isCurrent || sit.status === "confirmed") && (
-        <div className="mt-3 pt-2 border-t flex gap-2 flex-wrap">
+        <div className="mt-3 pt-2 border-t space-y-2">
           {(sit.status === "confirmed" || sit.status === "in_progress") && (
-            <Button size="sm" variant="secondary" className="flex-1" asChild>
-              <Link to="/inbox">
-                <MessageSquare className="w-3 h-3 mr-1" />
-                Message {isOwner ? "nomad" : "pet parent"}
-              </Link>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="w-full"
+              disabled={openingChat}
+              onClick={openConversation}
+            >
+              <MessageSquare className="w-3 h-3 mr-1" />
+              Message
             </Button>
           )}
+          <div className="flex gap-2 flex-wrap">
           {isCurrent && isSitter && (
-            <Button size="sm" variant="outline" className="flex-1" asChild>
-              <Link to="/inbox">
-                <Bone className="w-3 h-3 mr-1" />
-                Daily check-in
-              </Link>
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              disabled={openingChat}
+              onClick={openConversation}
+            >
+              <Bone className="w-3 h-3 mr-1" />
+              Daily check-in
             </Button>
           )}
           {isCurrent && isOwner && (
@@ -225,6 +298,7 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
               </AlertDialogContent>
             </AlertDialog>
           )}
+          </div>
         </div>
       )}
 

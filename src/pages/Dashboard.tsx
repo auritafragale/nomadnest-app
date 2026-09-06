@@ -321,6 +321,8 @@ const SitterDashboard = ({
       <div className="md:col-span-1 lg:col-span-2 space-y-6">
         {/* Saved Sits lives in the header actions, so no duplicate card here */}
 
+        {/* Upcoming & Past Sits */}
+        <UpcomingPastSits viewAs="sitter" />
 
         {/* My Applications */}
         <Card id="my-applications">
@@ -384,9 +386,6 @@ const SitterDashboard = ({
 
         {/* Availability Calendar */}
         <SitterAvailabilityCalendar />
-
-        {/* Upcoming & Past Sits */}
-        <UpcomingPastSits viewAs="sitter" />
 
       </div>
     </div>
@@ -456,6 +455,9 @@ const OwnerDashboard = ({
 
       {/* Middle Column */}
       <div className="md:col-span-1 lg:col-span-2 space-y-6">
+        {/* Upcoming & Past Sits — between Your Stats and My Listings */}
+        <UpcomingPastSits viewAs="owner" />
+
         {/* My Listings */}
         <Card>
           <CardHeader>
@@ -498,11 +500,6 @@ const OwnerDashboard = ({
             )}
           </CardContent>
         </Card>
-
-
-
-        {/* Upcoming & Past Sits */}
-        <UpcomingPastSits viewAs="owner" />
 
       </div>
     </div>
