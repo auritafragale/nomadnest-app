@@ -163,6 +163,22 @@ export function buildNotificationEmail(
         pushUrl: data.url || "/dashboard",
 
       };
+    case "sit_checkin":
+      return {
+        subject: `${data.checkinLabel} — ${data.listingTitle}`,
+        preview: `${data.sitterName} posted a ${data.checkinLabel} update`,
+        heading: `Daily check-in: ${data.checkinLabel}`,
+        body: `
+          <p><strong>${data.sitterName}</strong> checked in on your sit at <strong>${data.listingTitle}</strong>:</p>
+          <p style="font-size:18px;"><strong>${data.checkinLabel} ✓</strong></p>
+          ${data.note ? quote(data.note) : ""}
+        `,
+        ctaLabel: "View the care log",
+        ctaUrl: `${data.appUrl}${data.url || "/dashboard"}`,
+        pushTitle: `${data.checkinLabel} — ${data.listingTitle}`,
+        pushBody: data.note ? data.note : `Your Nomad posted a ${data.checkinLabel} update.`,
+        pushUrl: data.url || "/dashboard",
+      };
     case "id_verification_approved":
       return {
         subject: "Your ID has been verified ✓",
