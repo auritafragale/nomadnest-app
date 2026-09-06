@@ -4,8 +4,7 @@
 Remove the whole card from Settings in both modes.
 
 Two useful controls live inside it today, so they move rather than disappear:
-- The buttons to edit the Nomad / Pet Parent detailed profile move into the card above (account details), keeping the same mode-aware behaviour.
-- For members with a single role, the "Expand Your Role" upgrade action moves there too, so nobody loses the ability to become a Combined member.
+- For members with a single role, the "Expand Your Role" upgrade action moves into the card above (account details), so nobody loses the ability to become a Combined member. The profile-edit buttons stay out of Settings because they already live on the dashboard.
 
 ## 2. Welcome Guide pill placement (Pet Parent dashboard)
 Move the "5/5 fields filled" pill up onto the same line as the "Welcome Guide" title, aligned to the right, and remove the duplicate pill from the body. The offline note and Edit guide button stay as they are.
