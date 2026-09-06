@@ -47,3 +47,6 @@ verify_jwt = true
 
 [functions.preview-email-templates]
 verify_jwt = true
+
+[functions.get-google-maps-key]
+verify_jwt = true
