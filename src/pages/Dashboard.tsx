@@ -455,6 +455,9 @@ const OwnerDashboard = ({
 
       {/* Middle Column */}
       <div className="md:col-span-1 lg:col-span-2 space-y-6">
+        {/* Upcoming & Past Sits — between Your Stats and My Listings */}
+        <UpcomingPastSits viewAs="owner" />
+
         {/* My Listings */}
         <Card>
           <CardHeader>
