@@ -392,7 +392,7 @@ const ListingDetail = () => {
                 <ShareDialog
                   title={listing.title}
                   description={`Check out this pet sitting opportunity in ${listing.city}, ${listing.country}`}
-                  triggerClassName="bg-background/80 hover:bg-background backdrop-blur-sm rounded-full shadow-sm border-0"
+                  triggerClassName="border-0 bg-transparent text-primary-foreground shadow-none hover:bg-transparent hover:text-primary-foreground [&_svg]:h-7 [&_svg]:w-7"
                 />
               </div>
               {/* Favourite — top right */}
@@ -401,12 +401,12 @@ const ListingDetail = () => {
                   type="button"
                   onClick={() => toggleFavorite.mutate({ listingId: listing.id, isFavorited })}
                   aria-label={isFavorited ? "Remove from saved" : "Save listing"}
-                  className="absolute top-3 right-3 p-2 bg-background/80 hover:bg-background backdrop-blur-sm rounded-full shadow-sm transition-colors"
+                  className="absolute top-3 right-3 flex h-10 w-10 items-center justify-center bg-transparent text-primary-foreground transition-transform hover:scale-105"
                 >
                   <Heart
                     className={cn(
-                      "w-5 h-5 transition-colors",
-                      isFavorited ? "fill-primary text-primary" : "text-foreground",
+                      "h-8 w-8 transition-colors",
+                      isFavorited ? "fill-primary text-primary" : "text-primary-foreground",
                     )}
                   />
                 </button>
