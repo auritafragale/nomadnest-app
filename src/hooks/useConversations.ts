@@ -134,7 +134,7 @@ export const useConversations = () => {
         }
       }
 
-      return [...grouped.values()].sort((a, b) =>
+      return [...grouped.values()].filter((conversation) => Boolean(conversation.other_user)).sort((a, b) =>
         (b.last_message?.created_at || b.updated_at).localeCompare(a.last_message?.created_at || a.updated_at),
       );
     },

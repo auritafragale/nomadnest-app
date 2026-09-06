@@ -134,7 +134,7 @@ export const SitterInviteCard = ({ invite }: SitterInviteCardProps) => {
               <div className="-ml-1 flex items-center justify-start gap-2 min-w-0">
                 <Button size="sm" onClick={handleViewListing} className="min-w-0 px-2.5 sm:px-3">
                   <Eye className="h-4 w-4 mr-1" />
-                  View & Apply
+                  View
                 </Button>
                 <Button
                   size="sm"
