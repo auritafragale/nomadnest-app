@@ -290,16 +290,18 @@ const SitterDetail = () => {
         sitterUserId: userId,
       });
 
-      await supabase.from("messages").insert({
-        conversation_id: conversationId,
-        sender_user_id: user.id,
-        body: "Hi! I'd love to invite you to sit at my home. I've sent you a formal invitation — please check your notifications.",
-      });
+      if (conversationId) {
+        await supabase.from("messages").insert({
+          conversation_id: conversationId,
+          sender_user_id: user.id,
+          body: "Hi! I'd love to invite you to sit at my home. I've sent you a formal invitation — please check your notifications.",
+        });
 
-      await supabase
-        .from("conversations")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", conversationId);
+        await supabase
+          .from("conversations")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", conversationId);
+      }
 
       toast({
         title: "Invitation sent!",
