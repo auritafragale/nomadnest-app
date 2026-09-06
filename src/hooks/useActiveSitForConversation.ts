@@ -47,7 +47,7 @@ export const useActiveSitForConversation = (conversationId: string | null) => {
 
       if (error || !convo) return null;
 
-      // Find the active sit matching this owner/sitter pair (and listing if present).
+      // Find all active sits matching this owner/sitter pair (and listing if present).
       // The conversation's owner/sitter roles may be swapped relative to the sit,
       // so query both directions with an OR filter.
       let sitQuery = supabase
@@ -63,27 +63,36 @@ export const useActiveSitForConversation = (conversationId: string | null) => {
         sitQuery = sitQuery.eq("listing_id", convo.listing_id);
       }
 
-      const { data: sits } = await sitQuery.order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const { data: sitRows } = await sitQuery.order("created_at", { ascending: false }).limit(10);
 
-      const sit = sits as any;
-      if (!sit || !sit.id) return null;
+      const allSits = (sitRows ?? []) as any[];
+      if (allSits.length === 0) return null;
 
-      // Derive live "in progress" from dates so we show the bar even before the
-      // nightly job flips the status.
-      const { data: sitDates } = await supabase
-        .from("sit_dates")
-        .select("start_date, end_date")
-        .eq("id", (sit as any).sit_dates_id ?? undefined)
-        .maybeSingle();
-
+      // Fetch sit_dates for each candidate and pick the one that is live today.
       const today = new Date();
-      const start = sitDates?.start_date ? new Date(sitDates.start_date + "T00:00:00") : null;
-      const end = sitDates?.end_date ? new Date(sitDates.end_date + "T23:59:59") : null;
-      const isLive =
-        sit.status === "in_progress" ||
-        (start && end && today >= start && today <= end);
+      let liveSit: any | null = null;
 
-      if (!isLive) return null;
+      for (const candidate of allSits) {
+        const { data: sitDates } = await supabase
+          .from("sit_dates")
+          .select("start_date, end_date")
+          .eq("id", candidate.sit_dates_id ?? "")
+          .maybeSingle();
+
+        const start = sitDates?.start_date ? new Date(sitDates.start_date + "T00:00:00") : null;
+        const end = sitDates?.end_date ? new Date(sitDates.end_date + "T23:59:59") : null;
+        const isLive =
+          candidate.status === "in_progress" ||
+          (start && end && today >= start && today <= end);
+
+        if (isLive) {
+          liveSit = candidate;
+          break;
+        }
+      }
+
+      const sit = liveSit;
+      if (!sit) return null;
 
       // Check whether any pet on the listing requires medication.
       const { data: pets } = await supabase
