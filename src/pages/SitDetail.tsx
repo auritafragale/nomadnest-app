@@ -145,7 +145,6 @@ const SitDetail = () => {
                         maxImages={1}
                         folder="checkins"
                         label="Add a photo (optional)"
-                        allowCamera
                       />
                       <Button onClick={submit} disabled={addCheckin.isPending} className="w-full sm:w-auto">
                         {addCheckin.isPending ? "Posting…" : `Post ${CHECKIN_LABELS[activeKind]}`}
