@@ -1,2 +1,2 @@
 # Roadmap
-- [ ] Complete the nine approved dashboard, invitations, messaging, and Settings fixes
+- [x] Complete the nine approved dashboard, invitations, messaging, and Settings fixes
