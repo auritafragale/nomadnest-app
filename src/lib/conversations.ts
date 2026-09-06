@@ -33,6 +33,23 @@ const findPairConversation = async (
   return data?.[0]?.id ?? null;
 };
 
+export const findExistingPairConversation = async (
+  ownerUserId: string,
+  sitterUserId: string,
+): Promise<string | null> => {
+  const { data } = await supabase
+    .from("conversations")
+    .select("id")
+    .or(
+      `and(owner_user_id.eq.${ownerUserId},sitter_user_id.eq.${sitterUserId}),` +
+        `and(owner_user_id.eq.${sitterUserId},sitter_user_id.eq.${ownerUserId})`,
+    )
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  return data?.[0]?.id ?? null;
+};
+
 /**
  * Find (or create) the single chat thread for a sit / home.
  * `ownerUserId` MUST be the home's Pet Parent and `sitterUserId` the Nomad.
