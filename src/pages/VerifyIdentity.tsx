@@ -142,9 +142,14 @@ const VerifyIdentity = () => {
   useEffect(() => {
     return () => {
       if (idPreview) URL.revokeObjectURL(idPreview);
+    };
+  }, [idPreview]);
+
+  useEffect(() => {
+    return () => {
       if (selfiePreview) URL.revokeObjectURL(selfiePreview);
     };
-  }, [idPreview, selfiePreview]);
+  }, [selfiePreview]);
 
 
   // Teardown on unmount
