@@ -73,9 +73,9 @@ export const CheckinSheet = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-x-0 top-0 bottom-16 z-[60] flex items-end justify-center bg-black/50 md:bottom-0 md:items-center" onClick={onClose}>
       <div
-        className="flex max-h-[calc(100svh-1rem)] w-full flex-col overflow-hidden rounded-t-2xl border border-border bg-card shadow-lg sm:max-w-md sm:rounded-2xl"
+        className="flex max-h-[calc(100svh-5rem)] w-full flex-col overflow-hidden rounded-t-2xl border border-border bg-card shadow-lg sm:max-w-md sm:rounded-2xl md:max-h-[calc(100svh-1rem)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
