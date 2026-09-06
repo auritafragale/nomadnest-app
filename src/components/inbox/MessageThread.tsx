@@ -7,11 +7,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, isToday, isYesterday } from "date-fns";
-import { Send, ArrowLeft, Check, CheckCheck, Flag } from "lucide-react";
+import { Send, ArrowLeft, Check, CheckCheck, Flag, Bone, Pill, Footprints } from "lucide-react";
 import type { Message, Conversation } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { CheckinBar } from "@/components/inbox/CheckinBar";
+import { useActiveSitForConversation } from "@/hooks/useActiveSitForConversation";
+import { parseCheckinMessage, CHECKIN_LABELS, type CheckinKind } from "@/hooks/useSitCheckins";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface MessageThreadProps {
   conversation: Conversation | null;
@@ -30,6 +34,12 @@ const formatMessageDate = (dateStr: string) => {
   return format(date, "MMM d, h:mm a");
 };
 
+const KIND_ICON: Record<CheckinKind, typeof Bone> = {
+  pets_fed: Bone,
+  meds_given: Pill,
+  walk_completed: Footprints,
+};
+
 export const MessageThread = ({
   conversation,
   messages,
@@ -40,18 +50,25 @@ export const MessageThread = ({
   otherUserRole = "sitter",
 }: MessageThreadProps) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const otherUser = conversation?.other_user;
   const userName = user?.user_metadata?.first_name || "User";
-  
+
   const { isOtherTyping, typingUserName, sendTypingIndicator } = useTypingIndicator(
     conversation?.id || null,
     user?.id || null,
     userName
   );
+
+  const { data: activeSit, refetch: refetchActiveSit } = useActiveSitForConversation(conversation?.id || null);
+
+  // Current user is the sitter in this conversation?
+  const isCurrentUserSitter = !!conversation && !!user && conversation.sitter_user_id === user.id;
+  const isCurrentUserOwner = !!conversation && !!user && conversation.owner_user_id === user.id;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,12 +77,10 @@ export const MessageThread = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setNewMessage(value);
-    
-    // Send typing indicator when user starts typing
+
     if (value.length > 0) {
       sendTypingIndicator(true);
-      
-      // Clear previous timeout and set a new one to stop typing after 2 seconds of no input
+
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
@@ -176,6 +191,42 @@ export const MessageThread = ({
             {messages.map((message) => {
               const isOwn = message.sender_user_id === user?.id;
               const isRead = !!message.read_at;
+              const checkin = parseCheckinMessage(message.body);
+
+              if (checkin) {
+                const Icon = KIND_ICON[checkin.kind] || Bone;
+                return (
+                  <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+                    <div className="max-w-[80%] rounded-lg border border-primary/20 bg-primary/5 overflow-hidden">
+                      <div className="flex items-center gap-2 px-3 py-2">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <Icon className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-primary">{checkin.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatMessageDate(message.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                      {checkin.note && (
+                        <p className="text-sm px-3 pb-2 whitespace-pre-wrap break-words text-foreground">
+                          {checkin.note}
+                        </p>
+                      )}
+                      {checkin.photo && (
+                        <img
+                          src={checkin.photo}
+                          alt={`${checkin.label} check-in photo`}
+                          loading="lazy"
+                          className="w-full max-h-60 object-cover"
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={message.id}
@@ -241,6 +292,56 @@ export const MessageThread = ({
             </div>
             <span>{typingUserName || otherUser?.first_name || "User"} is typing...</span>
           </div>
+        </div>
+      )}
+
+      {/* Care bar / Today's care strip */}
+      {activeSit && isCurrentUserSitter && (
+        <CheckinBar
+          sitId={activeSit.sitId}
+          ownerUserId={activeSit.ownerUserId}
+          listingId={activeSit.listingId}
+          requiresMeds={activeSit.requiresMeds}
+          todayKinds={activeSit.todayKinds}
+          onPosted={() => {
+            refetchActiveSit();
+            queryClient.invalidateQueries({ queryKey: ["messages"] });
+          }}
+        />
+      )}
+      {activeSit && isCurrentUserOwner && (
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30 overflow-x-auto">
+          <span className="text-xs text-muted-foreground whitespace-nowrap mr-1">
+            Today:
+          </span>
+          {(activeSit.requiresMeds
+            ? ["pets_fed", "walk_completed", "meds_given"]
+            : ["pets_fed", "walk_completed"]
+          ).map((k) => {
+            const done = activeSit.todayKinds.includes(k as CheckinKind);
+            const Icon = KIND_ICON[k as CheckinKind] || Bone;
+            return (
+              <span
+                key={k}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border",
+                  done
+                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                    : "bg-background text-muted-foreground border-border",
+                )}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {CHECKIN_LABELS[k as CheckinKind]}
+                {done && <Check className="w-3 h-3" />}
+              </span>
+            );
+          })}
+          <Link
+            to={`/sits/${activeSit.sitId}`}
+            className="text-xs text-primary whitespace-nowrap hover:underline ml-auto"
+          >
+            Care log
+          </Link>
         </div>
       )}
 

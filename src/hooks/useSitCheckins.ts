@@ -21,6 +21,44 @@ export interface SitCheckin {
   created_at: string;
 }
 
+/**
+ * Machine-readable marker written into the mirrored conversation message so
+ * the chat can render a care card instead of raw text. Kept compact and
+ * parseable without string-sniffing prose.
+ *
+ * Format: `[[checkin]]{"kind":"pets_fed","label":"Pets Fed","note":"...","photo":"..."}`
+ */
+const CHECKIN_MARKER = "[[checkin]]";
+
+export const buildCheckinMessageBody = (
+  kind: CheckinKind,
+  note?: string,
+  photoUrl?: string | null,
+): string => {
+  const payload = {
+    kind,
+    label: CHECKIN_LABELS[kind],
+    note: note?.trim() || null,
+    photo: photoUrl || null,
+  };
+  return `${CHECKIN_MARKER}${JSON.stringify(payload)}`;
+};
+
+export const parseCheckinMessage = (
+  body: string,
+): { kind: CheckinKind; label: string; note: string | null; photo: string | null } | null => {
+  if (!body || !body.startsWith(CHECKIN_MARKER)) return null;
+  try {
+    const json = JSON.parse(body.slice(CHECKIN_MARKER.length));
+    if (json && typeof json.kind === "string") {
+      return json as { kind: CheckinKind; label: string; note: string | null; photo: string | null };
+    }
+  } catch {
+    // Not a valid check-in message.
+  }
+  return null;
+};
+
 export const useSitCheckins = (sitId: string | undefined) =>
   useQuery({
     queryKey: ["sit-checkins", sitId],
@@ -67,7 +105,7 @@ export const useAddSitCheckin = (sitId: string | undefined) => {
       if (error) throw error;
 
       // Mirror the update into the existing conversation with the Pet Parent.
-      const label = CHECKIN_LABELS[kind];
+      const body = buildCheckinMessageBody(kind, note, photoUrl);
       let convoQuery = supabase
         .from("conversations")
         .select("id")
@@ -95,7 +133,7 @@ export const useAddSitCheckin = (sitId: string | undefined) => {
         await supabase.from("messages").insert({
           conversation_id: conversationId,
           sender_user_id: user.id,
-          body: `Check-in — ${label}${note?.trim() ? `: ${note.trim()}` : ""}${photoUrl ? `\n${photoUrl}` : ""}`,
+          body,
         });
         await supabase
           .from("conversations")
@@ -108,6 +146,7 @@ export const useAddSitCheckin = (sitId: string | undefined) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sit-checkins", sitId] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
       toast.success("Check-in posted");
     },
     onError: (error: Error) => {

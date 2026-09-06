@@ -446,6 +446,7 @@ export type Database = {
           requirements_other: string | null
           sleeping_arrangement: string | null
           status: Database["public"]["Enums"]["listing_status"]
+          timezone: string | null
           title: string
           updated_at: string
           wifi_quality: string | null
@@ -477,6 +478,7 @@ export type Database = {
           requirements_other?: string | null
           sleeping_arrangement?: string | null
           status?: Database["public"]["Enums"]["listing_status"]
+          timezone?: string | null
           title: string
           updated_at?: string
           wifi_quality?: string | null
@@ -508,6 +510,7 @@ export type Database = {
           requirements_other?: string | null
           sleeping_arrangement?: string | null
           status?: Database["public"]["Enums"]["listing_status"]
+          timezone?: string | null
           title?: string
           updated_at?: string
           wifi_quality?: string | null
