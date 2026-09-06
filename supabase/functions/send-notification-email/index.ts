@@ -135,7 +135,7 @@ const handler = async (req: Request): Promise<Response> => {
       callerUserId = caller.user.id;
     }
 
-    const { type, recipientUserId, data }: NotificationEmailRequest = await req.json();
+    const { type, recipientUserId, data, skipInAppNotification }: NotificationEmailRequest = await req.json();
 
     // Admin-only notification types must come from an admin account.
     if (type === "id_verification_approved" && !isInternalCaller) {
@@ -185,6 +185,7 @@ const handler = async (req: Request): Promise<Response> => {
       new_message: "email_messages",
       invite: "email_sit_updates",
       sit_cancelled: "email_sit_updates",
+      sit_checkin: "email_sit_updates",
       review: "email_reviews",
       review_reminder: "email_reviews",
     };
