@@ -43,6 +43,7 @@ export type NotificationType =
   | "review"
   | "review_reminder"
   | "sit_cancelled"
+  | "sit_checkin"
   | "id_verification_approved";
 
 export function buildNotificationEmail(
