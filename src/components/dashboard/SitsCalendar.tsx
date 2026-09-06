@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import WriteReviewDialog from "@/components/reviews/WriteReviewDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveListingConversation } from "@/lib/conversations";
 
 interface SitsCalendarProps {
   viewAs: "sitter" | "owner";
