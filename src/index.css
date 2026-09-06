@@ -7,6 +7,11 @@
 @layer base {
   :root {
     /* NomadNest Brand Design System */
+    --brand-coral: 10 75% 63%;
+    --brand-teal: 171 58% 39%;
+    --brand-coral-light: 10 75% 95%;
+    --brand-teal-light: 171 58% 95%;
+
     --background: 34 33% 96%;
     --foreground: 0 0% 10%;
 
@@ -17,11 +22,11 @@
     --popover-foreground: 0 0% 10%;
 
     /* Primary Coral #E8735A */
-    --primary: 10 75% 63%;
+    --primary: var(--brand-coral);
     --primary-foreground: 0 0% 100%;
 
     /* Secondary Ocean Teal */
-    --secondary: 171 58% 39%;
+    --secondary: var(--brand-teal);
     --secondary-foreground: 0 0% 100%;
 
     /* Gold Accent #F5C842 */
@@ -49,8 +54,8 @@
     /* Custom tokens */
     --surface: 0 0% 100%;
     --cream: 34 33% 96%;
-    --terracotta-light: 10 75% 95%;
-    --ocean-light: 171 58% 95%;
+    --terracotta-light: var(--brand-coral-light);
+    --ocean-light: var(--brand-teal-light);
     --sand-light: 43 90% 95%;
 
     /* Shadows */
@@ -71,6 +76,9 @@
   }
 
   .dark {
+    --brand-coral-light: 10 75% 18%;
+    --brand-teal-light: 171 58% 18%;
+
     --background: 0 0% 8%;
     --foreground: 34 33% 96%;
 
@@ -80,10 +88,10 @@
     --popover: 0 0% 12%;
     --popover-foreground: 34 33% 96%;
 
-    --primary: 10 75% 63%;
+    --primary: var(--brand-coral);
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 171 58% 39%;
+    --secondary: var(--brand-teal);
     --secondary-foreground: 0 0% 100%;
 
     --accent: 43 90% 61%;
@@ -101,8 +109,8 @@
 
     --surface: 0 0% 12%;
     --cream: 0 0% 8%;
-    --terracotta-light: 10 75% 18%;
-    --ocean-light: 171 58% 18%;
+    --terracotta-light: var(--brand-coral-light);
+    --ocean-light: var(--brand-teal-light);
     --sand-light: 43 90% 18%;
 
     --sidebar-background: 0 0% 10%;
@@ -113,6 +121,19 @@
     --sidebar-accent-foreground: 34 33% 96%;
     --sidebar-border: 0 0% 18%;
     --sidebar-ring: 10 75% 63%;
+  }
+
+  /* Pet Parent Mode reverses the two brand accents. Nomad Mode and signed-out
+     pages retain coral as primary and teal as secondary. */
+  :root[data-active-role="owner"] {
+    --primary: var(--brand-teal);
+    --secondary: var(--brand-coral);
+    --ring: var(--brand-teal);
+    --terracotta-light: var(--brand-teal-light);
+    --ocean-light: var(--brand-coral-light);
+    --sidebar-primary: var(--brand-teal);
+    --sidebar-accent: var(--brand-teal-light);
+    --sidebar-ring: var(--brand-teal);
   }
 }
 

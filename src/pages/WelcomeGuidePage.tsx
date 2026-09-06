@@ -85,7 +85,7 @@ const WelcomeGuidePage = () => {
         </Link>
 
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
-          <BookOpen className="w-6 h-6 text-[#E8735A]" />
+          <BookOpen className="w-6 h-6 text-primary" />
           Welcome Guide
         </h1>
         <p className="text-muted-foreground mb-6">{listing?.title || "Everything a Nomad needs on arrival"}</p>

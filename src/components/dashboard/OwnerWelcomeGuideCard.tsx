@@ -31,7 +31,7 @@ const OwnerWelcomeGuideCard = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-[#E8735A]" />
+          <BookOpen className="w-5 h-5 text-primary" />
           Welcome Guide
         </CardTitle>
         <CardDescription>One guide shared across all your listings</CardDescription>

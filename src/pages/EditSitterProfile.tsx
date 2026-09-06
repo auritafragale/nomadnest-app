@@ -595,12 +595,11 @@ const EditSitterProfile = () => {
                               const updated = selected ? current.filter(r => r !== reason) : [...current, reason];
                               updateSitterProfile({ why_i_sit: updated.join(", ") });
                             }}
-                            className="px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors"
-                            style={
+                            className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors ${
                               selected
-                                ? { backgroundColor: "#E8735A", borderColor: "#E8735A", color: "white" }
-                                : { borderColor: "var(--border)", color: "var(--foreground)" }
-                            }
+                                ? "bg-primary border-primary text-primary-foreground"
+                                : "border-border text-foreground"
+                            }`}
                           >
                             {reason}
                           </button>

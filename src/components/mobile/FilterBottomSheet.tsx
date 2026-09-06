@@ -117,7 +117,7 @@ const FilterBottomSheet = ({ open, onClose, filters, onApply }: FilterBottomShee
               onClick={() => setDraft((d) => ({ ...d, lastMinute: !d.lastMinute }))}
               className={cn(
                 "w-full flex items-center justify-between p-4 rounded-xl border-2 transition-colors",
-                draft.lastMinute ? "border-[#E8735A] bg-[#E8735A]/10" : "border-border"
+                draft.lastMinute ? "border-primary bg-primary/10" : "border-border"
               )}
             >
               <div className="text-left">
@@ -127,7 +127,7 @@ const FilterBottomSheet = ({ open, onClose, filters, onApply }: FilterBottomShee
               <div
                 className={cn(
                   "w-6 h-6 rounded-full border-2 flex items-center justify-center",
-                  draft.lastMinute ? "border-[#E8735A] bg-[#E8735A]" : "border-muted-foreground"
+                  draft.lastMinute ? "border-primary bg-primary" : "border-muted-foreground"
                 )}
               >
                 {draft.lastMinute && <div className="w-2 h-2 rounded-full bg-white" />}
@@ -149,7 +149,7 @@ const FilterBottomSheet = ({ open, onClose, filters, onApply }: FilterBottomShee
                   className={cn(
                     "px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors",
                     draft.petTypes.includes(pet)
-                      ? "border-[#E8735A] bg-[#E8735A] text-white"
+                      ? "border-primary bg-primary text-primary-foreground"
                       : "border-border text-foreground"
                   )}
                 >
@@ -170,7 +170,7 @@ const FilterBottomSheet = ({ open, onClose, filters, onApply }: FilterBottomShee
                   className={cn(
                     "px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors",
                     draft.sitDetails.includes(key)
-                      ? "border-[#E8735A] bg-[#E8735A] text-white"
+                      ? "border-primary bg-primary text-primary-foreground"
                       : "border-border text-foreground"
                   )}
                 >
@@ -217,7 +217,6 @@ const FilterBottomSheet = ({ open, onClose, filters, onApply }: FilterBottomShee
           </Button>
           <Button
             className="flex-1"
-            style={{ backgroundColor: "#E8735A", color: "white" }}
             onClick={handleApply}
           >
             Apply

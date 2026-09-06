@@ -404,7 +404,6 @@ const VerifyIdentity = () => {
                       </div>
                       <Button
                         className="w-full"
-                        style={{ backgroundColor: "#E8735A", color: "white" }}
                         onClick={handleManualSubmit}
                         disabled={manualUploading || !idFile || !selfieFile}
                       >

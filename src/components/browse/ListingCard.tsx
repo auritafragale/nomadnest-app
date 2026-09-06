@@ -158,8 +158,8 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
               className={cn(
                 "absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors shadow-sm",
                 isFavorited
-                  ? "bg-[#E8735A] text-white"
-                  : "bg-white/90 text-muted-foreground hover:text-[#E8735A]"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-surface/90 text-muted-foreground hover:text-primary"
               )}
               onClick={handleFavoriteClick}
               disabled={toggleFavorite.isPending}
