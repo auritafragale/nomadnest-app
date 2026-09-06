@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Bell, BellOff, BellRing, Smartphone, Send } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Smartphone, Send } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,48 +59,10 @@ const PushNotificationSettings = () => {
             </p>
           </div>
         </div>
-        <Badge variant="outline" className="text-muted-foreground">
-          Unavailable
-        </Badge>
+        <Switch checked={false} disabled aria-label="Push notifications unavailable" />
       </div>
     );
   }
-
-  const getStatusBadge = () => {
-    if (isLoading) {
-      return (
-        <Badge variant="secondary" className="gap-1">
-          <Loader2 className="w-3 h-3 animate-spin" />
-          Loading
-        </Badge>
-      );
-    }
-
-    if (permission === "denied") {
-      return (
-        <Badge variant="destructive" className="gap-1">
-          <BellOff className="w-3 h-3" />
-          Blocked
-        </Badge>
-      );
-    }
-
-    if (isSubscribed) {
-      return (
-        <Badge variant="secondary" className="gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-          <BellRing className="w-3 h-3" />
-          Enabled
-        </Badge>
-      );
-    }
-
-    return (
-      <Badge variant="outline" className="gap-1 text-muted-foreground">
-        <BellOff className="w-3 h-3" />
-        Disabled
-      </Badge>
-    );
-  };
 
   const handleToggle = async () => {
     if (isSubscribed) {
@@ -112,8 +74,8 @@ const PushNotificationSettings = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+       <div className="flex items-center justify-between gap-3">
+         <div className="flex min-w-0 items-center gap-3">
           <Smartphone className="w-5 h-5 text-muted-foreground" />
           <div>
             <p className="font-medium">Push Notifications</p>
@@ -124,29 +86,15 @@ const PushNotificationSettings = () => {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          {getStatusBadge()}
-          <Button
-            variant={isSubscribed ? "outline" : "default"}
-            size="sm"
-            onClick={handleToggle}
-            disabled={isLoading || permission === "denied"}
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : isSubscribed ? (
-              <>
-                <BellOff className="w-4 h-4 mr-2" />
-                Disable
-              </>
-            ) : (
-              <>
-                <Bell className="w-4 h-4 mr-2" />
-                Enable
-              </>
-            )}
-          </Button>
-        </div>
+         <div className="flex shrink-0 items-center gap-2">
+           {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+           <Switch
+             checked={isSubscribed}
+             onCheckedChange={() => void handleToggle()}
+             disabled={isLoading || permission === "denied"}
+             aria-label="Push notifications"
+           />
+         </div>
       </div>
 
       {permission === "denied" && (

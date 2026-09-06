@@ -594,58 +594,52 @@ const Settings = () => {
               </Card>
             </Collapsible>
 
-            {/* Identity Verification */}
+            {/* Verification */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5" />
-                  Identity Verification
+                  Verification
                 </CardTitle>
                 <CardDescription>
-                  Verify your identity to build trust with the community
+                  Manage your identity and phone verification
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {verificationData?.id_verified ? (
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-5 h-5 text-green-500" />
-                    <div>
-                      <p className="font-medium text-green-700 dark:text-green-400">Identity Verified</p>
-                      <p className="text-sm text-muted-foreground">Your identity has been verified successfully.</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-medium">Not Verified</p>
-                      <p className="text-sm text-muted-foreground">Verify your identity to apply for sits and create listings.</p>
-                    </div>
-                    <Button onClick={() => navigate("/verify-identity")} className="flex-shrink-0">
-                      <ShieldCheck className="w-4 h-4 mr-2" />
-                      Verify Now
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Phone Verification */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="w-5 h-5" />
-                  Phone Verification
-                </CardTitle>
-                <CardDescription>
-                  Verify your phone number to build additional trust with the community (optional)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <PhoneVerification
-                  phoneVerified={phoneVerified}
-                  phoneNumber={phoneNumber}
-                  onVerified={() => { setPhoneVerified(true); fetchProfile(); }}
-                />
+                <Tabs defaultValue="identity">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="identity" className="gap-2"><ShieldCheck className="h-4 w-4" />Identity</TabsTrigger>
+                    <TabsTrigger value="phone" className="gap-2"><Phone className="h-4 w-4" />Phone</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="identity" className="pt-4">
+                    {verificationData?.id_verified ? (
+                      <div className="flex items-center gap-3">
+                        <ShieldCheck className="w-5 h-5 text-green-500" />
+                        <div>
+                          <p className="font-medium text-green-700 dark:text-green-400">Identity Verified</p>
+                          <p className="text-sm text-muted-foreground">Your identity has been verified successfully.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="font-medium">Not Verified</p>
+                          <p className="text-sm text-muted-foreground">Verify your identity to apply for sits and create listings.</p>
+                        </div>
+                        <Button onClick={() => navigate("/verify-identity")} className="shrink-0">
+                          <ShieldCheck className="w-4 h-4 mr-2" />Verify Now
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="phone" className="pt-4">
+                    <PhoneVerification
+                      phoneVerified={phoneVerified}
+                      phoneNumber={phoneNumber}
+                      onVerified={() => { setPhoneVerified(true); fetchProfile(); }}
+                    />
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
 
@@ -785,17 +779,21 @@ const Settings = () => {
             </Card>
 
             {/* Notification Preferences */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="w-5 h-5" />
-                  Notifications
-                </CardTitle>
-                <CardDescription>
-                  Choose what updates you want to receive
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Collapsible asChild>
+              <Card className="group">
+                <CollapsibleTrigger asChild>
+                  <button className="w-full text-left" aria-label="Toggle notification settings">
+                    <CardHeader className="flex-row items-center justify-between space-y-0">
+                      <div>
+                        <CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5" />Notifications</CardTitle>
+                        <CardDescription>Choose what updates you want to receive</CardDescription>
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+                    </CardHeader>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4">
                 {/* Push Notifications */}
                 <PushNotificationSettings />
                 
@@ -935,8 +933,10 @@ const Settings = () => {
                     </div>
                   </>
                 )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
             {/* Guided walkthrough */}
             <Card>
@@ -957,46 +957,6 @@ const Settings = () => {
                   <Button variant="outline" onClick={startWalkthrough}>
                     Replay tour
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Sign Out */}
-            <Card>
-              <CardHeader>
-
-                <CardTitle className="flex items-center gap-2">
-                  <LogOut className="w-5 h-5" />
-                  Sign Out
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Sign out of your account on this device
-                  </p>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline">
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Sign Out
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Sign out?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          You will need to sign in again to access your account.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleSignOut}>
-                          Sign Out
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>
