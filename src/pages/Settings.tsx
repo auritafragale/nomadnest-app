@@ -458,39 +458,14 @@ const Settings = () => {
 
                 <Separator />
 
-                {/* Role */}
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <p className="font-medium">Current Role</p>
-                    <p className="text-sm text-muted-foreground">
-                      Your account type determines what features you can access
-                    </p>
-                  </div>
-                  <Badge variant="secondary" className="gap-2 text-sm py-1.5 px-3 whitespace-nowrap">
-                    {role === "sitter" ? (
-                      <><Briefcase className="w-4 h-4" /> Nomad</>
-                    ) : role === "owner" ? (
-                      <><Home className="w-4 h-4" /> Pet Parent</>
-                    ) : role === "both" ? (
-                      <span className="flex items-center gap-1">
-                        <Briefcase className="w-4 h-4" />
-                        <Home className="w-4 h-4" />
-                        Combined
-                      </span>
-                    ) : (
-                      <><User className="w-4 h-4" /> Unknown</>
-                    )}
-                  </Badge>
-                </div>
-
                 {(role === "sitter" || role === "owner") && (
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
-                      <p className="font-medium">Expand Your Role</p>
+                      <p className="font-medium">Upgrade to Combined</p>
                       <p className="text-sm text-muted-foreground">
                         {role === "sitter"
-                          ? "Add pet owner capabilities to find sitters for your own pets"
-                          : "Add sitter capabilities to browse and apply for sits"}
+                          ? "Add Pet Parent access to list your home and pets."
+                          : "Add Nomad access to browse and apply for sits."}
                       </p>
                     </div>
                     <UpgradeRoleDialog
@@ -499,30 +474,25 @@ const Settings = () => {
                     />
                   </div>
                 )}
-
-                {role === "both" && (
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <p className="text-sm text-muted-foreground">
-                      You have full access to both Nomad and Pet Parent features. Use the
-                      toggle on your dashboard to switch between modes.
-                    </p>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
             {/* Email Change */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="w-5 h-5" />
-                  Change Email
-                </CardTitle>
-                <CardDescription>
-                  Update your email address
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Collapsible asChild>
+              <Card className="group">
+                <CollapsibleTrigger asChild>
+                  <button className="w-full text-left" aria-label="Toggle change email settings">
+                    <CardHeader className="flex-row items-center justify-between space-y-0">
+                      <div>
+                        <CardTitle className="flex items-center gap-2"><Mail className="w-5 h-5" />Change Email</CardTitle>
+                        <CardDescription>Update your email address</CardDescription>
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+                    </CardHeader>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Current Email</Label>
                   <div className="flex items-center gap-2">
@@ -564,21 +534,27 @@ const Settings = () => {
                   )}
                   Update Email
                 </Button>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
             {/* Password Change */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="w-5 h-5" />
-                  Change Password
-                </CardTitle>
-                <CardDescription>
-                  Update your account password
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Collapsible asChild>
+              <Card className="group">
+                <CollapsibleTrigger asChild>
+                  <button className="w-full text-left" aria-label="Toggle change password settings">
+                    <CardHeader className="flex-row items-center justify-between space-y-0">
+                      <div>
+                        <CardTitle className="flex items-center gap-2"><Lock className="w-5 h-5" />Change Password</CardTitle>
+                        <CardDescription>Update your account password</CardDescription>
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+                    </CardHeader>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="new_password">New Password</Label>
                   <Input
@@ -613,8 +589,10 @@ const Settings = () => {
                   )}
                   Update Password
                 </Button>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
             {/* Identity Verification */}
             <Card>
