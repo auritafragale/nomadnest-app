@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveListingConversation } from "@/lib/conversations";
 import { useAuth } from "@/contexts/AuthContext";
 import { sendNotification } from "@/lib/notifications";
 import { format, parseISO } from "date-fns";
@@ -152,31 +153,12 @@ export const useCreateInvite = () => {
 
 
 
-      // 2) Find-or-create a direct conversation between owner and sitter
-      const { data: existingConvo } = await supabase
-        .from("conversations")
-        .select("id")
-        .eq("owner_user_id", invite.owner_user_id)
-        .eq("sitter_user_id", invite.sitter_user_id)
-        .eq("conversation_type", "direct")
-        .is("listing_id", null)
-        .maybeSingle();
-
-      let conversationId = existingConvo?.id;
-      if (!conversationId) {
-        const { data: newConvo, error: convoError } = await supabase
-          .from("conversations")
-          .insert({
-            owner_user_id: invite.owner_user_id,
-            sitter_user_id: invite.sitter_user_id,
-            listing_id: null,
-            conversation_type: "direct",
-          })
-          .select("id")
-          .single();
-        if (convoError) throw convoError;
-        conversationId = newConvo.id;
-      }
+      // 2) Find-or-create the single chat thread for this home + pair
+      const conversationId = await resolveListingConversation({
+        listingId: invite.listing_id,
+        ownerUserId: invite.owner_user_id,
+        sitterUserId: invite.sitter_user_id,
+      });
 
       // 3) Send an opening message from the owner
       if (conversationId) {
