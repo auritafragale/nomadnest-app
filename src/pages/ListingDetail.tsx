@@ -472,10 +472,23 @@ const ListingDetail = () => {
                   )}
                 </div>
               </div>
-              <ShareDialog
-                title={listing.title}
-                description={`Check out this pet sitting opportunity in ${listing.city}, ${listing.country}`}
-              />
+              {user && !isOwner && (
+                <ReportDialog
+                  targetType="listing"
+                  targetId={listing.id}
+                  targetLabel={listing.title}
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="Report listing"
+                    >
+                      <Flag className="h-5 w-5" />
+                    </Button>
+                  }
+                />
+              )}
             </div>
           </div>
 
