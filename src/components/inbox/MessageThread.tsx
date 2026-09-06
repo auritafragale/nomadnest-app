@@ -110,7 +110,11 @@ export const MessageThread = ({
     e.target.value = "";
     if (!file || !user) return;
 
-    if (!file.type.startsWith("image/")) {
+    // Camera captures can arrive with an empty/generic MIME type; the input
+    // already restricts selection to images, so accept those too.
+    const looksLikeImage =
+      file.type.startsWith("image/") || !file.type || file.type === "application/octet-stream";
+    if (!looksLikeImage) {
       toast.error("Please select an image file");
       return;
     }
@@ -121,7 +125,9 @@ export const MessageThread = ({
 
     setPhotoUploading(true);
     try {
-      const ext = file.name.split(".").pop();
+      const nameExt = file.name.includes(".") ? file.name.split(".").pop() : null;
+      const typeExt = file.type.startsWith("image/") ? file.type.split("/")[1] : null;
+      const ext = (nameExt || typeExt || "jpg").toLowerCase().replace("jpeg", "jpg");
       const path = `${user.id}/chat-photos/${Date.now()}-${Math.random().toString(36).slice(7)}.${ext}`;
       const { error } = await supabase.storage.from("listing-images").upload(path, file);
       if (error) throw error;
