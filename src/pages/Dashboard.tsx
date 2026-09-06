@@ -321,6 +321,8 @@ const SitterDashboard = ({
       <div className="md:col-span-1 lg:col-span-2 space-y-6">
         {/* Saved Sits lives in the header actions, so no duplicate card here */}
 
+        {/* Upcoming & Past Sits */}
+        <UpcomingPastSits viewAs="sitter" />
 
         {/* My Applications */}
         <Card id="my-applications">
@@ -384,9 +386,6 @@ const SitterDashboard = ({
 
         {/* Availability Calendar */}
         <SitterAvailabilityCalendar />
-
-        {/* Upcoming & Past Sits */}
-        <UpcomingPastSits viewAs="sitter" />
 
       </div>
     </div>
