@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
+import { Upload, X, Loader2, Image as ImageIcon, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,8 @@ interface ImageUploadProps {
   maxImages?: number;
   folder: string;
   label?: string;
+  /** When true, also shows a "Take Photo" tile that opens the device camera on mobile. */
+  allowCamera?: boolean;
 }
 
 const ImageUpload = ({
@@ -20,11 +22,13 @@ const ImageUpload = ({
   maxImages = 5,
   folder,
   label = "Upload Images",
+  allowCamera = false,
 }: ImageUploadProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
