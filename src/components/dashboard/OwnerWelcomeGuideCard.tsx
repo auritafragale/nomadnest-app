@@ -29,7 +29,7 @@ const OwnerWelcomeGuideCard = () => {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2">
         <CardTitle>
           <span className="flex items-center gap-2 whitespace-nowrap">
             <BookOpen className="w-5 h-5 text-primary" />
@@ -45,7 +45,7 @@ const OwnerWelcomeGuideCard = () => {
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : complete ? (
-          <div className="space-y-2">
+          <div className="space-y-2 pb-2">
             <div className="flex items-center justify-between gap-3 text-sm">
               <span className="font-medium">Guide progress</span>
               <span className="text-muted-foreground">{filled}/5 fields filled</span>
