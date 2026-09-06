@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import { sendNotification } from "@/lib/notifications";
 import { messagePreviewText } from "@/lib/chatImage";
+import { resolveListingConversation } from "@/lib/conversations";
 
 const conversationsQueryKey = (userId?: string) => ["conversations", userId] as const;
 const unreadMessagesQueryKey = (userId?: string) => ["unread-messages", userId] as const;
