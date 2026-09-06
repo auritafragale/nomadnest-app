@@ -490,6 +490,59 @@ const Settings = () => {
                   )}
                   Save Changes
                 </Button>
+
+                <Separator />
+
+                {/* Role */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="font-medium">Current Role</p>
+                    <p className="text-sm text-muted-foreground">
+                      Your account type determines what features you can access
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="gap-2 text-sm py-1.5 px-3 whitespace-nowrap">
+                    {role === "sitter" ? (
+                      <><Briefcase className="w-4 h-4" /> Nomad</>
+                    ) : role === "owner" ? (
+                      <><Home className="w-4 h-4" /> Pet Parent</>
+                    ) : role === "both" ? (
+                      <span className="flex items-center gap-1">
+                        <Briefcase className="w-4 h-4" />
+                        <Home className="w-4 h-4" />
+                        Combined
+                      </span>
+                    ) : (
+                      <><User className="w-4 h-4" /> Unknown</>
+                    )}
+                  </Badge>
+                </div>
+
+                {(role === "sitter" || role === "owner") && (
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="font-medium">Expand Your Role</p>
+                      <p className="text-sm text-muted-foreground">
+                        {role === "sitter"
+                          ? "Add pet owner capabilities to find sitters for your own pets"
+                          : "Add sitter capabilities to browse and apply for sits"}
+                      </p>
+                    </div>
+                    <UpgradeRoleDialog
+                      currentRole={role}
+                      onUpgrade={() => refreshRole()}
+                    />
+                  </div>
+                )}
+
+                {role === "both" && (
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="text-sm text-muted-foreground">
+                      You have full access to both Nomad and Pet Parent features. Use the
+                      toggle on your dashboard to switch between modes.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
