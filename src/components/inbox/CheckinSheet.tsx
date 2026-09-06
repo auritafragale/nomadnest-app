@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Camera, Loader2 } from "lucide-react";
+import { X, Camera, Loader2, Upload } from "lucide-react";
 import { useAddSitCheckin, CHECKIN_LABELS, type CheckinKind } from "@/hooks/useSitCheckins";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,21 +96,39 @@ export const CheckinSheet = ({
         />
 
         <div className="flex gap-2">
-          <label className="flex-1 cursor-pointer">
-            <div className="flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors text-sm text-muted-foreground">
-              {uploading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : photoUrl ? (
-                <span className="text-emerald-600">Photo added ✓</span>
-              ) : (
-                <>
-                  <Camera className="w-4 h-4" />
-                  Add photo
-                </>
-              )}
+          {photoUrl ? (
+            <div className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-sm text-emerald-600">
+              Photo added ✓
             </div>
-            <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
-          </label>
+          ) : uploading ? (
+            <div className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Uploading…
+            </div>
+          ) : (
+            <>
+              <label className="flex-1 cursor-pointer">
+                <div className="flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors text-sm text-muted-foreground">
+                  <Camera className="w-4 h-4" />
+                  Take Photo
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhoto}
+                  className="hidden"
+                />
+              </label>
+              <label className="flex-1 cursor-pointer">
+                <div className="flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors text-sm text-muted-foreground">
+                  <Upload className="w-4 h-4" />
+                  Upload
+                </div>
+                <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+              </label>
+            </>
+          )}
           {photoUrl && (
             <button
               onClick={() => setPhotoUrl(null)}
