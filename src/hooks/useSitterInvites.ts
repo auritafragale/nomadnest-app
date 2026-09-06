@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { resolveListingConversation } from "@/lib/conversations";
+import { resolveInviteConversation } from "@/lib/conversations";
 import { useAuth } from "@/contexts/AuthContext";
 import { sendNotification } from "@/lib/notifications";
 import { format, parseISO } from "date-fns";
@@ -154,7 +154,7 @@ export const useCreateInvite = () => {
 
 
       // 2) Find-or-create the single chat thread for this home + pair
-      const conversationId = await resolveListingConversation({
+      const conversationId = await resolveInviteConversation({
         listingId: invite.listing_id,
         ownerUserId: invite.owner_user_id,
         sitterUserId: invite.sitter_user_id,

@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { startWalkthrough } from "@/components/walkthrough/GuidedWalkthrough";
 import {
   AlertDialog,
@@ -29,7 +31,6 @@ import {
   User,
   Bell,
   Shield,
-  LogOut,
   Compass,
   Briefcase,
   Home,
@@ -45,10 +46,10 @@ import {
   ShieldCheck,
   Phone,
   Crown,
+  ChevronDown,
 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/contexts/AuthContext";
-import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
@@ -73,9 +74,8 @@ interface Profile {
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { user, role, signOut, refreshRole } = useAuth();
+  const { user, role, refreshRole } = useAuth();
   const { isAdmin } = useIsAdmin();
-  const { activeRole } = useActiveRole();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -95,7 +95,6 @@ const Settings = () => {
   const [emailChangeLoading, setEmailChangeLoading] = useState(false);
   
   // Password change state
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
@@ -190,11 +189,6 @@ const Settings = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
   const handleNotificationChange = (key: string, value: boolean) => {
     updateNotifications.mutate({ [key]: value });
   };
@@ -274,7 +268,6 @@ const Settings = () => {
         title: "Password updated",
         description: "Your password has been changed successfully",
       });
-      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error: any) {
@@ -465,39 +458,14 @@ const Settings = () => {
 
                 <Separator />
 
-                {/* Role */}
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <p className="font-medium">Current Role</p>
-                    <p className="text-sm text-muted-foreground">
-                      Your account type determines what features you can access
-                    </p>
-                  </div>
-                  <Badge variant="secondary" className="gap-2 text-sm py-1.5 px-3 whitespace-nowrap">
-                    {role === "sitter" ? (
-                      <><Briefcase className="w-4 h-4" /> Nomad</>
-                    ) : role === "owner" ? (
-                      <><Home className="w-4 h-4" /> Pet Parent</>
-                    ) : role === "both" ? (
-                      <span className="flex items-center gap-1">
-                        <Briefcase className="w-4 h-4" />
-                        <Home className="w-4 h-4" />
-                        Combined
-                      </span>
-                    ) : (
-                      <><User className="w-4 h-4" /> Unknown</>
-                    )}
-                  </Badge>
-                </div>
-
                 {(role === "sitter" || role === "owner") && (
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
-                      <p className="font-medium">Expand Your Role</p>
+                      <p className="font-medium">Upgrade to Combined</p>
                       <p className="text-sm text-muted-foreground">
                         {role === "sitter"
-                          ? "Add pet owner capabilities to find sitters for your own pets"
-                          : "Add sitter capabilities to browse and apply for sits"}
+                          ? "Add Pet Parent access to list your home and pets."
+                          : "Add Nomad access to browse and apply for sits."}
                       </p>
                     </div>
                     <UpgradeRoleDialog
@@ -506,30 +474,25 @@ const Settings = () => {
                     />
                   </div>
                 )}
-
-                {role === "both" && (
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <p className="text-sm text-muted-foreground">
-                      You have full access to both Nomad and Pet Parent features. Use the
-                      toggle on your dashboard to switch between modes.
-                    </p>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
             {/* Email Change */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="w-5 h-5" />
-                  Change Email
-                </CardTitle>
-                <CardDescription>
-                  Update your email address
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Collapsible asChild>
+              <Card className="group">
+                <CollapsibleTrigger asChild>
+                  <button className="w-full text-left" aria-label="Toggle change email settings">
+                    <CardHeader className="flex-row items-center justify-between space-y-0">
+                      <div>
+                        <CardTitle className="flex items-center gap-2"><Mail className="w-5 h-5" />Change Email</CardTitle>
+                        <CardDescription>Update your email address</CardDescription>
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+                    </CardHeader>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Current Email</Label>
                   <div className="flex items-center gap-2">
@@ -571,21 +534,27 @@ const Settings = () => {
                   )}
                   Update Email
                 </Button>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
             {/* Password Change */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="w-5 h-5" />
-                  Change Password
-                </CardTitle>
-                <CardDescription>
-                  Update your account password
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Collapsible asChild>
+              <Card className="group">
+                <CollapsibleTrigger asChild>
+                  <button className="w-full text-left" aria-label="Toggle change password settings">
+                    <CardHeader className="flex-row items-center justify-between space-y-0">
+                      <div>
+                        <CardTitle className="flex items-center gap-2"><Lock className="w-5 h-5" />Change Password</CardTitle>
+                        <CardDescription>Update your account password</CardDescription>
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+                    </CardHeader>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="new_password">New Password</Label>
                   <Input
@@ -620,61 +589,57 @@ const Settings = () => {
                   )}
                   Update Password
                 </Button>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
-            {/* Identity Verification */}
+            {/* Verification */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5" />
-                  Identity Verification
+                  Verification
                 </CardTitle>
                 <CardDescription>
-                  Verify your identity to build trust with the community
+                  Manage your identity and phone verification
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {verificationData?.id_verified ? (
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-5 h-5 text-green-500" />
-                    <div>
-                      <p className="font-medium text-green-700 dark:text-green-400">Identity Verified</p>
-                      <p className="text-sm text-muted-foreground">Your identity has been verified successfully.</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-medium">Not Verified</p>
-                      <p className="text-sm text-muted-foreground">Verify your identity to apply for sits and create listings.</p>
-                    </div>
-                    <Button onClick={() => navigate("/verify-identity")} className="flex-shrink-0">
-                      <ShieldCheck className="w-4 h-4 mr-2" />
-                      Verify Now
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Phone Verification */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="w-5 h-5" />
-                  Phone Verification
-                </CardTitle>
-                <CardDescription>
-                  Verify your phone number to build additional trust with the community (optional)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <PhoneVerification
-                  phoneVerified={phoneVerified}
-                  phoneNumber={phoneNumber}
-                  onVerified={() => { setPhoneVerified(true); fetchProfile(); }}
-                />
+                <Tabs defaultValue="identity">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="identity" className="gap-2"><ShieldCheck className="h-4 w-4" />Identity</TabsTrigger>
+                    <TabsTrigger value="phone" className="gap-2"><Phone className="h-4 w-4" />Phone</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="identity" className="pt-4">
+                    {verificationData?.id_verified ? (
+                      <div className="flex items-center gap-3">
+                        <ShieldCheck className="w-5 h-5 text-green-500" />
+                        <div>
+                          <p className="font-medium text-green-700 dark:text-green-400">Identity Verified</p>
+                          <p className="text-sm text-muted-foreground">Your identity has been verified successfully.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="font-medium">Not Verified</p>
+                          <p className="text-sm text-muted-foreground">Verify your identity to apply for sits and create listings.</p>
+                        </div>
+                        <Button onClick={() => navigate("/verify-identity")} className="shrink-0">
+                          <ShieldCheck className="w-4 h-4 mr-2" />Verify Now
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="phone" className="pt-4">
+                    <PhoneVerification
+                      phoneVerified={phoneVerified}
+                      phoneNumber={phoneNumber}
+                      onVerified={() => { setPhoneVerified(true); fetchProfile(); }}
+                    />
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
 
@@ -814,17 +779,21 @@ const Settings = () => {
             </Card>
 
             {/* Notification Preferences */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="w-5 h-5" />
-                  Notifications
-                </CardTitle>
-                <CardDescription>
-                  Choose what updates you want to receive
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Collapsible asChild>
+              <Card className="group">
+                <CollapsibleTrigger asChild>
+                  <button className="w-full text-left" aria-label="Toggle notification settings">
+                    <CardHeader className="flex-row items-center justify-between space-y-0">
+                      <div>
+                        <CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5" />Notifications</CardTitle>
+                        <CardDescription>Choose what updates you want to receive</CardDescription>
+                      </div>
+                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+                    </CardHeader>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4">
                 {/* Push Notifications */}
                 <PushNotificationSettings />
                 
@@ -964,8 +933,10 @@ const Settings = () => {
                     </div>
                   </>
                 )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
             {/* Guided walkthrough */}
             <Card>
@@ -986,46 +957,6 @@ const Settings = () => {
                   <Button variant="outline" onClick={startWalkthrough}>
                     Replay tour
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Sign Out */}
-            <Card>
-              <CardHeader>
-
-                <CardTitle className="flex items-center gap-2">
-                  <LogOut className="w-5 h-5" />
-                  Sign Out
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Sign out of your account on this device
-                  </p>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline">
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Sign Out
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Sign out?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          You will need to sign in again to access your account.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleSignOut}>
-                          Sign Out
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>

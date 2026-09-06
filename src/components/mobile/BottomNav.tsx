@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Search, MessageCircle, User, MapPin, LayoutDashboard, ClipboardList } from "lucide-react";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useNewApplicationsCount } from "@/hooks/useNewApplicationsCount";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ type Tab = {
 const BottomNav = () => {
   const location = useLocation();
   const { unreadCount } = useUnreadMessages();
+  const { newApplicationsCount } = useNewApplicationsCount();
   const { user, role } = useAuth();
   const { activeRole } = useActiveRole();
 
@@ -59,7 +61,12 @@ const BottomNav = () => {
       <div className="flex items-center justify-around h-16">
         {tabs.map(({ href, label, icon: Icon }) => {
           const active = isActive(href);
-          const showBadge = href === "/inbox" && unreadCount > 0;
+          const badgeCount = href === "/inbox"
+            ? unreadCount
+            : href === "/applications"
+              ? newApplicationsCount
+              : 0;
+          const showBadge = badgeCount > 0;
           return (
             <Link
               key={href}
@@ -73,7 +80,7 @@ const BottomNav = () => {
                 <Icon className="w-6 h-6" />
                 {showBadge && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-medium">
-                    {unreadCount > 9 ? "9+" : unreadCount}
+                    {badgeCount > 9 ? "9+" : badgeCount}
                   </span>
                 )}
               </div>

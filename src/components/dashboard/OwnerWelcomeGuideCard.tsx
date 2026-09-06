@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, WifiOff } from "lucide-react";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWelcomeGuide } from "@/hooks/useWelcomeGuide";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
@@ -34,29 +35,27 @@ const OwnerWelcomeGuideCard = () => {
           <span className="flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-primary" />
             Welcome Guide
+            <HelpTooltip
+              label="About the Welcome Guide"
+              content="One guide is shared across all your listings. Nomads you confirm can see it on the listing and open it offline."
+            />
           </span>
           {complete && (
-            <Badge variant="secondary" className="gap-1">
+            <Badge variant="secondary" className="shrink-0 text-sm font-medium">
               {filled}/5 fields filled
             </Badge>
           )}
         </CardTitle>
-        <CardDescription>One guide shared across all your listings</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : complete ? (
-          <>
-            {isOffline && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <WifiOff className="w-3 h-3" /> Offline copy
-              </span>
-            )}
-            <p className="text-sm text-muted-foreground">
-              Nomads you confirm will see this guide on the listing and can open it offline.
-            </p>
-          </>
+          isOffline ? (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <WifiOff className="w-3 h-3" /> Offline copy
+            </span>
+          ) : null
         ) : (
           <p className="text-sm text-muted-foreground">
             Add your WiFi, feeding schedule, vet, emergency contacts and house notes so your Nomad is set on day one.

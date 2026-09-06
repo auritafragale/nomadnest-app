@@ -33,7 +33,6 @@ import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import MobileHomeScreen from "@/components/mobile/MobileHomeScreen";
 import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
 import { UpcomingPastSits } from "@/components/dashboard/UpcomingPastSits";
-import StatsTabsCard from "@/components/dashboard/StatsTabsCard";
 import OwnerWelcomeGuideCard from "@/components/dashboard/OwnerWelcomeGuideCard";
 
 interface Profile {
@@ -402,14 +401,7 @@ const OwnerDashboard = ({
   userId: string;
 }) => {
   const { data: listings = [], isLoading: listingsLoading } = useOwnerListings();
-  const profileCompletion = calculateOwnerProfileCompletion(profile, ownerProfile);
-
-  const listingStats = {
-    total: listings.length,
-    published: listings.filter((l) => l.status === "published").length,
-    draft: listings.filter((l) => l.status === "draft").length,
-    applications: listings.reduce((acc, l) => acc + l._count.applications, 0),
-  };
+  const listingStats = { total: listings.length };
 
 
 
@@ -429,28 +421,6 @@ const OwnerDashboard = ({
         {/* Welcome Guide — one reusable guide per Pet Parent */}
         <OwnerWelcomeGuideCard />
 
-        {/* Quick Stats — tabbed */}
-        <StatsTabsCard
-          tabs={[
-            {
-              id: "listings",
-              label: "Listings",
-              count: listingStats.total,
-              items: [
-                { label: "Active listings", value: listingStats.published, to: "/dashboard#my-listings" },
-                { label: "Draft listings", value: listingStats.draft, to: "/dashboard#my-listings" },
-              ],
-            },
-            {
-              id: "applications",
-              label: "Applications",
-              count: listingStats.applications,
-              items: [
-                { label: "Applications received", value: listingStats.applications, to: "/applications" },
-              ],
-            },
-          ]}
-        />
       </div>
 
       {/* Middle Column */}

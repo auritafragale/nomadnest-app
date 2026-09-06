@@ -131,8 +131,8 @@ export const SitterInviteCard = ({ invite }: SitterInviteCardProps) => {
 
             {/* Actions */}
             {invite.status === "pending" || invite.status === "viewed" ? (
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleViewListing}>
+              <div className="flex items-center justify-start gap-2 min-w-0">
+                <Button size="sm" onClick={handleViewListing} className="min-w-0 px-3">
                   <Eye className="h-4 w-4 mr-1" />
                   View & Apply
                 </Button>
@@ -141,9 +141,10 @@ export const SitterInviteCard = ({ invite }: SitterInviteCardProps) => {
                   variant="outline"
                   onClick={handleDecline}
                   disabled={updateStatus.isPending}
+                  className="h-9 w-9 shrink-0 p-0"
+                  aria-label="Decline invitation"
                 >
-                  <X className="h-4 w-4 mr-1" />
-                  Decline
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             ) : (
