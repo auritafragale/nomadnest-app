@@ -7,13 +7,10 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 
-const CoralPin = () => (
+const ListingPin = () => (
   <div className="flex flex-col items-center">
-    <div
-      className="w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center"
-      style={{ backgroundColor: "#E8735A" }}
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+    <div className="w-8 h-8 rounded-full border-2 border-primary-foreground bg-primary text-primary-foreground shadow-lg flex items-center justify-center">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
       </svg>
     </div>
@@ -65,8 +62,8 @@ const ClusteredMarkers = ({
         renderer: {
           render: ({ count, position }) => {
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-              <circle cx="20" cy="20" r="18" fill="#E8735A" stroke="white" stroke-width="2"/>
-              <text x="20" y="25" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${count}</text>
+              <circle cx="20" cy="20" r="18" fill="hsl(var(--primary))" stroke="hsl(var(--primary-foreground))" stroke-width="2"/>
+              <text x="20" y="25" text-anchor="middle" fill="hsl(var(--primary-foreground))" font-size="14" font-weight="bold">${count}</text>
             </svg>`;
             return new google.maps.marker.AdvancedMarkerElement({
               position,
@@ -108,7 +105,7 @@ const ClusteredMarkers = ({
           onClick={() => onSelect(listing.id)}
           ref={(marker) => setMarkerRef(marker as unknown as Marker, listing.id)}
         >
-          <CoralPin />
+          <ListingPin />
         </AdvancedMarker>
       ))}
     </>
