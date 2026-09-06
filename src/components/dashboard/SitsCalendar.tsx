@@ -298,6 +298,7 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
               </AlertDialogContent>
             </AlertDialog>
           )}
+          </div>
         </div>
       )}
 
