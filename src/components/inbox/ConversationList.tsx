@@ -102,7 +102,9 @@ export const ConversationList = ({
 
                 <div className="flex items-center justify-between gap-2 mt-1">
                   <p className="text-sm text-muted-foreground truncate">
-                    {conversation.last_message?.body || "No messages yet"}
+                    {conversation.last_message?.body
+                      ? messagePreviewText(conversation.last_message.body)
+                      : "No messages yet"}
                   </p>
                   {conversation.unread_count > 0 && (
                     <Badge variant="default" className="h-5 min-w-5 flex items-center justify-center">

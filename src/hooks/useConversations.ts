@@ -250,7 +250,7 @@ export const useSendMessage = () => {
           recipientUserId: recipientId,
           data: {
             senderName: [senderProfile?.first_name, senderProfile?.last_name].filter(Boolean).join(" ") || "Someone",
-            messagePreview: body.substring(0, 150),
+            messagePreview: messagePreviewText(body).substring(0, 150),
             conversationId,
           },
         });

@@ -450,15 +450,76 @@ export const MessageThread = ({
 
       {/* Input */}
       <form onSubmit={handleSubmit} className="p-4 border-t border-border">
+        {pendingPhoto && (
+          <div className="flex items-center gap-2 mb-2">
+            <div className="relative">
+              <img
+                src={pendingPhoto}
+                alt="Photo to send"
+                className="h-16 w-16 rounded-lg object-cover border border-border"
+              />
+              <button
+                type="button"
+                onClick={() => setPendingPhoto(null)}
+                className="absolute -top-2 -right-2 p-0.5 bg-background border border-border rounded-full text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">Add a caption or just send the photo</p>
+          </div>
+        )}
         <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={isSending || photoUploading}
+                aria-label="Add a photo"
+              >
+                {photoUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ImagePlus className="h-4 w-4" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top">
+              <DropdownMenuItem onClick={() => photoCameraRef.current?.click()}>
+                <Camera className="h-4 w-4 mr-2" />
+                Take Photo
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => photoLibraryRef.current?.click()}>
+                <ImagePlus className="h-4 w-4 mr-2" />
+                Upload from Library
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <input
+            ref={photoCameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoFile}
+            className="hidden"
+          />
+          <input
+            ref={photoLibraryRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoFile}
+            className="hidden"
+          />
           <Input
             value={newMessage}
             onChange={handleInputChange}
-            placeholder="Type a message..."
+            placeholder={pendingPhoto ? "Add a caption..." : "Type a message..."}
             disabled={isSending}
             className="flex-1"
           />
-          <Button type="submit" disabled={!newMessage.trim() || isSending}>
+          <Button type="submit" disabled={(!newMessage.trim() && !pendingPhoto) || isSending}>
             <Send className="h-4 w-4" />
           </Button>
         </div>
