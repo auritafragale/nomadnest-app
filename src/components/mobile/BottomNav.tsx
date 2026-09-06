@@ -66,13 +66,13 @@ const BottomNav = () => {
               to={href}
               className={cn(
                 "flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative",
-                active ? "text-[#E8735A]" : "text-muted-foreground"
+                active ? "text-primary" : "text-muted-foreground"
               )}
             >
               <div className="relative">
                 <Icon className="w-6 h-6" />
                 {showBadge && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#E8735A] text-white text-[10px] flex items-center justify-center font-medium">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-medium">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}

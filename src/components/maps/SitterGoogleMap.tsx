@@ -22,8 +22,7 @@ const AvatarPin = ({ sitter }: { sitter: SitterWithProfile }) => {
 
   return (
     <div className="relative flex flex-col items-center">
-      <div className="w-10 h-10 rounded-full border-2 border-white shadow-lg overflow-hidden"
-        style={{ backgroundColor: "#E8735A" }}>
+      <div className="w-10 h-10 rounded-full border-2 border-primary-foreground bg-primary shadow-lg overflow-hidden">
         {sitter.profile?.avatar_url ? (
           <img
             src={sitter.profile.avatar_url}
@@ -31,7 +30,7 @@ const AvatarPin = ({ sitter }: { sitter: SitterWithProfile }) => {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-full h-full flex items-center justify-center text-primary-foreground text-xs font-bold">
             {initials}
           </div>
         )}
@@ -91,8 +90,8 @@ const ClusteredSitterMarkers = ({
         renderer: {
           render: ({ count, position }) => {
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-              <circle cx="20" cy="20" r="18" fill="#E8735A" stroke="white" stroke-width="2"/>
-              <text x="20" y="25" text-anchor="middle" fill="white" font-size="14" font-weight="bold">${count}</text>
+              <circle cx="20" cy="20" r="18" fill="hsl(var(--primary))" stroke="hsl(var(--primary-foreground))" stroke-width="2"/>
+              <text x="20" y="25" text-anchor="middle" fill="hsl(var(--primary-foreground))" font-size="14" font-weight="bold">${count}</text>
             </svg>`;
             const div = document.createElement("div");
             div.innerHTML = svg;
@@ -156,12 +155,11 @@ const SitterInfoWindow = ({ sitter, onClose }: { sitter: SitterWithProfile; onCl
     >
       <div className="min-w-[180px] max-w-[220px] font-sans">
         <div className="flex items-center gap-2 mb-2">
-          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-border"
-            style={{ backgroundColor: "#E8735A" }}>
+          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-border bg-primary">
             {sitter.profile?.avatar_url ? (
               <img src={sitter.profile.avatar_url} alt={name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">
+              <div className="w-full h-full flex items-center justify-center text-primary-foreground text-xs font-bold">
                 {initials}
               </div>
             )}
@@ -197,7 +195,7 @@ const SitterInfoWindow = ({ sitter, onClose }: { sitter: SitterWithProfile; onCl
         )}
 
         <Link to={`/sitter/${sitter.user_id}`}>
-          <Button size="sm" className="w-full h-7 text-xs mb-1" style={{ backgroundColor: "#E8735A", color: "white" }}>
+          <Button size="sm" className="w-full h-7 text-xs mb-1">
             View Profile
           </Button>
         </Link>

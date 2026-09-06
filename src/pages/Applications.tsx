@@ -215,7 +215,7 @@ const Applications = () => {
               <SlidersHorizontal className="w-4 h-4 mr-2" />
               Filters
               {applicationFiltersActive(filters) && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#E8735A]" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary" />
               )}
             </Button>
           </div>

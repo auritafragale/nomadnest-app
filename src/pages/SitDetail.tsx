@@ -167,8 +167,8 @@ const SitDetail = () => {
                     const Icon = KIND_ICONS[c.kind] || Bone;
                     return (
                       <div key={c.id} className="flex gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
-                        <div className="w-9 h-9 rounded-full bg-[#E8735A]/10 flex items-center justify-center shrink-0">
-                          <Icon className="w-4 h-4 text-[#E8735A]" />
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <Icon className="w-4 h-4 text-primary" />
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-medium">{CHECKIN_LABELS[c.kind] || "Check-in"}</p>

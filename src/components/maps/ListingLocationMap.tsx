@@ -2,13 +2,10 @@ import { Map, AdvancedMarker } from "@vis.gl/react-google-maps";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 import { MapPin } from "lucide-react";
 
-const CoralPin = () => (
+const ListingPin = () => (
   <div className="flex flex-col items-center">
-    <div
-      className="w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center"
-      style={{ backgroundColor: "#E8735A" }}
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+    <div className="w-8 h-8 rounded-full border-2 border-primary-foreground bg-primary text-primary-foreground shadow-lg flex items-center justify-center">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
       </svg>
     </div>
@@ -40,7 +37,7 @@ const MapContent = ({ latitude, longitude, title }: ListingLocationMapProps) => 
         className="w-full h-full"
       >
         <AdvancedMarker position={{ lat: latitude, lng: longitude }} title={title}>
-          <CoralPin />
+          <ListingPin />
         </AdvancedMarker>
       </Map>
     </div>

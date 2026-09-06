@@ -22,6 +22,22 @@ export const ActiveRoleProvider = ({ children }: { children: ReactNode }) => {
   const { role, user } = useAuth();
   const [activeRole, setActiveRoleState] = useState<ActiveRole>("sitter");
 
+  // Expose the current member mode to the design tokens. Signed-out pages keep
+  // the default coral-first brand palette.
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (user) {
+      root.dataset.activeRole = activeRole;
+    } else {
+      delete root.dataset.activeRole;
+    }
+
+    return () => {
+      delete root.dataset.activeRole;
+    };
+  }, [activeRole, user]);
+
   // Initialize from localStorage or derive from role
   useEffect(() => {
     if (!user) return;

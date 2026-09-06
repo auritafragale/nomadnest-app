@@ -15,23 +15,17 @@ const MobileHomeScreen = () => {
         <div className="flex bg-muted rounded-full p-1 gap-1 w-full">
           <button
             onClick={() => setActiveRole("sitter")}
-            className="flex-1 py-1.5 rounded-full text-sm font-medium transition-colors"
-            style={
-              activeRole === "sitter"
-                ? { backgroundColor: "#E8735A", color: "white" }
-                : { color: "var(--muted-foreground)" }
-            }
+            className={`flex-1 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              activeRole === "sitter" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            }`}
           >
             Nomad Mode
           </button>
           <button
             onClick={() => setActiveRole("owner")}
-            className="flex-1 py-1.5 rounded-full text-sm font-medium transition-colors"
-            style={
-              activeRole === "owner"
-                ? { backgroundColor: "#E8735A", color: "white" }
-                : { color: "var(--muted-foreground)" }
-            }
+            className={`flex-1 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              activeRole === "owner" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            }`}
           >
             Pet Parent Mode
           </button>

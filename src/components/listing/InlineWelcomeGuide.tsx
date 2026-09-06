@@ -44,7 +44,7 @@ const InlineWelcomeGuide = ({
       >
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <BookOpen className="w-5 h-5 text-[#E8735A]" />
+            <BookOpen className="w-5 h-5 text-primary" />
             Welcome Guide
           </CardTitle>
           <div className="flex items-center gap-2 print-hidden">

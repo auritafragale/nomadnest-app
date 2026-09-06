@@ -534,7 +534,7 @@ const ListingDetail = () => {
                                     {pet.personality}
                                   </p>
                                 )}
-                                <span className="text-xs text-[#E8735A] font-medium">
+                                <span className="text-xs text-primary font-medium">
                                   Tap to view full profile & photos
                                 </span>
                               </div>
@@ -558,7 +558,7 @@ const ListingDetail = () => {
                       <>
                         <DialogHeader>
                           <DialogTitle className="flex items-center gap-2">
-                            <PetIcon className="w-5 h-5 text-[#E8735A]" />
+                            <PetIcon className="w-5 h-5 text-primary" />
                             {pet.name || formatPetType(pet.type)}
                           </DialogTitle>
                         </DialogHeader>
