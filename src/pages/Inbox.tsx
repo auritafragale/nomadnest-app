@@ -147,11 +147,11 @@ const Inbox = () => {
 
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-[100svh] bg-background flex flex-col overflow-hidden">
       <Navbar />
 
-      <main className="flex-1 pt-20">
-        <div className="container max-w-6xl mx-auto px-4 pt-4 pb-2 md:py-6 h-[calc(100svh-9rem)] md:h-[calc(100svh-5rem)] flex flex-col">
+      <main className="flex-1 min-h-0 pt-20 pb-16 md:pb-0">
+        <div className="container max-w-6xl mx-auto px-4 pt-4 pb-2 md:py-6 h-full flex flex-col">
           <div className="shrink-0">
             <Breadcrumbs />
             <h1 className="text-2xl font-bold text-foreground mb-3">Chats</h1>
