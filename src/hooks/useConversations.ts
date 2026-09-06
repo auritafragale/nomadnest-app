@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import { sendNotification } from "@/lib/notifications";
 import { messagePreviewText } from "@/lib/chatImage";
-import { resolveListingConversation } from "@/lib/conversations";
+import { resolveDirectConversation, resolveListingConversation } from "@/lib/conversations";
 
 const conversationsQueryKey = (userId?: string) => ["conversations", userId] as const;
 const unreadMessagesQueryKey = (userId?: string) => ["unread-messages", userId] as const;
@@ -34,6 +34,9 @@ export interface Conversation {
     sender_user_id: string;
   } | null;
   unread_count: number;
+  pair_thread_id: string | null;
+  conversation_ids: string[];
+  listing_contexts: Array<{ conversation_id: string; listing_id: string; title: string; city: string | null }>;
 }
 
 export interface Message {
@@ -102,36 +105,67 @@ export const useConversations = () => {
         })
       );
 
-      return enrichedConversations;
+      const grouped = new Map<string, Conversation>();
+      for (const conversation of enrichedConversations) {
+        const key = conversation.pair_thread_id || [conversation.owner_user_id, conversation.sitter_user_id].sort().join(":");
+        const existing = grouped.get(key);
+        const context = conversation.listing
+          ? [{ conversation_id: conversation.id, listing_id: conversation.listing.id, title: conversation.listing.title, city: conversation.listing.city }]
+          : [];
+
+        if (!existing) {
+          grouped.set(key, {
+            ...conversation,
+            id: key,
+            conversation_ids: [conversation.id],
+            listing_contexts: context,
+          });
+          continue;
+        }
+
+        existing.conversation_ids.push(conversation.id);
+        existing.listing_contexts.push(...context);
+        existing.unread_count += conversation.unread_count;
+        if ((conversation.last_message?.created_at || conversation.updated_at) > (existing.last_message?.created_at || existing.updated_at)) {
+          existing.last_message = conversation.last_message;
+          existing.updated_at = conversation.updated_at;
+          existing.listing = conversation.listing;
+          existing.listing_id = conversation.listing_id;
+        }
+      }
+
+      return [...grouped.values()].sort((a, b) =>
+        (b.last_message?.created_at || b.updated_at).localeCompare(a.last_message?.created_at || a.updated_at),
+      );
     },
     enabled: !!user,
   });
 };
 
-export const useMessages = (conversationId: string | null) => {
+export const useMessages = (conversationIds: string[]) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   // Subscribe to realtime messages (INSERT and UPDATE for read receipts)
   useEffect(() => {
-    if (!conversationId || !user) return;
+    if (conversationIds.length === 0 || !user) return;
 
     const channel = supabase
-      .channel(`messages:${conversationId}`)
+      .channel(`messages:${conversationIds.slice().sort().join(":")}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
         },
         async (payload) => {
           console.log("New message received:", payload);
           const newMessage = payload.new as Message;
+          if (!conversationIds.includes(newMessage.conversation_id)) return;
           // Add new message to cache
           queryClient.setQueryData<Message[]>(
-            ["messages", conversationId],
+            ["messages", conversationIds],
             (old) => {
               if (!old) return [newMessage];
               // Avoid duplicates
@@ -143,7 +177,7 @@ export const useMessages = (conversationId: string | null) => {
           );
           if (newMessage.sender_user_id !== user.id) {
             await supabase.rpc("mark_conversation_messages_read", {
-              _conversation_id: conversationId,
+              _conversation_id: newMessage.conversation_id,
             });
           }
           // Refresh conversations list for updated counts
@@ -157,18 +191,19 @@ export const useMessages = (conversationId: string | null) => {
           event: "UPDATE",
           schema: "public",
           table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
           console.log("Message updated (read receipt):", payload);
+          const updatedMessage = payload.new as Message;
+          if (!conversationIds.includes(updatedMessage.conversation_id)) return;
           // Update message in cache with read_at
           queryClient.setQueryData<Message[]>(
-            ["messages", conversationId],
+            ["messages", conversationIds],
             (old) => {
               if (!old) return [];
               return old.map((m) =>
-                m.id === (payload.new as Message).id
-                  ? { ...m, read_at: (payload.new as Message).read_at }
+                m.id === updatedMessage.id
+                  ? { ...m, read_at: updatedMessage.read_at }
                   : m
               );
             }
@@ -182,23 +217,23 @@ export const useMessages = (conversationId: string | null) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, user, queryClient]);
+  }, [conversationIds.join("|"), user, queryClient]);
 
   return useQuery({
-    queryKey: ["messages", conversationId],
+    queryKey: ["messages", conversationIds],
     queryFn: async (): Promise<Message[]> => {
-      if (!conversationId) return [];
+      if (conversationIds.length === 0) return [];
 
       const { data, error } = await supabase
         .from("messages")
         .select("*")
-        .eq("conversation_id", conversationId)
+        .in("conversation_id", conversationIds)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
       return data || [];
     },
-    enabled: !!conversationId && !!user,
+    enabled: conversationIds.length > 0 && !!user,
   });
 };
 
@@ -261,7 +296,7 @@ export const useSendMessage = () => {
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["messages", variables.conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["messages"] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       queryClient.invalidateQueries({ queryKey: unreadMessagesQueryKey(user?.id) });
     },
@@ -273,22 +308,21 @@ export const useMarkAsRead = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (conversationId: string) => {
+    mutationFn: async (conversationIds: string[]) => {
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase.rpc("mark_conversation_messages_read", {
-        _conversation_id: conversationId,
-      });
-
-      if (error) throw error;
+      for (const conversationId of conversationIds) {
+        const { error } = await supabase.rpc("mark_conversation_messages_read", { _conversation_id: conversationId });
+        if (error) throw error;
+      }
     },
-    onMutate: async (conversationId) => {
+    onMutate: async (conversationIds) => {
       if (!user) return;
 
       await Promise.all([
         queryClient.cancelQueries({ queryKey: conversationsQueryKey(user.id) }),
         queryClient.cancelQueries({ queryKey: unreadMessagesQueryKey(user.id) }),
-        queryClient.cancelQueries({ queryKey: ["messages", conversationId] }),
+        queryClient.cancelQueries({ queryKey: ["messages", conversationIds] }),
       ]);
 
       const previousConversations = queryClient.getQueryData<Conversation[]>(
@@ -297,16 +331,16 @@ export const useMarkAsRead = () => {
       const previousUnreadCount = queryClient.getQueryData<number>(
         unreadMessagesQueryKey(user.id)
       );
-      const previousMessages = queryClient.getQueryData<Message[]>(["messages", conversationId]);
+      const previousMessages = queryClient.getQueryData<Message[]>(["messages", conversationIds]);
       // How many unread messages this conversation contributes to the total count
       const conversationUnreadMessages = previousConversations?.find(
-        (c) => c.id === conversationId
+        (c) => c.conversation_ids.some((id) => conversationIds.includes(id))
       )?.unread_count ?? 0;
       const readAt = new Date().toISOString();
 
       queryClient.setQueryData<Conversation[]>(conversationsQueryKey(user.id), (old) =>
         old?.map((conversation) =>
-          conversation.id === conversationId
+          conversation.conversation_ids.some((id) => conversationIds.includes(id))
             ? { ...conversation, unread_count: 0 }
             : conversation
         ) ?? old
@@ -318,7 +352,7 @@ export const useMarkAsRead = () => {
         );
       }
 
-      queryClient.setQueryData<Message[]>(["messages", conversationId], (old) =>
+      queryClient.setQueryData<Message[]>(["messages", conversationIds], (old) =>
         old?.map((message) =>
           message.sender_user_id !== user.id && !message.read_at
             ? { ...message, read_at: readAt }
@@ -328,12 +362,12 @@ export const useMarkAsRead = () => {
 
       return { previousConversations, previousUnreadCount, previousMessages };
     },
-    onError: (_error, conversationId, context) => {
+    onError: (_error, conversationIds, context) => {
       if (!user || !context) return;
 
       queryClient.setQueryData(conversationsQueryKey(user.id), context.previousConversations);
       queryClient.setQueryData(unreadMessagesQueryKey(user.id), context.previousUnreadCount);
-      queryClient.setQueryData(["messages", conversationId], context.previousMessages);
+      queryClient.setQueryData(["messages", conversationIds], context.previousMessages);
     },
     onSuccess: async () => {
       // Fetch real unread count after the read receipt is confirmed by the server,
@@ -362,8 +396,8 @@ export const useMarkAsRead = () => {
         // Badge sync failure is non-critical; leave badge as-is.
       }
     },
-    onSettled: (_data, _error, conversationId) => {
-      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+    onSettled: (_data, _error, conversationIds) => {
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationIds] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       queryClient.invalidateQueries({ queryKey: unreadMessagesQueryKey(user?.id) });
     },
@@ -408,11 +442,9 @@ export const useStartConversation = () => {
         sitterUserId = isCurrentUserOwner ? otherUserId : user.id;
       }
 
-      const conversationId = await resolveListingConversation({
-        listingId: listingId || null,
-        ownerUserId,
-        sitterUserId,
-      });
+      const conversationId = listingId
+        ? await resolveListingConversation({ listingId, ownerUserId, sitterUserId })
+        : await resolveDirectConversation({ ownerUserId, sitterUserId });
 
       if (!conversationId) throw new Error("Could not open the conversation");
 

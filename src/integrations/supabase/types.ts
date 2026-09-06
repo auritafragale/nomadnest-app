@@ -324,6 +324,30 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_pair_threads: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          user_a_id: string
+          user_b_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_a_id: string
+          user_b_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_a_id?: string
+          user_b_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           conversation_type: Database["public"]["Enums"]["conversation_type"]
@@ -331,6 +355,7 @@ export type Database = {
           id: string
           listing_id: string | null
           owner_user_id: string
+          pair_thread_id: string | null
           sitter_user_id: string
           updated_at: string
         }
@@ -340,6 +365,7 @@ export type Database = {
           id?: string
           listing_id?: string | null
           owner_user_id: string
+          pair_thread_id?: string | null
           sitter_user_id: string
           updated_at?: string
         }
@@ -349,6 +375,7 @@ export type Database = {
           id?: string
           listing_id?: string | null
           owner_user_id?: string
+          pair_thread_id?: string | null
           sitter_user_id?: string
           updated_at?: string
         }
@@ -358,6 +385,13 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_pair_thread_id_fkey"
+            columns: ["pair_thread_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_pair_threads"
             referencedColumns: ["id"]
           },
         ]

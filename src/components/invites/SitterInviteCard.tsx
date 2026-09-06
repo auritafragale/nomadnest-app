@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { MapPin, Calendar, Eye, Check, X, User } from "lucide-react";
+import { MapPin, Calendar, Eye, X, User } from "lucide-react";
 import { SitterInvite, useUpdateInviteStatus } from "@/hooks/useSitterInvites";
 import { useToast } from "@/hooks/use-toast";
 
@@ -69,9 +69,9 @@ export const SitterInviteCard = ({ invite }: SitterInviteCardProps) => {
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
       <CardContent className="p-4">
-        <div className="flex gap-4">
+        <div className="flex gap-3 sm:gap-4">
           {/* Listing Image */}
-          <div className="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-muted">
+          <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-muted">
             {invite.listing?.photos?.[0] ? (
               <img
                 src={invite.listing.photos[0]}
@@ -131,8 +131,8 @@ export const SitterInviteCard = ({ invite }: SitterInviteCardProps) => {
 
             {/* Actions */}
             {invite.status === "pending" || invite.status === "viewed" ? (
-              <div className="flex items-center justify-start gap-2 min-w-0">
-                <Button size="sm" onClick={handleViewListing} className="min-w-0 px-3">
+              <div className="-ml-1 flex items-center justify-start gap-2 min-w-0">
+                <Button size="sm" onClick={handleViewListing} className="min-w-0 px-2.5 sm:px-3">
                   <Eye className="h-4 w-4 mr-1" />
                   View & Apply
                 </Button>
@@ -141,10 +141,11 @@ export const SitterInviteCard = ({ invite }: SitterInviteCardProps) => {
                   variant="outline"
                   onClick={handleDecline}
                   disabled={updateStatus.isPending}
-                  className="h-9 w-9 shrink-0 p-0"
+                  className="shrink-0 px-2.5 sm:px-3"
                   aria-label="Decline invitation"
                 >
                   <X className="h-4 w-4" />
+                  <span className="ml-1">Decline</span>
                 </Button>
               </div>
             ) : (

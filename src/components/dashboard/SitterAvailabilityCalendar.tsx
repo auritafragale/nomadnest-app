@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Save, Loader2, X } from "lucide-react";
@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format, isWithinInterval, startOfDay, endOfDay, eachDayOfInterval, isSameDay } from "date-fns";
 import { DateRange } from "react-day-picker";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 export const SitterAvailabilityCalendar = () => {
   const { user } = useAuth();
@@ -131,6 +132,7 @@ export const SitterAvailabilityCalendar = () => {
           <div className="flex items-center gap-2">
             <CalendarDays className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">My Availability</CardTitle>
+            <HelpTooltip label="About availability" content="Select your available dates. Pet Parents can see when you're open for sits." />
           </div>
           {(availableFrom || availableTo) && (
             <Badge variant="secondary">
@@ -138,9 +140,6 @@ export const SitterAvailabilityCalendar = () => {
             </Badge>
           )}
         </div>
-        <CardDescription>
-          Select your available dates. Owners can see when you're open for sits.
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Current availability display */}

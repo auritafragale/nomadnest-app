@@ -335,7 +335,7 @@ const SitterDashboard = ({
                 </Badge>
               )}
             </CardTitle>
-            <CardDescription>Track your sit applications</CardDescription>
+            <HelpTooltip label="About applications" content="Track your sit applications" />
           </CardHeader>
           <CardContent>
             <Tabs value={appTab} onValueChange={(v) => setAppTab(v as typeof appTab)} className="mb-4">
@@ -440,7 +440,7 @@ const OwnerDashboard = ({
                 </Badge>
               )}
             </CardTitle>
-            <CardDescription>Manage your sit opportunities</CardDescription>
+            <HelpTooltip label="About listings" content="Manage your sit opportunities" />
           </CardHeader>
           <CardContent>
             {listingsLoading ? (

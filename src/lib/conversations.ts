@@ -111,5 +111,8 @@ export const resolveDirectConversation = async ({
 }: {
   ownerUserId: string;
   sitterUserId: string;
-}): Promise<string | null> =>
-  resolveListingConversation({ listingId: null, ownerUserId, sitterUserId });
+}): Promise<string | null> => {
+  const existing = await findExistingPairConversation(ownerUserId, sitterUserId);
+  if (existing) return existing;
+  return resolveListingConversation({ listingId: null, ownerUserId, sitterUserId });
+};

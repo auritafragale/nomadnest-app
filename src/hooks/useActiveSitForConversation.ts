@@ -31,39 +31,43 @@ function isToday(iso: string): boolean {
  * between its owner and sitter, plus today's check-ins and whether meds are
  * needed. Returns null when there is no active sit for this conversation.
  */
-export const useActiveSitForConversation = (conversationId: string | null) => {
+export const useActiveSitForConversation = (conversationIds: string[]) => {
   const { user } = useAuth();
 
   return useQuery<ActiveSitInfo | null>({
-    queryKey: ["active-sit-for-conversation", conversationId, user?.id],
+    queryKey: ["active-sit-for-conversation", conversationIds, user?.id],
     queryFn: async (): Promise<ActiveSitInfo | null> => {
-      if (!conversationId || !user) return null;
+      if (conversationIds.length === 0 || !user) return null;
 
       const { data: convo, error } = await supabase
         .from("conversations")
         .select("id, owner_user_id, sitter_user_id, listing_id")
-        .eq("id", conversationId)
-        .maybeSingle();
+        .in("id", conversationIds);
 
-      if (error || !convo) return null;
+      if (error || !convo?.length) return null;
 
       // A home chat has one canonical identity: the home plus the Pet Parent /
       // Nomad pair. Match the sit strictly on those, so a member who is a Pet
       // Parent elsewhere never sees another home's sit in this chat.
-      if (!convo.listing_id) return null;
+      const listingConversations = convo.filter((row) => row.listing_id);
+      if (listingConversations.length === 0) return null;
 
       const sitQuery = supabase
         .from("sits")
         .select("id, owner_user_id, sitter_user_id, listing_id, status, sit_dates_id, listing:listings(id, title)")
         .in("status", ["confirmed", "in_progress"])
-        .eq("listing_id", convo.listing_id)
-        .eq("owner_user_id", convo.owner_user_id)
-        .eq("sitter_user_id", convo.sitter_user_id);
+        .in("listing_id", listingConversations.map((row) => row.listing_id as string));
 
 
       const { data: sitRows } = await sitQuery.order("created_at", { ascending: false }).limit(10);
 
-      const allSits = (sitRows ?? []) as any[];
+      const allSits = ((sitRows ?? []) as any[]).filter((sit) =>
+        listingConversations.some((row) =>
+          row.listing_id === sit.listing_id &&
+          row.owner_user_id === sit.owner_user_id &&
+          row.sitter_user_id === sit.sitter_user_id,
+        ),
+      );
       if (allSits.length === 0) return null;
 
       // Fetch sit_dates for each candidate and pick the one that is live today.
@@ -126,7 +130,7 @@ export const useActiveSitForConversation = (conversationId: string | null) => {
         todayKinds,
       };
     },
-    enabled: !!conversationId && !!user,
+    enabled: conversationIds.length > 0 && !!user,
     // Keep today's check-ins fresh while the chat is open.
     refetchInterval: 30_000,
   });
