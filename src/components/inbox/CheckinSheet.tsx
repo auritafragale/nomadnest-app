@@ -73,12 +73,12 @@ export const CheckinSheet = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50" onClick={onClose}>
       <div
-        className="w-full sm:max-w-md bg-card rounded-t-2xl sm:rounded-2xl border border-border shadow-lg p-4 space-y-3"
+        className="flex max-h-[calc(100svh-1rem)] w-full flex-col overflow-hidden rounded-t-2xl border border-border bg-card shadow-lg sm:max-w-md sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
           <h4 className="font-medium text-sm flex items-center gap-2">
             <span>{KIND_ICON[kind]}</span>
             {CHECKIN_LABELS[kind]}
@@ -88,68 +88,72 @@ export const CheckinSheet = ({
           </button>
         </div>
 
-        <Input
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Add a short note (optional)"
-          maxLength={200}
-        />
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Add a short note (optional)"
+            maxLength={200}
+          />
 
-        <div className="flex gap-2">
-          {photoUrl ? (
-            <div className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-sm text-emerald-600">
-              Photo added ✓
-            </div>
-          ) : uploading ? (
-            <div className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Uploading…
-            </div>
-          ) : (
-            <>
-              <label className="flex-1 cursor-pointer">
-                <div className="flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors text-sm text-muted-foreground">
-                  <Camera className="w-4 h-4" />
-                  Take Photo
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handlePhoto}
-                  className="hidden"
-                />
-              </label>
-              <label className="flex-1 cursor-pointer">
-                <div className="flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors text-sm text-muted-foreground">
-                  <Upload className="w-4 h-4" />
-                  Upload
-                </div>
-                <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
-              </label>
-            </>
-          )}
+          <div className="flex gap-2">
+            {photoUrl ? (
+              <div className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-sm text-emerald-600">
+                Photo added ✓
+              </div>
+            ) : uploading ? (
+              <div className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Uploading…
+              </div>
+            ) : (
+              <>
+                <label className="flex-1 cursor-pointer">
+                  <div className="flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors text-sm text-muted-foreground">
+                    <Camera className="w-4 h-4" />
+                    Take Photo
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handlePhoto}
+                    className="hidden"
+                  />
+                </label>
+                <label className="flex-1 cursor-pointer">
+                  <div className="flex items-center justify-center gap-2 py-2 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 transition-colors text-sm text-muted-foreground">
+                    <Upload className="w-4 h-4" />
+                    Upload
+                  </div>
+                  <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+                </label>
+              </>
+            )}
+            {photoUrl && (
+              <button
+                onClick={() => setPhotoUrl(null)}
+                className="px-3 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+
           {photoUrl && (
-            <button
-              onClick={() => setPhotoUrl(null)}
-              className="px-3 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground"
-            >
-              Remove
-            </button>
+            <img
+              src={photoUrl}
+              alt="Check-in preview"
+              className="w-full max-h-40 object-cover rounded-lg"
+            />
           )}
         </div>
 
-        {photoUrl && (
-          <img
-            src={photoUrl}
-            alt="Check-in preview"
-            className="w-full max-h-40 object-cover rounded-lg"
-          />
-        )}
-
-        <Button onClick={handleSubmit} disabled={addCheckin.isPending || uploading} className="w-full">
-          {addCheckin.isPending ? "Posting…" : `Send ${CHECKIN_LABELS[kind]} update`}
-        </Button>
+        <div className="shrink-0 border-t border-border bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Button onClick={handleSubmit} disabled={addCheckin.isPending || uploading} className="w-full">
+            {addCheckin.isPending ? "Posting…" : `Send ${CHECKIN_LABELS[kind]} update`}
+          </Button>
+        </div>
       </div>
     </div>
   );
