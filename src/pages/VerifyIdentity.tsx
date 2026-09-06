@@ -240,12 +240,19 @@ const VerifyIdentity = () => {
       return;
     }
     setManualUploading(true);
+    setFileError("");
     try {
       const uploadFile = async (file: File, name: string) => {
-        const path = `${user.id}/${name}-${Date.now()}.${file.name.split(".").pop()}`;
+        const nameExt = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
+        const typeExt = (file.type || "").split("/").pop()?.toLowerCase() || "";
+        const ext = nameExt || (typeExt === "pdf" ? "pdf" : typeExt) || "jpg";
+        const path = `${user.id}/${name}-${Date.now()}.${ext}`;
         const { error } = await supabase.storage
           .from("id-verification-documents")
-          .upload(path, file, { upsert: false });
+          .upload(path, file, {
+            upsert: false,
+            contentType: file.type || "image/jpeg",
+          });
         if (error) throw error;
         return path;
       };
@@ -264,7 +271,9 @@ const VerifyIdentity = () => {
       setManualSubmitted(true);
       toast({ title: "Submitted for review", description: "We'll notify you once reviewed, usually within 24-48 hours." });
     } catch (err: any) {
+      setFileError(err?.message || "Upload failed — please try again.");
       toast({ variant: "destructive", title: "Upload failed", description: err.message });
+
     } finally {
       setManualUploading(false);
     }
