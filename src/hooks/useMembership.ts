@@ -57,7 +57,7 @@ export const MEMBERSHIP_PLANS = {
 } as const;
 
 export const useMembership = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [state, setState] = useState<MembershipState>({
     subscribed: false,
     membershipType: null,
