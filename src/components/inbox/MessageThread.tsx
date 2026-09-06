@@ -76,7 +76,7 @@ export const MessageThread = ({
     userName
   );
 
-  const { data: activeSit, refetch: refetchActiveSit } = useActiveSitForConversation(conversation?.id || null);
+  const { data: activeSit, refetch: refetchActiveSit } = useActiveSitForConversation(conversation?.conversation_ids ?? []);
 
   // Current user is the sitter in this conversation?
   const isCurrentUserSitter = !!conversation && !!user && conversation.sitter_user_id === user.id;

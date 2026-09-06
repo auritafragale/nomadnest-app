@@ -39,7 +39,11 @@ const Inbox = () => {
   };
 
   const { data: conversations = [], isLoading: conversationsLoading } = useConversations();
-  const { data: messages = [], isLoading: messagesLoading } = useMessages(selectedId);
+  const selectedConversation = conversations.find(
+    (conversation) => conversation.id === selectedId || conversation.conversation_ids.includes(selectedId || ""),
+  ) || null;
+  const selectedConversationIds = selectedConversation?.conversation_ids ?? [];
+  const { data: messages = [], isLoading: messagesLoading } = useMessages(selectedConversationIds);
   const sendMessage = useSendMessage();
   const markAsRead = useMarkAsRead();
   const { unreadCount } = useUnreadMessages();
@@ -53,8 +57,6 @@ const Inbox = () => {
     nav.clearAppBadge?.();
   };
 
-  const selectedConversation = conversations.find((c) => c.id === selectedId) || null;
-  
   // Determine if the other user is a sitter or owner based on current user's role in this conversation
   const getOtherUserRole = (): "sitter" | "owner" => {
     if (!selectedConversation || !user) return "sitter";
@@ -75,7 +77,8 @@ const Inbox = () => {
     if (id) {
       if (lastMarkedConversationRef.current !== id) {
         lastMarkedConversationRef.current = id;
-        markAsRead.mutate(id);
+        const ids = conversations.find((conversation) => conversation.id === id)?.conversation_ids ?? [id];
+        markAsRead.mutate(ids);
         clearNotificationTray();
       }
       setSearchParams({ conversation: id });
@@ -89,7 +92,10 @@ const Inbox = () => {
   useEffect(() => {
     if (selectedId && lastMarkedConversationRef.current !== selectedId) {
       lastMarkedConversationRef.current = selectedId;
-      markAsRead.mutate(selectedId);
+      const ids = conversations.find(
+        (conversation) => conversation.id === selectedId || conversation.conversation_ids.includes(selectedId),
+      )?.conversation_ids ?? [selectedId];
+      markAsRead.mutate(ids);
       clearNotificationTray();
     }
   }, [selectedId]);
@@ -114,9 +120,14 @@ const Inbox = () => {
   }
 
   const handleSend = (body: string) => {
-    if (selectedId) {
+    if (selectedConversation) {
       sendMessage.mutate(
-        { conversationId: selectedId, body },
+        {
+          conversationId:
+            selectedConversation.listing_contexts.find((context) => context.listing_id === selectedConversation.listing_id)?.conversation_id
+            ?? selectedConversation.conversation_ids[0],
+          body,
+        },
         {
           onError: () => {
             toast({

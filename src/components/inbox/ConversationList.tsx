@@ -67,8 +67,8 @@ export const ConversationList = ({
                 "relative w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors",
                 "hover:bg-accent",
                 hasUnread && "bg-primary/10 hover:bg-primary/15",
-                selectedId === conversation.id && "bg-accent",
-                selectedId === conversation.id && hasUnread && "bg-primary/15"
+                (selectedId === conversation.id || conversation.conversation_ids.includes(selectedId || "")) && "bg-accent",
+                (selectedId === conversation.id || conversation.conversation_ids.includes(selectedId || "")) && hasUnread && "bg-primary/15"
               )}
             >
               {hasUnread && (

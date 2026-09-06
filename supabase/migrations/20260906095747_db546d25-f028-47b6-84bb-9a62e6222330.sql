@@ -1,0 +1,1 @@
+ALTER TABLE public.conversations ALTER COLUMN pair_thread_id DROP NOT NULL;

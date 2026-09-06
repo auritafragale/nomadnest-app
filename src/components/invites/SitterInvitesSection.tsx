@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Mail, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSitterInvites, usePendingInvitesCount } from "@/hooks/useSitterInvites";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SitterInviteCard } from "./SitterInviteCard";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 export const SitterInvitesSection = () => {
   const { data: invites = [], isLoading } = useSitterInvites();
@@ -37,13 +38,13 @@ export const SitterInvitesSection = () => {
         <CardTitle className="flex items-center gap-2">
           <Mail className="w-5 h-5" />
           Invitations
+          <HelpTooltip label="About invitations" content="Sit invitations from Pet Parents" />
           {pendingCount > 0 && (
             <Badge className="ml-auto">
               {pendingCount} new
             </Badge>
           )}
         </CardTitle>
-        <CardDescription>Sit invitations from pet owners</CardDescription>
       </CardHeader>
       <CardContent>
         {invites.length === 0 ? (

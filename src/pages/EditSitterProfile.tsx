@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -35,6 +35,7 @@ import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 import { PET_TYPE_OPTIONS, formatPetType, canonicalPetType } from "@/lib/petTypes";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 interface Profile {
   first_name: string;
@@ -545,10 +546,7 @@ const EditSitterProfile = () => {
               {/* About */}
               <Card>
                 <CardHeader>
-                  <CardTitle>About You</CardTitle>
-                  <CardDescription>
-                    Tell pet owners about yourself
-                  </CardDescription>
+                  <CardTitle className="flex items-center gap-2">About You<HelpTooltip label="About this section" content="Tell Pet Parents about yourself" /></CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -657,10 +655,7 @@ const EditSitterProfile = () => {
               {/* Gallery */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Photo Gallery</CardTitle>
-                  <CardDescription>
-                    Add photos of yourself with pets or during travels
-                  </CardDescription>
+                  <CardTitle className="flex items-center gap-2">Photo Gallery<HelpTooltip label="About your photo gallery" content="Add photos of yourself with pets or during travels" /></CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ImageUpload
@@ -726,10 +721,8 @@ const EditSitterProfile = () => {
                   <CardTitle className="flex items-center gap-2">
                     <Heart className="w-5 h-5" />
                     Pet Types
+                    <HelpTooltip label="About pet types" content="Choose the types of pets you're comfortable caring for" />
                   </CardTitle>
-                  <CardDescription>
-                    What types of pets are you comfortable caring for?
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -767,10 +760,7 @@ const EditSitterProfile = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Comfortable With</CardTitle>
-                  <CardDescription>
-                    Select any special situations you're comfortable handling
-                  </CardDescription>
+                  <CardTitle className="flex items-center gap-2">Comfortable With<HelpTooltip label="About special care" content="Select any special situations you're comfortable handling" /></CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -945,10 +935,7 @@ const EditSitterProfile = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Preferred Locations</CardTitle>
-                  <CardDescription>
-                    Add cities or countries where you'd like to sit
-                  </CardDescription>
+                  <CardTitle className="flex items-center gap-2">Preferred Locations<HelpTooltip label="About preferred locations" content="Add cities or countries where you'd like to sit" /></CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -1034,10 +1021,8 @@ const EditSitterProfile = () => {
                   <CardTitle className="flex items-center gap-2">
                     <Home className="w-5 h-5" />
                     Home Preferences
+                    <HelpTooltip label="About home preferences" content="Choose the types of homes you prefer to stay in" />
                   </CardTitle>
-                  <CardDescription>
-                    What type of homes do you prefer to stay in?
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

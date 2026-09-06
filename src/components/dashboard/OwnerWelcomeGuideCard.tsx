@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { BookOpen, WifiOff } from "lucide-react";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,8 +30,8 @@ const OwnerWelcomeGuideCard = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between gap-2">
-          <span className="flex items-center gap-2">
+        <CardTitle>
+          <span className="flex items-center gap-2 whitespace-nowrap">
             <BookOpen className="w-5 h-5 text-primary" />
             Welcome Guide
             <HelpTooltip
@@ -40,22 +39,26 @@ const OwnerWelcomeGuideCard = () => {
               content="One guide is shared across all your listings. Nomads you confirm can see it on the listing and open it offline."
             />
           </span>
-          {complete && (
-            <Badge variant="secondary" className="shrink-0 text-sm font-medium">
-              {filled}/5 fields filled
-            </Badge>
-          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : complete ? (
-          isOffline ? (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <WifiOff className="w-3 h-3" /> Offline copy
-            </span>
-          ) : null
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="font-medium">Guide progress</span>
+              <span className="text-muted-foreground">{filled}/5 fields filled</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Welcome Guide progress" aria-valuemin={0} aria-valuemax={5} aria-valuenow={filled}>
+              <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${(filled / 5) * 100}%` }} />
+            </div>
+            {isOffline && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <WifiOff className="w-3 h-3" /> Offline copy
+              </span>
+            )}
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground">
             Add your WiFi, feeding schedule, vet, emergency contacts and house notes so your Nomad is set on day one.

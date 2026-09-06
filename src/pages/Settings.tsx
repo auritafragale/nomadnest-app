@@ -331,17 +331,19 @@ const Settings = () => {
 
           <div className="space-y-6">
             {/* Account Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Account
-                </CardTitle>
-                <CardDescription>
-                  Your personal information and profile
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+            <Collapsible asChild>
+              <Card className="group">
+                <CardHeader className="flex-row items-center gap-2 space-y-0">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="h-auto min-w-0 flex-1 justify-between p-0 text-left hover:bg-transparent" aria-label="Toggle account settings">
+                      <CardTitle className="flex items-center gap-2"><User className="w-5 h-5" />Account</CardTitle>
+                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <HelpTooltip label="About account settings" content="Your personal information and profile" />
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent className="space-y-6">
                 {/* Avatar */}
                 <div className="flex items-center gap-6">
                   <Avatar className="w-20 h-20">
@@ -474,25 +476,27 @@ const Settings = () => {
                     />
                   </div>
                 )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
-            {/* Email Change */}
-            <Collapsible asChild>
-              <Card className="group">
-                <CollapsibleTrigger asChild>
-                  <button className="w-full text-left" aria-label="Toggle change email settings">
-                    <CardHeader className="flex-row items-center justify-between space-y-0">
-                      <div>
-                        <CardTitle className="flex items-center gap-2"><Mail className="w-5 h-5" />Change Email</CardTitle>
-                        <CardDescription>Update your email address</CardDescription>
-                      </div>
-                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
-                    </CardHeader>
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <CardContent className="space-y-4">
+            {/* Login & Security */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="w-5 h-5" />
+                  Login &amp; Security
+                  <HelpTooltip label="About login and security" content="Update your email address or account password" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="email">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="email" className="gap-2"><Mail className="h-4 w-4" />Email</TabsTrigger>
+                    <TabsTrigger value="password" className="gap-2"><Lock className="h-4 w-4" />Password</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="email" className="space-y-4 pt-4">
                 <div className="space-y-2">
                   <Label>Current Email</Label>
                   <div className="flex items-center gap-2">
@@ -534,27 +538,8 @@ const Settings = () => {
                   )}
                   Update Email
                 </Button>
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-
-            {/* Password Change */}
-            <Collapsible asChild>
-              <Card className="group">
-                <CollapsibleTrigger asChild>
-                  <button className="w-full text-left" aria-label="Toggle change password settings">
-                    <CardHeader className="flex-row items-center justify-between space-y-0">
-                      <div>
-                        <CardTitle className="flex items-center gap-2"><Lock className="w-5 h-5" />Change Password</CardTitle>
-                        <CardDescription>Update your account password</CardDescription>
-                      </div>
-                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
-                    </CardHeader>
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <CardContent className="space-y-4">
+                  </TabsContent>
+                  <TabsContent value="password" className="space-y-4 pt-4">
                 <div className="space-y-2">
                   <Label htmlFor="new_password">New Password</Label>
                   <Input
@@ -589,10 +574,10 @@ const Settings = () => {
                   )}
                   Update Password
                 </Button>
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
 
             {/* Verification */}
             <Card>
@@ -600,10 +585,8 @@ const Settings = () => {
                 <CardTitle className="flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5" />
                   Verification
+                  <HelpTooltip label="About verification" content="Manage your identity and phone verification" />
                 </CardTitle>
-                <CardDescription>
-                  Manage your identity and phone verification
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="identity">
@@ -664,21 +647,19 @@ const Settings = () => {
             )}
 
             {/* Profile Visibility */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="w-5 h-5" />
-                  Profile Visibility
-                  <HelpTooltip
-                    label="About profile visibility"
-                    content="Pausing hides your profile from search and maps, but keeps your data. Reactivate anytime to show up again."
-                  />
-                </CardTitle>
-                <CardDescription>
-                  Control whether your profiles are visible to others
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Collapsible asChild>
+              <Card className="group">
+                <CardHeader className="flex-row items-center gap-2 space-y-0">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="h-auto min-w-0 flex-1 justify-between p-0 text-left hover:bg-transparent" aria-label="Toggle profile visibility settings">
+                      <CardTitle className="flex items-center gap-2"><Eye className="w-5 h-5" />Profile Visibility</CardTitle>
+                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <HelpTooltip label="About profile visibility" content="Control whether your profiles are visible to others. Pausing hides your profile from search and maps, but keeps your data." />
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4">
                 {visibilityLoading ? (
                   <div className="space-y-4">
                     <Skeleton className="h-12 w-full" />
@@ -775,23 +756,23 @@ const Settings = () => {
                     </div>
                   </>
                 )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
 
             {/* Notification Preferences */}
             <Collapsible asChild>
               <Card className="group">
-                <CollapsibleTrigger asChild>
-                  <button className="w-full text-left" aria-label="Toggle notification settings">
-                    <CardHeader className="flex-row items-center justify-between space-y-0">
-                      <div>
-                        <CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5" />Notifications</CardTitle>
-                        <CardDescription>Choose what updates you want to receive</CardDescription>
-                      </div>
+                <CardHeader className="flex-row items-center gap-2 space-y-0">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="h-auto min-w-0 flex-1 justify-between p-0 text-left hover:bg-transparent" aria-label="Toggle notification settings">
+                      <CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5" />Notifications</CardTitle>
                       <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
-                    </CardHeader>
-                  </button>
-                </CollapsibleTrigger>
+                    </Button>
+                  </CollapsibleTrigger>
+                  <HelpTooltip label="About notifications" content="Choose what updates you want to receive" />
+                </CardHeader>
                 <CollapsibleContent>
                   <CardContent className="space-y-4">
                 {/* Push Notifications */}
@@ -944,10 +925,8 @@ const Settings = () => {
                 <CardTitle className="flex items-center gap-2">
                   <Compass className="w-5 h-5" />
                   App walkthrough
+                  <HelpTooltip label="About the app walkthrough" content="A quick 5-step tour of browsing, applying, messaging, reviews and settings" />
                 </CardTitle>
-                <CardDescription>
-                  A quick 5-step tour of browsing, applying, messaging, reviews and settings
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between gap-4">
@@ -967,10 +946,8 @@ const Settings = () => {
                 <CardTitle className="flex items-center gap-2 text-destructive">
                   <AlertTriangle className="w-5 h-5" />
                   Danger Zone
+                  <HelpTooltip label="About the danger zone" content="Irreversible and destructive actions" />
                 </CardTitle>
-                <CardDescription>
-                  Irreversible and destructive actions
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
