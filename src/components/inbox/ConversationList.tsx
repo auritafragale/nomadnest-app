@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import { MessageCircle } from "lucide-react";
 import type { Conversation } from "@/hooks/useConversations";
+import { messagePreviewText } from "@/lib/chatImage";
 import { cn } from "@/lib/utils";
 
 interface ConversationListProps {
