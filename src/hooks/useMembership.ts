@@ -67,7 +67,7 @@ export const useMembership = () => {
   });
 
   const checkSubscription = useCallback(async () => {
-    if (!user) {
+    if (!user || !session?.access_token) {
       setState((s) => ({ ...s, loading: false }));
       return;
     }
