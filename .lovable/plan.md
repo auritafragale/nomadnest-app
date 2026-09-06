@@ -33,6 +33,6 @@ The Pet Parent sees the same care bar area replaced by a read-only "Today's care
 - New `CheckinBar` + `CheckinSheet` components rendered by `MessageThread`, driven by a new hook that resolves the active sit for a conversation (owner/sitter pair + listing) and today's check-ins.
 - Message rendering in `MessageThread` detects check-in messages (structured prefix written by `useSitCheckins`) and renders the care card instead of raw text; the mirrored message body keeps a machine-readable marker so this is reliable rather than string-sniffing prose.
 - Meds button visibility reads the listing's pets `requires_medication` flag.
-- New edge function `sit-checkin-reminders` (service role) plus a `cron.schedule` entry at 08:00 UTC, mirroring the existing `review-reminders` job; it inserts notifications and calls `send-push-notification`.
+- New edge function `sit-checkin-reminders` (service role) plus a `cron.schedule` entry that runs hourly and sends each sit's reminder at ~6pm in the sit location's own timezone, mirroring the existing `review-reminders` job; it inserts notifications and calls `send-push-notification`.
 - Photo upload reuses `ImageUpload`/the existing bucket and folder used by check-ins today.
 - Verification: `npx tsgo --noEmit`, a mobile-width pass (393×852) posting a check-in from a live sit chat and confirming it appears for the other side, and a manual invoke of the reminder function checking exactly one notification per Nomad.
