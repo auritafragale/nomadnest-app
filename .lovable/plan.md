@@ -9,11 +9,11 @@
 
 ## The fix
 
-### 1. One tap = posted
+### 1. Tapping a pill opens the panel; "Send Update" posts it
 
-- Tapping Fed, Walk or Meds saves the check-in immediately and marks the pill green with a tick.
-- A separate small "＋ note or photo" action opens the panel for anyone who wants to add a note or picture; the panel keeps its own send button.
-- If saving fails, the pill returns to unticked and a clear message explains why, instead of failing quietly.
+- Tapping Fed, Walk or Meds opens the panel with optional note and photo (take a photo or upload).
+- The check-in is saved — and the pill turns green with a tick — only when "Send Update" is pressed and the photo (if one was chosen) has finished uploading. Until then the button waits/disabled rather than half-posting.
+- If saving fails, the panel stays open, the pill stays unticked, and a clear message explains why, instead of failing quietly.
 
 ### 2. The check-in always lands in the right chat
 
