@@ -381,12 +381,37 @@ const ListingDetail = () => {
 
           {/* Photo Gallery */}
           {allPhotos.length > 0 ? (
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-muted mb-6">
+            <div className="relative aspect-video rounded-xl overflow-hidden bg-muted mb-6 group">
               <img
                 src={allPhotos[currentPhotoIndex]}
                 alt={`Photo ${currentPhotoIndex + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover cursor-zoom-in"
+                onClick={() => setLightboxOpen(true)}
               />
+              {/* Share — top left, plain icon */}
+              <div className="absolute top-3 left-3">
+                <ShareDialog
+                  title={listing.title}
+                  description={`Check out this pet sitting opportunity in ${listing.city}, ${listing.country}`}
+                  triggerClassName="bg-background/80 hover:bg-background backdrop-blur-sm rounded-full shadow-sm border-0"
+                />
+              </div>
+              {/* Favourite — top right */}
+              {user && !isOwner && (
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite.mutate({ listingId: listing.id, isFavorited })}
+                  aria-label={isFavorited ? "Remove from saved" : "Save listing"}
+                  className="absolute top-3 right-3 p-2 bg-background/80 hover:bg-background backdrop-blur-sm rounded-full shadow-sm transition-colors"
+                >
+                  <Heart
+                    className={cn(
+                      "w-5 h-5 transition-colors",
+                      isFavorited ? "fill-primary text-primary" : "text-foreground",
+                    )}
+                  />
+                </button>
+              )}
               {allPhotos.length > 1 && (
               <>
                   <button
@@ -401,7 +426,7 @@ const ListingDetail = () => {
                     aria-label="Next photo"
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-background/80 rounded-full hover:bg-background transition-colors"
                   >
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-5 w-5" />
                   </button>
                   <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
                     {allPhotos.map((_, idx) => (
