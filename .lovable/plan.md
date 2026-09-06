@@ -9,11 +9,11 @@
 
 ## The fix
 
-### 1. One tap = posted
+### 1. Tapping a pill opens the panel; "Send Update" posts it
 
-- Tapping Fed, Walk or Meds saves the check-in immediately and marks the pill green with a tick.
-- A separate small "＋ note or photo" action opens the panel for anyone who wants to add a note or picture; the panel keeps its own send button.
-- If saving fails, the pill returns to unticked and a clear message explains why, instead of failing quietly.
+- Tapping Fed, Walk or Meds opens the panel with optional note and photo (take a photo or upload).
+- The check-in is saved — and the pill turns green with a tick — only when "Send Update" is pressed and the photo (if one was chosen) has finished uploading. Until then the button waits/disabled rather than half-posting.
+- If saving fails, the panel stays open, the pill stays unticked, and a clear message explains why, instead of failing quietly.
 
 ### 2. The check-in always lands in the right chat
 
@@ -30,7 +30,7 @@
 
 ## Technical notes
 
-- `CheckinBar.tsx`: pills call `useAddSitCheckin` directly (optimistic tick, revert on error); the sheet moves behind a secondary "note or photo" trigger. `CheckinSheet.tsx` keeps its submit path.
+- `CheckinBar.tsx`: pills open `CheckinSheet`; the green/tick state comes only from `sit_checkins` rows (todayKinds) after the sheet's Send succeeds. `CheckinSheet.tsx`: block Send until any photo upload has completed, keep the sheet open and show the error on failure.
 - `useSitCheckins.ts`: keep `resolveListingConversation` mirroring, but surface a warning toast when no conversation id resolves or the message insert errors; invalidate `["messages", id]`, `["conversations"]`, `["sit-checkins", sitId]`, and `["active-sit-for-conversation"]`.
 - Push/email: after the mirrored message insert, call the existing `send-push-notification` and `send-notification-email` functions for the Pet Parent (guarded by `notification_preferences.email_sit_updates`), mirroring the pattern already used in `useConversations.sendMessage`.
 - No schema change needed: `sit_checkins` insert policy and `trg_notify_owner_on_sit_checkin` are correct and verified working.
