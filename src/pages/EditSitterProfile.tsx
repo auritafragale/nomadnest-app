@@ -33,6 +33,7 @@ import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
+import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 import { PET_TYPE_OPTIONS, formatPetType, canonicalPetType } from "@/lib/petTypes";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
@@ -121,6 +122,9 @@ const EditSitterProfile = () => {
   const { user, role } = useAuth();
   const { toast } = useToast();
   const { data: mapsConfig } = useGoogleMapsKey();
+  // Coordinates captured when a city is chosen from the suggestions; saved
+  // directly so the nomad map does not depend on a later lookup.
+  const [pickedCoords, setPickedCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -272,9 +276,11 @@ const EditSitterProfile = () => {
       }
 
       // Geocode city/country so the nomad shows up on the Browse Nomads map.
-      const coords = mapsConfig?.key
-        ? await geocodeCityCountry(mapsConfig.key, profile.city, profile.country)
-        : null;
+      const coords =
+        pickedCoords ??
+        (mapsConfig?.key
+          ? await geocodeCityCountry(mapsConfig.key, profile.city, profile.country)
+          : null);
 
       // Upsert sitter profile
       const { error: sitterError } = await supabase
