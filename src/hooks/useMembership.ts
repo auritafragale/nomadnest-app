@@ -97,7 +97,7 @@ export const useMembership = () => {
       });
 
     }
-  }, [user]);
+  }, [user, session?.access_token]);
 
   useEffect(() => {
     checkSubscription();
