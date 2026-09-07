@@ -51,7 +51,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
-import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
+import { MembershipCardContent } from "@/components/settings/MembershipCardContent";
 import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { useDeleteAccount } from "@/hooks/useDeleteAccount";
 import { useProfileVisibility, useUpdateProfileVisibility } from "@/hooks/useProfileVisibility";
