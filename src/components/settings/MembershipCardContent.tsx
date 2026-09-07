@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
 import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
   role: "sitter" | "owner" | "both";
@@ -12,7 +11,6 @@ interface Props {
 }
 
 export const MembershipCardContent = ({ role, onUpgrade }: Props) => {
-  const { user } = useAuth();
   const { subscribed, membershipType, foundingMember, subscriptionEnd, cardBrand, cardLast4, loading, openPortal } = useMembership();
 
   if (loading) {
