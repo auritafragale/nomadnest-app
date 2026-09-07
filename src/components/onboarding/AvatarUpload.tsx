@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, User, Loader2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,7 @@ export const AvatarUpload = ({
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl || null);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -184,12 +185,14 @@ export const AvatarUpload = ({
         )}
       </div>
 
-      <label
-        htmlFor="avatar-upload-input"
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={isUploading}
         className="inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 text-sm cursor-pointer"
       >
         <input
-          id="avatar-upload-input"
+          ref={fileInputRef}
           type="file"
           accept="image/*"
           className="sr-only"
@@ -207,7 +210,7 @@ export const AvatarUpload = ({
             {previewUrl ? "Change photo" : "Upload photo (max 10MB)"}
           </>
         )}
-      </label>
+      </button>
     </div>
   );
 };
