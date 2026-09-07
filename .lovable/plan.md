@@ -27,7 +27,7 @@
 ## Complete the Settings Membership card
 
 - Show every signed-in member’s current plan and status in the existing Membership card.
-- Show the renewal/expiry date for paid memberships and “Lifetime access — no expiry” for founding members.
+- Show the renewal/expiry date for paid memberships and “Lifetime access” for founding members.
 - For inactive members, retain the Combined upgrade option where applicable and provide a clear route to view plans.
 - Add **Manage** for paid members and take them to `/membership`, as requested.
 - Add a signed-in management section on `/membership` that displays current plan, renewal status/date, and saved card summary when available, with a secure action to open Stripe’s hosted portal for changing the card or cancelling/controlling renewal. Founding members will see lifetime status without irrelevant payment controls.
