@@ -99,44 +99,52 @@ const VerifyIdentity = () => {
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [idPreview, setIdPreview] = useState<string | null>(null);
   const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
-  const [fileError, setFileError] = useState<string>("");
+  const [idError, setIdError] = useState<string>("");
+  const [selfieError, setSelfieError] = useState<string>("");
   const [manualUploading, setManualUploading] = useState(false);
   const [manualSubmitted, setManualSubmitted] = useState(false);
 
   // Phone cameras often hand over a file with an empty or generic MIME type and
   // no extension, so anything the picker returns is accepted unless it is
   // clearly unusable. Previews make it obvious the photo actually arrived.
+  // We do NOT manually revoke the previous preview URL here — the useEffect
+  // cleanups below own that exclusively, eliminating the stale-closure race
+  // that could blank the preview when returning from the camera app.
   const pickFile = (file: File | null, target: "id" | "selfie") => {
     const setFile = target === "id" ? setIdFile : setSelfieFile;
     const setPreview = target === "id" ? setIdPreview : setSelfiePreview;
-    const currentPreview = target === "id" ? idPreview : selfiePreview;
-
-    if (currentPreview) URL.revokeObjectURL(currentPreview);
+    const setError = target === "id" ? setIdError : setSelfieError;
 
     if (!file) {
       setFile(null);
       setPreview(null);
-      setFileError("");
+      setError("");
       return;
     }
 
     if (file.size === 0) {
-      setFileError("That photo came through empty — please try again.");
+      setError("That photo came through empty — please try again.");
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setFileError("That file is larger than 10MB — please choose a smaller photo.");
+      setError("That file is larger than 10MB — please choose a smaller photo.");
       return;
     }
     const type = (file.type || "").toLowerCase();
-    if (type && !type.startsWith("image/") && type !== "application/pdf") {
-      setFileError("Please choose a photo or a PDF.");
+    const isImage = type.startsWith("image/");
+    if (type && !isImage && type !== "application/pdf") {
+      setError("Please choose a photo or a PDF.");
+      return;
+    }
+    // Selfie must be an image (no PDF)
+    if (target === "selfie" && type && !isImage) {
+      setError("Selfie must be a photo.");
       return;
     }
 
-    setFileError("");
+    setError("");
     setFile(file);
-    setPreview(type.startsWith("image/") ? URL.createObjectURL(file) : null);
+    setPreview(isImage ? URL.createObjectURL(file) : null);
   };
 
   useEffect(() => {
