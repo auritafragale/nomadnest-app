@@ -161,20 +161,18 @@ export const AvatarUpload = ({
         )}
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileSelect}
-        disabled={isUploading}
-      />
-
-      <Button
-        variant="outline"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={isUploading}
+      <label
+        htmlFor="avatar-upload-input"
+        className="inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 text-sm cursor-pointer"
       >
+        <input
+          id="avatar-upload-input"
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={handleFileSelect}
+          disabled={isUploading}
+        />
         {isUploading ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -183,10 +181,10 @@ export const AvatarUpload = ({
         ) : (
           <>
             <Upload className="w-4 h-4 mr-2" />
-            {previewUrl ? "Change photo" : "Upload photo"}
+            {previewUrl ? "Change photo" : "Upload photo (max 10MB)"}
           </>
         )}
-      </Button>
+      </label>
     </div>
   );
 };
