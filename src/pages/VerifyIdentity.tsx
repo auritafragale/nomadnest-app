@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft, Upload, Clock } from "lucide-react";
+import { Loader2, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft, Upload, Clock, Camera } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { useVerification } from "@/hooks/useVerification";
