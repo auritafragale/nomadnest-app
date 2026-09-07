@@ -13,7 +13,7 @@ interface Props {
 
 export const MembershipCardContent = ({ role, onUpgrade }: Props) => {
   const { user } = useAuth();
-  const { subscribed, membershipType, foundingMember, subscriptionEnd, loading, openPortal } = useMembership();
+  const { subscribed, membershipType, foundingMember, subscriptionEnd, cardBrand, cardLast4, loading, openPortal } = useMembership();
 
   if (loading) {
     return (
