@@ -113,6 +113,21 @@ serve(async (req) => {
         ? new Date(periodEnd * 1000).toISOString()
         : null;
 
+    // Fetch card summary from the default payment method (safe, non-sensitive)
+    let cardSummary: { brand: string | null; last4: string | null } = { brand: null, last4: null };
+    try {
+      const customer = customers.data[0];
+      const pmId = customer.invoice_settings?.default_payment_method as string | undefined;
+      if (pmId && typeof pmId === "string" && pmId.startsWith("pm_")) {
+        const pm = await stripe.paymentMethods.retrieve(pmId);
+        if (pm.card) {
+          cardSummary = { brand: pm.card.brand, last4: pm.card.last4 };
+        }
+      }
+    } catch {
+      // Non-critical — card summary stays null
+    }
+
     await supabaseClient.from("profiles").update({
       membership_status: "active",
       membership_type: membershipType,
@@ -124,6 +139,8 @@ serve(async (req) => {
       membership_type: membershipType,
       subscription_end: subscriptionEnd,
       founding_member: false,
+      card_brand: cardSummary.brand,
+      card_last4: cardSummary.last4,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -51,7 +51,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
-import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
+import { MembershipCardContent } from "@/components/settings/MembershipCardContent";
 import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { useDeleteAccount } from "@/hooks/useDeleteAccount";
 import { useProfileVisibility, useUpdateProfileVisibility } from "@/hooks/useProfileVisibility";
@@ -264,27 +264,22 @@ const Settings = () => {
           </div>
 
           <div className="space-y-6">
-            {(role === "sitter" || role === "owner") && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Crown className="w-5 h-5 text-primary" />
-                    Membership
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="space-y-1">
-                    <p className="font-medium">Upgrade to Combined</p>
-                    <p className="text-sm text-muted-foreground">
-                      {role === "sitter"
-                        ? "Add Pet Parent access to list your home and pets."
-                        : "Add Nomad access to browse and apply for sits."}
-                    </p>
-                  </div>
-                  <UpgradeRoleDialog currentRole={role} onUpgrade={() => refreshRole()} />
-                </CardContent>
-              </Card>
-            )}
+            {/* Membership */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="w-5 h-5 text-primary" />
+                  Membership
+                  <HelpTooltip label="About membership" content="Your NomadNest plan and billing" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MembershipCardContent
+                  role={role}
+                  onUpgrade={() => refreshRole()}
+                />
+              </CardContent>
+            </Card>
 
             {/* Login & Security */}
             <Card>

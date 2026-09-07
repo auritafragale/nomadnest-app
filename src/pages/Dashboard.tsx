@@ -21,7 +21,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { OwnerListingCard } from "@/components/dashboard/OwnerListingCard";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
-import UpgradeRoleDialog from "@/components/dashboard/UpgradeRoleDialog";
 import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection";
 
 import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompletenessCard";
@@ -213,13 +212,6 @@ const Dashboard = () => {
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
-            </div>
-          )}
-
-          {/* Upgrade role option for single-role users */}
-          {(role === "sitter" || role === "owner") && (
-            <div className="mb-8">
-              <UpgradeRoleDialog currentRole={role} />
             </div>
           )}
 

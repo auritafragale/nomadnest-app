@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft, Upload, Clock } from "lucide-react";
+import { Loader2, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft, Upload, Clock, Camera } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { useVerification } from "@/hooks/useVerification";
@@ -99,44 +99,52 @@ const VerifyIdentity = () => {
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [idPreview, setIdPreview] = useState<string | null>(null);
   const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
-  const [fileError, setFileError] = useState<string>("");
+  const [idError, setIdError] = useState<string>("");
+  const [selfieError, setSelfieError] = useState<string>("");
   const [manualUploading, setManualUploading] = useState(false);
   const [manualSubmitted, setManualSubmitted] = useState(false);
 
   // Phone cameras often hand over a file with an empty or generic MIME type and
   // no extension, so anything the picker returns is accepted unless it is
   // clearly unusable. Previews make it obvious the photo actually arrived.
+  // We do NOT manually revoke the previous preview URL here — the useEffect
+  // cleanups below own that exclusively, eliminating the stale-closure race
+  // that could blank the preview when returning from the camera app.
   const pickFile = (file: File | null, target: "id" | "selfie") => {
     const setFile = target === "id" ? setIdFile : setSelfieFile;
     const setPreview = target === "id" ? setIdPreview : setSelfiePreview;
-    const currentPreview = target === "id" ? idPreview : selfiePreview;
-
-    if (currentPreview) URL.revokeObjectURL(currentPreview);
+    const setError = target === "id" ? setIdError : setSelfieError;
 
     if (!file) {
       setFile(null);
       setPreview(null);
-      setFileError("");
+      setError("");
       return;
     }
 
     if (file.size === 0) {
-      setFileError("That photo came through empty — please try again.");
+      setError("That photo came through empty — please try again.");
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setFileError("That file is larger than 10MB — please choose a smaller photo.");
+      setError("That file is larger than 10MB — please choose a smaller photo.");
       return;
     }
     const type = (file.type || "").toLowerCase();
-    if (type && !type.startsWith("image/") && type !== "application/pdf") {
-      setFileError("Please choose a photo or a PDF.");
+    const isImage = type.startsWith("image/");
+    if (type && !isImage && type !== "application/pdf") {
+      setError("Please choose a photo or a PDF.");
+      return;
+    }
+    // Selfie must be an image (no PDF)
+    if (target === "selfie" && type && !isImage) {
+      setError("Selfie must be a photo.");
       return;
     }
 
-    setFileError("");
+    setError("");
     setFile(file);
-    setPreview(type.startsWith("image/") ? URL.createObjectURL(file) : null);
+    setPreview(isImage ? URL.createObjectURL(file) : null);
   };
 
   useEffect(() => {
@@ -250,7 +258,9 @@ const VerifyIdentity = () => {
       return;
     }
     setManualUploading(true);
-    setFileError("");
+    setIdError("");
+    setSelfieError("");
+    const uploadedPaths: string[] = [];
     try {
       const uploadFile = async (file: File, name: string) => {
         const nameExt = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
@@ -264,6 +274,7 @@ const VerifyIdentity = () => {
             contentType: file.type || "image/jpeg",
           });
         if (error) throw error;
+        uploadedPaths.push(path);
         return path;
       };
 
@@ -281,9 +292,13 @@ const VerifyIdentity = () => {
       setManualSubmitted(true);
       toast({ title: "Submitted for review", description: "We'll notify you once reviewed, usually within 24-48 hours." });
     } catch (err: any) {
-      setFileError(err?.message || "Upload failed — please try again.");
-      toast({ variant: "destructive", title: "Upload failed", description: err.message });
-
+      // Clean up partially uploaded files so the member can retry cleanly
+      for (const path of uploadedPaths) {
+        await supabase.storage.from("id-verification-documents").remove([path]).catch(() => {});
+      }
+      const msg = err?.message || "Upload failed — please try again.";
+      setIdError(msg);
+      toast({ variant: "destructive", title: "Upload failed", description: msg });
     } finally {
       setManualUploading(false);
     }
@@ -415,73 +430,120 @@ const VerifyIdentity = () => {
                     </div>
                   ) : (
                     <>
-                      {fileError && (
-                        <p className="text-sm text-destructive" role="alert">{fileError}</p>
-                      )}
-                      <div className="space-y-2">
-                        <Label htmlFor="id_photo">Photo ID (passport, driving licence, national ID)</Label>
+                      <div className="space-y-1">
+                        <Label>Photo ID (passport, driving licence, national ID)</Label>
+                        <p className="text-xs text-muted-foreground">Images or PDF, max 10MB.</p>
+                        {idError && (
+                          <p className="text-sm text-destructive" role="alert">{idError}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
                         <label
-                          htmlFor="id_photo"
-                          className={buttonVariants({ variant: "outline", className: "relative w-full cursor-pointer" })}
+                          htmlFor="id_photo_camera"
+                          className={buttonVariants({ variant: "outline", className: "flex-1 cursor-pointer" })}
                         >
-                          <Upload className="w-4 h-4 mr-2" />
-                          {idFile ? "Change Photo ID" : "Choose Photo ID"}
+                          <Camera className="w-4 h-4 mr-2" />
+                          {idFile ? "Retake Photo ID" : "Take Photo"}
                           <input
-                            id="id_photo"
+                            id="id_photo_camera"
                             type="file"
-                            accept="image/*,application/pdf"
-                            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                            aria-label="Choose photo ID"
+                            accept="image/*"
+                            capture="environment"
+                            className="sr-only"
+                            aria-label="Take photo of ID with camera"
                             onChange={(e) => {
                               pickFile(e.target.files?.[0] ?? null, "id");
                               e.target.value = "";
                             }}
                           />
                         </label>
-                        {idFile && (
-                          <div className="flex items-center gap-3">
-                            {idPreview && (
-                              <img src={idPreview} alt="Selected photo ID preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
-                            )}
-                            <p className="text-xs text-muted-foreground truncate flex-1">Selected: {idFile.name}</p>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "id")}>
-                              Remove
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="selfie">Selfie (holding your ID or looking at camera)</Label>
                         <label
-                          htmlFor="selfie"
-                          className={buttonVariants({ variant: "outline", className: "relative w-full cursor-pointer" })}
+                          htmlFor="id_photo_upload"
+                          className={buttonVariants({ variant: "outline", className: "flex-1 cursor-pointer" })}
                         >
                           <Upload className="w-4 h-4 mr-2" />
-                          {selfieFile ? "Change Selfie" : "Choose Selfie"}
+                          Upload
                           <input
-                            id="selfie"
+                            id="id_photo_upload"
+                            type="file"
+                            accept="image/*,application/pdf"
+                            className="sr-only"
+                            aria-label="Upload photo ID from files"
+                            onChange={(e) => {
+                              pickFile(e.target.files?.[0] ?? null, "id");
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
+                      {idFile && (
+                        <div className="flex items-center gap-3">
+                          {idPreview && (
+                            <img src={idPreview} alt="Selected photo ID preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
+                          )}
+                          <p className="text-xs text-muted-foreground truncate flex-1">Selected: {idFile.name}</p>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "id")}>
+                            Remove
+                          </Button>
+                        </div>
+                      )}
+                      <div className="space-y-1">
+                        <Label>Selfie (holding your ID or looking at camera)</Label>
+                        <p className="text-xs text-muted-foreground">Photo only, max 10MB.</p>
+                        {selfieError && (
+                          <p className="text-sm text-destructive" role="alert">{selfieError}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <label
+                          htmlFor="selfie_camera"
+                          className={buttonVariants({ variant: "outline", className: "flex-1 cursor-pointer" })}
+                        >
+                          <Camera className="w-4 h-4 mr-2" />
+                          {selfieFile ? "Retake Selfie" : "Take Photo"}
+                          <input
+                            id="selfie_camera"
                             type="file"
                             accept="image/*"
-                            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                            aria-label="Choose selfie"
+                            capture="user"
+                            className="sr-only"
+                            aria-label="Take selfie with camera"
                             onChange={(e) => {
                               pickFile(e.target.files?.[0] ?? null, "selfie");
                               e.target.value = "";
                             }}
                           />
                         </label>
-                        {selfieFile && (
-                          <div className="flex items-center gap-3">
-                            {selfiePreview && (
-                              <img src={selfiePreview} alt="Selected selfie preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
-                            )}
-                            <p className="text-xs text-muted-foreground truncate flex-1">Selected: {selfieFile.name}</p>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "selfie")}>
-                              Remove
-                            </Button>
-                          </div>
-                        )}
+                        <label
+                          htmlFor="selfie_upload"
+                          className={buttonVariants({ variant: "outline", className: "flex-1 cursor-pointer" })}
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload
+                          <input
+                            id="selfie_upload"
+                            type="file"
+                            accept="image/*"
+                            className="sr-only"
+                            aria-label="Upload selfie from files"
+                            onChange={(e) => {
+                              pickFile(e.target.files?.[0] ?? null, "selfie");
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
                       </div>
+                      {selfieFile && (
+                        <div className="flex items-center gap-3">
+                          {selfiePreview && (
+                            <img src={selfiePreview} alt="Selected selfie preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
+                          )}
+                          <p className="text-xs text-muted-foreground truncate flex-1">Selected: {selfieFile.name}</p>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "selfie")}>
+                            Remove
+                          </Button>
+                        </div>
+                      )}
 
                       <Button
                         className="w-full"

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Check, Crown, Star, Sparkles, Shield, Gift, ChevronDown, ExternalLink } from "lucide-react";
+import { Check, Crown, Star, Sparkles, Shield, Gift, ChevronDown, ExternalLink, CreditCard, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
@@ -117,7 +118,7 @@ const Membership = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { subscribed, membershipType, foundingMember, loading, startCheckout, redeemFoundingMemberCode } = useMembership();
+  const { subscribed, membershipType, foundingMember, subscriptionEnd, cardBrand, cardLast4, loading, startCheckout, openPortal, redeemFoundingMemberCode } = useMembership();
   // Don't promise a stocked perks hub until there are enough partners live.
   const { perks } = usePerks();
   const perksLive = perks.length >= 3;
@@ -217,6 +218,55 @@ const Membership = () => {
             One simple annual membership. That's it. No commissions, no hidden costs.
           </p>
         </div>
+
+        {user && !loading && (subscribed || foundingMember) && (
+          <Card className="mb-12 max-w-2xl mx-auto border-2 border-primary/30">
+            <CardHeader>
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Crown className="w-5 h-5 text-primary" />
+                Your Membership
+              </h2>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Badge className="bg-primary/10 text-primary border-0">
+                  {foundingMember
+                    ? "Founding Member"
+                    : MEMBERSHIP_PLANS[membershipType as keyof typeof MEMBERSHIP_PLANS]?.name ?? membershipType}
+                </Badge>
+                <span className="text-sm font-medium text-muted-foreground">
+                  {foundingMember ? "Lifetime access" : "Active"}
+                </span>
+              </div>
+              {foundingMember ? (
+                <p className="text-sm text-muted-foreground">
+                  You have full Combined access to NomadNest — forever. Thank you for being an early supporter.
+                </p>
+              ) : (
+                <>
+                  {subscriptionEnd && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="w-4 h-4" />
+                      Renews on {new Date(subscriptionEnd).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                    </div>
+                  )}
+                  {cardBrand && cardLast4 && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CreditCard className="w-4 h-4" />
+                      {cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1)} ending {cardLast4}
+                    </div>
+                  )}
+                  <div className="pt-1">
+                    <Button variant="outline" size="sm" onClick={() => openPortal()}>
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Manage Subscription
+                    </Button>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {cancelled && (
           <div className="bg-warning/10 border border-warning text-warning-foreground rounded-lg p-4 mb-8 text-center">
