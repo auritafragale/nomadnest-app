@@ -65,6 +65,8 @@ export const useMembership = () => {
     membershipType: null,
     foundingMember: false,
     subscriptionEnd: null,
+    cardBrand: null,
+    cardLast4: null,
     loading: true,
   });
 
@@ -83,6 +85,8 @@ export const useMembership = () => {
         membershipType: data.membership_type ?? null,
         foundingMember: data.founding_member ?? false,
         subscriptionEnd: data.subscription_end ?? null,
+        cardBrand: data.card_brand ?? null,
+        cardLast4: data.card_last4 ?? null,
         loading: false,
       });
     } catch {
@@ -95,6 +99,8 @@ export const useMembership = () => {
         membershipType: profile?.membership_type ?? null,
         foundingMember: profile?.founding_member ?? false,
         subscriptionEnd: null,
+        cardBrand: null,
+        cardLast4: null,
         loading: false,
       });
 
