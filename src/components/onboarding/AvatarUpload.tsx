@@ -19,7 +19,6 @@ export const AvatarUpload = ({
 }: AvatarUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl || null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
