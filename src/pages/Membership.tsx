@@ -268,6 +268,12 @@ const Membership = () => {
           </Card>
         )}
 
+        {cancelled && (
+          <div className="bg-warning/10 border border-warning text-warning-foreground rounded-lg p-4 mb-8 text-center">
+            Payment was cancelled. You can try again whenever you're ready.
+          </div>
+        )}
+
         {upgradeBoth && (
           <div className="bg-primary/10 border border-primary text-foreground rounded-lg p-4 mb-8 text-center">
             Upgrade to the <strong>Combined Membership</strong> to use NomadNest as both a Nomad and Pet Parent.
