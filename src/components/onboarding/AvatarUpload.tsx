@@ -72,20 +72,45 @@ export const AvatarUpload = ({
         .from("listing-images")
         .getPublicUrl(filePath);
 
-      // Update profile with new avatar URL
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: publicUrl })
-        .eq("id", userId);
+      // Update profile with new avatar URL. During email-confirmation
+      // redirects the session may not be fully established yet, which would
+      // send the UPDATE as the anon role and fail with "permission denied".
+      // Verify the session first, retry once after a short delay, and if it
+      // still can't apply, don't block onboarding — the photo is already in
+      // storage.
+      const applyAvatar = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          await new Promise((r) => setTimeout(r, 1000));
+          const retry = await supabase.auth.getSession();
+          if (!retry.data.session?.access_token) {
+            return false;
+          }
+        }
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({ avatar_url: publicUrl })
+          .eq("id", userId);
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
+        return true;
+      };
+
+      const applied = await applyAvatar();
 
       onUploadComplete(publicUrl);
 
-      toast({
-        title: "Photo uploaded",
-        description: "Your profile photo has been updated.",
-      });
+      if (applied) {
+        toast({
+          title: "Photo uploaded",
+          description: "Your profile photo has been updated.",
+        });
+      } else {
+        toast({
+          title: "Photo saved",
+          description: "We'll apply it to your profile when you complete setup.",
+        });
+      }
     } catch (error: any) {
       console.error("Upload error:", error);
       setPreviewUrl(currentAvatarUrl || null);
