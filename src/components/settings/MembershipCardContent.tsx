@@ -57,6 +57,12 @@ export const MembershipCardContent = ({ role, onUpgrade }: Props) => {
             Renews on {renewalDate}
           </div>
         )}
+        {cardBrand && cardLast4 && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <CreditCard className="w-4 h-4" />
+            {cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1)} ending {cardLast4}
+          </div>
+        )}
         <div className="flex gap-2 pt-1">
           <Button variant="outline" size="sm" onClick={() => openPortal()}>
             <CreditCard className="w-4 h-4 mr-2" />
