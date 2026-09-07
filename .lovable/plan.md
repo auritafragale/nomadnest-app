@@ -14,7 +14,7 @@
 ## Fix onboarding profile-photo upload
 
 - Add the missing authenticated update grant for the safe, member-editable profile fields, including `avatar_url`; keep protected account, membership, verification, and admin fields blocked by the existing privilege-escalation safeguards.
-- Keep the current 5MB image limit, state it beside the selector, and make mobile selection use a direct native input rather than a programmatic hidden-input click.
+- Set the image limit to 10MB, state it beside the selector, and make mobile selection use a direct native input rather than a programmatic hidden-input click.
 - Revoke temporary preview URLs safely and keep the prior avatar when upload or profile saving fails.
 - Test the exact six-step onboarding path as a normal new member, confirming both storage upload and profile-photo persistence. The audit’s file did reach storage; the confirmed failure was the missing profile update permission, not file size.
 
