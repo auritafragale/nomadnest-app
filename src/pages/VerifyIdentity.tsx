@@ -283,11 +283,36 @@ const VerifyIdentity = () => {
         uploadFile(selfieFile, "selfie"),
       ]);
 
-      const { error: insertError } = await supabase
+      // A previous attempt can leave a pending row behind, so reuse it rather
+      // than stacking duplicate submissions in the admin review queue. The
+      // "Users can update own pending verifications" policy allows this while
+      // the row is still pending; once an admin reviews it, a retry correctly
+      // falls through to a fresh INSERT.
+      const { data: existing, error: existingError } = await supabase
         .from("manual_id_verifications")
-        .insert({ user_id: user.id, id_photo_path: idPath, selfie_path: selfiePath });
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (insertError) throw insertError;
+      if (existingError) throw existingError;
+
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from("manual_id_verifications")
+          .update({ id_photo_path: idPath, selfie_path: selfiePath })
+          .eq("id", existing.id);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("manual_id_verifications")
+          .insert({ user_id: user.id, id_photo_path: idPath, selfie_path: selfiePath });
+
+        if (insertError) throw insertError;
+      }
 
       setManualSubmitted(true);
       toast({ title: "Submitted for review", description: "We'll notify you once reviewed, usually within 24-48 hours." });
