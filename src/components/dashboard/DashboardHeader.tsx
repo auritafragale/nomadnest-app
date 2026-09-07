@@ -99,20 +99,21 @@ const DashboardHeader = ({
             Edit Profile
           </Button>
         </Link>
-        {!loading && !subscribed && (
-          <Link to="/membership">
-            <Button size="sm" variant="outline">
-              <Crown className="w-4 h-4 mr-2" />
-              View plans
-            </Button>
-          </Link>
-        )}
         <Link to="/settings">
           <Button variant="outline" size="icon" aria-label="Settings">
             <Settings className="w-4 h-4" />
           </Button>
         </Link>
       </div>
+
+      {!loading && !subscribed && (
+        <Link to="/membership">
+          <Button size="sm" variant="outline" className="w-full">
+            <Crown className="w-4 h-4 mr-2" />
+            View plans
+          </Button>
+        </Link>
+      )}
     </div>
   );
 };
