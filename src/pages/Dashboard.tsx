@@ -216,13 +216,6 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Upgrade role option for single-role users */}
-          {(role === "sitter" || role === "owner") && (
-            <div className="mb-8">
-              <UpgradeRoleDialog currentRole={role} />
-            </div>
-          )}
-
           {/* Dashboard Content */}
           {(activeRole === "sitter" && (role === "sitter" || role === "both")) && (
             <SitterDashboard 
