@@ -132,6 +132,9 @@ const VerifyIdentity = () => {
     }
     const type = (file.type || "").toLowerCase();
     const isImage = type.startsWith("image/");
+    // Android camera captures often arrive with an empty MIME type — treat
+    // those as images so the preview still renders.
+    const treatAsImage = isImage || type === "";
     if (type && !isImage && type !== "application/pdf") {
       setError("Please choose a photo or a PDF.");
       return;
@@ -144,20 +147,24 @@ const VerifyIdentity = () => {
 
     setError("");
     setFile(file);
-    setPreview(isImage ? URL.createObjectURL(file) : null);
+    setPreview(treatAsImage ? URL.createObjectURL(file) : null);
   };
 
+  // Revoke a preview URL only once it is no longer the current one.
+  const prevIdPreview = useRef<string | null>(null);
   useEffect(() => {
-    return () => {
-      if (idPreview) URL.revokeObjectURL(idPreview);
-    };
+    const previous = prevIdPreview.current;
+    if (previous && previous !== idPreview) URL.revokeObjectURL(previous);
+    prevIdPreview.current = idPreview;
   }, [idPreview]);
 
+  const prevSelfiePreview = useRef<string | null>(null);
   useEffect(() => {
-    return () => {
-      if (selfiePreview) URL.revokeObjectURL(selfiePreview);
-    };
+    const previous = prevSelfiePreview.current;
+    if (previous && previous !== selfiePreview) URL.revokeObjectURL(previous);
+    prevSelfiePreview.current = selfiePreview;
   }, [selfiePreview]);
+
 
 
   // Teardown on unmount
