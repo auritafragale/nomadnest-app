@@ -258,7 +258,9 @@ const VerifyIdentity = () => {
       return;
     }
     setManualUploading(true);
-    setFileError("");
+    setIdError("");
+    setSelfieError("");
+    const uploadedPaths: string[] = [];
     try {
       const uploadFile = async (file: File, name: string) => {
         const nameExt = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
@@ -272,6 +274,7 @@ const VerifyIdentity = () => {
             contentType: file.type || "image/jpeg",
           });
         if (error) throw error;
+        uploadedPaths.push(path);
         return path;
       };
 
@@ -289,9 +292,13 @@ const VerifyIdentity = () => {
       setManualSubmitted(true);
       toast({ title: "Submitted for review", description: "We'll notify you once reviewed, usually within 24-48 hours." });
     } catch (err: any) {
-      setFileError(err?.message || "Upload failed — please try again.");
-      toast({ variant: "destructive", title: "Upload failed", description: err.message });
-
+      // Clean up partially uploaded files so the member can retry cleanly
+      for (const path of uploadedPaths) {
+        await supabase.storage.from("id-verification-documents").remove([path]).catch(() => {});
+      }
+      const msg = err?.message || "Upload failed — please try again.";
+      setIdError(msg);
+      toast({ variant: "destructive", title: "Upload failed", description: msg });
     } finally {
       setManualUploading(false);
     }
