@@ -7,6 +7,8 @@ export interface MembershipState {
   membershipType: string | null;
   foundingMember: boolean;
   subscriptionEnd: string | null;
+  cardBrand: string | null;
+  cardLast4: string | null;
   loading: boolean;
 }
 
