@@ -45,6 +45,7 @@ const Onboarding = () => {
   
   // Owner preferences
   const [wantsToCreateListing, setWantsToCreateListing] = useState<boolean | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   // Redirect if not logged in, or if already onboarded
   useEffect(() => {
@@ -101,6 +102,7 @@ const Onboarding = () => {
           last_name: lastName,
           country,
           city,
+          ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
         })
         .eq("id", user.id);
       if (profileError) throw profileError;
@@ -424,7 +426,7 @@ const Onboarding = () => {
               <AvatarUpload
                 userId={user.id}
                 firstName={firstName}
-                onUploadComplete={() => {}}
+                onUploadComplete={(url) => setAvatarUrl(url)}
               />
             )}
 
