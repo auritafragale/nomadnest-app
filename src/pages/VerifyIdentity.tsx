@@ -430,73 +430,120 @@ const VerifyIdentity = () => {
                     </div>
                   ) : (
                     <>
-                      {fileError && (
-                        <p className="text-sm text-destructive" role="alert">{fileError}</p>
-                      )}
-                      <div className="space-y-2">
-                        <Label htmlFor="id_photo">Photo ID (passport, driving licence, national ID)</Label>
+                      <div className="space-y-1">
+                        <Label>Photo ID (passport, driving licence, national ID)</Label>
+                        <p className="text-xs text-muted-foreground">Images or PDF, max 10MB.</p>
+                        {idError && (
+                          <p className="text-sm text-destructive" role="alert">{idError}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
                         <label
-                          htmlFor="id_photo"
-                          className={buttonVariants({ variant: "outline", className: "relative w-full cursor-pointer" })}
+                          htmlFor="id_photo_camera"
+                          className={buttonVariants({ variant: "outline", className: "flex-1 cursor-pointer" })}
                         >
-                          <Upload className="w-4 h-4 mr-2" />
-                          {idFile ? "Change Photo ID" : "Choose Photo ID"}
+                          <Camera className="w-4 h-4 mr-2" />
+                          {idFile ? "Retake Photo ID" : "Take Photo"}
                           <input
-                            id="id_photo"
+                            id="id_photo_camera"
                             type="file"
-                            accept="image/*,application/pdf"
-                            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                            aria-label="Choose photo ID"
+                            accept="image/*"
+                            capture="environment"
+                            className="sr-only"
+                            aria-label="Take photo of ID with camera"
                             onChange={(e) => {
                               pickFile(e.target.files?.[0] ?? null, "id");
                               e.target.value = "";
                             }}
                           />
                         </label>
-                        {idFile && (
-                          <div className="flex items-center gap-3">
-                            {idPreview && (
-                              <img src={idPreview} alt="Selected photo ID preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
-                            )}
-                            <p className="text-xs text-muted-foreground truncate flex-1">Selected: {idFile.name}</p>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "id")}>
-                              Remove
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="selfie">Selfie (holding your ID or looking at camera)</Label>
                         <label
-                          htmlFor="selfie"
-                          className={buttonVariants({ variant: "outline", className: "relative w-full cursor-pointer" })}
+                          htmlFor="id_photo_upload"
+                          className={buttonVariants({ variant: "outline", className: "flex-1 cursor-pointer" })}
                         >
                           <Upload className="w-4 h-4 mr-2" />
-                          {selfieFile ? "Change Selfie" : "Choose Selfie"}
+                          Upload
                           <input
-                            id="selfie"
+                            id="id_photo_upload"
+                            type="file"
+                            accept="image/*,application/pdf"
+                            className="sr-only"
+                            aria-label="Upload photo ID from files"
+                            onChange={(e) => {
+                              pickFile(e.target.files?.[0] ?? null, "id");
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
+                      {idFile && (
+                        <div className="flex items-center gap-3">
+                          {idPreview && (
+                            <img src={idPreview} alt="Selected photo ID preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
+                          )}
+                          <p className="text-xs text-muted-foreground truncate flex-1">Selected: {idFile.name}</p>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "id")}>
+                            Remove
+                          </Button>
+                        </div>
+                      )}
+                      <div className="space-y-1">
+                        <Label>Selfie (holding your ID or looking at camera)</Label>
+                        <p className="text-xs text-muted-foreground">Photo only, max 10MB.</p>
+                        {selfieError && (
+                          <p className="text-sm text-destructive" role="alert">{selfieError}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <label
+                          htmlFor="selfie_camera"
+                          className={buttonVariants({ variant: "outline", className: "flex-1 cursor-pointer" })}
+                        >
+                          <Camera className="w-4 h-4 mr-2" />
+                          {selfieFile ? "Retake Selfie" : "Take Photo"}
+                          <input
+                            id="selfie_camera"
                             type="file"
                             accept="image/*"
-                            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                            aria-label="Choose selfie"
+                            capture="user"
+                            className="sr-only"
+                            aria-label="Take selfie with camera"
                             onChange={(e) => {
                               pickFile(e.target.files?.[0] ?? null, "selfie");
                               e.target.value = "";
                             }}
                           />
                         </label>
-                        {selfieFile && (
-                          <div className="flex items-center gap-3">
-                            {selfiePreview && (
-                              <img src={selfiePreview} alt="Selected selfie preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
-                            )}
-                            <p className="text-xs text-muted-foreground truncate flex-1">Selected: {selfieFile.name}</p>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "selfie")}>
-                              Remove
-                            </Button>
-                          </div>
-                        )}
+                        <label
+                          htmlFor="selfie_upload"
+                          className={buttonVariants({ variant: "outline", className: "flex-1 cursor-pointer" })}
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload
+                          <input
+                            id="selfie_upload"
+                            type="file"
+                            accept="image/*"
+                            className="sr-only"
+                            aria-label="Upload selfie from files"
+                            onChange={(e) => {
+                              pickFile(e.target.files?.[0] ?? null, "selfie");
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
                       </div>
+                      {selfieFile && (
+                        <div className="flex items-center gap-3">
+                          {selfiePreview && (
+                            <img src={selfiePreview} alt="Selected selfie preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
+                          )}
+                          <p className="text-xs text-muted-foreground truncate flex-1">Selected: {selfieFile.name}</p>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "selfie")}>
+                            Remove
+                          </Button>
+                        </div>
+                      )}
 
                       <Button
                         className="w-full"
