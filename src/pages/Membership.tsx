@@ -117,7 +117,7 @@ const Membership = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { subscribed, membershipType, foundingMember, loading, startCheckout, redeemFoundingMemberCode } = useMembership();
+  const { subscribed, membershipType, foundingMember, subscriptionEnd, cardBrand, cardLast4, loading, startCheckout, openPortal, redeemFoundingMemberCode } = useMembership();
   // Don't promise a stocked perks hub until there are enough partners live.
   const { perks } = usePerks();
   const perksLive = perks.length >= 3;
