@@ -87,7 +87,8 @@ export const useCityPredictions = (input: string, minChars = 3) => {
             );
           }
         );
-      } catch {
+      } catch (err) {
+        console.error("City prediction fetch failed:", err);
         if (requestId === requestIdRef.current) setPredictions([]);
       }
     }, 250);
