@@ -46,6 +46,10 @@ export const loadGooglePlaces = (apiKey: string): Promise<void> => {
       script.defer = true;
       script.dataset.googlePlaces = "true";
       script.onload = async () => {
+        // Resolve only once importLibrary exists, so anything waiting on this
+        // loader (e.g. the map provider) reuses this script instead of
+        // bootstrapping a second one.
+        await waitForImportLibrary();
         try {
           await (window as any).google.maps.importLibrary("places");
         } catch {
