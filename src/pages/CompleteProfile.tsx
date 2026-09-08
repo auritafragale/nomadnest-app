@@ -42,6 +42,7 @@ const CompleteProfile = () => {
         const name = `${data.first_name || ""} ${data.last_name || ""}`.trim();
         setFullName(name);
         setBio(data.bio || "");
+        setAvatarUrl(data.avatar_url || "");
         setLocation(
           data.location ||
             [data.city, data.country].filter(Boolean).join(", ") ||
