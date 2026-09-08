@@ -59,6 +59,7 @@ export const MessageThread = ({
   otherUserRole = "sitter",
 }: MessageThreadProps) => {
   const { user } = useAuth();
+  const { openReport } = useReport();
   const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
