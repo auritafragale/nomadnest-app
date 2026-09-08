@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
+import { matchesAllTokens } from "@/lib/utils";
 import {
   aggregateCategoryRatings,
   OWNER_RATING_CATEGORIES,
@@ -107,10 +108,16 @@ export const useListings = (filters: ListingFilters = {}) => {
         `)
         .eq("status", "published");
 
-      // Apply location/title search
+      // Apply location/title search. Use only the first word as a broad
+      // DB-level prefilter so punctuation from Places suggestions (e.g.
+      // "Dubai - United Arab Emirates") can't exclude valid rows; the exact
+      // multi-word match happens client-side below.
       if (filters.search) {
-        const searchTerm = `%${filters.search}%`;
-        query = query.or(`title.ilike.${searchTerm},city.ilike.${searchTerm},country.ilike.${searchTerm},area.ilike.${searchTerm},description.ilike.${searchTerm}`);
+        const firstWord = filters.search.toLowerCase().split(/[^a-z0-9]+/i).filter(Boolean)[0];
+        if (firstWord) {
+          const searchTerm = `%${firstWord}%`;
+          query = query.or(`title.ilike.${searchTerm},city.ilike.${searchTerm},country.ilike.${searchTerm},area.ilike.${searchTerm},description.ilike.${searchTerm}`);
+        }
       }
 
       const { data, error } = await query.order("created_at", { ascending: false });
@@ -118,6 +125,20 @@ export const useListings = (filters: ListingFilters = {}) => {
       if (error) throw error;
 
       let results = (data || []) as ListingWithDetails[];
+
+      // Exact multi-word AND match for the search value, tolerant of any
+      // punctuation from Places suggestion strings.
+      if (filters.search) {
+        results = results.filter((listing) =>
+          matchesAllTokens(filters.search!, [
+            listing.title,
+            listing.city,
+            listing.country,
+            listing.area,
+            listing.description,
+          ])
+        );
+      }
 
       // Fetch owner ratings in bulk
       const ownerIds = [...new Set(results.map((l) => l.owner_user_id))];

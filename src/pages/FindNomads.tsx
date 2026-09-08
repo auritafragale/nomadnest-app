@@ -15,6 +15,7 @@ import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import NomadGoogleMap from "@/components/maps/NomadGoogleMap";
 import NomadVisibilityBanner from "@/components/browse/NomadVisibilityBanner";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { matchesAllTokens } from "@/lib/utils";
 
 
 export interface NomadOnMap {
@@ -94,10 +95,9 @@ const FindNomads = () => {
 
   const filteredNomads = searchQuery
     ? nomads.filter((n) => {
-        const name = `${n.profile?.first_name || ""} ${n.profile?.last_name || ""}`.toLowerCase();
-        const location = `${n.profile?.city || ""} ${n.profile?.country || ""}`.toLowerCase();
-        const q = searchQuery.toLowerCase();
-        return name.includes(q) || location.includes(q);
+        const name = `${n.profile?.first_name || ""} ${n.profile?.last_name || ""}`;
+        const location = `${n.profile?.city || ""} ${n.profile?.country || ""}`;
+        return matchesAllTokens(searchQuery, [name, location]);
       })
     : nomads;
 
