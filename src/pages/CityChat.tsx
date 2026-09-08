@@ -34,6 +34,7 @@ interface ChatMessage {
   content: string;
   created_at: string;
   parent_message_id: string | null;
+  is_pinned?: boolean;
   sender?: SenderProfile | null;
 }
 
@@ -53,6 +54,7 @@ const CityChat = () => {
   const [room, setRoom] = useState<Room | null>(null);
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [pinned, setPinned] = useState<ChatMessage[]>([]);
   const [threads, setThreads] = useState<Record<string, ThreadInfo>>({});
   const [openThread, setOpenThread] = useState<BubbleMessage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,11 +137,21 @@ const CityChat = () => {
       if (mounted) setNomadCount(count || 0);
 
       if (access) {
+        const { data: pinnedRows } = await supabase
+          .from("city_chat_messages")
+          .select("*")
+          .eq("room_id", roomId)
+          .eq("is_pinned", true)
+          .order("created_at", { ascending: true });
+        const hydratedPinned = await hydrateSenders((pinnedRows || []) as ChatMessage[]);
+        if (mounted) setPinned(hydratedPinned);
+
         const { data: msgs } = await supabase
           .from("city_chat_messages")
           .select("*")
           .eq("room_id", roomId)
           .is("parent_message_id", null)
+          .eq("is_pinned", false)
           .order("created_at", { ascending: false })
           .limit(MESSAGE_PAGE_SIZE);
         const ordered = ((msgs || []) as ChatMessage[]).slice().reverse();
