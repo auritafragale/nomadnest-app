@@ -51,6 +51,7 @@ const MessageBubble = ({
   thread,
   onOpenThread,
 }: MessageBubbleProps) => {
+  const { openReport } = useReport();
   const initials =
     `${message.sender?.first_name?.[0] || ""}${message.sender?.last_name?.[0] || ""}`.toUpperCase() ||
     "?";
