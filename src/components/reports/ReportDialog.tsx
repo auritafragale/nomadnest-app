@@ -24,6 +24,9 @@ interface ReportDialogProps {
   targetId: string;
   targetLabel?: string;
   trigger?: React.ReactNode;
+  /** Controlled mode: when provided, no trigger is rendered. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const REPORT_REASONS: Record<ReportTargetType, { value: string; label: string }[]> = {
@@ -64,9 +67,17 @@ const ReportDialog = ({
   targetId,
   targetLabel,
   trigger,
+  open: controlledOpen,
+  onOpenChange,
 }: ReportDialogProps) => {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -111,14 +122,16 @@ const ReportDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="ghost" size="sm" className="text-muted-foreground gap-2">
-            <Flag className="w-4 h-4" />
-            Report
-          </Button>
-        )}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {trigger || (
+            <Button variant="ghost" size="sm" className="text-muted-foreground gap-2">
+              <Flag className="w-4 h-4" />
+              Report
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Report {label}</DialogTitle>

@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { buildImageMessageBody, parseImageMessage } from "@/lib/chatImage";
 import type { Message, Conversation } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
-import ReportDialog from "@/components/reports/ReportDialog";
+import { useReport } from "@/components/reports/ReportContext";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { CheckinBar } from "@/components/inbox/CheckinBar";
 import { useActiveSitForConversation } from "@/hooks/useActiveSitForConversation";
@@ -59,6 +59,7 @@ export const MessageThread = ({
   otherUserRole = "sitter",
 }: MessageThreadProps) => {
   const { user } = useAuth();
+  const { openReport } = useReport();
   const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
@@ -223,21 +224,22 @@ export const MessageThread = ({
           </>
         )}
         {otherUser?.id && (
-          <ReportDialog
-            targetType="user"
-            targetId={otherUser.id}
-            targetLabel={`${otherUser.first_name || ""} ${otherUser.last_name || ""}`.trim() || undefined}
-            trigger={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="ml-auto text-muted-foreground hover:text-foreground"
-                aria-label="Report user"
-              >
-                <Flag className="h-4 w-4" />
-              </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-auto text-muted-foreground hover:text-foreground"
+            aria-label="Report user"
+            onClick={() =>
+              openReport({
+                targetType: "user",
+                targetId: otherUser.id,
+                targetLabel:
+                  `${otherUser.first_name || ""} ${otherUser.last_name || ""}`.trim() || undefined,
+              })
             }
-          />
+          >
+            <Flag className="h-4 w-4" />
+          </Button>
         )}
       </div>
 
@@ -302,15 +304,14 @@ export const MessageThread = ({
                   <div key={message.id} className={cn("flex group", isOwn ? "justify-end" : "justify-start")}>
                     {!isOwn && (
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center mr-1">
-                        <ReportDialog
-                          targetType="message"
-                          targetId={message.id}
-                          trigger={
-                            <button className="p-1 text-muted-foreground hover:text-foreground rounded">
-                              <Flag className="h-3 w-3" />
-                            </button>
-                          }
-                        />
+                        <button
+                          type="button"
+                          aria-label="Report message"
+                          onClick={() => openReport({ targetType: "message", targetId: message.id })}
+                          className="p-1 text-muted-foreground hover:text-foreground rounded"
+                        >
+                          <Flag className="h-3 w-3" />
+                        </button>
                       </div>
                     )}
                     <div
@@ -360,15 +361,14 @@ export const MessageThread = ({
                   {/* Report button for received messages */}
                   {!isOwn && (
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center mr-1">
-                      <ReportDialog
-                        targetType="message"
-                        targetId={message.id}
-                        trigger={
-                          <button className="p-1 text-muted-foreground hover:text-foreground rounded">
-                            <Flag className="h-3 w-3" />
-                          </button>
-                        }
-                      />
+                      <button
+                        type="button"
+                        aria-label="Report message"
+                        onClick={() => openReport({ targetType: "message", targetId: message.id })}
+                        className="p-1 text-muted-foreground hover:text-foreground rounded"
+                      >
+                        <Flag className="h-3 w-3" />
+                      </button>
                     </div>
                   )}
                   <div
