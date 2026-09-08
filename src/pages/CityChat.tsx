@@ -49,7 +49,7 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const CityChat = () => {
-  const { roomId } = useParams<{ roomId: string }>();
+  const { roomId: routeParam } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -68,6 +68,10 @@ const CityChat = () => {
   const [nomadCount, setNomadCount] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const profileCache = useRef<Map<string, SenderProfile>>(new Map());
+
+  // The URL can carry either the room's UUID (older links) or its readable
+  // city slug. Both resolve to the same room; the real id is used internally.
+  const roomId = room?.id;
 
   const { byMessage, toggleReaction } = useMessageReactions(roomId, !!hasAccess);
   const reactionsFor = useCallback(
@@ -89,9 +93,10 @@ const CityChat = () => {
     return msgs.map((m) => ({ ...m, sender: profileCache.current.get(m.sender_user_id) || null }));
   };
 
-  const loadThreadSummaries = useCallback(async () => {
-    if (!roomId) return;
-    const { data } = await supabase.rpc("city_chat_thread_summaries", { p_room_id: roomId });
+  const loadThreadSummaries = useCallback(async (id?: string) => {
+    const target = id ?? roomId;
+    if (!target) return;
+    const { data } = await supabase.rpc("city_chat_thread_summaries", { p_room_id: target });
     const map: Record<string, ThreadInfo> = {};
     (data || []).forEach((row) => {
       map[row.parent_message_id] = {
