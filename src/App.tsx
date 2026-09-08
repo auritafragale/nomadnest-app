@@ -192,7 +192,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ActiveRoleProvider>
-            <AppShell />
+            <ReportProvider>
+              <AppShell />
+            </ReportProvider>
           </ActiveRoleProvider>
         </AuthProvider>
       </BrowserRouter>
