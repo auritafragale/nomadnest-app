@@ -45,6 +45,9 @@ interface ThreadInfo {
 
 const MESSAGE_PAGE_SIZE = 100;
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const CityChat = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();

@@ -63,7 +63,7 @@ const NearbyCityChats = () => {
               </div>
               {room.hasAccess ? (
                 <Button asChild className="w-full mt-auto">
-                  <Link to={`/city-chat/${room.id}`}>
+                  <Link to={`/city-chat/${room.city_key}`}>
                     <MessageCircle className="w-4 h-4" />
                     Join Chat
                   </Link>
