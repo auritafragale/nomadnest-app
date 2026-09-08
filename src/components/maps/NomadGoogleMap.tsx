@@ -55,9 +55,18 @@ const ClusteredNomadMarkers = ({
 }) => {
   const map = useMap();
   const clusterer = useRef<MarkerClusterer | null>(null);
-  const [clustererReady, setClustererReady] = useState(false);
   const markersRef = useRef<{ [key: string]: Marker }>({});
-  const [markerVersion, setMarkerVersion] = useState(0);
+  const syncHandle = useRef<number | null>(null);
+
+  const scheduleSync = useCallback(() => {
+    if (syncHandle.current !== null) return;
+    syncHandle.current = window.requestAnimationFrame(() => {
+      syncHandle.current = null;
+      if (!clusterer.current) return;
+      clusterer.current.clearMarkers();
+      clusterer.current.addMarkers(Object.values(markersRef.current));
+    });
+  }, []);
 
   useEffect(() => {
     if (!map) return;
@@ -77,35 +86,40 @@ const ClusteredNomadMarkers = ({
                 div.innerHTML = svg;
                 return div;
               })(),
-              zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
+              zIndex: 1000 + count,
             });
           },
         },
       });
     }
-    setClustererReady(true);
-  }, [map]);
+    scheduleSync();
+  }, [map, scheduleSync]);
 
-  // Registration must re-run when the clusterer becomes available OR when the
-  // markers/nomads change, otherwise an early run with no clusterer would
-  // silently leave every marker unclustered.
   useEffect(() => {
-    if (!clustererReady || !clusterer.current) return;
-    clusterer.current.clearMarkers();
-    clusterer.current.addMarkers(Object.values(markersRef.current));
-  }, [clustererReady, nomads, markerVersion]);
+    scheduleSync();
+  }, [nomads, scheduleSync]);
 
-  const setMarkerRef = useCallback((marker: Marker | null, key: string) => {
-    if (marker && markersRef.current[key]) return;
-    if (!marker && !markersRef.current[key]) return;
+  useEffect(
+    () => () => {
+      if (syncHandle.current !== null) window.cancelAnimationFrame(syncHandle.current);
+    },
+    [],
+  );
 
-    if (marker) {
-      markersRef.current[key] = marker;
-    } else {
-      delete markersRef.current[key];
-    }
-    setMarkerVersion((v) => v + 1);
-  }, []);
+  const setMarkerRef = useCallback(
+    (marker: Marker | null, key: string) => {
+      if (marker && markersRef.current[key]) return;
+      if (!marker && !markersRef.current[key]) return;
+
+      if (marker) {
+        markersRef.current[key] = marker;
+      } else {
+        delete markersRef.current[key];
+      }
+      scheduleSync();
+    },
+    [scheduleSync],
+  );
 
   return (
     <>
