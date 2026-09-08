@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, User, Loader2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,13 @@ export const AvatarUpload = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl || null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync previewUrl whenever currentAvatarUrl changes (e.g. when the profile
+  // is fetched asynchronously after the component first renders).
+  useEffect(() => {
+    setPreviewUrl(currentAvatarUrl || null);
+  }, [currentAvatarUrl]);
+
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
