@@ -122,14 +122,16 @@ const ReportDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="ghost" size="sm" className="text-muted-foreground gap-2">
-            <Flag className="w-4 h-4" />
-            Report
-          </Button>
-        )}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {trigger || (
+            <Button variant="ghost" size="sm" className="text-muted-foreground gap-2">
+              <Flag className="w-4 h-4" />
+              Report
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Report {label}</DialogTitle>
