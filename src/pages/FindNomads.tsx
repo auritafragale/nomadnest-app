@@ -34,8 +34,18 @@ export interface NomadOnMap {
   } | null;
 }
 
+const VIEW_MODE_KEY = "nomadnest_find_nomads_view";
+
 const FindNomads = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "map">(() => {
+    const saved = localStorage.getItem(VIEW_MODE_KEY);
+    return saved === "grid" ? "grid" : "map";
+  });
+
+  useEffect(() => {
+    localStorage.setItem(VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
 
   const { data: nomads = [], isLoading: loading } = useQuery({
     queryKey: ["nomads-map"],
