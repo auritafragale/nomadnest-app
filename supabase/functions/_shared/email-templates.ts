@@ -1,7 +1,7 @@
 // All NomadNest email template content in one place.
 // Edit this file to change the wording/subject of any email the app sends.
 
-import { APP_URL } from "./branded-email.ts";
+import { APP_URL, BRAND } from "./branded-email.ts";
 
 export interface BuiltEmail {
   subject: string;
@@ -207,6 +207,42 @@ export function buildNotificationEmail(
         pushUrl: "/dashboard",
       };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Welcome email (sent by send-welcome-email when a member confirms their email)
+// ---------------------------------------------------------------------------
+
+const welcomeStep = (icon: string, title: string, text: string) => `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
+    <tr>
+      <td width="44" valign="top" style="font-size:26px;line-height:32px;">${icon}</td>
+      <td valign="top">
+        <p style="margin:0;color:${BRAND.dark};font-weight:bold;font-size:16px;line-height:24px;">${title}</p>
+        <p style="margin:2px 0 0;color:${BRAND.body};font-size:15px;line-height:23px;">${text}</p>
+      </td>
+    </tr>
+  </table>`;
+
+export function buildWelcomeEmail(firstName: string): BuiltEmail {
+  const name = (firstName ?? "").trim() || "there";
+  return {
+    subject: "Welcome to NomadNest! 🏡",
+    preview: "Free pet sitting, free stays, here's how it works.",
+    heading: `Welcome to NomadNest, ${name}! 🎉`,
+    body: `
+      <img src="https://nomadnest.global/welcome-email-hero.jpg" alt="A dog and cat relaxing at home" style="width:100%;height:auto;display:block;border-radius:10px;margin-bottom:24px;" />
+      <p style="margin:0 0 24px;">NomadNest connects Nomads — people who love to travel — with Pet Parents who need someone to care for their home and pets while they're away. No booking fees and no nightly rates: Nomads stay for free in exchange for looking after the home and pets.</p>
+      <p style="margin:0 0 16px;color:${BRAND.dark};font-size:18px;font-weight:bold;">How it works</p>
+      ${welcomeStep("🔍", "Browse &amp; Connect", "Explore sits worldwide, or browse trusted Nomads nearby.")}
+      ${welcomeStep("🤝", "Apply or Invite", "Send an application or invite someone directly, and chat first to make sure it's a good fit.")}
+      ${welcomeStep("🏡", "Sit &amp; Enjoy", "Care for the home and pets, log daily check-ins, and leave a review when you're done.")}
+      <p style="margin:24px 0 0;">Happy travels,<br />The NomadNest Team</p>
+    `,
+    ctaLabel: "Complete your profile",
+    ctaUrl: `${APP_URL}/complete-profile`,
+    footerReason: "You're receiving this because you just joined NomadNest.",
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -452,6 +488,7 @@ export function getPreviewTemplates(): PreviewTemplate[] {
     { id: "review_reminder", label: "Review reminder", group: "Notifications", build: () => buildNotificationEmail("review_reminder", sample) },
     { id: "sit_cancelled", label: "Sit cancelled", group: "Notifications", build: () => buildNotificationEmail("sit_cancelled", sample) },
     { id: "id_verification_approved", label: "ID verified", group: "Notifications", build: () => buildNotificationEmail("id_verification_approved", sample) },
+    { id: "welcome", label: "Welcome email", group: "Notifications", build: () => buildWelcomeEmail("Alex") },
     { id: "membership_activated", label: "Membership activated", group: "Membership", build: () => buildMembershipEmail("activated", { planName: "Combined Membership", endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },
     { id: "membership_renewal_reminder", label: "Renewal reminder", group: "Membership", build: () => buildMembershipEmail("renewal_reminder", { endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },
     { id: "membership_payment_failed", label: "Payment failed", group: "Membership", build: () => buildMembershipEmail("payment_failed", { amount: "£99.00", name: "Alex" }) },
