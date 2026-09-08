@@ -167,6 +167,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_pinned: boolean
           parent_message_id: string | null
           room_id: string
           sender_user_id: string
@@ -175,6 +176,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          is_pinned?: boolean
           parent_message_id?: string | null
           room_id: string
           sender_user_id: string
@@ -183,6 +185,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          is_pinned?: boolean
           parent_message_id?: string | null
           room_id?: string
           sender_user_id?: string
