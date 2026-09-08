@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Map, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
 import { MarkerClusterer, type Marker } from "@googlemaps/markerclusterer";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useStartConversation } from "@/hooks/useConversations";
+import { toast } from "@/hooks/use-toast";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 import type { NomadOnMap } from "@/pages/FindNomads";
@@ -51,7 +55,9 @@ const ClusteredNomadMarkers = ({
 }) => {
   const map = useMap();
   const clusterer = useRef<MarkerClusterer | null>(null);
+  const [clustererReady, setClustererReady] = useState(false);
   const markersRef = useRef<{ [key: string]: Marker }>({});
+  const [markerVersion, setMarkerVersion] = useState(0);
 
   useEffect(() => {
     if (!map) return;
@@ -77,12 +83,17 @@ const ClusteredNomadMarkers = ({
         },
       });
     }
+    setClustererReady(true);
   }, [map]);
 
+  // Registration must re-run when the clusterer becomes available OR when the
+  // markers/nomads change, otherwise an early run with no clusterer would
+  // silently leave every marker unclustered.
   useEffect(() => {
-    clusterer.current?.clearMarkers();
-    clusterer.current?.addMarkers(Object.values(markersRef.current));
-  }, [nomads]);
+    if (!clustererReady || !clusterer.current) return;
+    clusterer.current.clearMarkers();
+    clusterer.current.addMarkers(Object.values(markersRef.current));
+  }, [clustererReady, nomads, markerVersion]);
 
   const setMarkerRef = useCallback((marker: Marker | null, key: string) => {
     if (marker && markersRef.current[key]) return;
@@ -93,6 +104,7 @@ const ClusteredNomadMarkers = ({
     } else {
       delete markersRef.current[key];
     }
+    setMarkerVersion((v) => v + 1);
   }, []);
 
   return (
