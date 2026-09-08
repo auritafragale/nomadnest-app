@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { MapPin, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCityPredictions } from "@/hooks/useCityPredictions";
+import { useCityPredictions, type CityPrediction } from "@/hooks/useCityPredictions";
 
 interface LocationSearchInputProps {
   value: string;
@@ -40,8 +40,8 @@ const LocationSearchInput = ({
     setHighlight(0);
   }, [predictions]);
 
-  const select = (description: string) => {
-    onChange(description);
+  const select = (prediction: CityPrediction) => {
+    onChange(prediction.mainText);
     clear();
     setOpen(false);
   };
@@ -56,7 +56,7 @@ const LocationSearchInput = ({
       setHighlight((h) => Math.max(h - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      select(predictions[highlight].description);
+      select(predictions[highlight]);
     } else if (e.key === "Escape") {
       setOpen(false);
     }
@@ -84,7 +84,7 @@ const LocationSearchInput = ({
               key={p.place_id}
               onMouseDown={(e) => {
                 e.preventDefault();
-                select(p.description);
+                select(p);
               }}
               onMouseEnter={() => setHighlight(i)}
               className={cn(

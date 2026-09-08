@@ -5,6 +5,7 @@ import { loadGooglePlaces } from "@/lib/loadGooglePlaces";
 export interface CityPrediction {
   place_id: string;
   description: string;
+  mainText: string;
 }
 
 /**
@@ -67,6 +68,12 @@ export const useCityPredictions = (input: string, minChars = 3) => {
               .map((p: any) => ({
                 place_id: p.placeId,
                 description: p.text?.toString?.() || p.text?.text || "",
+                mainText:
+                  p.structuredFormat?.mainText?.toString?.() ||
+                  p.structuredFormat?.mainText?.text ||
+                  p.text?.toString?.() ||
+                  p.text?.text ||
+                  "",
               }))
               .filter((p: CityPrediction) => p.description)
           );
@@ -86,6 +93,7 @@ export const useCityPredictions = (input: string, minChars = 3) => {
               (results || []).slice(0, 6).map((r) => ({
                 place_id: r.place_id,
                 description: r.description,
+                mainText: r.structured_formatting?.main_text || r.description,
               }))
             );
           }
