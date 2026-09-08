@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Lock, Send, Users, MapPin } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { useMessageReactions } from "@/hooks/useMessageReactions";
+import { useCityChatThreadSubscriptions } from "@/hooks/useCityChatThreadSubscriptions";
 import MessageBubble, { type BubbleMessage } from "@/components/city-chat/MessageBubble";
 import ThreadPanel from "@/components/city-chat/ThreadPanel";
+import ThreadWatchToggle from "@/components/city-chat/ThreadWatchToggle";
 
 interface Room {
   id: string;
@@ -51,6 +53,7 @@ const UUID_RE =
 const CityChat = () => {
   const { roomId: routeParam } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -78,6 +81,8 @@ const CityChat = () => {
     (messageId: string) => byMessage.get(messageId) ?? [],
     [byMessage],
   );
+
+  const { isSubscribed, toggle: toggleThreadWatch } = useCityChatThreadSubscriptions();
 
   const hydrateSenders = async (msgs: ChatMessage[]): Promise<ChatMessage[]> => {
     const missing = Array.from(
@@ -190,6 +195,50 @@ const CityChat = () => {
       mounted = false;
     };
   }, [routeParam, user, loadThreadSummaries]);
+
+  // Deep-link support: notifications for a thread reply point here with
+  // ?thread=<parent_message_id> so tapping one opens straight into that
+  // thread instead of just the room.
+  useEffect(() => {
+    if (!hasAccess || !roomId) return;
+    const threadId = searchParams.get("thread");
+    if (!threadId) return;
+
+    let mounted = true;
+    (async () => {
+      const alreadyLoaded =
+        pinned.find((m) => m.id === threadId) ?? messages.find((m) => m.id === threadId);
+      let target: ChatMessage | null = alreadyLoaded ?? null;
+      if (!target) {
+        const { data } = await supabase
+          .from("city_chat_messages")
+          .select("*")
+          .eq("id", threadId)
+          .eq("room_id", roomId)
+          .maybeSingle();
+        if (data) {
+          const [hydrated] = await hydrateSenders([data as ChatMessage]);
+          target = hydrated;
+        }
+      }
+      if (mounted && target) setOpenThread(target);
+    })();
+
+    // Drop the param either way so refreshing the page doesn't reopen it.
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("thread");
+        return next;
+      },
+      { replace: true },
+    );
+
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasAccess, roomId]);
 
   // Realtime
   useEffect(() => {
@@ -378,6 +427,10 @@ const CityChat = () => {
                             ? `${threads[m.id].replyCount} ${threads[m.id].replyCount === 1 ? "reply" : "replies"}`
                             : "Start the thread"}
                         </span>
+                        <ThreadWatchToggle
+                          isSubscribed={isSubscribed(m.id)}
+                          onToggle={() => toggleThreadWatch(m.id)}
+                        />
                       </button>
                     ))}
                   </div>
@@ -439,6 +492,8 @@ const CityChat = () => {
                 }}
                 reactionsFor={reactionsFor}
                 onToggleReaction={toggleReaction}
+                isSubscribed={openThread ? isSubscribed(openThread.id) : false}
+                onToggleSubscription={() => openThread && toggleThreadWatch(openThread.id)}
               />
             </>
           )}

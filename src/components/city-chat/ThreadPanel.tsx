@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCityChatThread } from "@/hooks/useCityChatThread";
 import type { MessageReactionSummary } from "@/hooks/useMessageReactions";
 import MessageBubble, { type BubbleMessage } from "@/components/city-chat/MessageBubble";
+import ThreadWatchToggle from "@/components/city-chat/ThreadWatchToggle";
 
 interface ThreadPanelProps {
   roomId: string | undefined;
@@ -17,6 +18,8 @@ interface ThreadPanelProps {
   onClose: () => void;
   reactionsFor: (messageId: string) => MessageReactionSummary[];
   onToggleReaction: (messageId: string, emoji: string) => void;
+  isSubscribed: boolean;
+  onToggleSubscription: () => void;
 }
 
 const ThreadPanel = ({
@@ -25,6 +28,8 @@ const ThreadPanel = ({
   onClose,
   reactionsFor,
   onToggleReaction,
+  isSubscribed,
+  onToggleSubscription,
 }: ThreadPanelProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -56,7 +61,12 @@ const ThreadPanel = ({
     <Sheet open={!!parent} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
         <SheetHeader className="p-4 pb-3 border-b border-border text-left">
-          <SheetTitle className="text-base">Thread</SheetTitle>
+          <div className="flex items-center justify-between gap-2">
+            <SheetTitle className="text-base">Thread</SheetTitle>
+            {parent && (
+              <ThreadWatchToggle isSubscribed={isSubscribed} onToggle={onToggleSubscription} />
+            )}
+          </div>
         </SheetHeader>
 
         {parent && (

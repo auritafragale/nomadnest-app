@@ -237,6 +237,49 @@ export type Database = {
         }
         Relationships: []
       }
+      city_chat_thread_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          thread_message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          thread_message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          thread_message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "city_chat_thread_subscriptions_thread_message_id_fkey"
+            columns: ["thread_message_id"]
+            isOneToOne: false
+            referencedRelation: "city_chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_chat_thread_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_chat_thread_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_flags: {
         Row: {
           category: string
