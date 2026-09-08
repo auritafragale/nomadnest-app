@@ -77,8 +77,11 @@ export const useCityPredictions = (input: string, minChars = 3) => {
         const service = new g.AutocompleteService();
         service.getPlacePredictions(
           { input: query, types: ["(cities)"], sessionToken: tokenRef.current ?? undefined },
-          (results: any[] | null) => {
+          (results: any[] | null, status?: string) => {
             if (requestId !== requestIdRef.current) return;
+            if (status && status !== "OK" && status !== "ZERO_RESULTS") {
+              console.error("City prediction fetch failed (legacy):", status);
+            }
             setPredictions(
               (results || []).slice(0, 6).map((r) => ({
                 place_id: r.place_id,
