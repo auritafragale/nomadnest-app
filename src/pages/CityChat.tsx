@@ -134,7 +134,7 @@ const CityChat = () => {
       if (mounted) setRoom(roomData);
 
       const { data: accessData } = await supabase.rpc("can_access_city_chat", {
-        p_room_id: roomId,
+        p_room_id: roomData.id,
         p_user_id: user.id,
       });
       const access = !!accessData;
@@ -152,7 +152,7 @@ const CityChat = () => {
         const { data: pinnedRows } = await supabase
           .from("city_chat_messages")
           .select("*")
-          .eq("room_id", roomId)
+          .eq("room_id", roomData.id)
           .eq("is_pinned", true)
           .order("created_at", { ascending: true });
         const hydratedPinned = await hydrateSenders((pinnedRows || []) as ChatMessage[]);
@@ -168,7 +168,7 @@ const CityChat = () => {
         const { data: msgs } = await supabase
           .from("city_chat_messages")
           .select("*")
-          .eq("room_id", roomId)
+          .eq("room_id", roomData.id)
           .is("parent_message_id", null)
           .eq("is_pinned", false)
           .order("created_at", { ascending: false })
@@ -179,7 +179,7 @@ const CityChat = () => {
           setMessages(hydrated);
           setHasMore((msgs || []).length === MESSAGE_PAGE_SIZE);
         }
-        await loadThreadSummaries();
+        await loadThreadSummaries(roomData.id);
       }
 
       if (mounted) setLoading(false);
@@ -189,7 +189,7 @@ const CityChat = () => {
     return () => {
       mounted = false;
     };
-  }, [roomId, user, loadThreadSummaries]);
+  }, [routeParam, user, loadThreadSummaries]);
 
   // Realtime
   useEffect(() => {
