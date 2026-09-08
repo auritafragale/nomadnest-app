@@ -232,11 +232,14 @@ export function buildWelcomeEmail(firstName: string): BuiltEmail {
     heading: `Welcome to NomadNest, ${name}! 🎉`,
     body: `
       <img src="https://nomadnest.global/welcome-email-hero.jpg" alt="A dog and cat relaxing at home" style="width:100%;height:auto;display:block;border-radius:10px;margin-bottom:24px;" />
-      <p style="margin:0 0 24px;">NomadNest connects Nomads — people who love to travel — with Pet Parents who need someone to care for their home and pets while they're away. No booking fees and no nightly rates: Nomads stay for free in exchange for looking after the home and pets.</p>
+      <p style="margin:0 0 16px;color:${BRAND.dark};font-size:18px;font-weight:bold;">What is NomadNest?</p>
+      <p style="margin:0 0 24px;">NomadNest connects Nomads, people who love to travel, with Pet Parents who need someone to care for their home and pets while they're away. No booking fees and no nightly rates: Nomads stay for free in exchange for looking after the home and pets.</p>
       <p style="margin:0 0 16px;color:${BRAND.dark};font-size:18px;font-weight:bold;">How it works</p>
       ${welcomeStep("🔍", "Browse &amp; Connect", "Explore sits worldwide, or browse trusted Nomads nearby.")}
       ${welcomeStep("🤝", "Apply or Invite", "Send an application or invite someone directly, and chat first to make sure it's a good fit.")}
       ${welcomeStep("🏡", "Sit &amp; Enjoy", "Care for the home and pets, log daily check-ins, and leave a review when you're done.")}
+      <p style="margin:24px 0 16px;color:${BRAND.dark};font-size:18px;font-weight:bold;">How it all began</p>
+      <p style="margin:0 0 24px;">NomadNest was founded by two girls who love to travel, and who are pet parents themselves. Through years of house sitting on other platforms, they kept feeling the same thing: it was a wonderful way to see the world, but a lonely one too, and they knew from their own pets back home how much trust it takes to hand over the keys to someone. That's why NomadNest was built around real connection on both sides: Nomads finding each other through Nomads Near Me and City Chats so no sit ever feels solitary, and Pet Parents finding real peace of mind knowing their home and pets are cared for by someone who's part of a genuine community, not a stranger passing through.</p>
       <p style="margin:24px 0 0;">Happy travels,<br />The NomadNest Team</p>
     `,
     ctaLabel: "Complete your profile",

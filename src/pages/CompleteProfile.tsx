@@ -19,6 +19,7 @@ const CompleteProfile = () => {
 
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [location, setLocation] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
@@ -34,7 +35,7 @@ const CompleteProfile = () => {
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("first_name, last_name, bio, location, city, country")
+        .select("first_name, last_name, bio, location, city, country, avatar_url")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -42,6 +43,7 @@ const CompleteProfile = () => {
         const name = `${data.first_name || ""} ${data.last_name || ""}`.trim();
         setFullName(name);
         setBio(data.bio || "");
+        setAvatarUrl(data.avatar_url || "");
         setLocation(
           data.location ||
             [data.city, data.country].filter(Boolean).join(", ") ||
@@ -72,6 +74,7 @@ const CompleteProfile = () => {
           last_name: lastName,
           bio,
           location,
+          ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
         })
         .eq("id", user.id);
 
@@ -148,8 +151,9 @@ const CompleteProfile = () => {
                 <Label className="mb-3 block">Profile photo</Label>
                 <AvatarUpload
                   userId={user.id}
+                  currentAvatarUrl={avatarUrl}
                   firstName={fullName.split(" ")[0] || ""}
-                  onUploadComplete={() => {}}
+                  onUploadComplete={(url) => setAvatarUrl(url)}
                 />
               </div>
             )}
