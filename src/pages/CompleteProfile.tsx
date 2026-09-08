@@ -74,6 +74,7 @@ const CompleteProfile = () => {
           last_name: lastName,
           bio,
           location,
+          ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
         })
         .eq("id", user.id);
 
