@@ -1757,6 +1757,7 @@ export type Database = {
         Args: { p_city: string; p_country: string }
         Returns: string
       }
+      city_chat_nomad_count: { Args: { p_room_id: string }; Returns: number }
       city_chat_thread_summaries: {
         Args: { p_room_id: string }
         Returns: {
