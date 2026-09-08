@@ -3,9 +3,7 @@ import { useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, MessageSquare, Loader2 } from "lucide-react";
-import PetTypeIcons from "@/components/browse/PetTypeIcons";
-import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
+import { MapPin, MessageSquare, Loader2, Star } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStartConversation } from "@/hooks/useConversations";
 import { toast } from "@/hooks/use-toast";
@@ -55,8 +53,17 @@ const NomadCard = ({ nomad }: { nomad: NomadOnMap }) => {
   return (
     <Card
       variant="interactive"
-      className="h-full flex flex-col items-center text-center p-3 md:p-4"
+      className="relative h-full flex flex-col items-center text-center p-3 md:p-4"
     >
+      {nomad.profile?.founding_member && (
+        <span
+          className="absolute top-2 left-2 flex items-center justify-center w-6 h-6 rounded-full bg-accent/15 text-accent"
+          title="Founding member"
+          aria-label="Founding member"
+        >
+          <Star className="w-3.5 h-3.5 fill-current" />
+        </span>
+      )}
       <Link to={`/sitter/${nomad.user_id}`} className="flex flex-col items-center w-full">
         <Avatar className="w-16 h-16 md:w-20 md:h-20 ring-2 ring-background shadow-sm mb-2.5">
           <AvatarImage src={nomad.profile?.avatar_url || ""} alt={name} />
@@ -66,12 +73,6 @@ const NomadCard = ({ nomad }: { nomad: NomadOnMap }) => {
         </Avatar>
 
         <h3 className="font-semibold text-sm leading-tight line-clamp-1 w-full">{name}</h3>
-
-        {nomad.profile?.founding_member && (
-          <div className="mt-1">
-            <FoundingMemberBadge />
-          </div>
-        )}
 
         {nomad.headline && (
           <p className="text-xs text-muted-foreground mt-1 line-clamp-2 w-full">
@@ -86,7 +87,6 @@ const NomadCard = ({ nomad }: { nomad: NomadOnMap }) => {
           </p>
         )}
 
-        <PetTypeIcons petTypes={nomad.pet_types || []} className="justify-center pt-2" />
       </Link>
 
       {user?.id !== nomad.user_id && (
