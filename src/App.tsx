@@ -58,6 +58,7 @@ import AdminReports from "./pages/AdminReports";
 
 import Perks from "./pages/Perks";
 import CityChat from "./pages/CityChat";
+import CityChats from "./pages/CityChats";
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
 import Safety from "./pages/Safety";
@@ -161,6 +162,7 @@ const AppShell = () => {
         <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
         <Route path="/admin/emails" element={<AdminRoute><AdminEmails /></AdminRoute>} />
 
+        <Route path="/city-chats" element={<ProtectedRoute><CityChats /></ProtectedRoute>} />
         <Route path="/city-chat/:roomId" element={<ProtectedRoute><CityChat /></ProtectedRoute>} />
         <Route path="/about" element={<About />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
