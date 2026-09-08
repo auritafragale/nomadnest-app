@@ -44,6 +44,7 @@ import {
   Phone,
   Crown,
   ChevronDown,
+  Clock,
 } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +58,7 @@ import { useDeleteAccount } from "@/hooks/useDeleteAccount";
 import { useProfileVisibility, useUpdateProfileVisibility } from "@/hooks/useProfileVisibility";
 import PushNotificationSettings from "@/components/settings/PushNotificationSettings";
 import { useVerification } from "@/hooks/useVerification";
+import { useIdVerificationRequest } from "@/hooks/useIdVerificationRequest";
 import { PhoneVerification } from "@/components/settings/PhoneVerification";
 
 interface Profile {
@@ -95,6 +97,7 @@ const Settings = () => {
 
   // Identity verification
   const { data: verificationData } = useVerification();
+  const { data: idRequest } = useIdVerificationRequest();
 
   // Phone verification state (loaded alongside profile)
   const [phoneVerified, setPhoneVerified] = useState(false);
