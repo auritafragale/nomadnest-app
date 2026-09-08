@@ -35,7 +35,7 @@ const GoogleMapsProvider = ({ children, height = "600px" }: GoogleMapsProviderPr
 
   return (
     <MapErrorBoundary height={height}>
-      <APIProvider apiKey={config.key} libraries={["places"]}>
+      <APIProvider apiKey={config.key} libraries={["places", "marker"]}>
         <GoogleMapsContext.Provider value={{ listingMapId: config.listingMapId, nomadMapId: config.nomadMapId }}>
           {children}
         </GoogleMapsContext.Provider>
