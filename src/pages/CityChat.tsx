@@ -331,8 +331,8 @@ const CityChat = () => {
               </div>
               <h2 className="text-xl font-semibold">This chat is locked</h2>
               <p className="text-muted-foreground max-w-md">
-                To join the {room.city} chat, you need a confirmed sit in this city
-                (active or starting within 7 days), or to be a visible nomad based here.
+                To join the {room.city} chat, you need a confirmed or in-progress sit
+                in this city.
               </p>
               <Button asChild>
                 <Link to="/browse-sits">Browse sits</Link>
@@ -340,6 +340,31 @@ const CityChat = () => {
             </div>
           ) : (
             <>
+              {pinned.length > 0 && (
+                <div className="pt-4 pb-3 border-b border-border">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">
+                    📌 Pinned Topics
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {pinned.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setOpenThread(m)}
+                        className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-left hover:border-primary/40 transition-colors"
+                      >
+                        <span className="text-sm font-medium flex-1">{m.content}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {threads[m.id]?.replyCount
+                            ? `${threads[m.id].replyCount} ${threads[m.id].replyCount === 1 ? "reply" : "replies"}`
+                            : "Start the thread"}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <ScrollArea className="flex-1 py-4" ref={scrollRef}>
                 {hasMore && (
                   <div className="text-center mb-4">
