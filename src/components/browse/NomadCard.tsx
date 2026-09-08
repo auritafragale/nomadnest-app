@@ -74,12 +74,6 @@ const NomadCard = ({ nomad }: { nomad: NomadOnMap }) => {
 
         <h3 className="font-semibold text-sm leading-tight line-clamp-1 w-full">{name}</h3>
 
-        {nomad.profile?.founding_member && (
-          <div className="mt-1">
-            <FoundingMemberBadge />
-          </div>
-        )}
-
         {nomad.headline && (
           <p className="text-xs text-muted-foreground mt-1 line-clamp-2 w-full">
             {nomad.headline}
@@ -93,7 +87,6 @@ const NomadCard = ({ nomad }: { nomad: NomadOnMap }) => {
           </p>
         )}
 
-        <PetTypeIcons petTypes={nomad.pet_types || []} className="justify-center pt-2" />
       </Link>
 
       {user?.id !== nomad.user_id && (
