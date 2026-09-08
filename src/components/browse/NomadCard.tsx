@@ -53,8 +53,17 @@ const NomadCard = ({ nomad }: { nomad: NomadOnMap }) => {
   return (
     <Card
       variant="interactive"
-      className="h-full flex flex-col items-center text-center p-3 md:p-4"
+      className="relative h-full flex flex-col items-center text-center p-3 md:p-4"
     >
+      {nomad.profile?.founding_member && (
+        <span
+          className="absolute top-2 left-2 flex items-center justify-center w-6 h-6 rounded-full bg-accent/15 text-accent"
+          title="Founding member"
+          aria-label="Founding member"
+        >
+          <Star className="w-3.5 h-3.5 fill-current" />
+        </span>
+      )}
       <Link to={`/sitter/${nomad.user_id}`} className="flex flex-col items-center w-full">
         <Avatar className="w-16 h-16 md:w-20 md:h-20 ring-2 ring-background shadow-sm mb-2.5">
           <AvatarImage src={nomad.profile?.avatar_url || ""} alt={name} />
