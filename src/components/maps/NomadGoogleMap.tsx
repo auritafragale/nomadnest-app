@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Map, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
 import { MarkerClusterer, type Marker } from "@googlemaps/markerclusterer";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useStartConversation } from "@/hooks/useConversations";
+import { toast } from "@/hooks/use-toast";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 import type { NomadOnMap } from "@/pages/FindNomads";
@@ -51,7 +55,9 @@ const ClusteredNomadMarkers = ({
 }) => {
   const map = useMap();
   const clusterer = useRef<MarkerClusterer | null>(null);
+  const [clustererReady, setClustererReady] = useState(false);
   const markersRef = useRef<{ [key: string]: Marker }>({});
+  const [markerVersion, setMarkerVersion] = useState(0);
 
   useEffect(() => {
     if (!map) return;
@@ -77,12 +83,17 @@ const ClusteredNomadMarkers = ({
         },
       });
     }
+    setClustererReady(true);
   }, [map]);
 
+  // Registration must re-run when the clusterer becomes available OR when the
+  // markers/nomads change, otherwise an early run with no clusterer would
+  // silently leave every marker unclustered.
   useEffect(() => {
-    clusterer.current?.clearMarkers();
-    clusterer.current?.addMarkers(Object.values(markersRef.current));
-  }, [nomads]);
+    if (!clustererReady || !clusterer.current) return;
+    clusterer.current.clearMarkers();
+    clusterer.current.addMarkers(Object.values(markersRef.current));
+  }, [clustererReady, nomads, markerVersion]);
 
   const setMarkerRef = useCallback((marker: Marker | null, key: string) => {
     if (marker && markersRef.current[key]) return;
@@ -93,6 +104,7 @@ const ClusteredNomadMarkers = ({
     } else {
       delete markersRef.current[key];
     }
+    setMarkerVersion((v) => v + 1);
   }, []);
 
   return (
@@ -119,6 +131,33 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { nomadMapId } = useGoogleMapsConfig();
   const selected = nomads.find((n) => n.user_id === selectedId);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const startConversation = useStartConversation();
+  const [startingChat, setStartingChat] = useState(false);
+
+  const handleMessage = async (otherUserId: string) => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    setStartingChat(true);
+    try {
+      const { conversationId } = await startConversation.mutateAsync({
+        otherUserId,
+        conversationType: "direct",
+      });
+      navigate(`/inbox?conversation=${conversationId}`);
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to start conversation. Please try again.",
+      });
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   return (
     <div className="w-full aspect-[4/5] min-h-[320px] max-h-[75vh] md:aspect-auto md:h-96 md:max-h-none rounded-lg overflow-hidden border border-border">
@@ -174,9 +213,16 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
                   <Link to={`/sitter/${selected.user_id}`} className="flex-1">
                     <Button size="sm" className="w-full h-7 text-xs">View Profile</Button>
                   </Link>
-                  <Link to={`/inbox?user=${selected.user_id}`} className="flex-1">
-                    <Button size="sm" variant="outline" className="w-full h-7 text-xs">Message</Button>
-                  </Link>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 w-full h-7 text-xs"
+                    onClick={() => handleMessage(selected.user_id)}
+                    disabled={startingChat}
+                  >
+                    {startingChat && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                    Message
+                  </Button>
                 </div>
               </div>
             </InfoWindow>

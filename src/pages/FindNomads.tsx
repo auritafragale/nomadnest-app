@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Users, MessageCircle, ChevronRight } from "lucide-react";
+import { Users, MessageCircle, ChevronRight, Grid, Map as MapIcon } from "lucide-react";
+import NomadCard from "@/components/browse/NomadCard";
 import LocationSearchInput from "@/components/search/LocationSearchInput";
 import { Skeleton } from "@/components/ui/skeleton";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
@@ -33,8 +34,18 @@ export interface NomadOnMap {
   } | null;
 }
 
+const VIEW_MODE_KEY = "nomadnest_find_nomads_view";
+
 const FindNomads = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "map">(() => {
+    const saved = localStorage.getItem(VIEW_MODE_KEY);
+    return saved === "grid" ? "grid" : "map";
+  });
+
+  useEffect(() => {
+    localStorage.setItem(VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
 
   const { data: nomads = [], isLoading: loading } = useQuery({
     queryKey: ["nomads-map"],
@@ -110,13 +121,31 @@ const FindNomads = () => {
         <NomadVisibilityBanner />
 
         <div className="bg-surface border-b border-border sticky top-16 z-40">
-          <div className="container py-4">
+          <div className="container py-4 flex items-center gap-3">
             <LocationSearchInput
-              wrapperClassName="max-w-md"
+              wrapperClassName="max-w-md flex-1"
               placeholder="Search by name or location..."
               value={searchQuery}
               onChange={setSearchQuery}
             />
+            <div className="flex items-center border border-border rounded-lg overflow-hidden flex-shrink-0 ml-auto">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-2.5 ${viewMode === "grid" ? "bg-muted" : "bg-surface hover:bg-muted/50"}`}
+                title="Grid view"
+                aria-label="Grid view"
+              >
+                <Grid className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode("map")}
+                className={`p-2.5 ${viewMode === "map" ? "bg-muted" : "bg-surface hover:bg-muted/50"}`}
+                title="Map view"
+                aria-label="Map view"
+              >
+                <MapIcon className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -126,7 +155,7 @@ const FindNomads = () => {
           ) : filteredNomads.length === 0 ? (
             <div className="text-center py-16">
               <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No nomads on the map yet</h3>
+              <h3 className="text-xl font-semibold mb-2">No nomads yet</h3>
               <p className="text-muted-foreground">
                 Nomads will appear here once they add their location to their profile.
               </p>
@@ -134,9 +163,17 @@ const FindNomads = () => {
           ) : (
             <>
               <p className="text-sm text-muted-foreground mb-4">
-                {filteredNomads.length} nomad{filteredNomads.length !== 1 ? "s" : ""} on the map
+                {filteredNomads.length} nomad{filteredNomads.length !== 1 ? "s" : ""}
               </p>
-              <NomadGoogleMap nomads={filteredNomads} />
+              {viewMode === "map" ? (
+                <NomadGoogleMap nomads={filteredNomads} />
+              ) : (
+                <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 lg:grid-cols-3">
+                  {filteredNomads.map((nomad) => (
+                    <NomadCard key={nomad.user_id} nomad={nomad} />
+                  ))}
+                </div>
+              )}
             </>
           )}
 
