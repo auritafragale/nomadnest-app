@@ -395,13 +395,35 @@ const Settings = () => {
                     <TabsTrigger value="phone" className="gap-2"><Phone className="h-4 w-4" />Phone</TabsTrigger>
                   </TabsList>
                   <TabsContent value="identity" className="pt-4">
-                    {verificationData?.id_verified ? (
+                    {verificationData?.id_verified || idRequest?.status === "approved" ? (
                       <div className="flex items-center gap-3">
                         <ShieldCheck className="w-5 h-5 text-green-500" />
                         <div>
-                          <p className="font-medium text-green-700 dark:text-green-400">Identity Verified</p>
+                          <p className="font-medium text-green-700 dark:text-green-400">Verified</p>
                           <p className="text-sm text-muted-foreground">Your identity has been verified successfully.</p>
                         </div>
+                      </div>
+                    ) : idRequest?.status === "pending" ? (
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-5 h-5 text-amber-500" />
+                        <div>
+                          <p className="font-medium text-amber-700 dark:text-amber-400">Under Review</p>
+                          <p className="text-sm text-muted-foreground">
+                            Submitted {new Date(idRequest.created_at).toLocaleDateString()} — we'll email you once it's reviewed.
+                          </p>
+                        </div>
+                      </div>
+                    ) : idRequest?.status === "rejected" ? (
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="font-medium text-destructive">Rejected</p>
+                          <p className="text-sm text-muted-foreground">
+                            {idRequest.notes || "Your submission couldn't be approved. Please upload clearer photos and try again."}
+                          </p>
+                        </div>
+                        <Button onClick={() => navigate("/verify-identity")} className="shrink-0">
+                          <ShieldCheck className="w-4 h-4 mr-2" />Resubmit
+                        </Button>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
