@@ -50,3 +50,9 @@ verify_jwt = true
 
 [functions.get-google-maps-key]
 verify_jwt = false
+
+[functions.notify-admin-verification-submitted]
+verify_jwt = false
+
+[functions.notify-verification-decision]
+verify_jwt = false
