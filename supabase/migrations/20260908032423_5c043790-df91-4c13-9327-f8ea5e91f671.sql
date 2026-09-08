@@ -1,0 +1,2 @@
+DROP TRIGGER IF EXISTS notify_member_on_id_verification_decision ON public.manual_id_verifications;
+DROP FUNCTION IF EXISTS public.notify_member_on_id_verification_decision();
