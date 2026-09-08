@@ -131,6 +131,33 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { nomadMapId } = useGoogleMapsConfig();
   const selected = nomads.find((n) => n.user_id === selectedId);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const startConversation = useStartConversation();
+  const [startingChat, setStartingChat] = useState(false);
+
+  const handleMessage = async (otherUserId: string) => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    setStartingChat(true);
+    try {
+      const { conversationId } = await startConversation.mutateAsync({
+        otherUserId,
+        conversationType: "direct",
+      });
+      navigate(`/inbox?conversation=${conversationId}`);
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to start conversation. Please try again.",
+      });
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   return (
     <div className="w-full aspect-[4/5] min-h-[320px] max-h-[75vh] md:aspect-auto md:h-96 md:max-h-none rounded-lg overflow-hidden border border-border">
@@ -186,9 +213,16 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
                   <Link to={`/sitter/${selected.user_id}`} className="flex-1">
                     <Button size="sm" className="w-full h-7 text-xs">View Profile</Button>
                   </Link>
-                  <Link to={`/inbox?user=${selected.user_id}`} className="flex-1">
-                    <Button size="sm" variant="outline" className="w-full h-7 text-xs">Message</Button>
-                  </Link>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 w-full h-7 text-xs"
+                    onClick={() => handleMessage(selected.user_id)}
+                    disabled={startingChat}
+                  >
+                    {startingChat && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                    Message
+                  </Button>
                 </div>
               </div>
             </InfoWindow>
