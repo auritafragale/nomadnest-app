@@ -203,6 +203,7 @@ const CityChat = () => {
             });
             return;
           }
+          if (msg.is_pinned) return;
           const [hydrated] = await hydrateSenders([msg]);
           setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, hydrated]));
         },
@@ -229,6 +230,7 @@ const CityChat = () => {
       .select("*")
       .eq("room_id", roomId)
       .is("parent_message_id", null)
+      .eq("is_pinned", false)
       .lt("created_at", oldest)
       .order("created_at", { ascending: false })
       .limit(MESSAGE_PAGE_SIZE);
