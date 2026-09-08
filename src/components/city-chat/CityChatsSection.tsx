@@ -61,7 +61,7 @@ const CityChatsSection = ({ className }: { className?: string }) => {
           <h2 className="text-2xl font-display font-semibold">Your City Chats</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          Join conversations with nomads in cities around the world. Available to nomads based in the city, or with a confirmed or in-progress sit there.
+          Join conversations with nomads in cities around the world. Available to nomads with a confirmed or in-progress sit there.
         </p>
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -71,8 +71,8 @@ const CityChatsSection = ({ className }: { className?: string }) => {
           </div>
         ) : yourRooms.length === 0 ? (
           <Card className="p-6 text-center text-muted-foreground">
-            You don't have access to any city chats yet — get a confirmed sit or
-            turn on your visibility.
+            You don't have access to any city chats yet. Confirm a sit in a city
+            to join its chat.
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
