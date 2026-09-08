@@ -95,11 +95,11 @@ const NomadVisibilityBanner = () => {
         <p className="text-sm md:text-base">
           {isVisible ? (
             <>
-              ✅ You're visible{city ? ` in ${city}` : ""} — nomads nearby can find you
+              ✅ You're visible{city ? ` in ${city}` : ""}, nomads nearby can find you
             </>
           ) : (
             <>
-              👁️ You're hidden — turn on visibility to appear on the map and connect with nomads nearby
+              👁️ You're hidden. Turn on visibility to appear on the map and connect with nomads nearby
             </>
           )}
         </p>
