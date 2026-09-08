@@ -536,7 +536,7 @@ const EditSitterProfile = () => {
                         }}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Pick your city from the suggestions so you appear on the Nomad map and join the right City Chat. Update it when you move.
+                        Pick your city from the suggestions so you appear on the Nomad map. Update it when you move.
                       </p>
                     </div>
                     <div className="space-y-2">
