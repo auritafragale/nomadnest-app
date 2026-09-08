@@ -40,10 +40,40 @@ const LocationSearchInput = ({
     setHighlight(0);
   }, [predictions]);
 
-  const select = (prediction: CityPrediction) => {
-    onChange(prediction.mainText);
+  // Address-component type names Google uses for "the city", in priority
+  // order — some countries (e.g. Japan, parts of the UK) don't populate
+  // "locality" at all, so we fall back down the list.
+  const CITY_COMPONENT_TYPES = ["locality", "postal_town", "administrative_area_level_2"];
+
+  const extractCityName = (components: any[] | undefined | null): string | null => {
+    for (const type of CITY_COMPONENT_TYPES) {
+      const match = components?.find((c: any) => c.types?.includes(type));
+      const name = match?.longText || match?.long_name;
+      if (name) return name;
+    }
+    return null;
+  };
+
+  const select = async (prediction: CityPrediction) => {
     clear();
     setOpen(false);
+
+    // Parsed prediction text (mainText) is unreliable across countries —
+    // e.g. Australian localities bake the state code into the primary name
+    // ("Adelaide SA"). Fetch the place's structured address components
+    // instead and pull the clean city name out of those, with no
+    // state/region text mixed in regardless of country.
+    try {
+      const g = (window as any).google?.maps?.places;
+      if (!g?.Place) throw new Error("google.maps.places.Place unavailable");
+      const place = new g.Place({ id: prediction.place_id });
+      await place.fetchFields({ fields: ["addressComponents"] });
+      const cityName = extractCityName(place.addressComponents);
+      onChange(cityName || prediction.mainText);
+    } catch (err) {
+      console.error("Failed to fetch place address components, falling back to mainText:", err);
+      onChange(prediction.mainText);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
