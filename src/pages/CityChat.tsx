@@ -140,13 +140,13 @@ const CityChat = () => {
       const access = !!accessData;
       if (mounted) setHasAccess(access);
 
-      // nomads-here count: visible sitters in this city
-      const { count } = await supabase
-        .from("sitter_profiles")
-        .select("user_id, profiles!inner(city)", { count: "exact", head: true })
-        .eq("is_visible", true)
-        .ilike("profiles.city", roomData.city);
-      if (mounted) setNomadCount(count || 0);
+      // nomads-here count: nomads with a current sit in this city,
+      // mirroring can_access_city_chat exactly so the count never
+      // drifts from who can actually join.
+      const { data: countData } = await supabase.rpc("city_chat_nomad_count", {
+        p_room_id: roomData.id,
+      });
+      if (mounted) setNomadCount(countData ?? 0);
 
       if (access) {
         const { data: pinnedRows } = await supabase
