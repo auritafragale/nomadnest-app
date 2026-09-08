@@ -27,7 +27,7 @@ export const AvatarUpload = ({
   useEffect(() => {
     setPreviewUrl(currentAvatarUrl || null);
   }, [currentAvatarUrl]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
