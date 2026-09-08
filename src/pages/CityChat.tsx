@@ -45,8 +45,11 @@ interface ThreadInfo {
 
 const MESSAGE_PAGE_SIZE = 100;
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const CityChat = () => {
-  const { roomId } = useParams<{ roomId: string }>();
+  const { roomId: routeParam } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -65,6 +68,10 @@ const CityChat = () => {
   const [nomadCount, setNomadCount] = useState<number>(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const profileCache = useRef<Map<string, SenderProfile>>(new Map());
+
+  // The URL can carry either the room's UUID (older links) or its readable
+  // city slug. Both resolve to the same room; the real id is used internally.
+  const roomId = room?.id;
 
   const { byMessage, toggleReaction } = useMessageReactions(roomId, !!hasAccess);
   const reactionsFor = useCallback(
@@ -86,9 +93,10 @@ const CityChat = () => {
     return msgs.map((m) => ({ ...m, sender: profileCache.current.get(m.sender_user_id) || null }));
   };
 
-  const loadThreadSummaries = useCallback(async () => {
-    if (!roomId) return;
-    const { data } = await supabase.rpc("city_chat_thread_summaries", { p_room_id: roomId });
+  const loadThreadSummaries = useCallback(async (id?: string) => {
+    const target = id ?? roomId;
+    if (!target) return;
+    const { data } = await supabase.rpc("city_chat_thread_summaries", { p_room_id: target });
     const map: Record<string, ThreadInfo> = {};
     (data || []).forEach((row) => {
       map[row.parent_message_id] = {
@@ -100,17 +108,21 @@ const CityChat = () => {
   }, [roomId]);
 
   useEffect(() => {
-    if (!roomId || !user) return;
+    if (!routeParam || !user) return;
     let mounted = true;
 
     const init = async () => {
       setLoading(true);
 
-      const { data: roomData, error: roomErr } = await supabase
+      const query = supabase
         .from("city_chat_rooms")
-        .select("id, city, country")
-        .eq("id", roomId)
-        .maybeSingle();
+        .select("id, city, country");
+      const { data: roomData, error: roomErr } = await (
+        UUID_RE.test(routeParam)
+          ? query.eq("id", routeParam)
+          : query.eq("city_key", routeParam)
+      ).maybeSingle();
+
 
       if (roomErr || !roomData) {
         if (mounted) {
@@ -122,7 +134,7 @@ const CityChat = () => {
       if (mounted) setRoom(roomData);
 
       const { data: accessData } = await supabase.rpc("can_access_city_chat", {
-        p_room_id: roomId,
+        p_room_id: roomData.id,
         p_user_id: user.id,
       });
       const access = !!accessData;
@@ -140,7 +152,7 @@ const CityChat = () => {
         const { data: pinnedRows } = await supabase
           .from("city_chat_messages")
           .select("*")
-          .eq("room_id", roomId)
+          .eq("room_id", roomData.id)
           .eq("is_pinned", true)
           .order("created_at", { ascending: true });
         const hydratedPinned = await hydrateSenders((pinnedRows || []) as ChatMessage[]);
@@ -156,7 +168,7 @@ const CityChat = () => {
         const { data: msgs } = await supabase
           .from("city_chat_messages")
           .select("*")
-          .eq("room_id", roomId)
+          .eq("room_id", roomData.id)
           .is("parent_message_id", null)
           .eq("is_pinned", false)
           .order("created_at", { ascending: false })
@@ -167,7 +179,7 @@ const CityChat = () => {
           setMessages(hydrated);
           setHasMore((msgs || []).length === MESSAGE_PAGE_SIZE);
         }
-        await loadThreadSummaries();
+        await loadThreadSummaries(roomData.id);
       }
 
       if (mounted) setLoading(false);
@@ -177,7 +189,7 @@ const CityChat = () => {
     return () => {
       mounted = false;
     };
-  }, [roomId, user, loadThreadSummaries]);
+  }, [routeParam, user, loadThreadSummaries]);
 
   // Realtime
   useEffect(() => {
