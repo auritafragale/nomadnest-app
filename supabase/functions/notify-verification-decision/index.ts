@@ -4,12 +4,22 @@ import { renderBrandedEmail, sendBrandedEmail, APP_URL } from "../_shared/brande
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-internal-secret",
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Only the database triggers may call this function.
+  const expectedSecret = Deno.env.get("INTERNAL_TRIGGER_SECRET");
+  if (!expectedSecret || req.headers.get("x-internal-secret") !== expectedSecret) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
