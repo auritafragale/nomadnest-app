@@ -144,6 +144,13 @@ const CityChat = () => {
           .eq("is_pinned", true)
           .order("created_at", { ascending: true });
         const hydratedPinned = await hydrateSenders((pinnedRows || []) as ChatMessage[]);
+        // Keep the official topics in a stable, predictable order.
+        const order = ["🚨", "🐾", "💻"];
+        hydratedPinned.sort(
+          (a, b) =>
+            order.findIndex((e) => a.content.startsWith(e)) -
+            order.findIndex((e) => b.content.startsWith(e)),
+        );
         if (mounted) setPinned(hydratedPinned);
 
         const { data: msgs } = await supabase
