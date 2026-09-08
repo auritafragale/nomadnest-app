@@ -150,8 +150,9 @@ const CompleteProfile = () => {
                 <Label className="mb-3 block">Profile photo</Label>
                 <AvatarUpload
                   userId={user.id}
+                  currentAvatarUrl={avatarUrl}
                   firstName={fullName.split(" ")[0] || ""}
-                  onUploadComplete={() => {}}
+                  onUploadComplete={(url) => setAvatarUrl(url)}
                 />
               </div>
             )}
