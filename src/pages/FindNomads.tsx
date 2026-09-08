@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Users, MessageCircle, ChevronRight } from "lucide-react";
+import { Users, MessageCircle, ChevronRight, Grid, Map } from "lucide-react";
+import NomadCard from "@/components/browse/NomadCard";
 import LocationSearchInput from "@/components/search/LocationSearchInput";
 import { Skeleton } from "@/components/ui/skeleton";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
