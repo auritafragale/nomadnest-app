@@ -66,7 +66,7 @@ serve(async (req) => {
       {
         heading: `Welcome to NomadNest, ${firstName}! 🎉`,
         body: `
-    <img src="https://nomadnest.global/hero-pets-home.jpg" alt="A dog and cat relaxing at home" style="width:100%;border-radius:10px;margin-bottom:24px;" />
+    <img src="https://nomadnest.global/welcome-email-hero.jpg" alt="A dog and cat relaxing at home" style="width:100%;height:auto;display:block;border-radius:10px;margin-bottom:24px;" />
     <p style="margin:0 0 24px;">NomadNest connects Nomads — people who love to travel — with Pet Parents who need someone to care for their home and pets while they're away. No booking fees and no nightly rates: Nomads stay for free in exchange for looking after the home and pets.</p>
     <p style="margin:0 0 16px;color:${BRAND.dark};font-size:18px;font-weight:bold;">How it works</p>
     ${step("🔍", "Browse &amp; Connect", "Explore sits worldwide, or browse trusted Nomads nearby.")}
