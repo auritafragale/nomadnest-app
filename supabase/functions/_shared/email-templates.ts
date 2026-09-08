@@ -61,7 +61,7 @@ export function buildNotificationEmail(
           <p>Dates: ${data.startDate} – ${data.endDate}</p>
         `,
         ctaLabel: "View the application",
-        ctaUrl: `${data.appUrl}/applications`,
+        ctaUrl: `${APP_URL}/applications`,
         pushTitle: "New Application!",
         pushBody: `${data.sitterName} applied for ${data.listingTitle}`,
         pushUrl: "/applications",
@@ -76,7 +76,7 @@ export function buildNotificationEmail(
           ${data.status === "accepted" ? "<p>Congratulations! The Pet Parent will be in touch soon.</p>" : ""}
         `,
         ctaLabel: "View your dashboard",
-        ctaUrl: `${data.appUrl}/dashboard`,
+        ctaUrl: `${APP_URL}/dashboard`,
         pushTitle: `Application ${data.status === "accepted" ? "Accepted!" : "Updated"}`,
         pushBody: `Your application for ${data.listingTitle} was ${data.status}`,
         pushUrl: data.status === "accepted" ? "/dashboard?appTab=accepted" : "/dashboard",
@@ -91,7 +91,7 @@ export function buildNotificationEmail(
           ${quote(data.messagePreview)}
         `,
         ctaLabel: "Reply now",
-        ctaUrl: `${data.appUrl}/inbox?conversation=${data.conversationId}`,
+        ctaUrl: `${APP_URL}/inbox?conversation=${data.conversationId}`,
         pushTitle: `Message from ${data.senderName}`,
         pushBody: data.messagePreview?.substring(0, 100),
         pushUrl: `/inbox?conversation=${data.conversationId}`,
@@ -106,7 +106,7 @@ export function buildNotificationEmail(
           <p>Dates: ${data.startDate} – ${data.endDate}</p>
         `,
         ctaLabel: "View the invitation",
-        ctaUrl: `${data.appUrl}/dashboard`,
+        ctaUrl: `${APP_URL}/dashboard`,
         pushTitle: "New Invitation!",
         pushBody: `${data.ownerName} invited you to ${data.listingTitle}`,
         pushUrl: "/dashboard",
@@ -121,7 +121,7 @@ export function buildNotificationEmail(
           ${data.text ? quote(data.text) : ""}
         `,
         ctaLabel: "View your profile",
-        ctaUrl: `${data.appUrl}/dashboard`,
+        ctaUrl: `${APP_URL}/dashboard`,
         pushTitle: "New Review!",
         pushBody: `${data.reviewerName} left you a ${data.rating}-star review`,
         pushUrl: "/dashboard",
@@ -140,7 +140,7 @@ export function buildNotificationEmail(
           <p>Reviews build trust across the whole NomadNest community, and you have <strong>${data.daysLeft} day${days === 1 ? "" : "s"}</strong> left to leave yours.</p>
         `,
         ctaLabel: "Write your review",
-        ctaUrl: `${data.appUrl}/dashboard`,
+        ctaUrl: `${APP_URL}/dashboard`,
         pushTitle: "Leave a review",
         pushBody: `You have ${data.daysLeft} day(s) left to review ${data.otherName}`,
         pushUrl: "/dashboard",
@@ -157,7 +157,7 @@ export function buildNotificationEmail(
           <p>The dates are open again, so you can keep looking for your next match.</p>
         `,
         ctaLabel: "See the cancelled sit",
-        ctaUrl: `${data.appUrl}${data.url || "/dashboard"}`,
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
         pushTitle: "Sit Cancelled",
         pushBody: `${data.listingTitle} was cancelled${data.reason ? `: ${data.reason}` : ""}`,
         pushUrl: data.url || "/dashboard",
@@ -174,7 +174,7 @@ export function buildNotificationEmail(
           ${data.note ? quote(data.note) : ""}
         `,
         ctaLabel: "View the care log",
-        ctaUrl: `${data.appUrl}${data.url || "/dashboard"}`,
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
         pushTitle: `${data.checkinLabel} — ${data.listingTitle}`,
         pushBody: data.note ? data.note : `Your Nomad posted a ${data.checkinLabel} update.`,
         pushUrl: data.url || "/dashboard",
@@ -189,7 +189,7 @@ export function buildNotificationEmail(
           <p>Your profile now displays the <strong>ID Verified</strong> badge, helping you build trust faster with the NomadNest community.</p>
         `,
         ctaLabel: "Go to your dashboard",
-        ctaUrl: `${data.appUrl}/dashboard`,
+        ctaUrl: `${APP_URL}/dashboard`,
         pushTitle: "ID Verified ✓",
         pushBody: "Your ID has been verified. Your profile now shows the badge.",
         pushUrl: "/dashboard",
@@ -201,7 +201,7 @@ export function buildNotificationEmail(
         heading: "New notification",
         body: `<p>You have a new notification on NomadNest.</p>`,
         ctaLabel: "Open NomadNest",
-        ctaUrl: `${data.appUrl}/dashboard`,
+        ctaUrl: `${APP_URL}/dashboard`,
         pushTitle: "NomadNest",
         pushBody: "You have a new notification",
         pushUrl: "/dashboard",
