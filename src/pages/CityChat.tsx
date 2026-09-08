@@ -108,17 +108,21 @@ const CityChat = () => {
   }, [roomId]);
 
   useEffect(() => {
-    if (!roomId || !user) return;
+    if (!routeParam || !user) return;
     let mounted = true;
 
     const init = async () => {
       setLoading(true);
 
-      const { data: roomData, error: roomErr } = await supabase
+      const query = supabase
         .from("city_chat_rooms")
-        .select("id, city, country")
-        .eq("id", roomId)
-        .maybeSingle();
+        .select("id, city, country");
+      const { data: roomData, error: roomErr } = await (
+        UUID_RE.test(routeParam)
+          ? query.eq("id", routeParam)
+          : query.eq("city_key", routeParam)
+      ).maybeSingle();
+
 
       if (roomErr || !roomData) {
         if (mounted) {
