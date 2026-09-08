@@ -7,14 +7,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Users } from "lucide-react";
+import { Users, MessageCircle, ChevronRight } from "lucide-react";
 import LocationSearchInput from "@/components/search/LocationSearchInput";
 import { Skeleton } from "@/components/ui/skeleton";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import NomadGoogleMap from "@/components/maps/NomadGoogleMap";
 import NomadVisibilityBanner from "@/components/browse/NomadVisibilityBanner";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
-import CityChatsSection from "@/components/city-chat/CityChatsSection";
+
 
 export interface NomadOnMap {
   user_id: string;
@@ -104,9 +104,6 @@ const FindNomads = () => {
                 content="Your visibility toggle controls whether other nomads can see you on this map. Hide it any time to pause discovery without losing your profile."
               />
             </div>
-            <p className="text-muted-foreground">
-              Discover other nomads around the world and connect with them
-            </p>
           </div>
         </div>
 
@@ -143,7 +140,18 @@ const FindNomads = () => {
             </>
           )}
 
-          <CityChatsSection />
+          <Link
+            to="/city-chats"
+            className="mt-10 flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-4 py-4 hover:border-primary/40 transition-colors"
+          >
+            <span className="flex items-center gap-3">
+              <MessageCircle className="w-5 h-5 text-primary shrink-0" />
+              <span className="text-sm md:text-base">
+                Looking for local community? Browse City Chats
+              </span>
+            </span>
+            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+          </Link>
         </div>
 
       </main>

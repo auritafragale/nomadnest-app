@@ -79,7 +79,7 @@ const NomadVisibilityBanner = () => {
       title: next ? "You're now visible" : "You're now hidden",
       description: next
         ? "Nomads nearby can find you on the map."
-        : "You've been removed from the map and city chats.",
+        : "You've been removed from the map.",
     });
   };
 
@@ -95,20 +95,29 @@ const NomadVisibilityBanner = () => {
         <p className="text-sm md:text-base">
           {isVisible ? (
             <>
-              ✅ You're visible{city ? ` in ${city}` : ""} — nomads nearby can find you
+              ✅ You're visible{city ? ` in ${city}` : ""}, nomads nearby can find you
             </>
           ) : (
             <>
-              👁️ You're hidden — turn on visibility to appear on the map and connect with nomads nearby
+              👁️ You're hidden. Turn on visibility to appear on the map and connect with nomads nearby
             </>
           )}
         </p>
-        <Switch
-          checked={isVisible}
-          onCheckedChange={handleToggle}
-          disabled={updating}
-          aria-label="Toggle nomad visibility"
-        />
+        <div className="flex items-center gap-2 shrink-0">
+          <span
+            className={`text-xs font-semibold ${
+              isVisible ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            {isVisible ? "Visible" : "Hidden"}
+          </span>
+          <Switch
+            checked={isVisible}
+            onCheckedChange={handleToggle}
+            disabled={updating}
+            aria-label="Toggle nomad visibility"
+          />
+        </div>
       </div>
     </div>
   );

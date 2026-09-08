@@ -34,6 +34,7 @@ interface ChatMessage {
   content: string;
   created_at: string;
   parent_message_id: string | null;
+  is_pinned?: boolean;
   sender?: SenderProfile | null;
 }
 
@@ -53,6 +54,7 @@ const CityChat = () => {
   const [room, setRoom] = useState<Room | null>(null);
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [pinned, setPinned] = useState<ChatMessage[]>([]);
   const [threads, setThreads] = useState<Record<string, ThreadInfo>>({});
   const [openThread, setOpenThread] = useState<BubbleMessage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,11 +137,28 @@ const CityChat = () => {
       if (mounted) setNomadCount(count || 0);
 
       if (access) {
+        const { data: pinnedRows } = await supabase
+          .from("city_chat_messages")
+          .select("*")
+          .eq("room_id", roomId)
+          .eq("is_pinned", true)
+          .order("created_at", { ascending: true });
+        const hydratedPinned = await hydrateSenders((pinnedRows || []) as ChatMessage[]);
+        // Keep the official topics in a stable, predictable order.
+        const order = ["🚨", "🐾", "💻"];
+        hydratedPinned.sort(
+          (a, b) =>
+            order.findIndex((e) => a.content.startsWith(e)) -
+            order.findIndex((e) => b.content.startsWith(e)),
+        );
+        if (mounted) setPinned(hydratedPinned);
+
         const { data: msgs } = await supabase
           .from("city_chat_messages")
           .select("*")
           .eq("room_id", roomId)
           .is("parent_message_id", null)
+          .eq("is_pinned", false)
           .order("created_at", { ascending: false })
           .limit(MESSAGE_PAGE_SIZE);
         const ordered = ((msgs || []) as ChatMessage[]).slice().reverse();
@@ -191,6 +210,7 @@ const CityChat = () => {
             });
             return;
           }
+          if (msg.is_pinned) return;
           const [hydrated] = await hydrateSenders([msg]);
           setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, hydrated]));
         },
@@ -217,6 +237,7 @@ const CityChat = () => {
       .select("*")
       .eq("room_id", roomId)
       .is("parent_message_id", null)
+      .eq("is_pinned", false)
       .lt("created_at", oldest)
       .order("created_at", { ascending: false })
       .limit(MESSAGE_PAGE_SIZE);
@@ -317,8 +338,8 @@ const CityChat = () => {
               </div>
               <h2 className="text-xl font-semibold">This chat is locked</h2>
               <p className="text-muted-foreground max-w-md">
-                To join the {room.city} chat, you need a confirmed sit in this city
-                (active or starting within 7 days), or to be a visible nomad based here.
+                To join the {room.city} chat, you need a confirmed or in-progress sit
+                in this city.
               </p>
               <Button asChild>
                 <Link to="/browse-sits">Browse sits</Link>
@@ -326,6 +347,31 @@ const CityChat = () => {
             </div>
           ) : (
             <>
+              {pinned.length > 0 && (
+                <div className="pt-4 pb-3 border-b border-border">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">
+                    📌 Pinned Topics
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {pinned.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setOpenThread(m)}
+                        className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-left hover:border-primary/40 transition-colors"
+                      >
+                        <span className="text-sm font-medium flex-1">{m.content}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {threads[m.id]?.replyCount
+                            ? `${threads[m.id].replyCount} ${threads[m.id].replyCount === 1 ? "reply" : "replies"}`
+                            : "Start the thread"}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <ScrollArea className="flex-1 py-4" ref={scrollRef}>
                 {hasMore && (
                   <div className="text-center mb-4">
