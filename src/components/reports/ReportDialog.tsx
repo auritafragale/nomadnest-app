@@ -24,6 +24,9 @@ interface ReportDialogProps {
   targetId: string;
   targetLabel?: string;
   trigger?: React.ReactNode;
+  /** Controlled mode: when provided, no trigger is rendered. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const REPORT_REASONS: Record<ReportTargetType, { value: string; label: string }[]> = {
@@ -64,9 +67,17 @@ const ReportDialog = ({
   targetId,
   targetLabel,
   trigger,
+  open: controlledOpen,
+  onOpenChange,
 }: ReportDialogProps) => {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
   const [files, setFiles] = useState<File[]>([]);
