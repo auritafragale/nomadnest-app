@@ -189,10 +189,10 @@ export function buildNotificationEmail(
           <p>Your profile now displays the <strong>ID Verified</strong> badge, helping you build trust faster with the NomadNest community.</p>
         `,
         ctaLabel: "Go to your dashboard",
-        ctaUrl: `${APP_URL}/dashboard`,
+        ctaUrl: `${APP_URL}/complete-profile`,
         pushTitle: "ID Verified ✓",
         pushBody: "Your ID has been verified. Your profile now shows the badge.",
-        pushUrl: "/dashboard",
+        pushUrl: "/complete-profile",
       };
     default:
       return {
