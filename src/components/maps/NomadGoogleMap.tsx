@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Map as GoogleMap, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
+import { Map as GoogleMap, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 import { MarkerClusterer, type Marker, type Cluster } from "@googlemaps/markerclusterer";
 import { Link, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -9,6 +9,7 @@ import { useStartConversation } from "@/hooks/useConversations";
 import { toast } from "@/hooks/use-toast";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
+import MapCardSheet from "./MapCardSheet";
 import type { NomadOnMap } from "@/pages/FindNomads";
 
 // Beyond this zoom, clustering stops being meaningful at city scale — pins
@@ -17,11 +18,6 @@ import type { NomadOnMap } from "@/pages/FindNomads";
 // pinch/scroll from ever separating them, since the algorithm's maxZoom only
 // controls when it STOPS forming new clusters, not how far the map can zoom.
 const MAX_ZOOM = 12;
-
-interface ClusterSelection {
-  ids: string[];
-  position: { lat: number; lng: number };
-}
 
 const NomadPin = ({ avatarUrl, initials }: { avatarUrl?: string | null; initials: string }) => (
   <div className="flex flex-col items-center">
@@ -65,7 +61,7 @@ const ClusteredNomadMarkers = ({
 }: {
   nomads: NomadOnMap[];
   onSelect: (id: string) => void;
-  onClusterOpen: (selection: ClusterSelection) => void;
+  onClusterOpen: (ids: string[]) => void;
 }) => {
   const map = useMap();
   const clusterer = useRef<MarkerClusterer | null>(null);
@@ -124,17 +120,14 @@ const ClusteredNomadMarkers = ({
           },
         },
         // Override the library's default "zoom into cluster bounds" behavior:
-        // open a scrollable list of every nomad in the cluster instead.
+        // open the shared bottom-sheet card carousel with every nomad in the
+        // cluster instead.
         onClusterClick: (_event, cluster: Cluster) => {
           const ids = cluster.markers
             ?.map((m) => markerIdRef.current.get(m as Marker))
             .filter((id): id is string => Boolean(id));
           if (!ids || ids.length === 0) return;
-          const pos = cluster.position;
-          onClusterOpenRef.current({
-            ids,
-            position: { lat: pos.lat(), lng: pos.lng() },
-          });
+          onClusterOpenRef.current(ids);
         },
       });
     }
@@ -190,7 +183,7 @@ const ClusteredNomadMarkers = ({
   );
 };
 
-/** Profile-card content shared by the single-nomad InfoWindow and each row of a cluster's list. */
+/** Profile-card content rendered inside MapCardSheet, one per nomad in the current selection. */
 const NomadCard = ({
   nomad,
   onMessage,
@@ -244,26 +237,25 @@ const NomadCard = ({
 };
 
 const MapContent = ({ nomads }: NomadGoogleMapProps) => {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [clusterSelection, setClusterSelection] = useState<ClusterSelection | null>(null);
+  // One list of nomad ids drives the shared bottom-sheet card carousel for
+  // both cases: a single-pin click populates it with one id, a cluster click
+  // with several. No position tracking needed — the sheet is bottom-anchored
+  // to the map's container, not tied to a lat/lng.
+  const [mapSelection, setMapSelection] = useState<string[] | null>(null);
   const { nomadMapId } = useGoogleMapsConfig();
-  const selected = nomads.find((n) => n.user_id === selectedId);
-  const clusterNomads = clusterSelection
-    ? nomads.filter((n) => clusterSelection.ids.includes(n.user_id))
+  const selectedNomads = mapSelection
+    ? nomads.filter((n) => mapSelection.includes(n.user_id))
     : [];
   const navigate = useNavigate();
   const { user } = useAuth();
   const startConversation = useStartConversation();
   const [startingChat, setStartingChat] = useState(false);
 
-  // Only one InfoWindow (single-nomad or cluster-list) is ever open at a time.
   const handleSelect = useCallback((id: string) => {
-    setClusterSelection(null);
-    setSelectedId(id);
+    setMapSelection([id]);
   }, []);
-  const handleClusterOpen = useCallback((selection: ClusterSelection) => {
-    setSelectedId(null);
-    setClusterSelection(selection);
+  const handleClusterOpen = useCallback((ids: string[]) => {
+    setMapSelection(ids);
   }, []);
 
   const handleMessage = async (otherUserId: string) => {
@@ -290,7 +282,7 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
   };
 
   return (
-    <div className="w-full aspect-[4/5] min-h-[320px] max-h-[75vh] md:aspect-auto md:h-96 md:max-h-none rounded-lg overflow-hidden border border-border">
+    <div className="relative w-full aspect-[4/5] min-h-[320px] max-h-[75vh] md:aspect-auto md:h-96 md:max-h-none rounded-lg overflow-hidden border border-border">
       <GoogleMap
         defaultCenter={{ lat: 30, lng: 0 }}
         defaultZoom={2}
@@ -311,38 +303,17 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
           onSelect={handleSelect}
           onClusterOpen={handleClusterOpen}
         />
-        {selected && (
-          <InfoWindow
-            position={{ lat: selected.latitude, lng: selected.longitude }}
-            onCloseClick={() => setSelectedId(null)}
-          >
-            <NomadCard nomad={selected} onMessage={handleMessage} messaging={startingChat} />
-          </InfoWindow>
-        )}
-        {clusterSelection && clusterNomads.length > 0 && (
-          <InfoWindow
-            position={clusterSelection.position}
-            onCloseClick={() => setClusterSelection(null)}
-          >
-            {clusterNomads.length === 1 ? (
-              <NomadCard nomad={clusterNomads[0]} onMessage={handleMessage} messaging={startingChat} />
-            ) : (
-              <div className="w-56">
-                <p className="text-xs font-semibold text-gray-500 mb-2">
-                  {clusterNomads.length} nomads here
-                </p>
-                <div className="max-h-64 overflow-y-auto divide-y divide-border -mx-1">
-                  {clusterNomads.map((n) => (
-                    <div key={n.user_id} className="px-1 py-2 first:pt-0 last:pb-0">
-                      <NomadCard nomad={n} onMessage={handleMessage} messaging={startingChat} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </InfoWindow>
-        )}
       </GoogleMap>
+      {mapSelection && (
+        <MapCardSheet
+          items={selectedNomads}
+          getKey={(n) => n.user_id}
+          onClose={() => setMapSelection(null)}
+          renderCard={(n) => (
+            <NomadCard nomad={n} onMessage={handleMessage} messaging={startingChat} />
+          )}
+        />
+      )}
     </div>
   );
 };

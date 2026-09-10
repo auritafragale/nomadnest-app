@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Map, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
-import { MarkerClusterer, type Marker } from "@googlemaps/markerclusterer";
+import { Map as GoogleMap, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
+import { MarkerClusterer, type Marker, type Cluster } from "@googlemaps/markerclusterer";
 import { ListingWithDetails } from "@/hooks/useListings";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
+import MapCardSheet from "./MapCardSheet";
 
 const ListingPin = () => (
   <div className="flex flex-col items-center">
@@ -46,13 +47,27 @@ interface ListingGoogleMapProps {
 const ClusteredMarkers = ({
   listings,
   onSelect,
+  onClusterOpen,
 }: {
   listings: ListingWithDetails[];
   onSelect: (id: string) => void;
+  onClusterOpen: (ids: string[]) => void;
 }) => {
   const map = useMap();
   const clusterer = useRef<MarkerClusterer | null>(null);
   const markersRef = useRef<{ [key: string]: Marker }>({});
+  // Reverse lookup so onClusterClick (bound once, below) can turn the
+  // library's Marker instances back into listing ids. Same pattern as
+  // NomadGoogleMap.tsx's ClusteredNomadMarkers.
+  const markerIdRef = useRef<Map<Marker, string>>(new Map());
+  // onClusterClick is registered once when the clusterer is constructed
+  // (below), so it would otherwise close over whichever onClusterOpen was
+  // passed on that first render. Keep a ref in sync so it always calls the
+  // current one.
+  const onClusterOpenRef = useRef(onClusterOpen);
+  useEffect(() => {
+    onClusterOpenRef.current = onClusterOpen;
+  }, [onClusterOpen]);
 
   useEffect(() => {
     if (!map) return;
@@ -76,6 +91,16 @@ const ClusteredMarkers = ({
             });
           },
         },
+        // Override the library's default "zoom into cluster bounds" behavior:
+        // open the shared bottom-sheet card carousel with every listing in
+        // the cluster instead.
+        onClusterClick: (_event, cluster: Cluster) => {
+          const ids = cluster.markers
+            ?.map((m) => markerIdRef.current.get(m as Marker))
+            .filter((id): id is string => Boolean(id));
+          if (!ids || ids.length === 0) return;
+          onClusterOpenRef.current(ids);
+        },
       });
     }
   }, [map]);
@@ -91,7 +116,10 @@ const ClusteredMarkers = ({
 
     if (marker) {
       markersRef.current[key] = marker;
+      markerIdRef.current.set(marker, key);
     } else {
+      const existing = markersRef.current[key];
+      if (existing) markerIdRef.current.delete(existing);
       delete markersRef.current[key];
     }
   }, []);
@@ -112,15 +140,63 @@ const ClusteredMarkers = ({
   );
 };
 
+/** Listing-card content rendered inside MapCardSheet, one per listing in the current selection. */
+const ListingMapCard = ({ listing }: { listing: ListingWithDetails }) => {
+  const openDate = listing.sit_dates.find((d) => d.status === "open");
+  return (
+    <div className="min-w-[200px] max-w-[260px]">
+      {listing.photos?.[0] && (
+        <img
+          src={listing.photos[0]}
+          alt={listing.title}
+          className="w-full h-28 object-cover rounded-md mb-2"
+        />
+      )}
+      <p className="font-semibold text-sm mb-1">{listing.title}</p>
+      {(listing.city || listing.country) && (
+        <p className="text-xs text-muted-foreground">
+          {[listing.city, listing.country].filter(Boolean).join(", ")}
+        </p>
+      )}
+      <p className="text-xs text-muted-foreground">
+        {openDate
+          ? `${format(new Date(openDate.start_date), "MMM d")} – ${format(new Date(openDate.end_date), "MMM d, yyyy")}`
+          : "Dates TBD"}
+      </p>
+      <p className="text-xs mt-1">
+        {listing.pets.map((p) => p.name || p.type).join(", ")}
+      </p>
+      <Link to={`/listing/${listing.id}`}>
+        <Button size="sm" className="w-full mt-2 h-8 text-xs">
+          View Listing
+        </Button>
+      </Link>
+    </div>
+  );
+};
+
 const MapContent = ({ listings }: ListingGoogleMapProps) => {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // One list of listing ids drives the shared bottom-sheet card carousel for
+  // both cases: a single-pin click populates it with one id, a cluster click
+  // with several. No position tracking needed — the sheet is bottom-anchored
+  // to the map's container, not tied to a lat/lng.
+  const [mapSelection, setMapSelection] = useState<string[] | null>(null);
   const { listingMapId } = useGoogleMapsConfig();
   const listingsWithCoords = listings.filter((l) => l.latitude && l.longitude);
-  const selected = listingsWithCoords.find((l) => l.id === selectedId);
+  const selectedListings = mapSelection
+    ? listingsWithCoords.filter((l) => mapSelection.includes(l.id))
+    : [];
+
+  const handleSelect = useCallback((id: string) => {
+    setMapSelection([id]);
+  }, []);
+  const handleClusterOpen = useCallback((ids: string[]) => {
+    setMapSelection(ids);
+  }, []);
 
   return (
     <div className="w-full aspect-[3/4] min-h-[420px] max-h-[80vh] sm:aspect-auto sm:h-[600px] sm:max-h-none rounded-lg overflow-hidden border border-border relative">
-      <Map
+      <GoogleMap
         defaultCenter={{ lat: 30, lng: 0 }}
         defaultZoom={2}
         gestureHandling="greedy"
@@ -133,48 +209,21 @@ const MapContent = ({ listings }: ListingGoogleMapProps) => {
         mapId={listingMapId || "listing-map"}
         className="w-full h-full"
       >
-        
         <FitBoundsInner listings={listingsWithCoords} />
-        <ClusteredMarkers listings={listingsWithCoords} onSelect={setSelectedId} />
-        {selected && (
-          <InfoWindow
-            position={{ lat: selected.latitude!, lng: selected.longitude! }}
-            onCloseClick={() => setSelectedId(null)}
-          >
-            <div className="min-w-[200px] max-w-[260px]">
-              {selected.photos?.[0] && (
-                <img
-                  src={selected.photos[0]}
-                  alt={selected.title}
-                  className="w-full h-28 object-cover rounded-md mb-2"
-                />
-              )}
-              <p className="font-semibold text-sm mb-1">{selected.title}</p>
-              {(selected.city || selected.country) && (
-                <p className="text-xs text-muted-foreground">
-                  {[selected.city, selected.country].filter(Boolean).join(", ")}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {(() => {
-                  const openDate = selected.sit_dates.find((d) => d.status === "open");
-                  return openDate
-                    ? `${format(new Date(openDate.start_date), "MMM d")} – ${format(new Date(openDate.end_date), "MMM d, yyyy")}`
-                    : "Dates TBD";
-                })()}
-              </p>
-              <p className="text-xs mt-1">
-                {selected.pets.map((p) => p.name || p.type).join(", ")}
-              </p>
-              <Link to={`/listing/${selected.id}`}>
-                <Button size="sm" className="w-full mt-2 h-8 text-xs">
-                  View Listing
-                </Button>
-              </Link>
-            </div>
-          </InfoWindow>
-        )}
-      </Map>
+        <ClusteredMarkers
+          listings={listingsWithCoords}
+          onSelect={handleSelect}
+          onClusterOpen={handleClusterOpen}
+        />
+      </GoogleMap>
+      {mapSelection && (
+        <MapCardSheet
+          items={selectedListings}
+          getKey={(l) => l.id}
+          onClose={() => setMapSelection(null)}
+          renderCard={(l) => <ListingMapCard listing={l} />}
+        />
+      )}
       {listingsWithCoords.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/60 pointer-events-none">
           <p className="text-muted-foreground text-sm">No listings have location data yet.</p>
