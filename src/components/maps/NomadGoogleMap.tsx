@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Map, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
+import { Map as GoogleMap, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
 import { MarkerClusterer, type Marker, type Cluster } from "@googlemaps/markerclusterer";
 import { Link, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -98,7 +98,7 @@ const ClusteredNomadMarkers = ({
     if (!clusterer.current) {
       clusterer.current = new MarkerClusterer({
         map,
-        // No algorithmOptions here: the <Map maxZoom={MAX_ZOOM}> cap below
+        // No algorithmOptions here: the <GoogleMap maxZoom={MAX_ZOOM}> cap below
         // already stops anyone from zooming in past that level, so the
         // clustering algorithm is never evaluated beyond it either — it
         // doesn't need a matching limit of its own. (Passing one here also
@@ -291,7 +291,7 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
 
   return (
     <div className="w-full aspect-[4/5] min-h-[320px] max-h-[75vh] md:aspect-auto md:h-96 md:max-h-none rounded-lg overflow-hidden border border-border">
-      <Map
+      <GoogleMap
         defaultCenter={{ lat: 30, lng: 0 }}
         defaultZoom={2}
         maxZoom={MAX_ZOOM}
@@ -342,7 +342,7 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
             )}
           </InfoWindow>
         )}
-      </Map>
+      </GoogleMap>
     </div>
   );
 };
