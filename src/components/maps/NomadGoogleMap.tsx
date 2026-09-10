@@ -98,10 +98,14 @@ const ClusteredNomadMarkers = ({
     if (!clusterer.current) {
       clusterer.current = new MarkerClusterer({
         map,
-        // Matches the hard cap on the <Map> itself (MAX_ZOOM): once the map
-        // reaches this zoom, the algorithm stops splitting clusters further,
-        // and the map can't zoom in any closer to try.
-        algorithmOptions: { maxZoom: MAX_ZOOM },
+        // No algorithmOptions here: the <Map maxZoom={MAX_ZOOM}> cap below
+        // already stops anyone from zooming in past that level, so the
+        // clustering algorithm is never evaluated beyond it either — it
+        // doesn't need a matching limit of its own. (Passing one here also
+        // used to crash production: "TypeError: hf is not a constructor" —
+        // algorithmOptions was the one new value flowing into
+        // SuperClusterAlgorithm's constructor call into SuperCluster, which
+        // previously only ever received an empty default object.)
         renderer: {
           render: ({ count, position }) => {
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
