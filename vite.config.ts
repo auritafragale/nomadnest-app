@@ -15,4 +15,10 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // Purely diagnostic: lets a production crash resolve to real file/line
+    // instead of minified names (e.g. "hf is not a constructor"). No effect
+    // on runtime behavior — just emits .js.map files alongside the bundle.
+    sourcemap: true,
+  },
 }));
