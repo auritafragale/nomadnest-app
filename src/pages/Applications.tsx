@@ -30,7 +30,7 @@ type ApplicationStatus = Database["public"]["Enums"]["application_status"];
 type FilterStatus = ApplicationStatus | "all";
 
 const statusTabs: { value: FilterStatus; label: string }[] = [
-  { value: "all", label: "All" },
+  { value: "applied", label: "New" },
   { value: "shortlisted", label: "Shortlisted" },
   { value: "accepted", label: "Accepted" },
   { value: "declined", label: "Declined" },
@@ -40,9 +40,9 @@ const statusTabs: { value: FilterStatus; label: string }[] = [
 const Applications = () => {
   const { user, loading, role } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialStatus = (searchParams.get("status") || "all") as FilterStatus;
+  const initialStatus = (searchParams.get("status") || "applied") as FilterStatus;
   const [statusFilter, setStatusFilter] = useState<FilterStatus>(
-    statusTabs.some((t) => t.value === initialStatus) ? initialStatus : "all",
+    statusTabs.some((t) => t.value === initialStatus) ? initialStatus : "applied",
   );
   const { toast } = useToast();
   const [filters, setFilters] = useState<ApplicationFilters>(defaultApplicationFilters);
@@ -192,7 +192,7 @@ const Applications = () => {
             value={statusFilter}
             onValueChange={(v) => {
               setStatusFilter(v as FilterStatus);
-              setSearchParams(v === "all" ? {} : { status: v }, { replace: true });
+              setSearchParams(v === "applied" ? {} : { status: v }, { replace: true });
             }}
             className="mb-6"
           >
@@ -243,8 +243,8 @@ const Applications = () => {
               <p className="text-muted-foreground mt-1 max-w-md">
                 {applications.length > 0
                   ? "No applications match these filters yet."
-                  : statusFilter === "all"
-                    ? "When nomads apply to your listings, they'll appear here."
+                  : statusFilter === "applied"
+                    ? "No new applications yet."
                     : `No ${statusFilter} applications found.`}
               </p>
             </div>
