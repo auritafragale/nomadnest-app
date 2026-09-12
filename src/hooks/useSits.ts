@@ -157,6 +157,10 @@ export const useUpdateSitStatus = () => {
           await sendNotification({
             type: "sit_cancelled",
             recipientUserId: otherUserId,
+            // The in-app row was already inserted directly above — without
+            // this, send-notification-email would insert a second one for
+            // the same event.
+            skipInAppNotification: true,
             data: {
               listingTitle: (sit.listing as { title?: string } | null)?.title || "a sit",
               cancelledByName: [me?.first_name, me?.last_name].filter(Boolean).join(" ") || "The other party",
