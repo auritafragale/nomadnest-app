@@ -86,8 +86,8 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
       ? "completed"
       : sit.status;
 
-  const canCompleteSit = isOwner && sit.status === "in_progress";
-  const canCancelSit = sit.status === "confirmed" || sit.status === "in_progress";
+  const canCompleteSit = isOwner && sit.status === "in_progress" && !isFinished;
+  const canCancelSit = (sit.status === "confirmed" || sit.status === "in_progress") && !isFinished;
   // Reviews stay open for 14 days after the sit's end date.
   const REVIEW_WINDOW_DAYS = 14;
   const daysSinceEnd = sit.sit_dates?.end_date

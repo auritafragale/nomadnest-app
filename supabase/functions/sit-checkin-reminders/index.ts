@@ -109,14 +109,18 @@ const handler = async (req: Request): Promise<Response> => {
 
       const todayStr = localDateString(tz);
 
-      // Once-per-day guard: skip if we already sent a reminder for this sit today.
+      // Once-per-day guard: skip if we already sent a reminder for this sit
+      // within the last 20 hours. A rolling window avoids reconstructing
+      // calendar-day boundaries from a local date string against a UTC
+      // column — that previously misaligned for timezones behind UTC, where
+      // `${todayStr}T00:00:00Z` doesn't actually correspond to the start of
+      // "today" in the home's timezone.
       const { data: existingReminder } = await supabase
         .from("notifications")
         .select("id")
         .eq("user_id", sitterId)
         .eq("type", "sit_checkin_reminder")
-        .gte("created_at", `${todayStr}T00:00:00Z`)
-        .lte("created_at", `${todayStr}T23:59:59Z`)
+        .gte("created_at", new Date(Date.now() - 20 * 3600_000).toISOString())
         .limit(1);
 
       if (existingReminder && existingReminder.length > 0) {
