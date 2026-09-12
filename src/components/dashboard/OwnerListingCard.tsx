@@ -49,7 +49,11 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
   const reopenSitDate = useReopenSitDate();
 
   const todayIso = new Date().toISOString().slice(0, 10);
-  const nextDate = listing.sit_dates.find((d) => d.status === "open" && d.end_date >= todayIso);
+  const upcomingOpenDates = listing.sit_dates.filter(
+    (d) => d.status === "open" && d.end_date >= todayIso,
+  );
+  const nextDate = upcomingOpenDates[0];
+  const extraOpenDatesCount = upcomingOpenDates.length - 1;
   const datesExpired = !nextDate && listing.status === "published";
   const closedDates = listing.sit_dates.filter((d) => d.status === "closed" || d.status === "booked");
   const petNames = listing.pets.map((p) => p.name || p.type).join(", ");
@@ -151,6 +155,11 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                     <Calendar className="w-3 h-3" />
                     {format(new Date(nextDate.start_date), "MMM d")} -{" "}
                     {format(new Date(nextDate.end_date), "MMM d, yyyy")}
+                    {extraOpenDatesCount > 0 && (
+                      <Badge variant="muted" className="ml-1 text-[10px] px-1.5 py-0 h-4 leading-none">
+                        +{extraOpenDatesCount} more date{extraOpenDatesCount !== 1 ? "s" : ""}
+                      </Badge>
+                    )}
                   </span>
                 )}
                 {datesExpired && (

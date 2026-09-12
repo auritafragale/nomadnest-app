@@ -42,6 +42,32 @@ export const useSitRescheduleRequest = (sitId: string | undefined, enabled = tru
   });
 };
 
+/**
+ * The most recent DECLINED reschedule request for a sit, if any — used by
+ * the cancel flow to offer a choice of which dates (the sit's original
+ * dates, or the declined proposal) should become available to a new Nomad.
+ */
+export const useLatestDeclinedReschedule = (sitId: string | undefined, enabled = true) => {
+  return useQuery({
+    queryKey: ["sit-reschedule-request-declined", sitId],
+    queryFn: async (): Promise<SitRescheduleRequest | null> => {
+      if (!sitId) return null;
+      const { data, error } = await supabase
+        .from("sit_reschedule_requests")
+        .select("*")
+        .eq("sit_id", sitId)
+        .eq("status", "declined")
+        .order("responded_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as SitRescheduleRequest | null;
+    },
+    enabled: enabled && !!sitId,
+  });
+};
+
 export const useProposeSitReschedule = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();

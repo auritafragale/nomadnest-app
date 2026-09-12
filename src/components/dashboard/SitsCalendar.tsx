@@ -10,6 +10,7 @@ import type { DateRange } from "react-day-picker";
 import { useSits, Sit, useUpdateSitStatus } from "@/hooks/useSits";
 import {
   useSitRescheduleRequest,
+  useLatestDeclinedReschedule,
   useProposeSitReschedule,
   useRespondToSitReschedule,
 } from "@/hooks/useSitReschedule";
@@ -29,6 +30,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as DatePickerCalendar } from "@/components/ui/calendar";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import WriteReviewDialog from "@/components/reviews/WriteReviewDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveListingConversation } from "@/lib/conversations";
@@ -223,8 +226,10 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
   const otherParty = isOwner ? sit.sitter_profile : sit.owner_profile;
   const otherPartyLabel = isOwner ? "Sitter" : "Owner";
   const { mutate: updateStatus, isPending } = useUpdateSitStatus();
+  const { data: declinedRequest } = useLatestDeclinedReschedule(sit.id);
   const [hasReviewed, setHasReviewed] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [reopenChoice, setReopenChoice] = useState<"original" | "proposed">("proposed");
   const [openingChat, setOpeningChat] = useState(false);
   const navigate = useNavigate();
 
@@ -246,6 +251,31 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
       setOpeningChat(false);
     }
 
+  };
+
+  // A declined reschedule proposal means the sit's original dates aren't
+  // necessarily what should reopen for a new Nomad — let the owner pick.
+  const handleCancel = () => {
+    if (!cancelReason.trim()) return;
+    let reopenWith: { start_date: string; end_date: string } | undefined;
+    if (declinedRequest) {
+      reopenWith =
+        reopenChoice === "proposed"
+          ? {
+              start_date: declinedRequest.proposed_start_date,
+              end_date: declinedRequest.proposed_end_date,
+            }
+          : sit.sit_dates
+            ? { start_date: sit.sit_dates.start_date, end_date: sit.sit_dates.end_date }
+            : undefined;
+    }
+    updateStatus({
+      sitId: sit.id,
+      sitDatesId: sit.sit_dates_id,
+      status: "cancelled",
+      reason: cancelReason.trim(),
+      reopenWith,
+    });
   };
 
   // Status is derived live from the dates so the badge is right even before the
@@ -412,6 +442,33 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
                     party why — a reason is required.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
+                {declinedRequest && sit.sit_dates && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      Which dates should become available for a new Nomad?
+                    </p>
+                    <RadioGroup
+                      value={reopenChoice}
+                      onValueChange={(v) => setReopenChoice(v as "original" | "proposed")}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="original" id={`reopen-original-${sit.id}`} />
+                        <Label htmlFor={`reopen-original-${sit.id}`} className="text-sm font-normal">
+                          Original dates ({format(parseISO(sit.sit_dates.start_date), "MMM d")} –{" "}
+                          {format(parseISO(sit.sit_dates.end_date), "MMM d, yyyy")})
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="proposed" id={`reopen-proposed-${sit.id}`} />
+                        <Label htmlFor={`reopen-proposed-${sit.id}`} className="text-sm font-normal">
+                          Your proposed dates (
+                          {format(parseISO(declinedRequest.proposed_start_date), "MMM d")} –{" "}
+                          {format(parseISO(declinedRequest.proposed_end_date), "MMM d, yyyy")})
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                )}
                 <Textarea
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
@@ -423,14 +480,7 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
                   <AlertDialogAction
                     disabled={!cancelReason.trim()}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() =>
-                      updateStatus({
-                        sitId: sit.id,
-                        sitDatesId: sit.sit_dates_id,
-                        status: "cancelled",
-                        reason: cancelReason.trim(),
-                      })
-                    }
+                    onClick={handleCancel}
                   >
                     Cancel Sit
                   </AlertDialogAction>

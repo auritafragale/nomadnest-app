@@ -88,18 +88,28 @@ export const useUpdateSitStatus = () => {
       sitDatesId,
       status,
       reason,
+      reopenWith,
     }: {
       sitId: string;
       sitDatesId?: string;
       status: "in_progress" | "completed" | "cancelled";
       /** Required when cancelling — explained to the other party. */
       reason?: string;
+      /**
+       * When cancelling, open a NEW sit_dates row with these dates instead of
+       * reopening the original sitDatesId row (which is left exactly as it
+       * is — still "booked", so it can still be reopened manually later via
+       * the existing closed-dates UI). Used when a declined reschedule
+       * proposal means the original dates aren't necessarily what should
+       * become available to a new Nomad. Omit for today's default behavior.
+       */
+      reopenWith?: { start_date: string; end_date: string };
     }) => {
-      const updateData: { 
-        status: "in_progress" | "completed" | "cancelled"; 
+      const updateData: {
+        status: "in_progress" | "completed" | "cancelled";
         completed_at?: string;
       } = { status };
-      
+
       if (status === "completed") {
         updateData.completed_at = new Date().toISOString();
       }
@@ -111,16 +121,16 @@ export const useUpdateSitStatus = () => {
 
       if (error) throw error;
 
-      // Notify the other party with the cancellation reason.
       if (status === "cancelled") {
         const { data: sit } = await supabase
           .from("sits")
           .select(
-            "owner_user_id, sitter_user_id, listing:listings(title), sit_dates:sit_dates_id(start_date, end_date)",
+            "listing_id, owner_user_id, sitter_user_id, listing:listings(title), sit_dates:sit_dates_id(start_date, end_date)",
           )
           .eq("id", sitId)
           .maybeSingle();
 
+        // Notify the other party with the cancellation reason.
         if (sit && user) {
           const otherIsSitter = sit.owner_user_id === user.id;
           const otherUserId = otherIsSitter ? sit.sitter_user_id : sit.owner_user_id;
@@ -158,17 +168,28 @@ export const useUpdateSitStatus = () => {
           });
 
         }
-      }
 
-      // Re-open sit dates when cancelled
-      if (status === "cancelled" && sitDatesId) {
-        const { error: sitDatesError } = await supabase
-          .from("sit_dates")
-          .update({ status: "open" as const })
-          .eq("id", sitDatesId);
+        // Make dates available again for a new Nomad.
+        if (reopenWith && sit?.listing_id) {
+          const { error: newDateError } = await supabase.from("sit_dates").insert({
+            listing_id: sit.listing_id,
+            start_date: reopenWith.start_date,
+            end_date: reopenWith.end_date,
+            status: "open" as const,
+          });
 
-        if (sitDatesError) {
-          console.error("Error re-opening sit dates:", sitDatesError);
+          if (newDateError) {
+            console.error("Error creating replacement sit dates:", newDateError);
+          }
+        } else if (sitDatesId) {
+          const { error: sitDatesError } = await supabase
+            .from("sit_dates")
+            .update({ status: "open" as const })
+            .eq("id", sitDatesId);
+
+          if (sitDatesError) {
+            console.error("Error re-opening sit dates:", sitDatesError);
+          }
         }
       }
     },
