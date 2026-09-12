@@ -15,7 +15,7 @@ import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import NomadGoogleMap from "@/components/maps/NomadGoogleMap";
 import NomadVisibilityBanner from "@/components/browse/NomadVisibilityBanner";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
-import { matchesAllTokens } from "@/lib/utils";
+import { matchesAllTokens, cn } from "@/lib/utils";
 
 
 export interface NomadOnMap {
@@ -149,7 +149,7 @@ const FindNomads = () => {
           </div>
         </div>
 
-        <div className="container py-8">
+        <div className={cn("container", viewMode === "map" ? "py-4" : "py-8")}>
           {loading ? (
             <Skeleton className="h-64 md:h-96 w-full rounded-lg" />
           ) : filteredNomads.length === 0 ? (
@@ -166,7 +166,13 @@ const FindNomads = () => {
                 {filteredNomads.length} nomad{filteredNomads.length !== 1 ? "s" : ""}
               </p>
               {viewMode === "map" ? (
-                <NomadGoogleMap nomads={filteredNomads} />
+                // Break out of the container's 1.5rem side padding on mobile
+                // so the map spans the full device width; revert to normal
+                // at sm (640px), where the container itself stops being
+                // fluid-width anyway.
+                <div className="-mx-6 sm:mx-0">
+                  <NomadGoogleMap nomads={filteredNomads} />
+                </div>
               ) : (
                 <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 lg:grid-cols-3">
                   {filteredNomads.map((nomad) => (

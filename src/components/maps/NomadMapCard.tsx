@@ -29,10 +29,14 @@ const NomadMapCard = ({ nomad, onMessage, messaging }: NomadMapCardProps) => {
   const location = [nomad.profile?.city, nomad.profile?.country].filter(Boolean).join(", ");
 
   return (
-    <div className="relative min-w-[220px]">
+    // pt-1/pl-6 reserve room for the star badge below so it can sit at a
+    // non-negative top-0/left-0 (fully inside this card's own box) instead of
+    // poking out at a negative offset — MapCardSheet's content wrapper has
+    // overflow-y-auto, which was clipping anything that stuck out above it.
+    <div className="relative pt-1 pl-6 min-w-[220px]">
       {nomad.profile?.founding_member && (
         <span
-          className="absolute -top-1 -left-1 flex items-center justify-center w-5 h-5 rounded-full bg-accent/15 text-accent"
+          className="absolute top-0 left-0 flex items-center justify-center w-5 h-5 rounded-full bg-accent/15 text-accent"
           title="Founding member"
           aria-label="Founding member"
         >

@@ -12,6 +12,7 @@ import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import Pagination from "@/components/browse/Pagination";
 import { usePagination } from "@/hooks/usePagination";
 import FilterBottomSheet, { MobileFilters, sitDetailKeys } from "@/components/mobile/FilterBottomSheet";
+import { cn } from "@/lib/utils";
 
 const ListingGoogleMap = lazy(() => import("@/components/maps/ListingGoogleMap"));
 
@@ -118,12 +119,14 @@ const BrowseSits = () => {
           onApply={handleMobileFiltersApply}
         />
 
-        <div className="container py-6 md:py-8">
+        <div className={cn("container", viewMode === "map" ? "py-3 md:py-4" : "py-6 md:py-8")}>
           {isLoading ? (
             <>
               <Skeleton className="h-5 w-32 mb-6" />
               {viewMode === "map" ? (
-                <Skeleton className="w-full h-[600px] rounded-lg" />
+                <div className="-mx-6 sm:mx-0">
+                  <Skeleton className="w-full h-[600px] rounded-lg" />
+                </div>
               ) : (
                 <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 lg:grid-cols-3">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -144,9 +147,15 @@ const BrowseSits = () => {
 
               <div className="transition-opacity duration-300">
                 {viewMode === "map" ? (
-                  <Suspense fallback={<Skeleton className="w-full h-[600px] rounded-lg" />}>
-                    <ListingGoogleMap listings={listings} />
-                  </Suspense>
+                  // Break out of the container's 1.5rem side padding on
+                  // mobile so the map spans the full device width; revert to
+                  // normal at sm (640px), where the container itself stops
+                  // being fluid-width anyway.
+                  <div className="-mx-6 sm:mx-0">
+                    <Suspense fallback={<Skeleton className="w-full h-[600px] rounded-lg" />}>
+                      <ListingGoogleMap listings={listings} />
+                    </Suspense>
+                  </div>
                 ) : (
                   <>
                     <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 lg:grid-cols-3">

@@ -1,17 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Map as GoogleMap, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 import { MarkerClusterer, type Marker, type Cluster } from "@googlemaps/markerclusterer";
+import { PawPrint } from "lucide-react";
 import { ListingWithDetails } from "@/hooks/useListings";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 import MapCardSheet from "./MapCardSheet";
 import ListingMapCard from "./ListingMapCard";
 
+// Individual (non-clustered) pin. Same circular-badge treatment as
+// NomadGoogleMap.tsx's NomadPin, kept visually consistent between both
+// maps — only the icon differs. Cluster count badges (built as raw SVG for
+// the AdvancedMarkerElement content the clusterer's own renderer constructs)
+// are untouched.
 const ListingPin = () => (
   <div className="flex flex-col items-center">
-    <div className="w-8 h-8 rounded-full border-2 border-primary-foreground bg-primary text-primary-foreground shadow-lg flex items-center justify-center">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-      </svg>
+    <div className="w-10 h-10 rounded-full border-2 border-white shadow-lg bg-primary flex items-center justify-center">
+      <PawPrint className="w-5 h-5 text-primary-foreground" />
     </div>
   </div>
 );
@@ -158,7 +162,7 @@ const MapContent = ({ listings }: ListingGoogleMapProps) => {
   }, []);
 
   return (
-    <div className="w-full aspect-[3/4] min-h-[420px] max-h-[80vh] sm:aspect-auto sm:h-[600px] sm:max-h-none rounded-lg overflow-hidden border border-border relative">
+    <div className="w-full aspect-[3/4] min-h-[460px] max-h-[82vh] sm:aspect-auto sm:h-[600px] sm:max-h-none rounded-lg overflow-hidden border border-border relative">
       <GoogleMap
         defaultCenter={{ lat: 30, lng: 0 }}
         defaultZoom={2}
