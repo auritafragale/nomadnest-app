@@ -25,11 +25,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { MapPin, Calendar, Edit, Eye, Users, MoreVertical, Pause, Play, Trash2, Copy, ChevronDown, RotateCcw, Loader2 } from "lucide-react";
+import { MapPin, Calendar, Edit, Eye, Users, MoreVertical, Pause, Play, Trash2, ChevronDown, RotateCcw, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { OwnerListing } from "@/hooks/useOwnerListings";
 import { useUpdateListingStatus, useDeleteListing } from "@/hooks/useOwnerListingActions";
-import { useDuplicateListing } from "@/hooks/useDuplicateListing";
 import { useReopenSitDate } from "@/hooks/useReopenSitDate";
 
 interface OwnerListingCardProps {
@@ -47,7 +46,6 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
   const [showDatesOpen, setShowDatesOpen] = useState(false);
   const updateStatus = useUpdateListingStatus();
   const deleteListing = useDeleteListing();
-  const duplicateListing = useDuplicateListing();
   const reopenSitDate = useReopenSitDate();
 
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -67,10 +65,6 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
   const handleDelete = () => {
     deleteListing.mutate(listing.id);
     setShowDeleteDialog(false);
-  };
-
-  const handleDuplicate = () => {
-    duplicateListing.mutate(listing.id);
   };
 
   return (
@@ -133,10 +127,6 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                           Unpause Listing
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem onClick={handleDuplicate}>
-                        <Copy className="w-4 h-4 mr-2" />
-                        Duplicate Listing
-                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => setShowDeleteDialog(true)}
