@@ -270,11 +270,24 @@ const SitterDashboard = ({
   }, [initialAppTab]);
 
   const todayISO = new Date().toISOString().slice(0, 10);
+  // Re-applying to the same date range after a cancellation (e.g. applied,
+  // accepted, cancelled, applied again, cancelled again) produces one
+  // cancelled row per attempt. applications is already sorted by
+  // created_at descending, so keeping the first occurrence per
+  // sit_dates_id keeps only the most recent cancelled application for that
+  // range and drops the older duplicates — display-only, nothing
+  // underlying is touched.
+  const seenCancelledDates = new Set<string>();
   const visibleApplications = applications.filter((a) => {
+    if (appTab === "cancelled") {
+      if (a.status !== "cancelled") return false;
+      if (seenCancelledDates.has(a.sit_dates_id)) return false;
+      seenCancelledDates.add(a.sit_dates_id);
+      return true;
+    }
     const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
     if (appTab === "accepted") return a.status === "accepted" && !ended;
     if (appTab === "pending") return a.status === "applied" || a.status === "shortlisted";
-    if (appTab === "cancelled") return a.status === "cancelled";
     if (appTab === "all") return a.status !== "cancelled";
     return true;
   }).sort((a, b) => {
