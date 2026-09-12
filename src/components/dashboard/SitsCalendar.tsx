@@ -339,11 +339,12 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
       {/* Sit actions */}
       {(canCompleteSit || canCancelSit || isCurrent || sit.status === "confirmed") && (
         <div className="mt-3 pt-2 border-t space-y-2">
+          <div className="flex gap-2 flex-wrap">
           {(sit.status === "confirmed" || sit.status === "in_progress") && (
             <Button
               size="sm"
               variant="secondary"
-              className="w-full"
+              className="flex-1"
               disabled={openingChat}
               onClick={openConversation}
             >
@@ -351,7 +352,6 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
               Message
             </Button>
           )}
-          <div className="flex gap-2 flex-wrap">
           {isCurrent && isSitter && (
             <Button
               size="sm"
