@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Map as GoogleMap, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 import { MarkerClusterer, type Marker, type Cluster } from "@googlemaps/markerclusterer";
-import { Backpack } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStartConversation } from "@/hooks/useConversations";
@@ -18,15 +17,16 @@ import type { NomadOnMap } from "@/pages/FindNomads";
 // controls when it STOPS forming new clusters, not how far the map can zoom.
 const MAX_ZOOM = 12;
 
-// Individual (non-clustered) pin. Same circular-badge treatment as
-// ListingGoogleMap.tsx's ListingPin, kept visually consistent between both
-// maps — only the icon differs. Cluster count badges (built as raw SVG for
-// the AdvancedMarkerElement content the clusterer's own renderer constructs)
-// are untouched.
-const NomadPin = () => (
+const NomadPin = ({ avatarUrl, initials }: { avatarUrl?: string | null; initials: string }) => (
   <div className="flex flex-col items-center">
-    <div className="w-10 h-10 rounded-full border-2 border-white shadow-lg bg-primary flex items-center justify-center">
-      <Backpack className="w-5 h-5 text-primary-foreground" />
+    <div className="w-10 h-10 rounded-full border-2 border-white shadow-lg overflow-hidden bg-primary">
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-primary-foreground">
+          {initials}
+        </div>
+      )}
     </div>
   </div>
 );
@@ -163,16 +163,20 @@ const ClusteredNomadMarkers = ({
 
   return (
     <>
-      {nomads.map((nomad) => (
-        <AdvancedMarker
-          key={nomad.user_id}
-          position={{ lat: nomad.latitude, lng: nomad.longitude }}
-          onClick={() => onSelect(nomad.user_id)}
-          ref={(marker) => setMarkerRef(marker as unknown as Marker, nomad.user_id)}
-        >
-          <NomadPin />
-        </AdvancedMarker>
-      ))}
+      {nomads.map((nomad) => {
+        const name = `${nomad.profile?.first_name || ""} ${nomad.profile?.last_name || ""}`.trim() || "Nomad";
+        const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+        return (
+          <AdvancedMarker
+            key={nomad.user_id}
+            position={{ lat: nomad.latitude, lng: nomad.longitude }}
+            onClick={() => onSelect(nomad.user_id)}
+            ref={(marker) => setMarkerRef(marker as unknown as Marker, nomad.user_id)}
+          >
+            <NomadPin avatarUrl={nomad.profile?.avatar_url} initials={initials} />
+          </AdvancedMarker>
+        );
+      })}
     </>
   );
 };
