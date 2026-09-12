@@ -1,15 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Map as GoogleMap, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 import { MarkerClusterer, type Marker, type Cluster } from "@googlemaps/markerclusterer";
-import { Link, useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStartConversation } from "@/hooks/useConversations";
 import { toast } from "@/hooks/use-toast";
-import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 import MapCardSheet from "./MapCardSheet";
+import NomadMapCard from "./NomadMapCard";
 import type { NomadOnMap } from "@/pages/FindNomads";
 
 // Beyond this zoom, clustering stops being meaningful at city scale — pins
@@ -183,59 +181,6 @@ const ClusteredNomadMarkers = ({
   );
 };
 
-/** Profile-card content rendered inside MapCardSheet, one per nomad in the current selection. */
-const NomadCard = ({
-  nomad,
-  onMessage,
-  messaging,
-}: {
-  nomad: NomadOnMap;
-  onMessage: (userId: string) => void;
-  messaging: boolean;
-}) => {
-  const name = `${nomad.profile?.first_name || ""} ${nomad.profile?.last_name || ""}`.trim() || "Nomad";
-  const location = [nomad.profile?.city, nomad.profile?.country].filter(Boolean).join(", ");
-  return (
-    <div className="min-w-[180px] text-center">
-      {nomad.profile?.avatar_url && (
-        <div className="flex justify-center mb-2">
-          <img
-            src={nomad.profile.avatar_url}
-            alt={name}
-            className="w-12 h-12 rounded-full object-cover"
-          />
-        </div>
-      )}
-      <p className="font-semibold text-sm">{name}</p>
-      {nomad.profile?.founding_member && (
-        <div className="flex justify-center mt-1">
-          <FoundingMemberBadge />
-        </div>
-      )}
-      {nomad.headline && <p className="text-xs text-gray-500 mt-1">{nomad.headline}</p>}
-      {location && <p className="text-xs text-gray-500 mt-1">📍 {location}</p>}
-      {nomad.pet_types && nomad.pet_types.length > 0 && (
-        <p className="text-xs mt-1">{nomad.pet_types.join(", ")}</p>
-      )}
-      <div className="flex gap-2 mt-2">
-        <Link to={`/sitter/${nomad.user_id}`} className="flex-1">
-          <Button size="sm" className="w-full h-7 text-xs">View Profile</Button>
-        </Link>
-        <Button
-          size="sm"
-          variant="outline"
-          className="flex-1 w-full h-7 text-xs"
-          onClick={() => onMessage(nomad.user_id)}
-          disabled={messaging}
-        >
-          {messaging && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
-          Message
-        </Button>
-      </div>
-    </div>
-  );
-};
-
 const MapContent = ({ nomads }: NomadGoogleMapProps) => {
   // One list of nomad ids drives the shared bottom-sheet card carousel for
   // both cases: a single-pin click populates it with one id, a cluster click
@@ -310,7 +255,7 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
           getKey={(n) => n.user_id}
           onClose={() => setMapSelection(null)}
           renderCard={(n) => (
-            <NomadCard nomad={n} onMessage={handleMessage} messaging={startingChat} />
+            <NomadMapCard nomad={n} onMessage={handleMessage} messaging={startingChat} />
           )}
         />
       )}

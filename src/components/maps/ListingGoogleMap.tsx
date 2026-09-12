@@ -2,11 +2,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Map as GoogleMap, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 import { MarkerClusterer, type Marker, type Cluster } from "@googlemaps/markerclusterer";
 import { ListingWithDetails } from "@/hooks/useListings";
-import { format } from "date-fns";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 import MapCardSheet from "./MapCardSheet";
+import ListingMapCard from "./ListingMapCard";
 
 const ListingPin = () => (
   <div className="flex flex-col items-center">
@@ -137,41 +135,6 @@ const ClusteredMarkers = ({
         </AdvancedMarker>
       ))}
     </>
-  );
-};
-
-/** Listing-card content rendered inside MapCardSheet, one per listing in the current selection. */
-const ListingMapCard = ({ listing }: { listing: ListingWithDetails }) => {
-  const openDate = listing.sit_dates.find((d) => d.status === "open");
-  return (
-    <div className="min-w-[200px] max-w-[260px]">
-      {listing.photos?.[0] && (
-        <img
-          src={listing.photos[0]}
-          alt={listing.title}
-          className="w-full h-28 object-cover rounded-md mb-2"
-        />
-      )}
-      <p className="font-semibold text-sm mb-1">{listing.title}</p>
-      {(listing.city || listing.country) && (
-        <p className="text-xs text-muted-foreground">
-          {[listing.city, listing.country].filter(Boolean).join(", ")}
-        </p>
-      )}
-      <p className="text-xs text-muted-foreground">
-        {openDate
-          ? `${format(new Date(openDate.start_date), "MMM d")} – ${format(new Date(openDate.end_date), "MMM d, yyyy")}`
-          : "Dates TBD"}
-      </p>
-      <p className="text-xs mt-1">
-        {listing.pets.map((p) => p.name || p.type).join(", ")}
-      </p>
-      <Link to={`/listing/${listing.id}`}>
-        <Button size="sm" className="w-full mt-2 h-8 text-xs">
-          View Listing
-        </Button>
-      </Link>
-    </div>
   );
 };
 
