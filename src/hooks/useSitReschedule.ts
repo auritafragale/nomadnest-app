@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -85,14 +86,17 @@ export const useProposeSitReschedule = () => {
         .eq("id", user.id)
         .maybeSingle();
 
+      // The DB column needs the ISO (yyyy-MM-dd) form above — the
+      // notification/email is a display surface, so it gets a separately
+      // formatted, human-readable version instead of the raw ISO string.
       await sendNotification({
         type: "sit_reschedule_proposed",
         recipientUserId: sitterUserId,
         data: {
           listingTitle,
           ownerName: [me?.first_name, me?.last_name].filter(Boolean).join(" ") || "Your Pet Parent",
-          proposedStartDate,
-          proposedEndDate,
+          proposedStartDate: format(parseISO(proposedStartDate), "d MMM yyyy"),
+          proposedEndDate: format(parseISO(proposedEndDate), "d MMM yyyy"),
           url: "/dashboard",
         },
       });
