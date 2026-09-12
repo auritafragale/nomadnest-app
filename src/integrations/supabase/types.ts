@@ -1357,13 +1357,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sit_reschedule_requests_sit_id_fkey"
-            columns: ["sit_id"]
-            isOneToOne: false
-            referencedRelation: "sits"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "sit_reschedule_requests_requested_by_fkey"
             columns: ["requested_by"]
             isOneToOne: false
@@ -1375,6 +1368,13 @@ export type Database = {
             columns: ["requested_by"]
             isOneToOne: false
             referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sit_reschedule_requests_sit_id_fkey"
+            columns: ["sit_id"]
+            isOneToOne: false
+            referencedRelation: "sits"
             referencedColumns: ["id"]
           },
         ]
