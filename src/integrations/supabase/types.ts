@@ -1321,6 +1321,64 @@ export type Database = {
           },
         ]
       }
+      sit_reschedule_requests: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          proposed_end_date: string
+          proposed_start_date: string
+          requested_by: string
+          responded_at: string | null
+          sit_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          proposed_end_date: string
+          proposed_start_date: string
+          requested_by: string
+          responded_at?: string | null
+          sit_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          proposed_end_date?: string
+          proposed_start_date?: string
+          requested_by?: string
+          responded_at?: string | null
+          sit_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sit_reschedule_requests_sit_id_fkey"
+            columns: ["sit_id"]
+            isOneToOne: false
+            referencedRelation: "sits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sit_reschedule_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sit_reschedule_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sits: {
         Row: {
           completed_at: string | null
@@ -1871,6 +1929,10 @@ export type Database = {
       }
       release_job_lease: { Args: { p_job_name: string }; Returns: undefined }
       request_is_end_user: { Args: never; Returns: boolean }
+      respond_to_sit_reschedule: {
+        Args: { p_accept: boolean; p_request_id: string }
+        Returns: Json
+      }
       set_my_profile_phone: {
         Args: { p_phone: string; p_target: string }
         Returns: undefined

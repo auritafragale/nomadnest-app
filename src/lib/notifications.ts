@@ -8,7 +8,10 @@ interface NotificationData {
     | "invite"
     | "review"
     | "sit_cancelled"
-    | "sit_checkin";
+    | "sit_checkin"
+    | "sit_reschedule_proposed"
+    | "sit_reschedule_accepted"
+    | "sit_reschedule_declined";
   recipientUserId: string;
   data: Record<string, string>;
   /** Skip the in-app notifications row when a DB trigger already created it. */

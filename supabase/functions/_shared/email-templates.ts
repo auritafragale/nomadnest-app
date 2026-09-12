@@ -44,7 +44,10 @@ export type NotificationType =
   | "review_reminder"
   | "sit_cancelled"
   | "sit_checkin"
-  | "id_verification_approved";
+  | "id_verification_approved"
+  | "sit_reschedule_proposed"
+  | "sit_reschedule_accepted"
+  | "sit_reschedule_declined";
 
 export function buildNotificationEmail(
   type: string,
@@ -193,6 +196,53 @@ export function buildNotificationEmail(
         pushTitle: "ID Verified ✓",
         pushBody: "Your ID has been verified. Your profile now shows the badge.",
         pushUrl: "/complete-profile",
+      };
+    case "sit_reschedule_proposed":
+      return {
+        subject: `New dates proposed for ${data.listingTitle}`,
+        preview: `${data.ownerName || "Your Pet Parent"} proposed new dates for your sit`,
+        heading: "New dates proposed",
+        body: `
+          <p><strong>${data.ownerName || "Your Pet Parent"}</strong> has proposed new dates for your sit at <strong>${data.listingTitle}</strong>.</p>
+          <p>Proposed dates: ${data.proposedStartDate} – ${data.proposedEndDate}</p>
+          ${data.note ? quote(data.note) : ""}
+          <p>Review the new dates and accept or decline from your dashboard.</p>
+        `,
+        ctaLabel: "Review the proposed dates",
+        ctaUrl: `${APP_URL}/dashboard`,
+        pushTitle: "New dates proposed",
+        pushBody: `${data.ownerName || "Your Pet Parent"} proposed new dates for ${data.listingTitle}`,
+        pushUrl: "/dashboard",
+      };
+    case "sit_reschedule_accepted":
+      return {
+        subject: `Your proposed dates were accepted — ${data.listingTitle}`,
+        preview: `${data.sitterName || "Your Nomad"} accepted the new dates`,
+        heading: "New dates accepted",
+        body: `
+          <p><strong>${data.sitterName || "Your Nomad"}</strong> has accepted the new dates you proposed for <strong>${data.listingTitle}</strong>.</p>
+          <p>The sit is now confirmed for the new dates.</p>
+        `,
+        ctaLabel: "View your dashboard",
+        ctaUrl: `${APP_URL}/dashboard`,
+        pushTitle: "New dates accepted",
+        pushBody: `${data.sitterName || "Your Nomad"} accepted the new dates for ${data.listingTitle}`,
+        pushUrl: "/dashboard",
+      };
+    case "sit_reschedule_declined":
+      return {
+        subject: `Your proposed dates were declined — ${data.listingTitle}`,
+        preview: `${data.sitterName || "Your Nomad"} declined the new dates`,
+        heading: "New dates declined",
+        body: `
+          <p><strong>${data.sitterName || "Your Nomad"}</strong> has declined the new dates you proposed for <strong>${data.listingTitle}</strong>.</p>
+          <p>The sit's original dates remain unchanged.</p>
+        `,
+        ctaLabel: "View your dashboard",
+        ctaUrl: `${APP_URL}/dashboard`,
+        pushTitle: "New dates declined",
+        pushBody: `${data.sitterName || "Your Nomad"} declined the new dates for ${data.listingTitle} — dates are unchanged`,
+        pushUrl: "/dashboard",
       };
     default:
       return {
@@ -470,6 +520,8 @@ const sample = {
   otherName: "James Whitfield",
   daysLeft: "4",
   status: "accepted",
+  proposedStartDate: "2 Nov 2026",
+  proposedEndDate: "16 Nov 2026",
 };
 
 export function getPreviewTemplates(): PreviewTemplate[] {
@@ -491,6 +543,9 @@ export function getPreviewTemplates(): PreviewTemplate[] {
     { id: "review_reminder", label: "Review reminder", group: "Notifications", build: () => buildNotificationEmail("review_reminder", sample) },
     { id: "sit_cancelled", label: "Sit cancelled", group: "Notifications", build: () => buildNotificationEmail("sit_cancelled", sample) },
     { id: "id_verification_approved", label: "ID verified", group: "Notifications", build: () => buildNotificationEmail("id_verification_approved", sample) },
+    { id: "sit_reschedule_proposed", label: "New dates proposed (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("sit_reschedule_proposed", sample) },
+    { id: "sit_reschedule_accepted", label: "New dates accepted (to Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("sit_reschedule_accepted", sample) },
+    { id: "sit_reschedule_declined", label: "New dates declined (to Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("sit_reschedule_declined", sample) },
     { id: "welcome", label: "Welcome email", group: "Notifications", build: () => buildWelcomeEmail("Alex") },
     { id: "membership_activated", label: "Membership activated", group: "Membership", build: () => buildMembershipEmail("activated", { planName: "Combined Membership", endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },
     { id: "membership_renewal_reminder", label: "Renewal reminder", group: "Membership", build: () => buildMembershipEmail("renewal_reminder", { endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },

@@ -4,9 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, ChevronLeft, ChevronRight, MapPin, User, MessageSquare, CheckCircle, XCircle, Star, Bone } from "lucide-react";
+import { Calendar, CalendarClock, ChevronLeft, ChevronRight, MapPin, User, MessageSquare, CheckCircle, XCircle, Star, Bone } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import type { DateRange } from "react-day-picker";
 import { useSits, Sit, useUpdateSitStatus } from "@/hooks/useSits";
+import {
+  useSitRescheduleRequest,
+  useProposeSitReschedule,
+  useRespondToSitReschedule,
+} from "@/hooks/useSitReschedule";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +27,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as DatePickerCalendar } from "@/components/ui/calendar";
 import WriteReviewDialog from "@/components/reviews/WriteReviewDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveListingConversation } from "@/lib/conversations";
@@ -34,6 +42,179 @@ const statusColors: Record<string, string> = {
   in_progress: "bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30",
   completed: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
   cancelled: "bg-destructive/20 text-destructive border-destructive/30",
+};
+
+/**
+ * Propose/respond UI for a confirmed or in-progress sit's dates. Only ever
+ * rendered by SitCard for those two statuses.
+ */
+const SitRescheduleSection = ({
+  sit,
+  isOwner,
+  isSitter,
+}: {
+  sit: Sit;
+  isOwner: boolean;
+  isSitter: boolean;
+}) => {
+  const { data: pendingRequest, isLoading } = useSitRescheduleRequest(sit.id);
+  const proposeReschedule = useProposeSitReschedule();
+  const respondToReschedule = useRespondToSitReschedule();
+  const [proposedRange, setProposedRange] = useState<DateRange | undefined>(undefined);
+  const [proposeNote, setProposeNote] = useState("");
+
+  if (isLoading) return null;
+
+  const listingTitle = sit.listing?.title || "your sit";
+
+  const handlePropose = () => {
+    if (!proposedRange?.from || !proposedRange?.to) return;
+    proposeReschedule.mutate({
+      sitId: sit.id,
+      sitterUserId: sit.sitter_user_id,
+      listingTitle,
+      proposedStartDate: format(proposedRange.from, "yyyy-MM-dd"),
+      proposedEndDate: format(proposedRange.to, "yyyy-MM-dd"),
+      note: proposeNote,
+    });
+    setProposedRange(undefined);
+    setProposeNote("");
+  };
+
+  const handleRespond = (accept: boolean) => {
+    if (!pendingRequest) return;
+    respondToReschedule.mutate({
+      requestId: pendingRequest.id,
+      sitId: sit.id,
+      accept,
+      ownerUserId: sit.owner_user_id,
+      listingTitle,
+    });
+  };
+
+  // Owner, no pending request yet — offer to propose new dates.
+  if (isOwner && !pendingRequest) {
+    return (
+      <div className="mt-3 pt-2 border-t">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="outline" className="w-full">
+              <CalendarClock className="w-3 h-3 mr-1" />
+              Propose New Dates
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Propose new dates</AlertDialogTitle>
+              <AlertDialogDescription>
+                Suggest new dates for this sit. The Nomad will be notified and can accept
+                or decline.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start font-normal">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  {proposedRange?.from ? (
+                    proposedRange.to ? (
+                      `${format(proposedRange.from, "MMM d")} - ${format(proposedRange.to, "MMM d, yyyy")}`
+                    ) : (
+                      format(proposedRange.from, "MMM d, yyyy")
+                    )
+                  ) : (
+                    "Select new dates"
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <DatePickerCalendar
+                  mode="range"
+                  selected={proposedRange}
+                  onSelect={setProposedRange}
+                  numberOfMonths={2}
+                  disabled={{ before: new Date() }}
+                />
+              </PopoverContent>
+            </Popover>
+            <Textarea
+              value={proposeNote}
+              onChange={(e) => setProposeNote(e.target.value)}
+              placeholder="Add a short note (optional)"
+              rows={2}
+            />
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={
+                  !proposedRange?.from || !proposedRange?.to || proposeReschedule.isPending
+                }
+                onClick={handlePropose}
+              >
+                Propose Dates
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    );
+  }
+
+  // Owner, pending request already out — quiet status, no cancel-your-own
+  // proposal action for now.
+  if (isOwner && pendingRequest) {
+    return (
+      <div className="mt-3 pt-2 border-t">
+        <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+          <CalendarClock className="w-3 h-3" />
+          Reschedule proposed, awaiting response
+        </p>
+      </div>
+    );
+  }
+
+  // Sitter, a pending proposal exists — show the new dates with Accept/Decline.
+  if (isSitter && pendingRequest) {
+    return (
+      <div className="mt-3 pt-2 border-t">
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-2.5 space-y-2">
+          <p className="text-xs font-medium flex items-center gap-1">
+            <CalendarClock className="w-3 h-3" />
+            New dates proposed
+          </p>
+          <p className="text-xs">
+            {format(parseISO(pendingRequest.proposed_start_date), "MMM d")} –{" "}
+            {format(parseISO(pendingRequest.proposed_end_date), "MMM d, yyyy")}
+          </p>
+          {pendingRequest.note && (
+            <p className="text-xs text-muted-foreground italic">"{pendingRequest.note}"</p>
+          )}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="flex-1"
+              disabled={respondToReschedule.isPending}
+              onClick={() => handleRespond(true)}
+            >
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Accept
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              disabled={respondToReschedule.isPending}
+              onClick={() => handleRespond(false)}
+            >
+              <XCircle className="w-3 h-3 mr-1" />
+              Decline
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 };
 
 export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | "owner"; userId: string }) => {
@@ -259,6 +440,11 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
           )}
           </div>
         </div>
+      )}
+
+      {/* Propose/respond to new dates */}
+      {(sit.status === "confirmed" || sit.status === "in_progress") && (
+        <SitRescheduleSection sit={sit} isOwner={isOwner} isSitter={isSitter} />
       )}
 
       {/* Review Button for Completed Sits */}
