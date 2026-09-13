@@ -247,7 +247,7 @@ export function buildNotificationEmail(
       };
     case "arrival_vault_prompt":
       return {
-        subject: `Start your Arrival Check-In — ${data.listingTitle}`,
+        subject: `Start your Arrival Check-In. ${data.listingTitle}`,
         preview: "A private, just-for-you record of how the home looked on arrival",
         heading: "Start your Arrival Check-In",
         body: `
