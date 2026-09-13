@@ -75,69 +75,23 @@ const handler = async (req: Request): Promise<Response> => {
 
       const url = `/sits/${sitId}/arrival-vault`;
 
-      const { error: notifError } = await supabase.from("notifications").insert({
-        user_id: sitterId,
-        type: "arrival_vault_prompt",
-        title: "Start your Arrival Check-In",
-        message: `Add a few photos of ${listingTitle} for your private Arrival Check-In — only visible to you unless you need to raise a concern later.`,
-        data: { url, sit_id: sitId },
-      });
+      // send-notification-email handles the in-app notification, push, and
+      // email together — nothing else needs to be written manually here.
+      const { error: notifyError } = await supabase.functions.invoke(
+        "send-notification-email",
+        {
+          body: {
+            type: "arrival_vault_prompt",
+            recipientUserId: sitterId,
+            data: { listingTitle, url },
+          },
+        },
+      );
 
-      if (notifError) {
-        console.error("Failed to insert arrival vault prompt notification", sitId, notifError);
+      if (notifyError) {
+        console.error("Failed to send arrival vault prompt", sitId, notifyError);
         summary.errors++;
         continue;
-      }
-
-      // Send push notification if the nomad has push enabled.
-      try {
-        const { data: subs } = await supabase
-          .from("push_subscriptions")
-          .select("endpoint, p256dh, auth")
-          .eq("user_id", sitterId);
-
-        if (subs && subs.length > 0) {
-          const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");
-          const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY");
-          if (vapidPublic && vapidPrivate) {
-            const { default: webpush } = await import(
-              "https://esm.sh/web-push@3.6.7"
-            );
-            webpush.setVapidDetails(
-              "mailto:hello@nomadnest.global",
-              vapidPublic,
-              vapidPrivate,
-            );
-            await Promise.allSettled(
-              subs.map(async (sub: any) => {
-                try {
-                  await webpush.sendNotification(
-                    {
-                      endpoint: sub.endpoint,
-                      keys: { p256dh: sub.p256dh, auth: sub.auth },
-                    },
-                    JSON.stringify({
-                      title: "Start your Arrival Check-In",
-                      body: `Add a few photos of ${listingTitle} — private, just for you.`,
-                      url,
-                      tag: `arrival-vault-${sitId}`,
-                    }),
-                  );
-                } catch (err: any) {
-                  if (err?.statusCode === 404 || err?.statusCode === 410) {
-                    await supabase
-                      .from("push_subscriptions")
-                      .delete()
-                      .eq("endpoint", sub.endpoint);
-                  }
-                }
-              }),
-            );
-          }
-        }
-      } catch (pushErr) {
-        // Push failure is non-critical; the in-app notification already exists.
-        console.warn("Push send failed for", sitterId, pushErr);
       }
 
       // Set once so this sit is never prompted again, regardless of outcome above.

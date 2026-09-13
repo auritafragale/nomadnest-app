@@ -13,7 +13,7 @@ const corsHeaders = {
 };
 
 interface NotificationEmailRequest {
-  type: "new_application" | "application_status" | "new_message" | "invite" | "review" | "review_reminder" | "sit_cancelled" | "sit_checkin" | "id_verification_approved";
+  type: "new_application" | "application_status" | "new_message" | "invite" | "review" | "review_reminder" | "sit_cancelled" | "sit_checkin" | "id_verification_approved" | "arrival_vault_prompt";
   recipientUserId: string;
   data: Record<string, string>;
   /** When true, skip writing the in-app notifications row (already created by a DB trigger). */
