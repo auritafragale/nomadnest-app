@@ -1829,12 +1829,14 @@ export type Database = {
           p_subject_type: string
         }
         Returns: {
-          evidence_photo_url: string | null
-          evidence_reason: string | null
+          evidence_photo_url: string
+          evidence_reason: string
+          flag_id: string
           flagged_at: string
           reporter_name: string
           review_id: string
-          review_text: string | null
+          review_text: string
+          sit_id: string
         }[]
       }
       admin_list_id_verifications: {
