@@ -55,7 +55,9 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
   const nextDate = upcomingOpenDates[0];
   const extraOpenDatesCount = upcomingOpenDates.length - 1;
   const datesExpired = !nextDate && listing.status === "published";
-  const closedDates = listing.sit_dates.filter((d) => d.status === "closed" || d.status === "booked");
+  const closedDates = listing.sit_dates.filter(
+    (d) => (d.status === "closed" || d.status === "booked") && d.end_date >= todayIso,
+  );
   const petNames = listing.pets.map((p) => p.name || p.type).join(", ");
 
   const handlePause = () => {
