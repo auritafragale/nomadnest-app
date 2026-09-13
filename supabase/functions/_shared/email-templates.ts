@@ -140,7 +140,7 @@ export function buildNotificationEmail(
         preview: `You have ${data.daysLeft} day(s) left to leave your review`,
         heading: "Leave your review",
         body: `
-          <p>Your sit at <strong>${data.listingTitle}</strong> has finished — please take a minute to review <strong>${data.otherName}</strong>.</p>
+          <p>Your sit at <strong>${data.listingTitle}</strong> has finished. Please take a minute to review <strong>${data.otherName}</strong>.</p>
           <p>Reviews build trust across the whole NomadNest community, and you have <strong>${data.daysLeft} day${days === 1 ? "" : "s"}</strong> left to leave yours.</p>
         `,
         ctaLabel: "Write your review",
@@ -169,7 +169,7 @@ export function buildNotificationEmail(
       };
     case "sit_checkin":
       return {
-        subject: `${data.checkinLabel} — ${data.listingTitle}`,
+        subject: `${data.checkinLabel}. ${data.listingTitle}`,
         preview: `${data.sitterName} posted a ${data.checkinLabel} update`,
         heading: `Daily check-in: ${data.checkinLabel}`,
         body: `
@@ -179,7 +179,7 @@ export function buildNotificationEmail(
         `,
         ctaLabel: "View the care log",
         ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
-        pushTitle: `${data.checkinLabel} — ${data.listingTitle}`,
+        pushTitle: `${data.checkinLabel}. ${data.listingTitle}`,
         pushBody: data.note ? data.note : `Your Nomad posted a ${data.checkinLabel} update.`,
         pushUrl: data.url || "/dashboard",
       };
@@ -189,7 +189,7 @@ export function buildNotificationEmail(
         preview: "Your profile now shows the ID Verified badge",
         heading: "You're verified! 🎉",
         body: `
-          <p>Great news — your ID has been successfully verified.</p>
+          <p>Great news. Your ID has been successfully verified.</p>
           <p>Your profile now displays the <strong>ID Verified</strong> badge, helping you build trust faster with the NomadNest community.</p>
         `,
         ctaLabel: "Go to your dashboard",
@@ -217,7 +217,7 @@ export function buildNotificationEmail(
       };
     case "sit_reschedule_accepted":
       return {
-        subject: `Your proposed dates were accepted — ${data.listingTitle}`,
+        subject: `Your proposed dates were accepted. ${data.listingTitle}`,
         preview: `${data.sitterName || "Your Nomad"} accepted the new dates`,
         heading: "New dates accepted",
         body: `
@@ -232,7 +232,7 @@ export function buildNotificationEmail(
       };
     case "sit_reschedule_declined":
       return {
-        subject: `Your proposed dates were declined — ${data.listingTitle}`,
+        subject: `Your proposed dates were declined. ${data.listingTitle}`,
         preview: `${data.sitterName || "Your Nomad"} declined the new dates`,
         heading: "New dates declined",
         body: `
@@ -242,7 +242,7 @@ export function buildNotificationEmail(
         ctaLabel: "View your dashboard",
         ctaUrl: `${APP_URL}/dashboard`,
         pushTitle: "New dates declined",
-        pushBody: `${data.sitterName || "Your Nomad"} declined the new dates for ${data.listingTitle} — dates are unchanged`,
+        pushBody: `${data.sitterName || "Your Nomad"} declined the new dates for ${data.listingTitle}. Dates are unchanged`,
         pushUrl: "/dashboard",
       };
     case "arrival_vault_prompt":
@@ -252,7 +252,7 @@ export function buildNotificationEmail(
         heading: "Start your Arrival Check-In",
         body: `
           <p>Now that you've settled in at <strong>${data.listingTitle}</strong>, take a moment to snap a few photos of the home for your own Arrival Check-In.</p>
-          <p>These photos are private — only you can see them, unless you later need to attach one to a private community flag when you leave your review.</p>
+          <p>These photos are private. Only you can see them, unless you later need to attach one to a private community flag when you leave your review.</p>
         `,
         ctaLabel: "Add your photos",
         ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
@@ -343,7 +343,7 @@ export function buildMembershipEmail(
   switch (kind) {
     case "activated":
       return {
-        subject: `Welcome aboard — your ${details.planName ?? "membership"} is active 🎉`,
+        subject: `Welcome aboard. Your ${details.planName ?? "membership"} is active 🎉`,
         preview: "Your NomadNest membership is now active",
         heading: `You're in${name}!`,
         body: `
@@ -370,7 +370,7 @@ export function buildMembershipEmail(
         heading: `Sorry to see you go${name}`,
         body: `
           <p>Your NomadNest membership has been cancelled and your access has ended.</p>
-          <p>You can rejoin any time — your profile, reviews and messages are still here waiting for you.</p>
+          <p>You can rejoin any time. Your profile, reviews and messages are still here waiting for you.</p>
         `,
         ctaLabel: "Rejoin NomadNest",
         ctaUrl: `${APP_URL}/membership`,
@@ -386,14 +386,14 @@ export function buildMembershipEmail(
         heading: `Payment issue${name}`,
         body: `
           <p>We couldn't take payment for your NomadNest membership${details.amount ? ` (<strong>${details.amount}</strong>)` : ""}.</p>
-          <p>Please update your payment method soon to keep your membership active — if payment keeps failing, your access will be paused.</p>
+          <p>Please update your payment method soon to keep your membership active. If payment keeps failing, your access will be paused.</p>
           <p style="font-size:14px;color:#888;">Go to Dashboard → Membership → Manage Subscription to update your card.</p>
         `,
         ctaLabel: "Update your payment method",
         ctaUrl: `${APP_URL}/dashboard`,
         footerReason,
         pushTitle: "Payment failed",
-        pushBody: "Your membership payment failed — please update your card.",
+        pushBody: "Your membership payment failed. Please update your card.",
         pushUrl: "/membership",
       };
     case "renewal_reminder":
@@ -403,7 +403,7 @@ export function buildMembershipEmail(
         heading: `Heads up${name}`,
         body: `
           <p>Your NomadNest membership will renew in the next few days${details.endDate ? `, on <strong>${fmtDate(details.endDate)}</strong>` : ""}.</p>
-          <p>No action needed if you'd like to stay — and thank you for being part of the community.</p>
+          <p>No action needed if you'd like to stay, and thank you for being part of the community.</p>
         `,
         ctaLabel: "Manage your membership",
         ctaUrl: `${APP_URL}/dashboard`,
@@ -497,7 +497,7 @@ export function buildAuthEmail(
     };
   }
   return {
-    subject: "NomadNest — action required",
+    subject: "NomadNest: action required",
     preview: "Confirm your action on NomadNest",
     heading: "One more step",
     body: `<p>Click the button below to complete your action.</p>`,
@@ -528,11 +528,11 @@ const sample = {
   endDate: "26 Oct 2026",
   senderName: "James Whitfield",
   messagePreview:
-    "Hi Sofia! Lovely to connect — Luna is very friendly and the flat is 5 minutes from the metro.",
+    "Hi Sofia! Lovely to connect. Luna is very friendly and the flat is 5 minutes from the metro.",
   conversationId: "sample-conversation-id",
   reviewerName: "Sofia Marchetti",
   rating: "5",
-  text: "James was a wonderful host — clear instructions, a spotless flat, and Luna is the sweetest cat.",
+  text: "James was a wonderful host. Clear instructions, a spotless flat, and Luna is the sweetest cat.",
   otherName: "James Whitfield",
   daysLeft: "4",
   status: "accepted",
