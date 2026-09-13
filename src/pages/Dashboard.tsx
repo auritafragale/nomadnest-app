@@ -334,13 +334,13 @@ const SitterDashboard = ({
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />
               My Applications
+              <HelpTooltip label="About applications" content="Track your sit applications" />
               {applicationStats.pending > 0 && (
                 <Badge variant="secondary" className="ml-auto">
                   {applicationStats.pending} pending
                 </Badge>
               )}
             </CardTitle>
-            <HelpTooltip label="About applications" content="Track your sit applications" />
           </CardHeader>
           <CardContent>
             <Tabs value={appTab} onValueChange={(v) => setAppTab(v as typeof appTab)} className="mb-4">
@@ -439,13 +439,13 @@ const OwnerDashboard = ({
             <CardTitle className="flex items-center gap-2">
               <Home className="w-5 h-5" />
               My Listings
+              <HelpTooltip label="About listings" content="Manage your sit opportunities" />
               {listingStats.total > 0 && (
                 <Badge variant="secondary" className="ml-auto">
                   {listingStats.total} total
                 </Badge>
               )}
             </CardTitle>
-            <HelpTooltip label="About listings" content="Manage your sit opportunities" />
           </CardHeader>
           <CardContent>
             {listingsLoading ? (
