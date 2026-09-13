@@ -509,7 +509,7 @@ export function buildAuthEmail(
 }
 
 // ---------------------------------------------------------------------------
-// Preview registry — sample data for the admin email preview page
+// Preview registry: sample data for the admin email preview page
 // ---------------------------------------------------------------------------
 
 export interface PreviewTemplate {
