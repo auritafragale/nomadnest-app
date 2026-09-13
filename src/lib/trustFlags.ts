@@ -11,7 +11,8 @@ export type HomeFlagCategory =
 export type NomadFlagCategory =
   | "sitter_cleanliness"
   | "pet_neglect"
-  | "abandonment";
+  | "abandonment"
+  | "unauthorized_guests";
 
 export type FlagCategory = HomeFlagCategory | NomadFlagCategory;
 
@@ -22,6 +23,7 @@ export const FLAG_LABELS: Record<FlagCategory, string> = {
   sitter_cleanliness: "Home Cleanliness",
   pet_neglect: "Pet Care Protocol",
   abandonment: "Timeline Reliability",
+  unauthorized_guests: "Unauthorized Guests",
 };
 
 /** Review columns that raise a private flag when answered "No". */
@@ -53,7 +55,7 @@ export const HOME_FLAG_QUESTIONS: {
 ];
 
 export const NOMAD_FLAG_QUESTIONS: {
-  column: "flag_sitter_cleanliness" | "flag_pet_neglect" | "flag_abandonment";
+  column: "flag_sitter_cleanliness" | "flag_pet_neglect" | "flag_abandonment" | "flag_unauthorized_guests";
   category: NomadFlagCategory;
   question: string;
   yesIsGood: boolean;
@@ -74,6 +76,12 @@ export const NOMAD_FLAG_QUESTIONS: {
     column: "flag_abandonment",
     category: "abandonment",
     question: "Did the nomad leave the sit early without agreeing it with you?",
+    yesIsGood: false,
+  },
+  {
+    column: "flag_unauthorized_guests",
+    category: "unauthorized_guests",
+    question: "Were there any other guests staying that were not previously agreed upon?",
     yesIsGood: false,
   },
 ];
