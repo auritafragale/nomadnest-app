@@ -47,7 +47,8 @@ export type NotificationType =
   | "id_verification_approved"
   | "sit_reschedule_proposed"
   | "sit_reschedule_accepted"
-  | "sit_reschedule_declined";
+  | "sit_reschedule_declined"
+  | "arrival_vault_prompt";
 
 export function buildNotificationEmail(
   type: string,
@@ -243,6 +244,21 @@ export function buildNotificationEmail(
         pushTitle: "New dates declined",
         pushBody: `${data.sitterName || "Your Nomad"} declined the new dates for ${data.listingTitle} — dates are unchanged`,
         pushUrl: "/dashboard",
+      };
+    case "arrival_vault_prompt":
+      return {
+        subject: `Start your Arrival Check-In — ${data.listingTitle}`,
+        preview: "A private, just-for-you record of how the home looked on arrival",
+        heading: "Start your Arrival Check-In",
+        body: `
+          <p>Now that you've settled in at <strong>${data.listingTitle}</strong>, take a moment to snap a few photos of the home for your own Arrival Check-In.</p>
+          <p>These photos are private — only you can see them, unless you later need to attach one to a private community flag when you leave your review.</p>
+        `,
+        ctaLabel: "Add your photos",
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
+        pushTitle: "Start your Arrival Check-In",
+        pushBody: "Add a few photos for your private, just-for-you Arrival Check-In.",
+        pushUrl: data.url || "/dashboard",
       };
     default:
       return {
@@ -522,6 +538,7 @@ const sample = {
   status: "accepted",
   proposedStartDate: "2 Nov 2026",
   proposedEndDate: "16 Nov 2026",
+  url: "/sits/sample-sit-id/arrival-vault",
 };
 
 export function getPreviewTemplates(): PreviewTemplate[] {
@@ -546,6 +563,7 @@ export function getPreviewTemplates(): PreviewTemplate[] {
     { id: "sit_reschedule_proposed", label: "New dates proposed (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("sit_reschedule_proposed", sample) },
     { id: "sit_reschedule_accepted", label: "New dates accepted (to Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("sit_reschedule_accepted", sample) },
     { id: "sit_reschedule_declined", label: "New dates declined (to Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("sit_reschedule_declined", sample) },
+    { id: "arrival_vault_prompt", label: "Arrival Check-In prompt (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("arrival_vault_prompt", sample) },
     { id: "welcome", label: "Welcome email", group: "Notifications", build: () => buildWelcomeEmail("Alex") },
     { id: "membership_activated", label: "Membership activated", group: "Membership", build: () => buildMembershipEmail("activated", { planName: "Combined Membership", endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },
     { id: "membership_renewal_reminder", label: "Renewal reminder", group: "Membership", build: () => buildMembershipEmail("renewal_reminder", { endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },

@@ -68,6 +68,52 @@ export type Database = {
           },
         ]
       }
+      arrival_vault_photos: {
+        Row: {
+          created_at: string
+          id: string
+          photo_url: string
+          sit_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          photo_url: string
+          sit_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          photo_url?: string
+          sit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arrival_vault_photos_sit_id_fkey"
+            columns: ["sit_id"]
+            isOneToOne: false
+            referencedRelation: "sits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arrival_vault_photos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arrival_vault_photos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       background_job_state: {
         Row: {
           job_name: string
@@ -1121,6 +1167,41 @@ export type Database = {
         }
         Relationships: []
       }
+      review_flag_evidence: {
+        Row: {
+          created_at: string
+          flag_key: string
+          id: string
+          photo_url: string | null
+          reason_text: string | null
+          review_id: string
+        }
+        Insert: {
+          created_at?: string
+          flag_key: string
+          id?: string
+          photo_url?: string | null
+          reason_text?: string | null
+          review_id: string
+        }
+        Update: {
+          created_at?: string
+          flag_key?: string
+          id?: string
+          photo_url?: string | null
+          reason_text?: string | null
+          review_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_flag_evidence_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       review_reminders: {
         Row: {
           id: string
@@ -1381,6 +1462,7 @@ export type Database = {
       }
       sits: {
         Row: {
+          arrival_prompt_sent_at: string | null
           completed_at: string | null
           confirmed_at: string | null
           created_at: string
@@ -1393,6 +1475,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          arrival_prompt_sent_at?: string | null
           completed_at?: string | null
           confirmed_at?: string | null
           created_at?: string
@@ -1405,6 +1488,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          arrival_prompt_sent_at?: string | null
           completed_at?: string | null
           confirmed_at?: string | null
           created_at?: string
@@ -1736,6 +1820,21 @@ export type Database = {
           subject_type: string
           subject_user_id: string
           updated_at: string
+        }[]
+      }
+      admin_list_flag_incidents: {
+        Args: {
+          p_category: string
+          p_subject_id: string
+          p_subject_type: string
+        }
+        Returns: {
+          evidence_photo_url: string | null
+          evidence_reason: string | null
+          flagged_at: string
+          reporter_name: string
+          review_id: string
+          review_text: string | null
         }[]
       }
       admin_list_id_verifications: {

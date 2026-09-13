@@ -11,7 +11,8 @@ interface NotificationData {
     | "sit_checkin"
     | "sit_reschedule_proposed"
     | "sit_reschedule_accepted"
-    | "sit_reschedule_declined";
+    | "sit_reschedule_declined"
+    | "arrival_vault_prompt";
   recipientUserId: string;
   data: Record<string, string>;
   /** Skip the in-app notifications row when a DB trigger already created it. */

@@ -14,11 +14,27 @@ import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Star, PenLine } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Star, PenLine, Paperclip, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sendNotification } from "@/lib/notifications";
 import { HOME_FLAG_QUESTIONS, NOMAD_FLAG_QUESTIONS } from "@/lib/trustFlags";
+
+const EVIDENCE_BUCKET = "arrival-vault-photos";
+/** Flags a Nomad reviewer can back with a photo from their Arrival Vault — the Pet Parent side has no vault. */
+const VAULT_ELIGIBLE_COLUMNS = new Set(["flag_home_cleanliness", "flag_undisclosed_cameras"]);
+
+interface VaultPhoto {
+  id: string;
+  path: string;
+  signedUrl: string | null;
+}
+
+interface FlagEvidenceDraft {
+  reasonText: string;
+  photoFile?: File;
+  vaultPhotoPath?: string;
+}
 
 interface WriteReviewDialogProps {
   sitId: string;
@@ -97,16 +113,54 @@ const WriteReviewDialog = ({
   // `reviewType === "sitter"` means a Pet Parent is reviewing a Nomad.
   const flagQuestions = reviewType === "sitter" ? NOMAD_FLAG_QUESTIONS : HOME_FLAG_QUESTIONS;
   const [flagAnswers, setFlagAnswers] = useState<Record<string, "yes" | "no" | undefined>>({});
+  const [flagEvidence, setFlagEvidence] = useState<Record<string, FlagEvidenceDraft>>({});
+  const isFlagRaised = (column: string, answer: "yes" | "no" | undefined) => {
+    const q = flagQuestions.find((fq) => fq.column === column);
+    if (!q || !answer) return false;
+    return q.yesIsGood ? answer === "no" : answer === "yes";
+  };
   const flagPayload = () => {
     const payload: Record<string, boolean> = {};
     for (const q of flagQuestions) {
       const answer = flagAnswers[q.column];
       if (!answer) continue;
       // A flag is raised when the unhealthy answer is given.
-      payload[q.column] = q.yesIsGood ? answer === "no" : answer === "yes";
+      payload[q.column] = isFlagRaised(q.column, answer);
     }
     return payload;
   };
+
+  // Only a Nomad reviewing a Pet Parent has an Arrival Vault to draw evidence from.
+  const isNomadReviewer = reviewType === "owner";
+  const { data: vaultPhotos } = useQuery({
+    queryKey: ["arrival-vault-photos-for-review", sitId],
+    queryFn: async (): Promise<VaultPhoto[]> => {
+      const { data, error } = await supabase
+        .from("arrival_vault_photos")
+        .select("id, photo_url")
+        .eq("sit_id", sitId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const paths = (data ?? []).map((p) => p.photo_url);
+      let signedByPath: Record<string, string> = {};
+      if (paths.length > 0) {
+        const { data: signed } = await supabase.storage
+          .from(EVIDENCE_BUCKET)
+          .createSignedUrls(paths, 300);
+        signedByPath = Object.fromEntries(
+          (signed ?? [])
+            .filter((s) => s.path && s.signedUrl)
+            .map((s) => [s.path as string, s.signedUrl as string])
+        );
+      }
+      return (data ?? []).map((p) => ({
+        id: p.id,
+        path: p.photo_url,
+        signedUrl: signedByPath[p.photo_url] ?? null,
+      }));
+    },
+    enabled: open && isNomadReviewer,
+  });
 
   const handleSubmit = async () => {
     if (!user || !allRated) return;
@@ -130,11 +184,47 @@ const WriteReviewDialog = ({
       }
       Object.assign(insertPayload, flagPayload());
 
-      const { error } = await supabase
+      const { data: insertedReview, error } = await supabase
         .from("reviews")
-        .insert(insertPayload as never);
+        .insert(insertPayload as never)
+        .select("id")
+        .single();
 
       if (error) throw error;
+
+      // Write evidence rows only for flags that are still raised at submit
+      // time — un-flagging a question just means its draft is never persisted.
+      const reviewId = (insertedReview as { id: string }).id;
+      for (const q of flagQuestions) {
+        const answer = flagAnswers[q.column];
+        if (!isFlagRaised(q.column, answer)) continue;
+
+        const draft = flagEvidence[q.column];
+        let photoPath: string | null = draft?.vaultPhotoPath || null;
+        if (!photoPath && draft?.photoFile) {
+          const file = draft.photoFile;
+          const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
+          const path = `${user.id}/${reviewId}/${crypto.randomUUID()}${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from(EVIDENCE_BUCKET)
+            .upload(path, file, { upsert: false, contentType: file.type || undefined });
+          if (uploadError) {
+            console.error("Error uploading flag evidence photo:", uploadError);
+          } else {
+            photoPath = path;
+          }
+        }
+
+        const { error: evidenceError } = await supabase.from("review_flag_evidence").insert({
+          review_id: reviewId,
+          flag_key: q.column,
+          reason_text: draft?.reasonText.trim() || null,
+          photo_url: photoPath,
+        });
+        if (evidenceError) {
+          console.error("Error saving flag evidence:", evidenceError);
+        }
+      }
 
       // Get reviewer name for notification
       const { data: reviewerProfile } = await supabase
@@ -177,6 +267,8 @@ const WriteReviewDialog = ({
         rating_hospitality: 0,
         rating_clear_expectations: 0,
       });
+      setFlagAnswers({});
+      setFlagEvidence({});
       onReviewSubmitted?.();
     } catch (error: any) {
       console.error("Error submitting review:", error);
@@ -269,6 +361,22 @@ const WriteReviewDialog = ({
             })}
           </div>
 
+          {/* Review Text */}
+          <div className="space-y-2">
+            <Label htmlFor="review-text">Your Review (optional)</Label>
+            <Textarea
+              id="review-text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={`Tell others about your experience with ${revieweeName}...`}
+              rows={4}
+              maxLength={1000}
+            />
+            <p className="text-xs text-muted-foreground text-right">
+              {text.length}/1000
+            </p>
+          </div>
+
           {/* Private community questions — never shown publicly */}
           <div className="space-y-4">
             <div className="flex items-center gap-1.5">
@@ -280,6 +388,11 @@ const WriteReviewDialog = ({
             </div>
             {flagQuestions.map((q) => {
               const answer = flagAnswers[q.column];
+              const flagged = isFlagRaised(q.column, answer);
+              const evidence = flagEvidence[q.column];
+              const showVaultPicker =
+                isNomadReviewer && VAULT_ELIGIBLE_COLUMNS.has(q.column) && !!vaultPhotos?.length;
+
               return (
                 <div key={q.column} className="space-y-1.5">
                   <Label className="text-sm font-medium">{q.question}</Label>
@@ -299,27 +412,126 @@ const WriteReviewDialog = ({
                       </Button>
                     ))}
                   </div>
+
+                  {flagged && (
+                    <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        Optional — add a bit more detail or a photo to help our team understand what happened.
+                      </p>
+
+                      {showVaultPicker && (
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium">
+                            Attach from your Arrival Check-In photos
+                          </Label>
+                          <div className="flex gap-2 flex-wrap">
+                            {vaultPhotos!.map((vp) => (
+                              <button
+                                key={vp.id}
+                                type="button"
+                                onClick={() =>
+                                  setFlagEvidence((prev) => ({
+                                    ...prev,
+                                    [q.column]: {
+                                      reasonText: prev[q.column]?.reasonText || "",
+                                      vaultPhotoPath: vp.path,
+                                      photoFile: undefined,
+                                    },
+                                  }))
+                                }
+                                className={cn(
+                                  "w-14 h-14 rounded-md overflow-hidden border-2 bg-muted shrink-0",
+                                  evidence?.vaultPhotoPath === vp.path
+                                    ? "border-primary"
+                                    : "border-transparent"
+                                )}
+                                aria-label="Attach this Arrival Check-In photo"
+                              >
+                                {vp.signedUrl && (
+                                  <img
+                                    src={vp.signedUrl}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`evidence-reason-${q.column}`} className="text-xs font-medium">
+                          Reason (optional)
+                        </Label>
+                        <Textarea
+                          id={`evidence-reason-${q.column}`}
+                          value={evidence?.reasonText || ""}
+                          onChange={(e) =>
+                            setFlagEvidence((prev) => ({
+                              ...prev,
+                              [q.column]: {
+                                reasonText: e.target.value,
+                                vaultPhotoPath: prev[q.column]?.vaultPhotoPath,
+                                photoFile: prev[q.column]?.photoFile,
+                              },
+                            }))
+                          }
+                          placeholder="What happened?"
+                          rows={2}
+                          maxLength={500}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium">Photo (optional)</Label>
+                        {evidence?.photoFile ? (
+                          <div className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-2.5 py-1.5">
+                            <span className="text-xs truncate min-w-0">{evidence.photoFile.name}</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFlagEvidence((prev) => ({
+                                  ...prev,
+                                  [q.column]: { ...prev[q.column], reasonText: prev[q.column]?.reasonText || "", photoFile: undefined },
+                                }))
+                              }
+                              aria-label="Remove photo"
+                              className="text-muted-foreground hover:text-foreground shrink-0"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-2.5 cursor-pointer hover:bg-muted/40 transition-colors">
+                            <Paperclip className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">Add photo</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setFlagEvidence((prev) => ({
+                                  ...prev,
+                                  [q.column]: {
+                                    reasonText: prev[q.column]?.reasonText || "",
+                                    photoFile: file,
+                                    vaultPhotoPath: undefined,
+                                  },
+                                }));
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
-          </div>
-
-
-
-          {/* Review Text */}
-          <div className="space-y-2">
-            <Label htmlFor="review-text">Your Review (optional)</Label>
-            <Textarea
-              id="review-text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={`Tell others about your experience with ${revieweeName}...`}
-              rows={4}
-              maxLength={1000}
-            />
-            <p className="text-xs text-muted-foreground text-right">
-              {text.length}/1000
-            </p>
           </div>
 
           <div className="flex gap-3">

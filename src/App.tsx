@@ -32,6 +32,7 @@ import CreateListing from "./pages/CreateListing";
 import EditListing from "./pages/EditListing";
 import WelcomeGuidePage from "./pages/WelcomeGuidePage";
 import SitDetail from "./pages/SitDetail";
+import ArrivalVault from "./pages/ArrivalVault";
 import ListingDetail from "./pages/ListingDetail";
 import EditSitterProfile from "./pages/EditSitterProfile";
 import EditOwnerProfile from "./pages/EditOwnerProfile";
@@ -138,6 +139,7 @@ const AppShell = () => {
         <Route path="/listing/:id" element={<ListingDetail />} />
         <Route path="/listing/:id/welcome-guide" element={<WelcomeGuidePage />} />
         <Route path="/sits/:id" element={<SitDetail />} />
+        <Route path="/sits/:id/arrival-vault" element={<ProtectedRoute><ArrivalVault /></ProtectedRoute>} />
         <Route path="/edit-sitter-profile" element={<ProtectedRoute><EditSitterProfile /></ProtectedRoute>} />
         <Route path="/edit-owner-profile" element={<ProtectedRoute><EditOwnerProfile /></ProtectedRoute>} />
         <Route path="/sitter/:userId" element={<SitterDetail />} />
