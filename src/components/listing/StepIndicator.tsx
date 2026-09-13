@@ -10,9 +10,11 @@ interface StepIndicatorProps {
   steps: Step[];
   currentStep: number;
   onStepClick?: (step: number) => void;
+  /** When true, every step is clickable regardless of the current position. */
+  allowJumpAhead?: boolean;
 }
 
-const StepIndicator = ({ steps, currentStep, onStepClick }: StepIndicatorProps) => {
+const StepIndicator = ({ steps, currentStep, onStepClick, allowJumpAhead = false }: StepIndicatorProps) => {
   return (
     <div className="w-full">
       <div className="flex items-center justify-between">
@@ -20,7 +22,7 @@ const StepIndicator = ({ steps, currentStep, onStepClick }: StepIndicatorProps) 
           <div key={step.number} className="flex items-center flex-1">
             <button
               onClick={() => onStepClick?.(step.number)}
-              disabled={step.number > currentStep}
+              disabled={!allowJumpAhead && step.number > currentStep}
               className={cn(
                 "flex items-center justify-center w-10 h-10 rounded-full font-medium transition-all",
                 step.number < currentStep

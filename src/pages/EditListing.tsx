@@ -486,6 +486,7 @@ const EditListing = () => {
               steps={steps}
               currentStep={currentStep}
               onStepClick={goToStep}
+              allowJumpAhead
             />
           </div>
 
