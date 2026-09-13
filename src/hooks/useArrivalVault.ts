@@ -74,7 +74,7 @@ export const useAddArrivalVaultPhotos = (sitId: string | undefined) => {
 
         const { error: insertError } = await supabase.from("arrival_vault_photos").insert({
           sit_id: sitId,
-          user_id: user.id,
+          sitter_user_id: user.id,
           photo_url: path,
         });
         if (insertError) throw insertError;

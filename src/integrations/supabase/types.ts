@@ -74,21 +74,21 @@ export type Database = {
           id: string
           photo_url: string
           sit_id: string
-          user_id: string
+          sitter_user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           photo_url: string
           sit_id: string
-          user_id: string
+          sitter_user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           photo_url?: string
           sit_id?: string
-          user_id?: string
+          sitter_user_id?: string
         }
         Relationships: [
           {
@@ -99,15 +99,15 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "arrival_vault_photos_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "arrival_vault_photos_sitter_user_id_fkey"
+            columns: ["sitter_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "arrival_vault_photos_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "arrival_vault_photos_sitter_user_id_fkey"
+            columns: ["sitter_user_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
