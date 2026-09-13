@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, CalendarClock, ChevronLeft, ChevronRight, MapPin, User, MessageSquare, CheckCircle, XCircle, Star, Bone } from "lucide-react";
+import { Calendar, CalendarClock, ChevronLeft, ChevronRight, MapPin, User, MessageSquare, CheckCircle, XCircle, Star, Bone, Camera } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { DateRange } from "react-day-picker";
 import { useSits, Sit, useUpdateSitStatus } from "@/hooks/useSits";
@@ -399,6 +399,14 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
               <Link to={`/sits/${sit.id}`}>
                 <Bone className="w-3 h-3 mr-1" />
                 Care log
+              </Link>
+            </Button>
+          )}
+          {isSitter && (sit.status === "confirmed" || sit.status === "in_progress") && (
+            <Button size="sm" variant="outline" className="flex-1" asChild>
+              <Link to={`/sits/${sit.id}/arrival-vault`}>
+                <Camera className="w-3 h-3 mr-1" />
+                Arrival Check-In
               </Link>
             </Button>
           )}
