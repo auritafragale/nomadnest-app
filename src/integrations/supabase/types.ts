@@ -1242,7 +1242,7 @@ export type Database = {
           flag_pet_aggression: boolean
           flag_pet_neglect: boolean
           flag_sitter_cleanliness: boolean
-          flag_unauthorized_guests: boolean
+          flag_unauthorized_guests: boolean | null
           flag_undisclosed_cameras: boolean
           id: string
           rating: number
@@ -1267,7 +1267,7 @@ export type Database = {
           flag_pet_aggression?: boolean
           flag_pet_neglect?: boolean
           flag_sitter_cleanliness?: boolean
-          flag_unauthorized_guests?: boolean
+          flag_unauthorized_guests?: boolean | null
           flag_undisclosed_cameras?: boolean
           id?: string
           rating: number
@@ -1292,7 +1292,7 @@ export type Database = {
           flag_pet_aggression?: boolean
           flag_pet_neglect?: boolean
           flag_sitter_cleanliness?: boolean
-          flag_unauthorized_guests?: boolean
+          flag_unauthorized_guests?: boolean | null
           flag_undisclosed_cameras?: boolean
           id?: string
           rating?: number
