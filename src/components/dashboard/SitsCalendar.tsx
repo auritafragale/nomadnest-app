@@ -247,12 +247,22 @@ export const SitCard = ({
   const navigate = useNavigate();
   const isReviewDeepLinkTarget = !!openReview && openReview === sit.id;
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  // Stays true only until the auto-opened dialog is closed (submitted or
+  // cancelled), at which point the dialog reverts to fully uncontrolled —
+  // otherwise its trigger button would never come back without a refresh.
+  const [autoOpenActive, setAutoOpenActive] = useState(isReviewDeepLinkTarget);
 
   useEffect(() => {
     if (isReviewDeepLinkTarget) {
       setReviewDialogOpen(true);
+      setAutoOpenActive(true);
     }
   }, [isReviewDeepLinkTarget]);
+
+  const handleReviewDialogOpenChange = (next: boolean) => {
+    setReviewDialogOpen(next);
+    if (!next) setAutoOpenActive(false);
+  };
 
   // Open the single chat thread that belongs to THIS sit's home, creating it if
   // needed. Never falls back to another home's chat with the same person.
@@ -541,8 +551,8 @@ export const SitCard = ({
                 Review {otherPartyLabel}
               </Button>
             }
-            {...(isReviewDeepLinkTarget
-              ? { open: reviewDialogOpen, onOpenChange: setReviewDialogOpen }
+            {...(autoOpenActive
+              ? { open: reviewDialogOpen, onOpenChange: handleReviewDialogOpenChange }
               : {})}
           />
           {reviewDaysLeft !== null && (
