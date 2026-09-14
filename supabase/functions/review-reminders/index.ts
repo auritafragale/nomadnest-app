@@ -154,6 +154,10 @@ const handler = async (req: Request): Promise<Response> => {
               body: {
                 type: "review_reminder",
                 recipientUserId: party.userId,
+                // The in-app row is inserted directly below with its own
+                // message format — without this, send-notification-email
+                // would insert a second, differently-worded one.
+                skipInAppNotification: true,
                 data: {
                   otherName,
                   listingTitle: (sit as any).listing?.title ?? "your recent sit",
