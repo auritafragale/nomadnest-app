@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -60,6 +60,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openReviewSitId, setOpenReviewSitId] = useState<string | null>(null);
+  // Stable identity so it doesn't re-trigger SitCard's auto-open effect on
+  // every unrelated Dashboard re-render.
+  const handleReviewAutoOpened = useCallback(() => setOpenReviewSitId(null), []);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
@@ -243,6 +246,7 @@ const Dashboard = () => {
               sitterProfile={sitterProfile}
               userId={user?.id || ""}
               openReview={openReviewSitId}
+              onReviewAutoOpened={handleReviewAutoOpened}
             />
           )}
 
@@ -252,6 +256,7 @@ const Dashboard = () => {
               ownerProfile={ownerProfile}
               userId={user?.id || ""}
               openReview={openReviewSitId}
+              onReviewAutoOpened={handleReviewAutoOpened}
             />
           )}
         </div>
@@ -265,11 +270,13 @@ const SitterDashboard = ({
   sitterProfile,
   userId,
   openReview,
+  onReviewAutoOpened,
 }: {
   profile: Profile | null;
   sitterProfile: SitterProfile | null;
   userId: string;
   openReview?: string | null;
+  onReviewAutoOpened?: (sitId: string) => void;
 }) => {
   const profileCompletion = calculateSitterProfileCompletion(profile, sitterProfile);
   const { data: applications = [], isLoading: applicationsLoading } = useSitterApplications();
@@ -351,7 +358,7 @@ const SitterDashboard = ({
         {/* Saved Sits lives in the header actions, so no duplicate card here */}
 
         {/* Upcoming & Past Sits */}
-        <UpcomingPastSits viewAs="sitter" openReview={openReview} />
+        <UpcomingPastSits viewAs="sitter" openReview={openReview} onAutoOpened={onReviewAutoOpened} />
 
         {/* My Applications */}
         <Card id="my-applications">
@@ -426,11 +433,13 @@ const OwnerDashboard = ({
   ownerProfile,
   userId,
   openReview,
+  onReviewAutoOpened,
 }: {
   profile: Profile | null;
   ownerProfile: OwnerProfile | null;
   userId: string;
   openReview?: string | null;
+  onReviewAutoOpened?: (sitId: string) => void;
 }) => {
   const { data: listings = [], isLoading: listingsLoading } = useOwnerListings();
   const listingStats = { total: listings.length };
@@ -458,7 +467,7 @@ const OwnerDashboard = ({
       {/* Middle Column */}
       <div className="md:col-span-1 lg:col-span-2 space-y-6">
         {/* Upcoming & Past Sits — between Your Stats and My Listings */}
-        <UpcomingPastSits viewAs="owner" openReview={openReview} />
+        <UpcomingPastSits viewAs="owner" openReview={openReview} onAutoOpened={onReviewAutoOpened} />
 
         {/* My Listings */}
         <Card>

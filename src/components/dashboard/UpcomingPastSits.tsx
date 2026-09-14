@@ -13,9 +13,11 @@ interface UpcomingPastSitsProps {
   viewAs: "sitter" | "owner";
   /** Sit id to auto-open the review dialog for (deep-linked from a review reminder). */
   openReview?: string | null;
+  /** Called once the deep-linked dialog has auto-opened, so the caller can clear openReview. */
+  onAutoOpened?: (sitId: string) => void;
 }
 
-export const UpcomingPastSits = ({ viewAs, openReview }: UpcomingPastSitsProps) => {
+export const UpcomingPastSits = ({ viewAs, openReview, onAutoOpened }: UpcomingPastSitsProps) => {
   const { user } = useAuth();
   const { data: sits = [], isLoading } = useSits();
   const today = startOfToday();
@@ -122,7 +124,7 @@ export const UpcomingPastSits = ({ viewAs, openReview }: UpcomingPastSitsProps) 
             ) : (
               <div className="space-y-3">
                 {upcomingSits.slice(0, 5).map((sit) => (
-                  <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} openReview={openReview} />
+                  <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} openReview={openReview} onAutoOpened={onAutoOpened} />
                 ))}
                 {upcomingSits.length > 5 && (
                   <p className="text-sm text-muted-foreground text-center">
@@ -142,7 +144,7 @@ export const UpcomingPastSits = ({ viewAs, openReview }: UpcomingPastSitsProps) 
             ) : (
               <div className="space-y-3">
                 {pastSitsToShow.map((sit) => (
-                  <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} openReview={openReview} />
+                  <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} openReview={openReview} onAutoOpened={onAutoOpened} />
                 ))}
                 {pastSits.length > pastSitsToShow.length && (
                   <p className="text-sm text-muted-foreground text-center">
