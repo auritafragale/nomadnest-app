@@ -38,6 +38,8 @@ import { resolveListingConversation } from "@/lib/conversations";
 
 interface SitsCalendarProps {
   viewAs: "sitter" | "owner";
+  /** Sit id to auto-open the review dialog for (deep-linked from a review reminder). */
+  openReview?: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -220,7 +222,18 @@ const SitRescheduleSection = ({
   return null;
 };
 
-export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | "owner"; userId: string }) => {
+export const SitCard = ({
+  sit,
+  viewAs,
+  userId,
+  openReview,
+}: {
+  sit: Sit;
+  viewAs: "sitter" | "owner";
+  userId: string;
+  /** Sit id to auto-open the review dialog for (deep-linked from a review reminder). */
+  openReview?: string | null;
+}) => {
   const isOwner = sit.owner_user_id === userId;
   const isSitter = sit.sitter_user_id === userId;
   const otherParty = isOwner ? sit.sitter_profile : sit.owner_profile;
@@ -232,6 +245,14 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
   const [reopenChoice, setReopenChoice] = useState<"original" | "proposed">("proposed");
   const [openingChat, setOpeningChat] = useState(false);
   const navigate = useNavigate();
+  const isReviewDeepLinkTarget = !!openReview && openReview === sit.id;
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (isReviewDeepLinkTarget) {
+      setReviewDialogOpen(true);
+    }
+  }, [isReviewDeepLinkTarget]);
 
   // Open the single chat thread that belongs to THIS sit's home, creating it if
   // needed. Never falls back to another home's chat with the same person.
@@ -520,6 +541,9 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
                 Review {otherPartyLabel}
               </Button>
             }
+            {...(isReviewDeepLinkTarget
+              ? { open: reviewDialogOpen, onOpenChange: setReviewDialogOpen }
+              : {})}
           />
           {reviewDaysLeft !== null && (
             <p className="text-[11px] text-muted-foreground text-center mt-1.5">
@@ -551,7 +575,7 @@ export const SitCard = ({ sit, viewAs, userId }: { sit: Sit; viewAs: "sitter" | 
   );
 };
 
-export const SitsCalendar = ({ viewAs }: SitsCalendarProps) => {
+export const SitsCalendar = ({ viewAs, openReview }: SitsCalendarProps) => {
   const { user } = useAuth();
   const { data: sits = [], isLoading } = useSits();
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -599,6 +623,13 @@ export const SitsCalendar = ({ viewAs }: SitsCalendarProps) => {
         return dateB.getTime() - dateA.getTime();
       });
   }, [filteredSits, today]);
+
+  const pastSitsToShow = useMemo(() => {
+    const firstThree = pastSits.slice(0, 3);
+    if (!openReview || firstThree.some((sit) => sit.id === openReview)) return firstThree;
+    const match = pastSits.find((sit) => sit.id === openReview);
+    return match ? [...firstThree, match] : firstThree;
+  }, [pastSits, openReview]);
 
   const calendarDays = useMemo(() => {
     const start = startOfMonth(currentMonth);
@@ -715,7 +746,7 @@ export const SitsCalendar = ({ viewAs }: SitsCalendarProps) => {
           ) : (
             <div className="space-y-3">
               {upcomingSits.slice(0, 5).map((sit) => (
-                <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} />
+                <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} openReview={openReview} />
               ))}
               {upcomingSits.length > 5 && (
                 <p className="text-sm text-muted-foreground text-center">
@@ -746,12 +777,12 @@ export const SitsCalendar = ({ viewAs }: SitsCalendarProps) => {
             </div>
           ) : (
             <div className="space-y-3">
-              {pastSits.slice(0, 3).map((sit) => (
-                <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} />
+              {pastSitsToShow.map((sit) => (
+                <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} openReview={openReview} />
               ))}
-              {pastSits.length > 3 && (
+              {pastSits.length > pastSitsToShow.length && (
                 <p className="text-sm text-muted-foreground text-center">
-                  +{pastSits.length - 3} more past sits
+                  +{pastSits.length - pastSitsToShow.length} more past sits
                 </p>
               )}
             </div>

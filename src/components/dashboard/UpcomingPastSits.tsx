@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { parseISO, isAfter, isBefore, isSameDay, isWithinInterval, startOfToday } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,12 +11,15 @@ import { SitCard } from "./SitsCalendar";
 
 interface UpcomingPastSitsProps {
   viewAs: "sitter" | "owner";
+  /** Sit id to auto-open the review dialog for (deep-linked from a review reminder). */
+  openReview?: string | null;
 }
 
-export const UpcomingPastSits = ({ viewAs }: UpcomingPastSitsProps) => {
+export const UpcomingPastSits = ({ viewAs, openReview }: UpcomingPastSitsProps) => {
   const { user } = useAuth();
   const { data: sits = [], isLoading } = useSits();
   const today = startOfToday();
+  const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
 
   const filteredSits = useMemo(() => {
     if (!user) return [];
@@ -62,6 +65,21 @@ export const UpcomingPastSits = ({ viewAs }: UpcomingPastSitsProps) => {
       });
   }, [filteredSits, today]);
 
+  // A past sit is where a completed sit's review dialog would auto-open —
+  // switch to that tab so there's actually something on screen to open.
+  useEffect(() => {
+    if (openReview && pastSits.some((sit) => sit.id === openReview)) {
+      setActiveTab("past");
+    }
+  }, [openReview, pastSits]);
+
+  const pastSitsToShow = useMemo(() => {
+    const firstThree = pastSits.slice(0, 3);
+    if (!openReview || firstThree.some((sit) => sit.id === openReview)) return firstThree;
+    const match = pastSits.find((sit) => sit.id === openReview);
+    return match ? [...firstThree, match] : firstThree;
+  }, [pastSits, openReview]);
+
   if (isLoading) {
     return <Skeleton className="h-64 w-full rounded-lg" />;
   }
@@ -75,7 +93,7 @@ export const UpcomingPastSits = ({ viewAs }: UpcomingPastSitsProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="upcoming">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "upcoming" | "past")}>
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="upcoming" className="gap-1.5">
               Upcoming
@@ -104,7 +122,7 @@ export const UpcomingPastSits = ({ viewAs }: UpcomingPastSitsProps) => {
             ) : (
               <div className="space-y-3">
                 {upcomingSits.slice(0, 5).map((sit) => (
-                  <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} />
+                  <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} openReview={openReview} />
                 ))}
                 {upcomingSits.length > 5 && (
                   <p className="text-sm text-muted-foreground text-center">
@@ -123,12 +141,12 @@ export const UpcomingPastSits = ({ viewAs }: UpcomingPastSitsProps) => {
               </div>
             ) : (
               <div className="space-y-3">
-                {pastSits.slice(0, 3).map((sit) => (
-                  <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} />
+                {pastSitsToShow.map((sit) => (
+                  <SitCard key={sit.id} sit={sit} viewAs={viewAs} userId={user?.id || ""} openReview={openReview} />
                 ))}
-                {pastSits.length > 3 && (
+                {pastSits.length > pastSitsToShow.length && (
                   <p className="text-sm text-muted-foreground text-center">
-                    +{pastSits.length - 3} more past sits
+                    +{pastSits.length - pastSitsToShow.length} more past sits
                   </p>
                 )}
               </div>

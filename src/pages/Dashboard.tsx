@@ -59,6 +59,7 @@ const Dashboard = () => {
   const { activeRole, setActiveRole } = useActiveRole();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [openReviewSitId, setOpenReviewSitId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
@@ -89,6 +90,26 @@ const Dashboard = () => {
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  // Deep link from a review reminder: land a combined member in the correct
+  // mode first, then let the matching SitCard auto-open its review dialog.
+  useEffect(() => {
+    if (loading) return;
+    const mode = searchParams.get("mode");
+    const openReview = searchParams.get("openReview");
+    if (!mode && !openReview) return;
+
+    if ((mode === "owner" || mode === "sitter") && role === "both") {
+      setActiveRole(mode);
+    }
+    if (openReview) {
+      setOpenReviewSitId(openReview);
+    }
+
+    searchParams.delete("mode");
+    searchParams.delete("openReview");
+    setSearchParams(searchParams, { replace: true });
+  }, [loading, role, searchParams, setSearchParams, setActiveRole]);
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -217,18 +238,20 @@ const Dashboard = () => {
 
           {/* Dashboard Content */}
           {(activeRole === "sitter" && (role === "sitter" || role === "both")) && (
-            <SitterDashboard 
-              profile={profile} 
+            <SitterDashboard
+              profile={profile}
               sitterProfile={sitterProfile}
               userId={user?.id || ""}
+              openReview={openReviewSitId}
             />
           )}
 
           {(activeRole === "owner" && (role === "owner" || role === "both")) && (
-            <OwnerDashboard 
-              profile={profile} 
+            <OwnerDashboard
+              profile={profile}
               ownerProfile={ownerProfile}
               userId={user?.id || ""}
+              openReview={openReviewSitId}
             />
           )}
         </div>
@@ -237,14 +260,16 @@ const Dashboard = () => {
   );
 };
 
-const SitterDashboard = ({ 
-  profile, 
+const SitterDashboard = ({
+  profile,
   sitterProfile,
-  userId
-}: { 
-  profile: Profile | null; 
+  userId,
+  openReview,
+}: {
+  profile: Profile | null;
   sitterProfile: SitterProfile | null;
   userId: string;
+  openReview?: string | null;
 }) => {
   const profileCompletion = calculateSitterProfileCompletion(profile, sitterProfile);
   const { data: applications = [], isLoading: applicationsLoading } = useSitterApplications();
@@ -326,7 +351,7 @@ const SitterDashboard = ({
         {/* Saved Sits lives in the header actions, so no duplicate card here */}
 
         {/* Upcoming & Past Sits */}
-        <UpcomingPastSits viewAs="sitter" />
+        <UpcomingPastSits viewAs="sitter" openReview={openReview} />
 
         {/* My Applications */}
         <Card id="my-applications">
@@ -396,14 +421,16 @@ const SitterDashboard = ({
   );
 };
 
-const OwnerDashboard = ({ 
-  profile, 
+const OwnerDashboard = ({
+  profile,
   ownerProfile,
-  userId
-}: { 
-  profile: Profile | null; 
+  userId,
+  openReview,
+}: {
+  profile: Profile | null;
   ownerProfile: OwnerProfile | null;
   userId: string;
+  openReview?: string | null;
 }) => {
   const { data: listings = [], isLoading: listingsLoading } = useOwnerListings();
   const listingStats = { total: listings.length };
@@ -431,7 +458,7 @@ const OwnerDashboard = ({
       {/* Middle Column */}
       <div className="md:col-span-1 lg:col-span-2 space-y-6">
         {/* Upcoming & Past Sits — between Your Stats and My Listings */}
-        <UpcomingPastSits viewAs="owner" />
+        <UpcomingPastSits viewAs="owner" openReview={openReview} />
 
         {/* My Listings */}
         <Card>

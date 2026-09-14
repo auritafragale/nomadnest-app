@@ -147,6 +147,10 @@ const handler = async (req: Request): Promise<Response> => {
 
         const daysLeft = REVIEW_WINDOW_DAYS - days;
 
+        // Deep-link straight to the review form, landing combined members in
+        // the correct mode first.
+        const reviewUrl = `/dashboard?mode=${party.role}&openReview=${sit.id}`;
+
         try {
           const { error: notifyError } = await supabase.functions.invoke(
             "send-notification-email",
@@ -163,6 +167,7 @@ const handler = async (req: Request): Promise<Response> => {
                   listingTitle: (sit as any).listing?.title ?? "your recent sit",
                   daysLeft: String(daysLeft),
                   stage: String(days),
+                  url: reviewUrl,
                 },
               },
             }
@@ -179,7 +184,7 @@ const handler = async (req: Request): Promise<Response> => {
           type: "review_reminder",
           title: "Leave a review",
           message: `You have ${daysLeft} day${daysLeft === 1 ? "" : "s"} left to review ${otherName}.`,
-          data: { url: "/dashboard", sit_id: sit.id },
+          data: { url: reviewUrl, sit_id: sit.id },
         });
 
         summary.remindersSent++;

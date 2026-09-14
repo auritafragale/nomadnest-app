@@ -144,10 +144,10 @@ export function buildNotificationEmail(
           <p>Reviews build trust across the whole NomadNest community, and you have <strong>${data.daysLeft} day${days === 1 ? "" : "s"}</strong> left to leave yours.</p>
         `,
         ctaLabel: "Write your review",
-        ctaUrl: `${APP_URL}/dashboard`,
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
         pushTitle: "Leave a review",
         pushBody: `You have ${data.daysLeft} day(s) left to review ${data.otherName}`,
-        pushUrl: "/dashboard",
+        pushUrl: data.url || "/dashboard",
       };
     }
     case "sit_cancelled":

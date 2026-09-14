@@ -43,6 +43,9 @@ interface WriteReviewDialogProps {
   reviewType: "owner" | "sitter";
   trigger?: React.ReactNode;
   onReviewSubmitted?: () => void;
+  /** Controlled mode: when provided, no trigger is rendered. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 type CategoryKey =
@@ -84,8 +87,16 @@ const WriteReviewDialog = ({
   reviewType,
   trigger,
   onReviewSubmitted,
+  open: controlledOpen,
+  onOpenChange,
 }: WriteReviewDialogProps) => {
-  const [open, setOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [ratings, setRatings] = useState<Record<CategoryKey, number>>({
@@ -287,14 +298,16 @@ const WriteReviewDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="outline" size="sm" className="gap-2">
-            <PenLine className="w-4 h-4" />
-            Write Review
-          </Button>
-        )}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          {trigger || (
+            <Button variant="outline" size="sm" className="gap-2">
+              <PenLine className="w-4 h-4" />
+              Write Review
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Review {revieweeName}</DialogTitle>
