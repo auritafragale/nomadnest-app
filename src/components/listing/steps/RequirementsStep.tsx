@@ -187,20 +187,6 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
         />
       </div>
 
-      {/* Ideal Nomad */}
-      <div className="space-y-2">
-        <Label htmlFor="ideal-sitter" className="text-base font-semibold">
-          Describe Your Ideal Nomad
-        </Label>
-        <Textarea
-          id="ideal-sitter"
-          placeholder="What kind of person would be perfect for this sit? What qualities matter most to you?"
-          value={formData.ideal_sitter_description}
-          onChange={(e) => updateFormData({ ideal_sitter_description: e.target.value })}
-          rows={4}
-        />
-      </div>
-
       {/* Communication Style */}
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
