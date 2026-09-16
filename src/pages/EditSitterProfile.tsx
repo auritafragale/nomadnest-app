@@ -159,6 +159,10 @@ const EditSitterProfile = () => {
     gallery: [],
     age_range: "",
   });
+  // Raw text for the comma-separated inputs, decoupled from the parsed
+  // array so a trailing comma isn't discarded mid-keystroke.
+  const [preferredCitiesText, setPreferredCitiesText] = useState("");
+  const [preferredCountriesText, setPreferredCountriesText] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -234,6 +238,8 @@ const EditSitterProfile = () => {
           gallery: sitterData.gallery || [],
           age_range: sitterData.age_range || "",
         });
+        setPreferredCitiesText((sitterData.preferred_cities || []).join(", "));
+        setPreferredCountriesText((sitterData.preferred_countries || []).join(", "));
       }
     } catch (error) {
       console.error("Error fetching profiles:", error);
@@ -270,6 +276,18 @@ const EditSitterProfile = () => {
           ? await geocodeCityCountry(mapsConfig.key, profile.city, profile.country)
           : null);
 
+      // Parsed here (not on every keystroke) so a trailing comma while
+      // typing never gets discarded mid-entry.
+      const preferredCities = preferredCitiesText
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean);
+      const preferredCountries = preferredCountriesText
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean);
+      updateSitterProfile({ preferred_cities: preferredCities, preferred_countries: preferredCountries });
+
       // Upsert sitter profile
       const { error: sitterError } = await supabase
         .from("sitter_profiles")
@@ -290,8 +308,8 @@ const EditSitterProfile = () => {
           available_from: sitterProfile.available_from || null,
           available_to: sitterProfile.available_to || null,
           preferred_regions: sitterProfile.preferred_regions,
-          preferred_countries: sitterProfile.preferred_countries,
-          preferred_cities: sitterProfile.preferred_cities,
+          preferred_countries: preferredCountries,
+          preferred_cities: preferredCities,
           gallery: sitterProfile.gallery,
           age_range: sitterProfile.age_range || null,
           ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
@@ -956,15 +974,8 @@ const EditSitterProfile = () => {
                     <Label htmlFor="preferred_cities">Preferred Cities</Label>
                     <Input
                       id="preferred_cities"
-                      value={sitterProfile.preferred_cities.join(", ")}
-                      onChange={(e) =>
-                        updateSitterProfile({
-                          preferred_cities: e.target.value
-                            .split(",")
-                            .map((c) => c.trim())
-                            .filter(Boolean),
-                        })
-                      }
+                      value={preferredCitiesText}
+                      onChange={(e) => setPreferredCitiesText(e.target.value)}
                       placeholder="e.g., Paris, Barcelona, Tokyo"
                     />
                     <p className="text-xs text-muted-foreground">
@@ -978,15 +989,8 @@ const EditSitterProfile = () => {
                     </Label>
                     <Input
                       id="preferred_countries"
-                      value={sitterProfile.preferred_countries.join(", ")}
-                      onChange={(e) =>
-                        updateSitterProfile({
-                          preferred_countries: e.target.value
-                            .split(",")
-                            .map((c) => c.trim())
-                            .filter(Boolean),
-                        })
-                      }
+                      value={preferredCountriesText}
+                      onChange={(e) => setPreferredCountriesText(e.target.value)}
                       placeholder="e.g., France, Spain, Japan"
                     />
                   </div>
