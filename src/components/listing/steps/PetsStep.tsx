@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, Dog, Cat, Bird, Fish, Rabbit, Bug, Tractor, HelpCircle } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Plus, Trash2, ChevronDown, Dog, Cat, Bird, Fish, Rabbit, Bug, Tractor, HelpCircle } from "lucide-react";
 import { Pet, ListingFormData } from "@/hooks/useListingForm";
 import { cn } from "@/lib/utils";
 import ImageUpload from "@/components/listing/ImageUpload";
@@ -35,6 +37,29 @@ const petTypes = [
 ];
 
 const PetsStep = ({ formData, addPet, updatePet, removePet }: PetsStepProps) => {
+  // A single pet starts expanded so a first-time user isn't staring at a
+  // wall of collapsed headers; the rest start collapsed.
+  const [expandedPetIds, setExpandedPetIds] = useState<Set<string>>(
+    () => new Set(formData.pets[0] ? [formData.pets[0].id] : [])
+  );
+
+  const togglePetExpanded = (petId: string) => {
+    setExpandedPetIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(petId)) {
+        next.delete(petId);
+      } else {
+        next.add(petId);
+      }
+      return next;
+    });
+  };
+
+  const petSummary = (pet: Pet) => {
+    const typeLabel = petTypes.find((t) => t.value === pet.type)?.label;
+    return [typeLabel, pet.age].filter(Boolean).join(" · ") || null;
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
@@ -47,23 +72,52 @@ const PetsStep = ({ formData, addPet, updatePet, removePet }: PetsStepProps) => 
       </div>
 
       <div className="space-y-6">
-        {formData.pets.map((pet, index) => (
+        {formData.pets.map((pet, index) => {
+          const expanded = expandedPetIds.has(pet.id);
+          const PetIcon = petTypes.find((t) => t.value === pet.type)?.icon ?? HelpCircle;
+          const summary = petSummary(pet);
+          return (
           <Card key={pet.id} className="relative">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Pet {index + 1}</CardTitle>
-                {formData.pets.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => removePet(pet.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
+            <Collapsible open={expanded} onOpenChange={() => togglePetExpanded(pet.id)}>
+              <CardHeader className="pb-4">
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <PetIcon className="w-5 h-5 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <CardTitle className="text-lg truncate">
+                          {pet.name || `Pet ${index + 1}`}
+                        </CardTitle>
+                        {summary && (
+                          <p className="text-xs text-muted-foreground truncate">{summary}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {formData.pets.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removePet(pet.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <ChevronDown
+                        className={cn(
+                          "w-4 h-4 text-muted-foreground transition-transform",
+                          expanded && "rotate-180"
+                        )}
+                      />
+                    </div>
+                  </div>
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
             <CardContent className="space-y-4">
               {/* Pet Type Selection */}
               <div className="space-y-2">
@@ -216,7 +270,7 @@ const PetsStep = ({ formData, addPet, updatePet, removePet }: PetsStepProps) => 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor={`pet-vet-${pet.id}`}>Vet Information</Label>
+                <Label htmlFor={`pet-vet-${pet.id}`}>Vet Information *</Label>
                 <Textarea
                   id={`pet-vet-${pet.id}`}
                   placeholder="Vet clinic name, phone number, address..."
@@ -224,6 +278,9 @@ const PetsStep = ({ formData, addPet, updatePet, removePet }: PetsStepProps) => 
                   onChange={(e) => updatePet(pet.id, { vet_info: e.target.value })}
                   rows={2}
                 />
+                <p className="text-xs text-muted-foreground">
+                  No permanent vet yet? Add the nearest clinic instead.
+                </p>
               </div>
 
               {/* Pet Photos */}
@@ -235,8 +292,11 @@ const PetsStep = ({ formData, addPet, updatePet, removePet }: PetsStepProps) => 
                 label="Pet Photos"
               />
             </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
-        ))}
+          );
+        })}
 
         <Button
           type="button"

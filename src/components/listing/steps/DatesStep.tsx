@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, CalendarIcon } from "lucide-react";
+import { Plus, Trash2, CalendarIcon, ChevronDown } from "lucide-react";
 import { SitDate, ListingFormData } from "@/hooks/useListingForm";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -32,6 +34,31 @@ const handoverOptions = [
 ];
 
 const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate }: DatesStepProps) => {
+  // A single date range starts expanded so a first-time user isn't staring
+  // at a wall of collapsed headers; the rest start collapsed.
+  const [expandedDateIds, setExpandedDateIds] = useState<Set<string>>(
+    () => new Set(formData.sit_dates[0] ? [formData.sit_dates[0].id] : [])
+  );
+
+  const toggleDateExpanded = (id: string) => {
+    setExpandedDateIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const dateSummary = (sitDate: SitDate) => {
+    if (!sitDate.start_date && !sitDate.end_date) return "Not set yet";
+    const start = sitDate.start_date ? format(parseISO(sitDate.start_date), "MMM d, yyyy") : "?";
+    const end = sitDate.end_date ? format(parseISO(sitDate.end_date), "MMM d, yyyy") : "?";
+    return `${start} – ${end}`;
+  };
+
   const handleStartDateSelect = (id: string, date: Date | undefined) => {
     if (date) {
       updateSitDate(id, { start_date: format(date, "yyyy-MM-dd") });
@@ -56,23 +83,43 @@ const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate }: Dates
       </div>
 
       <div className="space-y-6">
-        {formData.sit_dates.map((sitDate, index) => (
+        {formData.sit_dates.map((sitDate, index) => {
+          const expanded = expandedDateIds.has(sitDate.id);
+          return (
           <Card key={sitDate.id}>
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Date Range {index + 1}</CardTitle>
-                {formData.sit_dates.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => removeSitDate(sitDate.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
+            <Collapsible open={expanded} onOpenChange={() => toggleDateExpanded(sitDate.id)}>
+              <CardHeader className="pb-4">
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center justify-between cursor-pointer">
+                    <div className="min-w-0">
+                      <CardTitle className="text-lg">Date Range {index + 1}</CardTitle>
+                      <p className="text-xs text-muted-foreground">{dateSummary(sitDate)}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {formData.sit_dates.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeSitDate(sitDate.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <ChevronDown
+                        className={cn(
+                          "w-4 h-4 text-muted-foreground transition-transform",
+                          expanded && "rotate-180"
+                        )}
+                      />
+                    </div>
+                  </div>
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Start Date */}
@@ -183,8 +230,11 @@ const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate }: Dates
                 </div>
               </div>
             </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
-        ))}
+          );
+        })}
 
         <Button
           type="button"

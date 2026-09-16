@@ -23,8 +23,8 @@ const steps = [
   { number: 1, title: "Basics" },
   { number: 2, title: "Pets" },
   { number: 3, title: "Dates" },
-  { number: 4, title: "Home" },
-  { number: 5, title: "Requirements" },
+  { number: 4, title: "Requirements" },
+  { number: 5, title: "Home" },
 ];
 
 const CreateListing = () => {
@@ -65,12 +65,12 @@ const CreateListing = () => {
         return true;
       case 2:
         const validPets = formData.pets.every(
-          (pet) => pet.name.trim() && pet.type
+          (pet) => pet.name.trim() && pet.type && pet.vet_info.trim()
         );
         if (!validPets) {
           toast({
             title: "Pet details required",
-            description: "Please add a name for each pet",
+            description: "Please add a name and vet information for each pet",
             variant: "destructive",
           });
           return false;
@@ -89,7 +89,7 @@ const CreateListing = () => {
           return false;
         }
         return true;
-      case 4:
+      case 5:
         // Location is resolved in handleNext before this runs, so if it's
         // still empty the member genuinely has no location typed.
         if (!formData.city.trim() && !formData.country.trim()) {
@@ -112,7 +112,7 @@ const CreateListing = () => {
   // Returns true if the location is resolved (or already was), so the caller
   // can skip the now-stale validation check.
   const resolveLocationIfNeeded = async (): Promise<boolean> => {
-    if (currentStep !== 4) return true;
+    if (currentStep !== 5) return true;
     const typed = (formData.locationQuery || "").trim();
     const hasResolved = formData.city.trim() || formData.country.trim();
     if (hasResolved) return true;
@@ -141,7 +141,7 @@ const CreateListing = () => {
   };
 
   const handleNext = async () => {
-    if (currentStep === 4) {
+    if (currentStep === 5) {
       const resolved = await resolveLocationIfNeeded();
       if (resolved) {
         // State will update on next render; advance immediately.
@@ -193,6 +193,7 @@ const CreateListing = () => {
           owner_user_id: user.id,
           title: formData.title,
           description: formData.description,
+          ideal_nomad_types: formData.ideal_nomad_types,
           status,
           home_type: formData.home_type || null,
           city: formData.city,
@@ -310,14 +311,14 @@ const CreateListing = () => {
         );
       case 4:
         return (
-          <HomeInfoStep formData={formData} updateFormData={updateFormData} />
-        );
-      case 5:
-        return (
           <RequirementsStep
             formData={formData}
             updateFormData={updateFormData}
           />
+        );
+      case 5:
+        return (
+          <HomeInfoStep formData={formData} updateFormData={updateFormData} />
         );
       default:
         return null;

@@ -99,6 +99,7 @@ interface Listing {
   id: string;
   title: string;
   description: string | null;
+  ideal_nomad_types: string[];
   city: string;
   country: string;
   area: string | null;
@@ -221,7 +222,7 @@ const ListingDetail = () => {
         const { data: listingData, error: listingError } = await supabase
           .from("listings")
           .select(
-            "id, owner_user_id, title, description, city, country, area, " +
+            "id, owner_user_id, title, description, ideal_nomad_types, city, country, area, " +
             "home_type, sleeping_arrangement, amenities, wifi_quality, " +
             "house_rules, house_rules_other, home_care_tasks, home_care_tasks_other, " +
             "requirements, requirements_other, communication_style, " +
@@ -470,6 +471,15 @@ const ListingDetail = () => {
                     <span className="text-sm">• {listing.area}</span>
                   )}
                 </div>
+                {listing.ideal_nomad_types.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {listing.ideal_nomad_types.map((type) => (
+                      <Badge key={type} variant="secondary">
+                        {type}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
               {user && !isOwner && (
                 <ReportDialog

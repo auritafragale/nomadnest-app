@@ -34,6 +34,7 @@ export interface ListingWithDetails {
   id: string;
   title: string;
   description: string | null;
+  ideal_nomad_types: string[] | null;
   status: string;
   home_type: string | null;
   city: string | null;
@@ -133,6 +134,7 @@ export const useUpdateListing = () => {
         .update({
           title: formData.title,
           description: formData.description,
+          ideal_nomad_types: formData.ideal_nomad_types,
           status,
           home_type: formData.home_type || null,
           city: formData.city,
@@ -293,6 +295,7 @@ export const convertToFormData = (listing: ListingWithDetails): ListingFormData 
   return {
     title: listing.title,
     description: listing.description || "",
+    ideal_nomad_types: listing.ideal_nomad_types || [],
     pets: listing.pets.map((pet) => ({
       id: pet.id,
       name: pet.name || "",

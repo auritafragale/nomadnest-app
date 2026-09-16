@@ -1,14 +1,30 @@
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ListingFormData } from "@/hooks/useListingForm";
+import { cn } from "@/lib/utils";
 
 interface BasicInfoStepProps {
   formData: ListingFormData;
   updateFormData: (data: Partial<ListingFormData>) => void;
 }
 
+const idealNomadTypes = [
+  "🛋️ Remote Workers (Fast Wi-Fi & Dedicated Desk)",
+  "🎒 Sightseers (Great location, plenty of free time)",
+  "🌿 Nature Lovers (Quiet, scenic, or rural)",
+  "🏠 Homebodies (Pets need lots of companionship)",
+];
+
 const BasicInfoStep = ({ formData, updateFormData }: BasicInfoStepProps) => {
+  const toggleIdealNomadType = (type: string) => {
+    const current = formData.ideal_nomad_types;
+    const updated = current.includes(type)
+      ? current.filter((t) => t !== type)
+      : [...current, type];
+    updateFormData({ ideal_nomad_types: updated });
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
@@ -16,7 +32,7 @@ const BasicInfoStep = ({ formData, updateFormData }: BasicInfoStepProps) => {
           Let's start with the basics
         </h2>
         <p className="text-muted-foreground mt-2">
-          Give your listing a catchy title and description
+          Give your listing a catchy title
         </p>
       </div>
 
@@ -36,18 +52,29 @@ const BasicInfoStep = ({ formData, updateFormData }: BasicInfoStepProps) => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description">Description *</Label>
-          <Textarea
-            id="description"
-            placeholder="Tell nomads about your home, your pets, and what makes this sit special..."
-            value={formData.description}
-            onChange={(e) => updateFormData({ description: e.target.value })}
-            rows={6}
-            className="resize-none"
-          />
-          <p className="text-sm text-muted-foreground">
-            Include details about your neighborhood, nearby amenities, and what nomads can expect
-          </p>
+          <Label className="text-base font-semibold">
+            What kind of Nomad is this sit best suited for?
+          </Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {idealNomadTypes.map((type) => (
+              <div
+                key={type}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
+                  formData.ideal_nomad_types.includes(type)
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:border-primary/50"
+                )}
+                onClick={() => toggleIdealNomadType(type)}
+              >
+                <Checkbox
+                  checked={formData.ideal_nomad_types.includes(type)}
+                  onCheckedChange={() => toggleIdealNomadType(type)}
+                />
+                <span className="text-sm">{type}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

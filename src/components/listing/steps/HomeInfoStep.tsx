@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -376,6 +377,22 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
             folder="home"
             label="Home Photos"
           />
+        </div>
+
+        {/* Description */}
+        <div className="space-y-2">
+          <Label htmlFor="description">Description *</Label>
+          <Textarea
+            id="description"
+            placeholder="Tell nomads about your home, your pets, and what makes this sit special..."
+            value={formData.description}
+            onChange={(e) => updateFormData({ description: e.target.value })}
+            rows={6}
+            className="resize-none"
+          />
+          <p className="text-sm text-muted-foreground">
+            Include details about your neighborhood, nearby amenities, and what nomads can expect
+          </p>
         </div>
       </div>
     </div>

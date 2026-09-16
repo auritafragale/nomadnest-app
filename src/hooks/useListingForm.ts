@@ -30,7 +30,8 @@ export interface ListingFormData {
   // Step 1: Basic Info
   title: string;
   description: string;
-  
+  ideal_nomad_types: string[];
+
   // Step 2: Pets
   pets: Pet[];
   
@@ -93,6 +94,7 @@ const initialSitDate: SitDate = {
 const initialFormData: ListingFormData = {
   title: "",
   description: "",
+  ideal_nomad_types: [],
   pets: [{ ...initialPet }],
   sit_dates: [{ ...initialSitDate }],
   home_type: "",
