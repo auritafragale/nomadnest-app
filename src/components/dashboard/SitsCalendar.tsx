@@ -292,19 +292,16 @@ export const SitCard = ({
 
   // A declined reschedule proposal means the sit's original dates aren't
   // necessarily what should reopen for a new Nomad — let the owner pick.
+  // "original" means the sit's existing sit_dates row is reopened directly
+  // (no reopenWith), rather than inserting a duplicate of the same dates.
   const handleCancel = () => {
     if (!cancelReason.trim()) return;
     let reopenWith: { start_date: string; end_date: string } | undefined;
-    if (declinedRequest) {
-      reopenWith =
-        reopenChoice === "proposed"
-          ? {
-              start_date: declinedRequest.proposed_start_date,
-              end_date: declinedRequest.proposed_end_date,
-            }
-          : sit.sit_dates
-            ? { start_date: sit.sit_dates.start_date, end_date: sit.sit_dates.end_date }
-            : undefined;
+    if (declinedRequest && reopenChoice === "proposed") {
+      reopenWith = {
+        start_date: declinedRequest.proposed_start_date,
+        end_date: declinedRequest.proposed_end_date,
+      };
     }
     updateStatus({
       sitId: sit.id,

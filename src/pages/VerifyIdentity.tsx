@@ -484,7 +484,7 @@ const VerifyIdentity = () => {
                         <input
                           ref={idInputRef}
                           type="file"
-                          accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
+                          accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,application/pdf"
                           className="sr-only"
                           aria-label="Upload photo ID from files"
                           onChange={(e) => {

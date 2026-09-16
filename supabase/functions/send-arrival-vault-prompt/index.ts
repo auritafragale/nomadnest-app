@@ -46,7 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
   }
 
-  const summary = { promptsSent: 0, skipped: 0, errors: 0 };
+  const summary = { promptsSent: 0, errors: 0 };
 
   try {
     const yesterday = yesterdayDateString();
@@ -54,11 +54,11 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: sits, error: sitsError } = await supabase
       .from("sits")
       .select(
-        "id, sitter_user_id, listing:listing_id(title), sit_dates:sit_dates_id(start_date)",
+        "id, sitter_user_id, listing:listing_id(title), sit_dates:sit_dates_id!inner(start_date)",
       )
       .in("status", ["confirmed", "in_progress"])
       .is("arrival_prompt_sent_at", null)
-      .limit(500);
+      .eq("sit_dates.start_date", yesterday);
 
     if (sitsError) throw sitsError;
 
@@ -66,12 +66,6 @@ const handler = async (req: Request): Promise<Response> => {
       const sitId = (sit as any).id;
       const sitterId = (sit as any).sitter_user_id;
       const listingTitle = (sit as any).listing?.title ?? "your sit";
-      const startDate = (sit as any).sit_dates?.start_date;
-
-      if (startDate !== yesterday) {
-        summary.skipped++;
-        continue;
-      }
 
       const url = `/sits/${sitId}/arrival-vault`;
 

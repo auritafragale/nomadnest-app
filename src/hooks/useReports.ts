@@ -91,8 +91,21 @@ export const useSubmitReport = () => {
       } catch (e) {
         console.error("Could not alert the admin team about this report", e);
       }
+
+      return {
+        reportId: inserted.id,
+        evidenceUploadFailed: evidencePaths.length < evidenceFiles.length,
+      };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (result?.evidenceUploadFailed) {
+        toast({
+          title: "Report submitted, but proof upload failed",
+          description: `We couldn't upload your proof files — please contact support and reference report ID ${result.reportId} to add them.`,
+          variant: "destructive",
+        });
+        return;
+      }
       toast({
         title: "Report submitted",
         description:
