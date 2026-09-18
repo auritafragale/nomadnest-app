@@ -38,6 +38,8 @@ export interface ListingFormData {
 
   // Step 4: Home Info
   home_type: string;
+  location_type: string;
+  public_transport_accessible: boolean | null;
   city: string;
   country: string;
   locationQuery: string;
@@ -97,6 +99,8 @@ const initialFormData: ListingFormData = {
   pets: [{ ...initialPet }],
   sit_dates: [{ ...initialSitDate }],
   home_type: "",
+  location_type: "",
+  public_transport_accessible: null,
   city: "",
   country: "",
   locationQuery: "",

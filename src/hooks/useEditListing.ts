@@ -37,6 +37,8 @@ export interface ListingWithDetails {
   ideal_nomad_types: string[] | null;
   status: string;
   home_type: string | null;
+  location_type: string | null;
+  public_transport_accessible: boolean | null;
   city: string | null;
   country: string | null;
   area: string | null;
@@ -138,6 +140,8 @@ export const useUpdateListing = () => {
           ideal_nomad_types: formData.ideal_nomad_types,
           status,
           home_type: formData.home_type || null,
+          location_type: formData.location_type || null,
+          public_transport_accessible: formData.public_transport_accessible,
           city: formData.city,
           country: formData.country,
           area: formData.area || null,
@@ -349,6 +353,8 @@ export const convertToFormData = (listing: ListingWithDetails): ListingFormData 
       handover_preference: date.handover_preference || "flexible",
     })),
     home_type: listing.home_type || "",
+    location_type: listing.location_type || "",
+    public_transport_accessible: listing.public_transport_accessible ?? null,
     city: listing.city || "",
     country: listing.country || "",
     locationQuery: [listing.city, listing.country].filter(Boolean).join(", ") || "",

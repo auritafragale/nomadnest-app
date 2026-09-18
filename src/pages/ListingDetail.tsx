@@ -29,6 +29,11 @@ import {
   Loader2,
   Flag,
   Heart,
+  Building2,
+  TreePine,
+  Palmtree,
+  Mountain,
+  Bus,
 } from "lucide-react";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,6 +109,8 @@ interface Listing {
   country: string;
   area: string | null;
   home_type: string | null;
+  location_type: string | null;
+  public_transport_accessible?: boolean | null;
   wifi_quality: string | null;
   sleeping_arrangement: string | null;
   amenities: string[];
@@ -128,6 +135,12 @@ interface Listing {
   profiles: Profile;
 }
 
+const locationTypeMeta: Record<string, { label: string; icon: typeof Home }> = {
+  beach: { label: "Beach", icon: Palmtree },
+  city: { label: "City", icon: Building2 },
+  countryside: { label: "Countryside", icon: TreePine },
+  mountains: { label: "Mountains", icon: Mountain },
+};
 
 // Owner Card with Message Button
 const OwnerCard = ({
@@ -224,7 +237,7 @@ const ListingDetail = () => {
           .from("listings")
           .select(
             "id, owner_user_id, title, description, ideal_nomad_types, city, country, area, " +
-            "home_type, sleeping_arrangement, amenities, wifi_quality, " +
+            "home_type, location_type, public_transport_accessible, sleeping_arrangement, amenities, wifi_quality, " +
             "house_rules, house_rules_other, home_care_tasks, home_care_tasks_other, " +
             "requirements, requirements_other, communication_style, " +
             "ideal_sitter_description, photos, status, latitude, longitude, " +
@@ -718,6 +731,17 @@ const ListingDetail = () => {
                             <span className="capitalize">{listing.home_type}</span>
                           </div>
                         )}
+                        {listing.location_type && locationTypeMeta[listing.location_type] && (
+                          (() => {
+                            const LocationIcon = locationTypeMeta[listing.location_type].icon;
+                            return (
+                              <div className="flex items-center gap-2">
+                                <LocationIcon className="w-4 h-4 text-muted-foreground" />
+                                <span>{locationTypeMeta[listing.location_type].label}</span>
+                              </div>
+                            );
+                          })()
+                        )}
                         {listing.wifi_quality && (
                           <div className="flex items-center gap-2">
                             <Wifi className="w-4 h-4 text-muted-foreground" />
@@ -736,7 +760,7 @@ const ListingDetail = () => {
                         )}
                       </div>
 
-                      {(listing.remote_location || listing.car_needed || listing.heavy_gardening || listing.wheelchair_accessible) && (
+                      {(listing.remote_location || listing.car_needed || listing.heavy_gardening || listing.wheelchair_accessible || listing.public_transport_accessible === true) && (
                         <>
                           <Separator />
                           <div>
@@ -746,6 +770,12 @@ const ListingDetail = () => {
                               {listing.car_needed && <Badge variant="secondary">Car needed</Badge>}
                               {listing.heavy_gardening && <Badge variant="secondary">Plant Care</Badge>}
                               {listing.wheelchair_accessible && <Badge variant="secondary">Step-free Access</Badge>}
+                              {listing.public_transport_accessible === true && (
+                                <Badge variant="secondary">
+                                  <Bus className="w-3 h-3 mr-1" />
+                                  Public transport accessible
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </>

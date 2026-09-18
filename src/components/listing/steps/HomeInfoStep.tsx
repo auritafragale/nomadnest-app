@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { geocodeCityCountry } from "@/lib/geocode";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import {
-  Home, Building2, Building, TreePine,
+  Home, Building2, Building, TreePine, Palmtree, Mountain,
   Wifi, WifiOff, Bed, Sofa, MapPin, Loader2, Navigation
 } from "lucide-react";
 import ImageUpload from "@/components/listing/ImageUpload";
@@ -27,6 +27,18 @@ const homeTypes = [
   { value: "house", label: "House", icon: Home },
   { value: "condo", label: "Condo", icon: Building },
   { value: "cottage", label: "Cottage / Rural", icon: TreePine },
+];
+
+const locationTypes = [
+  { value: "beach", label: "Beach", icon: Palmtree },
+  { value: "city", label: "City", icon: Building2 },
+  { value: "countryside", label: "Countryside", icon: TreePine },
+  { value: "mountains", label: "Mountains", icon: Mountain },
+];
+
+const publicTransportOptions = [
+  { value: true, title: "Yes", desc: "By bus, train, or other public transportation" },
+  { value: false, title: "No", desc: "You'll need your own transport" },
 ];
 
 const wifiOptions = [
@@ -161,8 +173,9 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
   };
 
   const homeTypeLabel = homeTypes.find((t) => t.value === formData.home_type)?.label;
+  const locationTypeLabel = locationTypes.find((t) => t.value === formData.location_type)?.label;
   const locationSummary =
-    [homeTypeLabel, [formData.city, formData.country].filter(Boolean).join(", ")]
+    [homeTypeLabel, locationTypeLabel, [formData.city, formData.country].filter(Boolean).join(", ")]
       .filter(Boolean)
       .join(" · ") || null;
 
@@ -222,6 +235,55 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* Location Type */}
+        <div className="space-y-2">
+          <Label>How would you describe your location?</Label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {locationTypes.map((option) => {
+              const Icon = option.icon;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => updateFormData({ location_type: option.value })}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-lg border transition-all",
+                    formData.location_type === option.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:border-primary/50"
+                  )}
+                >
+                  <Icon className="w-6 h-6" />
+                  <span className="text-sm font-medium">{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Public Transport Accessibility */}
+        <div className="space-y-2">
+          <Label>Can the Nomad travel to your home using public transportation?</Label>
+          <div className="grid grid-cols-1 gap-3">
+            {publicTransportOptions.map((option) => (
+              <button
+                key={String(option.value)}
+                type="button"
+                onClick={() => updateFormData({ public_transport_accessible: option.value })}
+                className={cn(
+                  "flex flex-col items-start gap-0.5 p-4 rounded-lg border text-left transition-all",
+                  formData.public_transport_accessible === option.value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:border-primary/50"
+                )}
+              >
+                <span className="text-sm font-medium">{option.title}</span>
+                <span className="text-sm text-muted-foreground">{option.desc}</span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -426,7 +488,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
           <Label htmlFor="description">Any extra details? *</Label>
           <Textarea
             id="description"
-            placeholder="Why do you love this home? Anything else a Nomad should know before saying yes?"
+            placeholder="Anything else a Nomad should know before saying yes?"
             value={formData.description}
             onChange={(e) => updateFormData({ description: e.target.value })}
             rows={6}

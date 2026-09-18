@@ -192,6 +192,8 @@ const CreateListing = () => {
           ideal_nomad_types: formData.ideal_nomad_types,
           status,
           home_type: formData.home_type || null,
+          location_type: formData.location_type || null,
+          public_transport_accessible: formData.public_transport_accessible,
           city: formData.city,
           country: formData.country,
           area: formData.area || null,
