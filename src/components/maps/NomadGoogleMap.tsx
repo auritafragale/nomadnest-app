@@ -227,7 +227,7 @@ const MapContent = ({ nomads }: NomadGoogleMapProps) => {
   };
 
   return (
-    <div className="relative w-full aspect-[3/4] min-h-[400px] max-h-[80vh] md:aspect-auto md:h-96 md:max-h-none rounded-lg overflow-hidden border border-border">
+    <div className="relative w-full aspect-[2/3] min-h-[480px] max-h-[85vh] md:aspect-auto md:h-96 md:max-h-none rounded-lg overflow-hidden border border-border">
       <GoogleMap
         defaultCenter={{ lat: 30, lng: 0 }}
         defaultZoom={2}

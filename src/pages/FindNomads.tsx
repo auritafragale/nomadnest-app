@@ -115,10 +115,9 @@ const FindNomads = () => {
                 content="Your visibility toggle controls whether other nomads can see you on this map. Hide it any time to pause discovery without losing your profile."
               />
             </div>
+            <NomadVisibilityBanner bare transparent={viewMode === "map"} />
           </div>
         </div>
-
-        <NomadVisibilityBanner transparent={viewMode === "map"} />
 
         <div
           className={cn(

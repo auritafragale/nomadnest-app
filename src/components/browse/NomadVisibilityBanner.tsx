@@ -9,9 +9,11 @@ import { useToast } from "@/hooks/use-toast";
 interface NomadVisibilityBannerProps {
   /** True when rendered over a map, so the card blends into it instead of sitting as a solid block. */
   transparent?: boolean;
+  /** True to skip the outer container/spacing wrapper, so the caller controls placement. */
+  bare?: boolean;
 }
 
-const NomadVisibilityBanner = ({ transparent = false }: NomadVisibilityBannerProps = {}) => {
+const NomadVisibilityBanner = ({ transparent = false, bare = false }: NomadVisibilityBannerProps = {}) => {
   const { user, role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -95,40 +97,44 @@ const NomadVisibilityBanner = ({ transparent = false }: NomadVisibilityBannerPro
       ? "bg-primary/5"
       : "bg-surface";
 
-  return (
-    <div className="container pt-4">
-      <div
-        className={`flex items-start justify-between gap-4 rounded-2xl border px-4 py-3 ${borderClass} ${fillClass}`}
-      >
-        <p className="text-sm md:text-base">
-          {isVisible ? (
-            <>
-              ✅ You're visible{city ? ` in ${city}` : ""}, nomads nearby can find you
-            </>
-          ) : (
-            <>
-              👁️ You're hidden. Turn on visibility to appear on the map and connect with nomads nearby
-            </>
-          )}
-        </p>
-        <div className="flex items-center gap-2 shrink-0 pt-0.5">
-          <span
-            className={`text-xs font-semibold ${
-              isVisible ? "text-primary" : "text-muted-foreground"
-            }`}
-          >
-            {isVisible ? "Visible" : "Hidden"}
-          </span>
-          <Switch
-            checked={isVisible}
-            onCheckedChange={handleToggle}
-            disabled={updating}
-            aria-label="Toggle nomad visibility"
-          />
-        </div>
+  const pill = (
+    <div
+      className={`flex items-start justify-between gap-4 rounded-2xl border px-4 py-3 ${borderClass} ${fillClass} ${
+        bare ? "mt-3" : ""
+      }`}
+    >
+      <p className="text-sm md:text-base">
+        {isVisible ? (
+          <>
+            ✅ You're visible{city ? ` in ${city}` : ""}, nomads nearby can find you
+          </>
+        ) : (
+          <>
+            👁️ You're hidden. Turn on visibility to appear on the map and connect with nomads nearby
+          </>
+        )}
+      </p>
+      <div className="flex items-center gap-2 shrink-0 pt-0.5">
+        <span
+          className={`text-xs font-semibold ${
+            isVisible ? "text-primary" : "text-muted-foreground"
+          }`}
+        >
+          {isVisible ? "Visible" : "Hidden"}
+        </span>
+        <Switch
+          checked={isVisible}
+          onCheckedChange={handleToggle}
+          disabled={updating}
+          aria-label="Toggle nomad visibility"
+        />
       </div>
     </div>
   );
+
+  if (bare) return pill;
+
+  return <div className="container pt-4">{pill}</div>;
 };
 
 export default NomadVisibilityBanner;
