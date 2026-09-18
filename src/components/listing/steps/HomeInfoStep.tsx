@@ -15,6 +15,7 @@ import {
 import ImageUpload from "@/components/listing/ImageUpload";
 import { Switch } from "@/components/ui/switch";
 import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
+import CollapsibleFormSection from "@/components/listing/steps/CollapsibleFormSection";
 
 interface HomeInfoStepProps {
   formData: ListingFormData;
@@ -153,6 +154,31 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
     }
   };
 
+  const homeTypeLabel = homeTypes.find((t) => t.value === formData.home_type)?.label;
+  const locationSummary =
+    [homeTypeLabel, [formData.city, formData.country].filter(Boolean).join(", ")]
+      .filter(Boolean)
+      .join(" · ") || null;
+
+  const wifiLabel = wifiOptions.find((o) => o.value === formData.wifi_quality)?.label;
+  const sleepingLabel = sleepingOptions.find((o) => o.value === formData.sleeping_arrangement)?.label;
+  const wifiSleepSummary = [wifiLabel, sleepingLabel].filter(Boolean).join(" · ") || null;
+
+  const amenitiesSummary =
+    formData.amenities.length > 0 ? `${formData.amenities.length} selected` : null;
+
+  const practicalCount = [
+    formData.remote_location,
+    formData.car_needed,
+    formData.heavy_gardening,
+  ].filter(Boolean).length;
+  const practicalSummary = practicalCount > 0 ? `${practicalCount} selected` : null;
+
+  const photosSummary =
+    formData.photos.length > 0
+      ? `${formData.photos.length} photo${formData.photos.length === 1 ? "" : "s"}`
+      : null;
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
@@ -164,7 +190,8 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
+        <CollapsibleFormSection title="Home type & location" summary={locationSummary}>
         {/* Home Type */}
         <div className="space-y-2">
           <Label>Home Type *</Label>
@@ -266,7 +293,9 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
             types={["address"]}
           />
         </div>
+        </CollapsibleFormSection>
 
+        <CollapsibleFormSection title="WiFi & sleeping arrangement" summary={wifiSleepSummary}>
         <div className="space-y-2">
           <Label>WiFi Quality</Label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -317,8 +346,9 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
             })}
           </div>
         </div>
+        </CollapsibleFormSection>
 
-        {/* Amenities */}
+        <CollapsibleFormSection title="Amenities" summary={amenitiesSummary}>
         <div className="space-y-3">
           <Label>Amenities</Label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -342,10 +372,10 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
             ))}
           </div>
         </div>
+        </CollapsibleFormSection>
 
-        {/* Practical details */}
+        <CollapsibleFormSection title="Practical details" summary={practicalSummary}>
         <div className="space-y-3">
-          <Label>Practical details</Label>
           {([
             { key: "remote_location" as const, title: "Remote location", desc: "The home is rural or far from a town centre" },
             { key: "car_needed" as const, title: "Car needed", desc: "A car is needed to get around day to day" },
@@ -363,6 +393,9 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
             </div>
           ))}
         </div>
+        </CollapsibleFormSection>
+
+        <CollapsibleFormSection title="Photos & description" summary={photosSummary}>
 
         {/* Home Photos */}
         <div className="space-y-3">
@@ -394,6 +427,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
             Include details about your neighborhood, nearby amenities, and what nomads can expect
           </p>
         </div>
+        </CollapsibleFormSection>
       </div>
     </div>
   );

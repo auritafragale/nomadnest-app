@@ -242,17 +242,44 @@ export const useUpdateListing = () => {
         if (deleteDatesError) throw deleteDatesError;
       }
 
+      // A sit_dates row still referenced by a live sit must keep its current
+      // status untouched (it may be confirmed/booked) — only rows nothing
+      // currently depends on are safe to force back to "open".
+      let liveReferencedDateIds = new Set<string>();
+      if (originalSitDateIds.length > 0) {
+        const { data: referencingSits, error: referencingSitsError } = await supabase
+          .from("sits")
+          .select("sit_dates_id")
+          .in("sit_dates_id", originalSitDateIds);
+        if (referencingSitsError) throw referencingSitsError;
+        liveReferencedDateIds = new Set(
+          (referencingSits || []).map((s) => s.sit_dates_id)
+        );
+      }
+
       for (const date of formData.sit_dates) {
         if (originalSitDateIds.includes(date.id)) {
-          // Update existing date
+          // Update existing date. A stale closed/booked status left over from
+          // before editing must not permanently block rebooking, unless a
+          // live sit still depends on this exact row.
+          const updatePayload: {
+            start_date: string;
+            end_date: string;
+            flexibility: string | null;
+            handover_preference: string | null;
+            status?: "open";
+          } = {
+            start_date: date.start_date,
+            end_date: date.end_date,
+            flexibility: date.flexibility || null,
+            handover_preference: date.handover_preference || null,
+          };
+          if (!liveReferencedDateIds.has(date.id)) {
+            updatePayload.status = "open";
+          }
           const { error: updateDateError } = await supabase
             .from("sit_dates")
-            .update({
-              start_date: date.start_date,
-              end_date: date.end_date,
-              flexibility: date.flexibility || null,
-              handover_preference: date.handover_preference || null,
-            })
+            .update(updatePayload)
             .eq("id", date.id);
           if (updateDateError) throw updateDateError;
         } else {

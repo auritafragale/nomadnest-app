@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,10 +17,10 @@ interface StepIndicatorProps {
 
 const StepIndicator = ({ steps, currentStep, onStepClick, allowJumpAhead = false }: StepIndicatorProps) => {
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between">
-        {steps.map((step, index) => (
-          <div key={step.number} className="flex items-center flex-1">
+    <div className="w-full flex items-start">
+      {steps.map((step, index) => (
+        <Fragment key={step.number}>
+          <div className="flex flex-col items-center flex-1">
             <button
               onClick={() => onStepClick?.(step.number)}
               disabled={!allowJumpAhead && step.number > currentStep}
@@ -38,36 +39,30 @@ const StepIndicator = ({ steps, currentStep, onStepClick, allowJumpAhead = false
                 step.number
               )}
             </button>
-            
-            {index < steps.length - 1 && (
-              <div
-                className={cn(
-                  "flex-1 h-1 mx-3 rounded-full transition-colors",
-                  step.number < currentStep ? "bg-primary" : "bg-muted"
-                )}
-              />
-            )}
+            <span
+              className={cn(
+                "text-xs font-medium transition-colors mt-2 text-center",
+                step.number === currentStep
+                  ? "text-primary"
+                  : step.number < currentStep
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              )}
+            >
+              {step.title}
+            </span>
           </div>
-        ))}
-      </div>
-      
-      <div className="flex justify-between mt-2">
-        {steps.map((step) => (
-          <span
-            key={step.number}
-            className={cn(
-              "text-xs font-medium transition-colors",
-              step.number === currentStep
-                ? "text-primary"
-                : step.number < currentStep
-                ? "text-foreground"
-                : "text-muted-foreground"
-            )}
-          >
-            {step.title}
-          </span>
-        ))}
-      </div>
+
+          {index < steps.length - 1 && (
+            <div
+              className={cn(
+                "h-1 flex-1 rounded-full transition-colors mt-[18px] mx-1",
+                step.number < currentStep ? "bg-primary" : "bg-muted"
+              )}
+            />
+          )}
+        </Fragment>
+      ))}
     </div>
   );
 };

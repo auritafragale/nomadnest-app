@@ -37,11 +37,8 @@ const petTypes = [
 ];
 
 const PetsStep = ({ formData, addPet, updatePet, removePet }: PetsStepProps) => {
-  // A single pet starts expanded so a first-time user isn't staring at a
-  // wall of collapsed headers; the rest start collapsed.
-  const [expandedPetIds, setExpandedPetIds] = useState<Set<string>>(
-    () => new Set(formData.pets[0] ? [formData.pets[0].id] : [])
-  );
+  // Every pet starts collapsed; the member clicks to open each one.
+  const [expandedPetIds, setExpandedPetIds] = useState<Set<string>>(() => new Set());
 
   const togglePetExpanded = (petId: string) => {
     setExpandedPetIds((prev) => {

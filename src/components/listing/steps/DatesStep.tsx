@@ -10,6 +10,7 @@ import { Plus, Trash2, CalendarIcon, ChevronDown } from "lucide-react";
 import { SitDate, ListingFormData } from "@/hooks/useListingForm";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import type { DateRange } from "react-day-picker";
 
 interface DatesStepProps {
   formData: ListingFormData;
@@ -34,11 +35,8 @@ const handoverOptions = [
 ];
 
 const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate }: DatesStepProps) => {
-  // A single date range starts expanded so a first-time user isn't staring
-  // at a wall of collapsed headers; the rest start collapsed.
-  const [expandedDateIds, setExpandedDateIds] = useState<Set<string>>(
-    () => new Set(formData.sit_dates[0] ? [formData.sit_dates[0].id] : [])
-  );
+  // Every date range starts collapsed; the member clicks to open each one.
+  const [expandedDateIds, setExpandedDateIds] = useState<Set<string>>(() => new Set());
 
   const toggleDateExpanded = (id: string) => {
     setExpandedDateIds((prev) => {
@@ -59,16 +57,11 @@ const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate }: Dates
     return `${start} – ${end}`;
   };
 
-  const handleStartDateSelect = (id: string, date: Date | undefined) => {
-    if (date) {
-      updateSitDate(id, { start_date: format(date, "yyyy-MM-dd") });
-    }
-  };
-
-  const handleEndDateSelect = (id: string, date: Date | undefined) => {
-    if (date) {
-      updateSitDate(id, { end_date: format(date, "yyyy-MM-dd") });
-    }
+  const handleRangeSelect = (id: string, range: DateRange | undefined) => {
+    updateSitDate(id, {
+      start_date: range?.from ? format(range.from, "yyyy-MM-dd") : "",
+      end_date: range?.to ? format(range.to, "yyyy-MM-dd") : "",
+    });
   };
 
   return (
@@ -121,73 +114,40 @@ const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate }: Dates
               </CardHeader>
               <CollapsibleContent>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Start Date */}
-                <div className="space-y-2">
-                  <Label>Start Date *</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !sitDate.start_date && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {sitDate.start_date
+              <div className="space-y-2">
+                <Label>Sit Dates *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !sitDate.start_date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {sitDate.start_date && sitDate.end_date
+                        ? `${format(parseISO(sitDate.start_date), "PPP")} – ${format(parseISO(sitDate.end_date), "PPP")}`
+                        : sitDate.start_date
                           ? format(parseISO(sitDate.start_date), "PPP")
-                          : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={sitDate.start_date ? parseISO(sitDate.start_date) : undefined}
-                        onSelect={(date) => handleStartDateSelect(sitDate.id, date)}
-                        disabled={(date) => date < new Date()}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* End Date */}
-                <div className="space-y-2">
-                  <Label>End Date *</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !sitDate.end_date && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {sitDate.end_date
-                          ? format(parseISO(sitDate.end_date), "PPP")
-                          : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={sitDate.end_date ? parseISO(sitDate.end_date) : undefined}
-                        onSelect={(date) => handleEndDateSelect(sitDate.id, date)}
-                        disabled={(date) => {
-                          const startDate = sitDate.start_date
-                            ? parseISO(sitDate.start_date)
-                            : new Date();
-                          return date < startDate;
-                        }}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                          : "Pick a date range"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={{
+                        from: sitDate.start_date ? parseISO(sitDate.start_date) : undefined,
+                        to: sitDate.end_date ? parseISO(sitDate.end_date) : undefined,
+                      }}
+                      onSelect={(range) => handleRangeSelect(sitDate.id, range)}
+                      disabled={(date) => date < new Date()}
+                      numberOfMonths={2}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
