@@ -1,12 +1,16 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ListingFormData } from "@/hooks/useListingForm";
+import { ListingFormData, SitDate } from "@/hooks/useListingForm";
 import { cn } from "@/lib/utils";
+import DatesStep from "@/components/listing/steps/DatesStep";
 
 interface BasicInfoStepProps {
   formData: ListingFormData;
   updateFormData: (data: Partial<ListingFormData>) => void;
+  addSitDate: () => void;
+  updateSitDate: (id: string, data: Partial<SitDate>) => void;
+  removeSitDate: (id: string) => void;
 }
 
 const idealNomadTypes = [
@@ -16,7 +20,13 @@ const idealNomadTypes = [
   "🏠 Homebodies (Pets need lots of companionship)",
 ];
 
-const BasicInfoStep = ({ formData, updateFormData }: BasicInfoStepProps) => {
+const BasicInfoStep = ({
+  formData,
+  updateFormData,
+  addSitDate,
+  updateSitDate,
+  removeSitDate,
+}: BasicInfoStepProps) => {
   const toggleIdealNomadType = (type: string) => {
     const current = formData.ideal_nomad_types;
     const updated = current.includes(type)
@@ -50,6 +60,14 @@ const BasicInfoStep = ({ formData, updateFormData }: BasicInfoStepProps) => {
             Make it descriptive and inviting
           </p>
         </div>
+
+        <DatesStep
+          formData={formData}
+          addSitDate={addSitDate}
+          updateSitDate={updateSitDate}
+          removeSitDate={removeSitDate}
+          showHeading={false}
+        />
 
         <div className="space-y-2">
           <Label className="text-base font-semibold">

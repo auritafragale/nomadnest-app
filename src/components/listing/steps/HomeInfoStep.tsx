@@ -356,7 +356,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
               <div
                 key={amenity}
                 className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
+                  "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all min-w-0",
                   formData.amenities.includes(amenity)
                     ? "border-primary bg-primary/10"
                     : "border-border hover:border-primary/50"
@@ -364,10 +364,11 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
                 onClick={() => toggleAmenity(amenity)}
               >
                 <Checkbox
+                  className="shrink-0"
                   checked={formData.amenities.includes(amenity)}
                   onCheckedChange={() => toggleAmenity(amenity)}
                 />
-                <span className="text-sm">{amenity}</span>
+                <span className="text-xs sm:text-sm break-words">{amenity}</span>
               </div>
             ))}
           </div>

@@ -17,6 +17,8 @@ interface DatesStepProps {
   addSitDate: () => void;
   updateSitDate: (id: string, data: Partial<SitDate>) => void;
   removeSitDate: (id: string) => void;
+  /** Hides the "When do you need a Nomad?" heading/intro, for use as a sub-section elsewhere. */
+  showHeading?: boolean;
 }
 
 const flexibilityOptions = [
@@ -34,7 +36,7 @@ const handoverOptions = [
   { value: "overlap", label: "Need overlap with sitter" },
 ];
 
-const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate }: DatesStepProps) => {
+const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate, showHeading = true }: DatesStepProps) => {
   // Every date range starts collapsed; the member clicks to open each one.
   const [expandedDateIds, setExpandedDateIds] = useState<Set<string>>(() => new Set());
 
@@ -66,14 +68,16 @@ const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate }: Dates
 
   return (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-display font-bold text-foreground">
-          When do you need a Nomad?
-        </h2>
-        <p className="text-muted-foreground mt-2">
-          Add one or more date ranges for your sit
-        </p>
-      </div>
+      {showHeading && (
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-display font-bold text-foreground">
+            When do you need a Nomad?
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            Add one or more date ranges for your sit
+          </p>
+        </div>
+      )}
 
       <div className="space-y-6">
         {formData.sit_dates.map((sitDate, index) => {

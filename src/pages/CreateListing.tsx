@@ -10,7 +10,6 @@ import Navbar from "@/components/layout/Navbar";
 import StepIndicator from "@/components/listing/StepIndicator";
 import BasicInfoStep from "@/components/listing/steps/BasicInfoStep";
 import PetsStep from "@/components/listing/steps/PetsStep";
-import DatesStep from "@/components/listing/steps/DatesStep";
 import HomeInfoStep from "@/components/listing/steps/HomeInfoStep";
 import RequirementsStep from "@/components/listing/steps/RequirementsStep";
 import { useListingForm } from "@/hooks/useListingForm";
@@ -22,9 +21,8 @@ import { ShieldCheck } from "lucide-react";
 const steps = [
   { number: 1, title: "Basics" },
   { number: 2, title: "Pets" },
-  { number: 3, title: "Dates" },
-  { number: 4, title: "Requirements" },
-  { number: 5, title: "Home" },
+  { number: 3, title: "Requirements" },
+  { number: 4, title: "Home" },
 ];
 
 const CreateListing = () => {
@@ -62,6 +60,17 @@ const CreateListing = () => {
           });
           return false;
         }
+        const validDates = formData.sit_dates.every(
+          (date) => date.start_date && date.end_date
+        );
+        if (!validDates) {
+          toast({
+            title: "Dates required",
+            description: "Please select start and end dates",
+            variant: "destructive",
+          });
+          return false;
+        }
         return true;
       case 2:
         const validPets = formData.pets.every(
@@ -76,20 +85,7 @@ const CreateListing = () => {
           return false;
         }
         return true;
-      case 3:
-        const validDates = formData.sit_dates.every(
-          (date) => date.start_date && date.end_date
-        );
-        if (!validDates) {
-          toast({
-            title: "Dates required",
-            description: "Please select start and end dates",
-            variant: "destructive",
-          });
-          return false;
-        }
-        return true;
-      case 5:
+      case 4:
         // Location is resolved in handleNext before this runs, so if it's
         // still empty the member genuinely has no location typed.
         if (!formData.city.trim() && !formData.country.trim()) {
@@ -112,7 +108,7 @@ const CreateListing = () => {
   // Returns true if the location is resolved (or already was), so the caller
   // can skip the now-stale validation check.
   const resolveLocationIfNeeded = async (): Promise<boolean> => {
-    if (currentStep !== 5) return true;
+    if (currentStep !== 4) return true;
     const typed = (formData.locationQuery || "").trim();
     const hasResolved = formData.city.trim() || formData.country.trim();
     if (hasResolved) return true;
@@ -141,7 +137,7 @@ const CreateListing = () => {
   };
 
   const handleNext = async () => {
-    if (currentStep === 5) {
+    if (currentStep === 4) {
       const resolved = await resolveLocationIfNeeded();
       if (resolved) {
         // State will update on next render; advance immediately.
@@ -289,7 +285,13 @@ const CreateListing = () => {
     switch (currentStep) {
       case 1:
         return (
-          <BasicInfoStep formData={formData} updateFormData={updateFormData} />
+          <BasicInfoStep
+            formData={formData}
+            updateFormData={updateFormData}
+            addSitDate={addSitDate}
+            updateSitDate={updateSitDate}
+            removeSitDate={removeSitDate}
+          />
         );
       case 2:
         return (
@@ -302,21 +304,12 @@ const CreateListing = () => {
         );
       case 3:
         return (
-          <DatesStep
-            formData={formData}
-            addSitDate={addSitDate}
-            updateSitDate={updateSitDate}
-            removeSitDate={removeSitDate}
-          />
-        );
-      case 4:
-        return (
           <RequirementsStep
             formData={formData}
             updateFormData={updateFormData}
           />
         );
-      case 5:
+      case 4:
         return (
           <HomeInfoStep formData={formData} updateFormData={updateFormData} />
         );

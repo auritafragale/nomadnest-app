@@ -28,12 +28,12 @@ const CollapsibleFormSection = ({
       <Collapsible open={open} onOpenChange={setOpen}>
         <CardHeader className="pb-4">
           <CollapsibleTrigger asChild>
-            <div className="flex items-center justify-between cursor-pointer">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 cursor-pointer">
               <div className="flex items-center gap-1.5 min-w-0">
                 <CardTitle className="text-lg">{title}</CardTitle>
                 {tooltip && <HelpTooltip label={tooltip.label} content={tooltip.content} />}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
                 {summary && (
                   <span className="text-xs text-muted-foreground">{summary}</span>
                 )}

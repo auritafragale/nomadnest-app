@@ -91,7 +91,7 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
               <div
                 key={req}
                 className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
+                  "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all min-w-0",
                   formData.requirements.includes(req)
                     ? "border-primary bg-primary/10"
                     : "border-border hover:border-primary/50"
@@ -99,10 +99,11 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
                 onClick={() => toggleItem(formData.requirements, req, "requirements")}
               >
                 <Checkbox
+                  className="shrink-0"
                   checked={formData.requirements.includes(req)}
                   onCheckedChange={() => toggleItem(formData.requirements, req, "requirements")}
                 />
-                <span className="text-sm">{req}</span>
+                <span className="text-xs sm:text-sm break-words">{req}</span>
               </div>
             ))}
           </div>
@@ -132,7 +133,7 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
               <div
                 key={rule}
                 className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
+                  "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all min-w-0",
                   formData.house_rules.includes(rule)
                     ? "border-primary bg-primary/10"
                     : "border-border hover:border-primary/50"
@@ -140,10 +141,11 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
                 onClick={() => toggleItem(formData.house_rules, rule, "house_rules")}
               >
                 <Checkbox
+                  className="shrink-0"
                   checked={formData.house_rules.includes(rule)}
                   onCheckedChange={() => toggleItem(formData.house_rules, rule, "house_rules")}
                 />
-                <span className="text-sm">{rule}</span>
+                <span className="text-xs sm:text-sm break-words">{rule}</span>
               </div>
             ))}
           </div>
@@ -173,7 +175,7 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
               <div
                 key={task}
                 className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all",
+                  "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all min-w-0",
                   formData.home_care_tasks.includes(task)
                     ? "border-primary bg-primary/10"
                     : "border-border hover:border-primary/50"
@@ -181,10 +183,11 @@ const RequirementsStep = ({ formData, updateFormData }: RequirementsStepProps) =
                 onClick={() => toggleItem(formData.home_care_tasks, task, "home_care_tasks")}
               >
                 <Checkbox
+                  className="shrink-0"
                   checked={formData.home_care_tasks.includes(task)}
                   onCheckedChange={() => toggleItem(formData.home_care_tasks, task, "home_care_tasks")}
                 />
-                <span className="text-sm">{task}</span>
+                <span className="text-xs sm:text-sm break-words">{task}</span>
               </div>
             ))}
           </div>

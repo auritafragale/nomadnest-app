@@ -27,17 +27,15 @@ export interface SitDate {
 }
 
 export interface ListingFormData {
-  // Step 1: Basic Info
+  // Step 1: Basic Info (also renders the date-range cards inline)
   title: string;
   description: string;
   ideal_nomad_types: string[];
+  sit_dates: SitDate[];
 
   // Step 2: Pets
   pets: Pet[];
-  
-  // Step 3: Dates
-  sit_dates: SitDate[];
-  
+
   // Step 4: Home Info
   home_type: string;
   city: string;
@@ -54,8 +52,8 @@ export interface ListingFormData {
   remote_location: boolean;
   car_needed: boolean;
   heavy_gardening: boolean;
-  
-  // Step 5: Requirements
+
+  // Step 3: Requirements
   requirements: string[];
   requirements_other: string;
   house_rules: string[];
@@ -126,7 +124,7 @@ export const useListingForm = () => {
   const [formData, setFormData] = useState<ListingFormData>(initialFormData);
   const [currentStep, setCurrentStep] = useState(1);
 
-  const totalSteps = 5;
+  const totalSteps = 4;
 
   const updateFormData = (data: Partial<ListingFormData>) => {
     setFormData((prev) => ({ ...prev, ...data }));

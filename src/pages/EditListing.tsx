@@ -9,7 +9,6 @@ import Navbar from "@/components/layout/Navbar";
 import StepIndicator from "@/components/listing/StepIndicator";
 import BasicInfoStep from "@/components/listing/steps/BasicInfoStep";
 import PetsStep from "@/components/listing/steps/PetsStep";
-import DatesStep from "@/components/listing/steps/DatesStep";
 import HomeInfoStep from "@/components/listing/steps/HomeInfoStep";
 import RequirementsStep from "@/components/listing/steps/RequirementsStep";
 import { ListingFormData, Pet, SitDate } from "@/hooks/useListingForm";
@@ -35,9 +34,8 @@ import { supabase } from "@/integrations/supabase/client";
 const steps = [
   { number: 1, title: "Basics" },
   { number: 2, title: "Pets" },
-  { number: 3, title: "Dates" },
-  { number: 4, title: "Requirements" },
-  { number: 5, title: "Home" },
+  { number: 3, title: "Requirements" },
+  { number: 4, title: "Home" },
 ];
 
 const initialPet: Pet = {
@@ -80,7 +78,7 @@ const EditListing = () => {
   const [originalSitDateIds, setOriginalSitDateIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const totalSteps = 5;
+  const totalSteps = 4;
 
   // Initialize form data from fetched listing
   useEffect(() => {
@@ -204,6 +202,17 @@ const EditListing = () => {
           });
           return false;
         }
+        const validDates = formData.sit_dates.every(
+          (date) => date.start_date && date.end_date
+        );
+        if (!validDates) {
+          toast({
+            title: "Dates required",
+            description: "Please select start and end dates",
+            variant: "destructive",
+          });
+          return false;
+        }
         return true;
       case 2:
         const validPets = formData.pets.every(
@@ -218,20 +227,7 @@ const EditListing = () => {
           return false;
         }
         return true;
-      case 3:
-        const validDates = formData.sit_dates.every(
-          (date) => date.start_date && date.end_date
-        );
-        if (!validDates) {
-          toast({
-            title: "Dates required",
-            description: "Please select start and end dates",
-            variant: "destructive",
-          });
-          return false;
-        }
-        return true;
-      case 5:
+      case 4:
         // Location is resolved in handleNext before this runs, so if it's
         // still empty the member genuinely has no location typed.
         if (!formData.city.trim() && !formData.country.trim()) {
@@ -252,7 +248,7 @@ const EditListing = () => {
   // Resolve a typed-but-not-selected location into city/country/coords before
   // validating. Returns true if resolved (or already was).
   const resolveLocationIfNeeded = async (): Promise<boolean> => {
-    if (!formData || currentStep !== 5) return true;
+    if (!formData || currentStep !== 4) return true;
     const typed = (formData.locationQuery || "").trim();
     const hasResolved = formData.city.trim() || formData.country.trim();
     if (hasResolved) return true;
@@ -281,7 +277,7 @@ const EditListing = () => {
   };
 
   const handleNext = async () => {
-    if (currentStep === 5) {
+    if (currentStep === 4) {
       const resolved = await resolveLocationIfNeeded();
       if (resolved) {
         nextStep();
@@ -347,7 +343,13 @@ const EditListing = () => {
     switch (currentStep) {
       case 1:
         return (
-          <BasicInfoStep formData={formData} updateFormData={updateFormData} />
+          <BasicInfoStep
+            formData={formData}
+            updateFormData={updateFormData}
+            addSitDate={addSitDate}
+            updateSitDate={updateSitDate}
+            removeSitDate={removeSitDate}
+          />
         );
       case 2:
         return (
@@ -360,21 +362,12 @@ const EditListing = () => {
         );
       case 3:
         return (
-          <DatesStep
-            formData={formData}
-            addSitDate={addSitDate}
-            updateSitDate={updateSitDate}
-            removeSitDate={removeSitDate}
-          />
-        );
-      case 4:
-        return (
           <RequirementsStep
             formData={formData}
             updateFormData={updateFormData}
           />
         );
-      case 5:
+      case 4:
         return (
           <HomeInfoStep formData={formData} updateFormData={updateFormData} />
         );
