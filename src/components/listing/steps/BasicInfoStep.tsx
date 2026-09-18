@@ -48,7 +48,7 @@ const BasicInfoStep = ({
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="title">Listing Title *</Label>
+          <Label htmlFor="title" className="text-base font-semibold">Listing Title *</Label>
           <p className="text-sm text-muted-foreground">
             Make it descriptive and inviting
           </p>
@@ -61,11 +61,11 @@ const BasicInfoStep = ({
           />
         </div>
 
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-display font-bold text-foreground">
+        <div className="space-y-2">
+          <Label className="text-base font-semibold">
             When do you need a Nomad?
-          </h2>
-          <p className="text-muted-foreground mt-2">
+          </Label>
+          <p className="text-sm text-muted-foreground">
             Choose the dates you need your Nomad to arrive and leave.
           </p>
         </div>
