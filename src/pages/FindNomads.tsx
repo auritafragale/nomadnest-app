@@ -107,7 +107,7 @@ const FindNomads = () => {
 
       <main className="flex-1 pt-20">
         <div className="bg-surface border-b border-border">
-          <div className="container py-8">
+          <div className="container pt-8 pb-3">
             <div className="flex items-center gap-1.5 mb-2">
               <h1 className="text-2xl md:text-4xl font-display">Find Nomads</h1>
               <HelpTooltip
