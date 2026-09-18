@@ -119,12 +119,7 @@ const FindNomads = () => {
           </div>
         </div>
 
-        <div
-          className={cn(
-            "border-b border-border sticky top-16 z-40",
-            viewMode === "map" ? "bg-background/80 backdrop-blur-sm" : "bg-surface"
-          )}
-        >
+        <div className="bg-surface border-b border-border sticky top-16 z-40">
           <div className="container py-4 flex items-center gap-3">
             <LocationSearchInput
               wrapperClassName="max-w-md flex-1"
