@@ -54,8 +54,8 @@ const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate, showHea
 
   const dateSummary = (sitDate: SitDate) => {
     if (!sitDate.start_date && !sitDate.end_date) return "Not set yet";
-    const start = sitDate.start_date ? format(parseISO(sitDate.start_date), "MMM d, yyyy") : "?";
-    const end = sitDate.end_date ? format(parseISO(sitDate.end_date), "MMM d, yyyy") : "?";
+    const start = sitDate.start_date ? format(parseISO(sitDate.start_date), "d MMM yyyy") : "?";
+    const end = sitDate.end_date ? format(parseISO(sitDate.end_date), "d MMM yyyy") : "?";
     return `${start} – ${end}`;
   };
 
@@ -131,9 +131,9 @@ const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate, showHea
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {sitDate.start_date && sitDate.end_date
-                        ? `${format(parseISO(sitDate.start_date), "PPP")} – ${format(parseISO(sitDate.end_date), "PPP")}`
+                        ? `${format(parseISO(sitDate.start_date), "d MMM yyyy")} – ${format(parseISO(sitDate.end_date), "d MMM yyyy")}`
                         : sitDate.start_date
-                          ? format(parseISO(sitDate.start_date), "PPP")
+                          ? format(parseISO(sitDate.start_date), "d MMM yyyy")
                           : "Pick a date range"}
                     </Button>
                   </PopoverTrigger>

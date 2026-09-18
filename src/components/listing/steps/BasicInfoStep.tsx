@@ -49,6 +49,9 @@ const BasicInfoStep = ({
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="title">Listing Title *</Label>
+          <p className="text-sm text-muted-foreground">
+            Make it descriptive and inviting
+          </p>
           <Input
             id="title"
             placeholder="e.g., Cozy apartment with two friendly cats in Barcelona"
@@ -56,8 +59,14 @@ const BasicInfoStep = ({
             onChange={(e) => updateFormData({ title: e.target.value })}
             className="text-lg"
           />
-          <p className="text-sm text-muted-foreground">
-            Make it descriptive and inviting
+        </div>
+
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-display font-bold text-foreground">
+            When do you need a Nomad?
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            Choose the dates you need your Nomad to arrive and leave.
           </p>
         </div>
 
