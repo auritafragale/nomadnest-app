@@ -109,7 +109,7 @@ const FindNomads = () => {
         <div className="bg-surface border-b border-border">
           <div className="container py-8">
             <div className="flex items-center gap-1.5 mb-2">
-              <h1 className="text-3xl md:text-4xl font-display">Find Nomads</h1>
+              <h1 className="text-2xl md:text-4xl font-display">Find Nomads</h1>
               <HelpTooltip
                 label="About nomad visibility"
                 content="Your visibility toggle controls whether other nomads can see you on this map. Hide it any time to pause discovery without losing your profile."
@@ -118,9 +118,14 @@ const FindNomads = () => {
           </div>
         </div>
 
-        <NomadVisibilityBanner />
+        <NomadVisibilityBanner transparent={viewMode === "map"} />
 
-        <div className="bg-surface border-b border-border sticky top-16 z-40">
+        <div
+          className={cn(
+            "border-b border-border sticky top-16 z-40",
+            viewMode === "map" ? "bg-background/80 backdrop-blur-sm" : "bg-surface"
+          )}
+        >
           <div className="container py-4 flex items-center gap-3">
             <LocationSearchInput
               wrapperClassName="max-w-md flex-1"

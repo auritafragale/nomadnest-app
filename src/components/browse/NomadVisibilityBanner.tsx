@@ -6,7 +6,12 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 
 
-const NomadVisibilityBanner = () => {
+interface NomadVisibilityBannerProps {
+  /** True when rendered over a map, so the card blends into it instead of sitting as a solid block. */
+  transparent?: boolean;
+}
+
+const NomadVisibilityBanner = ({ transparent = false }: NomadVisibilityBannerProps = {}) => {
   const { user, role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -83,14 +88,17 @@ const NomadVisibilityBanner = () => {
     });
   };
 
+  const borderClass = isVisible ? "border-primary/30" : "border-border";
+  const fillClass = transparent
+    ? "bg-background/70 backdrop-blur-sm"
+    : isVisible
+      ? "bg-primary/5"
+      : "bg-surface";
+
   return (
     <div className="container pt-4">
       <div
-        className={`flex items-center justify-between gap-4 rounded-2xl border px-4 py-3 ${
-          isVisible
-            ? "border-primary/30 bg-primary/5"
-            : "border-border bg-surface"
-        }`}
+        className={`flex items-start justify-between gap-4 rounded-2xl border px-4 py-3 ${borderClass} ${fillClass}`}
       >
         <p className="text-sm md:text-base">
           {isVisible ? (
@@ -103,7 +111,7 @@ const NomadVisibilityBanner = () => {
             </>
           )}
         </p>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 pt-0.5">
           <span
             className={`text-xs font-semibold ${
               isVisible ? "text-primary" : "text-muted-foreground"
