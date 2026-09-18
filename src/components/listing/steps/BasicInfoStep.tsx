@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ListingFormData, SitDate } from "@/hooks/useListingForm";
 import { cn } from "@/lib/utils";
 import DatesStep from "@/components/listing/steps/DatesStep";
+import CollapsibleFormSection from "@/components/listing/steps/CollapsibleFormSection";
 
 interface BasicInfoStepProps {
   formData: ListingFormData;
@@ -19,6 +20,8 @@ const idealNomadTypes = [
   "🌿 Nature Lovers (Quiet, scenic, or rural)",
   "🏠 Homebodies (Pets need lots of companionship)",
 ];
+
+const selectedSummary = (count: number) => (count > 0 ? `${count} selected` : null);
 
 const BasicInfoStep = ({
   formData,
@@ -78,10 +81,10 @@ const BasicInfoStep = ({
           showHeading={false}
         />
 
-        <div className="space-y-2">
-          <Label className="text-base font-semibold">
-            What kind of Nomad is this sit best suited for?
-          </Label>
+        <CollapsibleFormSection
+          title="What kind of Nomad is this sit best suited for?"
+          summary={selectedSummary(formData.ideal_nomad_types.length)}
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {idealNomadTypes.map((type) => (
               <div
@@ -102,7 +105,7 @@ const BasicInfoStep = ({
               </div>
             ))}
           </div>
-        </div>
+        </CollapsibleFormSection>
       </div>
     </div>
   );

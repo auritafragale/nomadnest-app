@@ -423,18 +423,15 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
 
         {/* Description */}
         <div className="space-y-2">
-          <Label htmlFor="description">Description *</Label>
+          <Label htmlFor="description">Any extra details? *</Label>
           <Textarea
             id="description"
-            placeholder="Tell nomads about your home, your pets, and what makes this sit special..."
+            placeholder="Why do you love this home? Anything else a Nomad should know before saying yes?"
             value={formData.description}
             onChange={(e) => updateFormData({ description: e.target.value })}
             rows={6}
             className="resize-none"
           />
-          <p className="text-sm text-muted-foreground">
-            Include details about your neighborhood, nearby amenities, and what nomads can expect
-          </p>
         </div>
         </CollapsibleFormSection>
       </div>
