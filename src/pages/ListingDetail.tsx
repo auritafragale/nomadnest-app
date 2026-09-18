@@ -120,6 +120,7 @@ interface Listing {
   remote_location?: boolean | null;
   car_needed?: boolean | null;
   heavy_gardening?: boolean | null;
+  wheelchair_accessible?: boolean | null;
   latitude: number | null;
   longitude: number | null;
   pets: Pet[];
@@ -227,7 +228,7 @@ const ListingDetail = () => {
             "house_rules, house_rules_other, home_care_tasks, home_care_tasks_other, " +
             "requirements, requirements_other, communication_style, " +
             "ideal_sitter_description, photos, status, latitude, longitude, " +
-            "remote_location, car_needed, heavy_gardening, " +
+            "remote_location, car_needed, heavy_gardening, wheelchair_accessible, " +
             "created_at, updated_at"
           )
           .eq("id", id)
@@ -735,7 +736,7 @@ const ListingDetail = () => {
                         )}
                       </div>
 
-                      {(listing.remote_location || listing.car_needed || listing.heavy_gardening) && (
+                      {(listing.remote_location || listing.car_needed || listing.heavy_gardening || listing.wheelchair_accessible) && (
                         <>
                           <Separator />
                           <div>
@@ -744,6 +745,7 @@ const ListingDetail = () => {
                               {listing.remote_location && <Badge variant="secondary">Remote location</Badge>}
                               {listing.car_needed && <Badge variant="secondary">Car needed</Badge>}
                               {listing.heavy_gardening && <Badge variant="secondary">Plant Care</Badge>}
+                              {listing.wheelchair_accessible && <Badge variant="secondary">Step-free Access</Badge>}
                             </div>
                           </div>
                         </>

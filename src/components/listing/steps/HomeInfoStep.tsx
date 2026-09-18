@@ -59,6 +59,12 @@ const amenitiesList = [
   "BBQ/Grill",
   "Bike Available",
   "Car Available",
+  "Oven",
+  "Microwave",
+  "Elevator/Lift",
+  "Iron & Board",
+  "Keyless/Smart Entry",
+  "Hair Dryer",
 ];
 
 const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
@@ -171,6 +177,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
     formData.remote_location,
     formData.car_needed,
     formData.heavy_gardening,
+    formData.wheelchair_accessible,
   ].filter(Boolean).length;
   const practicalSummary = practicalCount > 0 ? `${practicalCount} selected` : null;
 
@@ -381,6 +388,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
             { key: "remote_location" as const, title: "Remote location", desc: "The home is rural or far from a town centre" },
             { key: "car_needed" as const, title: "Car needed", desc: "A car is needed to get around day to day" },
             { key: "heavy_gardening" as const, title: "Plant Care", desc: "Plants or a garden need watering and care" },
+            { key: "wheelchair_accessible" as const, title: "Step-free Access", desc: "No stairs between the entrance and where a Nomad would stay" },
           ]).map((item) => (
             <div key={item.key} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
               <div>

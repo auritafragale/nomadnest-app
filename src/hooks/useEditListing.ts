@@ -58,6 +58,7 @@ export interface ListingWithDetails {
   remote_location?: boolean | null;
   car_needed?: boolean | null;
   heavy_gardening?: boolean | null;
+  wheelchair_accessible?: boolean | null;
   pets: DatabasePet[];
   sit_dates: DatabaseSitDate[];
 }
@@ -158,6 +159,7 @@ export const useUpdateListing = () => {
           remote_location: formData.remote_location,
           car_needed: formData.car_needed,
           heavy_gardening: formData.heavy_gardening,
+          wheelchair_accessible: formData.wheelchair_accessible,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
         })
         .eq("id", listingId);
@@ -361,6 +363,7 @@ export const convertToFormData = (listing: ListingWithDetails): ListingFormData 
     remote_location: listing.remote_location || false,
     car_needed: listing.car_needed || false,
     heavy_gardening: listing.heavy_gardening || false,
+    wheelchair_accessible: listing.wheelchair_accessible || false,
     requirements: listing.requirements || [],
     requirements_other: listing.requirements_other || "",
     house_rules: listing.house_rules || [],

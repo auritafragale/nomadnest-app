@@ -213,6 +213,7 @@ const CreateListing = () => {
           remote_location: formData.remote_location,
           car_needed: formData.car_needed,
           heavy_gardening: formData.heavy_gardening,
+          wheelchair_accessible: formData.wheelchair_accessible,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
         })
         .select()

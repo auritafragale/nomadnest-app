@@ -52,6 +52,7 @@ export interface ListingFormData {
   remote_location: boolean;
   car_needed: boolean;
   heavy_gardening: boolean;
+  wheelchair_accessible: boolean;
 
   // Step 3: Requirements
   requirements: string[];
@@ -110,6 +111,7 @@ const initialFormData: ListingFormData = {
   remote_location: false,
   car_needed: false,
   heavy_gardening: false,
+  wheelchair_accessible: false,
   requirements: [],
   requirements_other: "",
   house_rules: [],
