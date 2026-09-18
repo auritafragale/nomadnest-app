@@ -12,7 +12,9 @@ interface NotificationData {
     | "sit_reschedule_proposed"
     | "sit_reschedule_accepted"
     | "sit_reschedule_declined"
-    | "arrival_vault_prompt";
+    | "arrival_vault_prompt"
+    | "application_withdrawn"
+    | "listing_dates_changed";
   recipientUserId: string;
   data: Record<string, string>;
   /** Skip the in-app notifications row when a DB trigger already created it. */

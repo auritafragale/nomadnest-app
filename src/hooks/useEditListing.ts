@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { sendNotification } from "@/lib/notifications";
+import { format, parseISO } from "date-fns";
 import { ListingFormData, Pet, SitDate } from "./useListingForm";
 
 export interface DatabasePet {
@@ -263,6 +265,20 @@ export const useUpdateListing = () => {
         );
       }
 
+      // Snapshot the current (pre-update) dates so we can tell afterwards
+      // whether a range actually moved, and notify affected applicants.
+      let originalDatesById = new Map<string, { start_date: string; end_date: string }>();
+      if (originalSitDateIds.length > 0) {
+        const { data: originalDates, error: originalDatesError } = await supabase
+          .from("sit_dates")
+          .select("id, start_date, end_date")
+          .in("id", originalSitDateIds);
+        if (originalDatesError) throw originalDatesError;
+        originalDatesById = new Map(
+          (originalDates || []).map((d) => [d.id, { start_date: d.start_date, end_date: d.end_date }])
+        );
+      }
+
       for (const date of formData.sit_dates) {
         if (originalSitDateIds.includes(date.id)) {
           // Update existing date. A stale closed/booked status left over from
@@ -288,6 +304,38 @@ export const useUpdateListing = () => {
             .update(updatePayload)
             .eq("id", date.id);
           if (updateDateError) throw updateDateError;
+
+          // The dates genuinely moved — let applicants still in the running
+          // know, since the range they applied for is no longer the same.
+          const original = originalDatesById.get(date.id);
+          const datesChanged =
+            !!original &&
+            (original.start_date !== date.start_date || original.end_date !== date.end_date);
+          if (datesChanged) {
+            const { data: affectedApplications, error: affectedApplicationsError } = await supabase
+              .from("applications")
+              .select("sitter_user_id")
+              .eq("sit_dates_id", date.id)
+              .in("status", ["applied", "shortlisted"]);
+            if (affectedApplicationsError) {
+              console.error("Failed to fetch applicants to notify of date change", affectedApplicationsError);
+            } else if (affectedApplications && affectedApplications.length > 0) {
+              const datesLabel = `${format(parseISO(date.start_date), "MMM d")} – ${format(parseISO(date.end_date), "MMM d, yyyy")}`;
+              await Promise.all(
+                affectedApplications.map((application) =>
+                  sendNotification({
+                    type: "listing_dates_changed",
+                    recipientUserId: application.sitter_user_id,
+                    data: {
+                      listingTitle: formData.title,
+                      dates: datesLabel,
+                      url: `/listing/${listingId}`,
+                    },
+                  })
+                )
+              );
+            }
+          }
         } else {
           // Insert new date
           const { error: insertDateError } = await supabase

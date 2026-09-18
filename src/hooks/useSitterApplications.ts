@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { sendNotification } from "@/lib/notifications";
 import type { Database } from "@/integrations/supabase/types";
 
 type ApplicationStatus = Database["public"]["Enums"]["application_status"];
@@ -105,6 +106,7 @@ export const useSitterApplications = (statusFilter?: ApplicationStatus | "all") 
 
 export const useWithdrawApplication = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (applicationId: string) => {
@@ -114,6 +116,33 @@ export const useWithdrawApplication = () => {
         .eq("id", applicationId);
 
       if (error) throw error;
+
+      // Notify the owner — the reverse direction of the owner-info
+      // enrichment useSitterApplications's own query already does above.
+      const { data: application } = await supabase
+        .from("applications")
+        .select("listings:listing_id (title, owner_user_id)")
+        .eq("id", applicationId)
+        .maybeSingle();
+
+      const listing = application?.listings as { title: string | null; owner_user_id: string } | null;
+      if (user && listing?.owner_user_id) {
+        const { data: sitterProfile } = await supabase
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        await sendNotification({
+          type: "application_withdrawn",
+          recipientUserId: listing.owner_user_id,
+          data: {
+            sitterName: [sitterProfile?.first_name, sitterProfile?.last_name].filter(Boolean).join(" ") || "A Nomad",
+            listingTitle: listing.title || "your listing",
+            url: "/dashboard?mode=owner",
+          },
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sitter-applications"] });

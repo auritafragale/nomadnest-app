@@ -48,7 +48,9 @@ export type NotificationType =
   | "sit_reschedule_proposed"
   | "sit_reschedule_accepted"
   | "sit_reschedule_declined"
-  | "arrival_vault_prompt";
+  | "arrival_vault_prompt"
+  | "application_withdrawn"
+  | "listing_dates_changed";
 
 export function buildNotificationEmail(
   type: string,
@@ -258,6 +260,36 @@ export function buildNotificationEmail(
         ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
         pushTitle: "Start your Arrival Check-In",
         pushBody: "Add a few photos for your private, just-for-you Arrival Check-In.",
+        pushUrl: data.url || "/dashboard",
+      };
+    case "application_withdrawn":
+      return {
+        subject: `${data.sitterName} withdrew their application for ${data.listingTitle}`,
+        preview: `${data.sitterName} withdrew their application`,
+        heading: "An application was withdrawn",
+        body: `
+          <p><strong>${data.sitterName}</strong> withdrew their application for <strong>${data.listingTitle}</strong>.</p>
+          <p>Those dates are still open, so you can keep looking for your next match.</p>
+        `,
+        ctaLabel: "View your dashboard",
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
+        pushTitle: "Application withdrawn",
+        pushBody: `${data.sitterName} withdrew their application for ${data.listingTitle}`,
+        pushUrl: data.url || "/dashboard",
+      };
+    case "listing_dates_changed":
+      return {
+        subject: `The dates for ${data.listingTitle} have changed`,
+        preview: `New dates: ${data.dates}`,
+        heading: "The sit dates have changed",
+        body: `
+          <p>The dates for <strong>${data.listingTitle}</strong>, which you applied for, changed to <strong>${data.dates}</strong>.</p>
+          <p>Please check these still work for you.</p>
+        `,
+        ctaLabel: "View the listing",
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
+        pushTitle: "Sit dates changed",
+        pushBody: `The dates for ${data.listingTitle} changed to ${data.dates}`,
         pushUrl: data.url || "/dashboard",
       };
     default:
@@ -539,6 +571,7 @@ const sample = {
   proposedStartDate: "2 Nov 2026",
   proposedEndDate: "16 Nov 2026",
   url: "/sits/sample-sit-id/arrival-vault",
+  dates: "Sep 20 – Sep 30, 2026",
 };
 
 export function getPreviewTemplates(): PreviewTemplate[] {
@@ -564,6 +597,8 @@ export function getPreviewTemplates(): PreviewTemplate[] {
     { id: "sit_reschedule_accepted", label: "New dates accepted (to Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("sit_reschedule_accepted", sample) },
     { id: "sit_reschedule_declined", label: "New dates declined (to Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("sit_reschedule_declined", sample) },
     { id: "arrival_vault_prompt", label: "Arrival Check-In prompt (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("arrival_vault_prompt", sample) },
+    { id: "application_withdrawn", label: "Application withdrawn (to Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("application_withdrawn", sample) },
+    { id: "listing_dates_changed", label: "Listing dates changed (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("listing_dates_changed", sample) },
     { id: "welcome", label: "Welcome email", group: "Notifications", build: () => buildWelcomeEmail("Alex") },
     { id: "membership_activated", label: "Membership activated", group: "Membership", build: () => buildMembershipEmail("activated", { planName: "Combined Membership", endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },
     { id: "membership_renewal_reminder", label: "Renewal reminder", group: "Membership", build: () => buildMembershipEmail("renewal_reminder", { endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },
