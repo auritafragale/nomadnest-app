@@ -152,6 +152,11 @@ const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate, showHea
                     />
                   </PopoverContent>
                 </Popover>
+                {sitDate.start_date && !sitDate.end_date && (
+                  <p className="text-xs text-destructive">
+                    Pick an end date to complete this range.
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

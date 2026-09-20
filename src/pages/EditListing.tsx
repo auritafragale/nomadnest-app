@@ -189,6 +189,13 @@ const EditListing = () => {
     }
   };
 
+  // Every entry needs both ends picked — a range left with only a start date
+  // (e.g. the calendar popover closed early) must never reach the update.
+  const hasCompleteDates = () =>
+    !!formData &&
+    formData.sit_dates.length > 0 &&
+    formData.sit_dates.every((date) => date.start_date && date.end_date);
+
   const validateCurrentStep = (): boolean => {
     if (!formData) return false;
 
@@ -202,13 +209,10 @@ const EditListing = () => {
           });
           return false;
         }
-        const validDates = formData.sit_dates.every(
-          (date) => date.start_date && date.end_date
-        );
-        if (!validDates) {
+        if (!hasCompleteDates()) {
           toast({
             title: "Dates required",
-            description: "Please select start and end dates",
+            description: "Please finish picking dates, every date range needs both a start and end date.",
             variant: "destructive",
           });
           return false;
@@ -292,6 +296,19 @@ const EditListing = () => {
   const handleSubmit = async (status: "draft" | "published" | "paused") => {
     if (!user || !formData || !id) return;
     if (!validateCurrentStep()) return;
+
+    // validateCurrentStep only checks the step currently on screen, but dates
+    // live on step 1 — if the member reached this final step by jumping
+    // straight there, an incomplete range would otherwise never get caught.
+    if (!hasCompleteDates()) {
+      toast({
+        title: "Dates required",
+        description: "Please finish picking dates, every date range needs both a start and end date.",
+        variant: "destructive",
+      });
+      goToStep(1);
+      return;
+    }
 
     updateListing.mutate(
       {
