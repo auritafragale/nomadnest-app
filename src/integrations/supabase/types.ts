@@ -2042,7 +2042,7 @@ export type Database = {
           id: string
           open_dates_count: number
           owner_name: string
-          photo_url: string | null
+          photo_url: string
           title: string
         }[]
       }
