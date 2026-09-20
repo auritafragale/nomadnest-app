@@ -191,65 +191,73 @@ export const ApplicationCard = ({
 
         {/* Actions */}
         {canModify && (
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Button
-              className="flex-1"
-              onClick={() => (nomadWarning.hasWarning ? setWarningOpen(true) : onAccept())}
-              disabled={isUpdating}
-            >
-              <Check className="h-4 w-4 mr-2" />
-              Accept
-            </Button>
-            <CommunityWarningModal
-              open={warningOpen}
-              onOpenChange={setWarningOpen}
-              labels={nomadWarning.labels}
-              audience="nomad"
-              continueLabel="Accept Nomad"
-              onContinue={() => {
-                setWarningOpen(false);
-                onAccept();
-              }}
-            />
-            <Button variant="outline" asChild>
-              <Link to={`/sitter/${application.sitter_user_id}`}>
-                <User className="h-4 w-4 mr-2" />
-                View
-              </Link>
-            </Button>
+          <div className="space-y-2 pt-2">
             <div className="flex gap-2">
               <Button
-                variant="outline"
-                className="shrink-0"
-                onClick={handleMessageSitter}
-                disabled={isStartingChat}
+                className="flex-1"
+                onClick={() => (nomadWarning.hasWarning ? setWarningOpen(true) : onAccept())}
+                disabled={isUpdating}
               >
-                {isStartingChat ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                )}
-                Message
+                <Check className="h-4 w-4 mr-2" />
+                Accept
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="shrink-0" disabled={isUpdating}>
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {application.status !== "shortlisted" && (
-                    <DropdownMenuItem onClick={() => onStatusChange("shortlisted")}>
-                      <Bookmark className="h-4 w-4 mr-2" />
-                      Shortlist
-                    </DropdownMenuItem>
+              <Button
+                className="flex-1"
+                onClick={() => onStatusChange("declined")}
+                disabled={isUpdating}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Decline
+              </Button>
+              <CommunityWarningModal
+                open={warningOpen}
+                onOpenChange={setWarningOpen}
+                labels={nomadWarning.labels}
+                audience="nomad"
+                continueLabel="Accept Nomad"
+                onContinue={() => {
+                  setWarningOpen(false);
+                  onAccept();
+                }}
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" asChild>
+                <Link to={`/sitter/${application.sitter_user_id}`}>
+                  <User className="h-4 w-4 mr-2" />
+                  View
+                </Link>
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={handleMessageSitter}
+                  disabled={isStartingChat}
+                >
+                  {isStartingChat ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <MessageCircle className="h-4 w-4 mr-2" />
                   )}
-                  <DropdownMenuItem onClick={() => onStatusChange("declined")}>
-                    <X className="h-4 w-4 mr-2" />
-                    Decline
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  Message
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="shrink-0" disabled={isUpdating}>
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {application.status !== "shortlisted" && (
+                      <DropdownMenuItem onClick={() => onStatusChange("shortlisted")}>
+                        <Bookmark className="h-4 w-4 mr-2" />
+                        Shortlist
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
         )}
