@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import { MapPin, Star, CheckCircle } from "lucide-react";
 import { SitterWithProfile } from "@/hooks/useSitters";
 import MessageSitterButton from "@/components/browse/MessageSitterButton";
-import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
 import PetTypeIcons from "@/components/browse/PetTypeIcons";
 import SignUpPromptDialog from "@/components/auth/SignUpPromptDialog";
@@ -101,20 +100,11 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
 
         {/* Rating */}
         {count > 0 ? (
-          <>
-            <div className="flex items-center justify-center gap-0.5 text-xs mb-1.5">
-              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium text-foreground">{average.toFixed(1)}</span>
-              <span className="text-muted-foreground">({count})</span>
-            </div>
-            {sitter.category_ratings?.length > 0 && (
-              <CategoryRatingsSummary
-                categories={sitter.category_ratings}
-                limit={4}
-                className="mb-1.5"
-              />
-            )}
-          </>
+          <div className="flex items-center justify-center gap-0.5 text-xs mb-1.5">
+            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+            <span className="font-medium text-foreground">{average.toFixed(1)}</span>
+            <span className="text-muted-foreground">({count})</span>
+          </div>
         ) : (
           <RatingPlaceholder className="mb-1.5 justify-center" />
         )}
