@@ -58,6 +58,7 @@ import AdminTrust from "./pages/AdminTrust";
 import AdminTrustDetail from "./pages/AdminTrustDetail";
 import AdminReliabilityDetail from "./pages/AdminReliabilityDetail";
 import AdminReports from "./pages/AdminReports";
+import AdminListings from "./pages/AdminListings";
 
 import Perks from "./pages/Perks";
 import CityChat from "./pages/CityChat";
@@ -166,6 +167,7 @@ const AppShell = () => {
         <Route path="/admin/trust/:subjectType/:subjectId" element={<AdminRoute><AdminTrustDetail /></AdminRoute>} />
         <Route path="/admin/reliability/:userId" element={<AdminRoute><AdminReliabilityDetail /></AdminRoute>} />
         <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
+        <Route path="/admin/listings" element={<AdminRoute><AdminListings /></AdminRoute>} />
         <Route path="/admin/emails" element={<AdminRoute><AdminEmails /></AdminRoute>} />
 
         <Route path="/city-chats" element={<ProtectedRoute><CityChats /></ProtectedRoute>} />

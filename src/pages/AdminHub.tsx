@@ -65,8 +65,8 @@ type MembersTab = "all" | "owner" | "sitter" | "both" | "founding" | "no_members
 
 const MEMBER_TABS: { value: MembersTab; label: string; filter: (m: Member) => boolean }[] = [
   { value: "all", label: "All", filter: () => true },
-  { value: "owner", label: "Pet Parent", filter: (m) => m.role === "owner" },
-  { value: "sitter", label: "Nomad", filter: (m) => m.role === "sitter" },
+  { value: "owner", label: "Pet Parent", filter: (m) => m.role === "owner" || m.role === "both" },
+  { value: "sitter", label: "Nomad", filter: (m) => m.role === "sitter" || m.role === "both" },
   { value: "both", label: "Combined", filter: (m) => m.role === "both" },
   { value: "founding", label: "Founding Members", filter: (m) => m.founding_member === true },
   { value: "no_membership", label: "No Membership", filter: (m) => m.membership_status !== "active" },
@@ -173,7 +173,7 @@ const AdminHub = () => {
     { label: "Members", value: stats?.total_members, icon: Users, href: "/admin?membersTab=all#members" },
     { label: "Active memberships", value: stats?.active_members, icon: Crown, href: "/admin?membersTab=active#members" },
     { label: "Founding members", value: stats?.founding_members, icon: Crown, href: "/admin?membersTab=founding#members" },
-    { label: "Published listings", value: stats?.published_listings, icon: Home, href: "/browse-sits" },
+    { label: "Published listings", value: stats?.published_listings, icon: Home, href: "/admin/listings" },
     { label: "Open sit dates", value: stats?.open_sit_dates, icon: CalendarDays, href: "/browse-sits" },
     { label: "Pending ID reviews", value: stats?.pending_verifications, icon: ShieldCheck, href: "/admin/verifications" },
   ];

@@ -2033,6 +2033,19 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_list_published_listings: {
+        Args: never
+        Returns: {
+          city: string
+          country: string
+          created_at: string
+          id: string
+          open_dates_count: number
+          owner_name: string
+          photo_url: string | null
+          title: string
+        }[]
+      }
       admin_list_reliability_reviews: {
         Args: never
         Returns: {
