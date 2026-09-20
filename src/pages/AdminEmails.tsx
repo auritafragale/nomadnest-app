@@ -7,6 +7,7 @@ import Navbar from "@/components/layout/Navbar";
 import AdminNav from "@/components/admin/AdminNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -159,11 +160,12 @@ const AdminEmails = () => {
 
         <div className="flex items-center gap-3 mb-6">
           <Mail className="w-6 h-6 text-primary" />
-          <div>
+          <div className="flex items-center gap-1.5">
             <h1 className="text-2xl font-bold">Email Templates</h1>
-            <p className="text-sm text-muted-foreground">
-              Preview every email NomadNest sends, with sample data. Nothing here sends real mail unless you use "Send test to me".
-            </p>
+            <HelpTooltip
+              label="About this page"
+              content='Preview every email NomadNest sends, with sample data. Nothing here sends real mail unless you use "Send test to me".'
+            />
           </div>
         </div>
 
