@@ -624,6 +624,8 @@ export interface PreviewTemplate {
   id: string;
   label: string;
   group: "Notifications" | "Membership" | "Contact" | "Auth";
+  /** Sub-category within the group, currently only used to split up "Notifications". */
+  subgroup?: string;
   build: () => BuiltEmail;
 }
 
@@ -663,23 +665,23 @@ export function getPreviewTemplates(): PreviewTemplate[] {
   };
 
   return [
-    { id: "new_application", label: "New application (to Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("new_application", sample) },
-    { id: "application_status", label: "Application accepted (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("application_status", sample) },
-    { id: "new_message", label: "New message", group: "Notifications", build: () => buildNotificationEmail("new_message", sample) },
-    { id: "invite", label: "Sit invitation (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("invite", sample) },
-    { id: "review", label: "New review", group: "Notifications", build: () => buildNotificationEmail("review", sample) },
-    { id: "review_reminder", label: "Review reminder", group: "Notifications", build: () => buildNotificationEmail("review_reminder", sample) },
-    { id: "sit_cancelled", label: "Sit cancelled", group: "Notifications", build: () => buildNotificationEmail("sit_cancelled", sample) },
-    { id: "id_verification_approved", label: "ID verified", group: "Notifications", build: () => buildNotificationEmail("id_verification_approved", sample) },
-    { id: "sit_reschedule_proposed", label: "New dates proposed (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("sit_reschedule_proposed", sample) },
-    { id: "sit_reschedule_accepted", label: "New dates accepted (to Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("sit_reschedule_accepted", sample) },
-    { id: "sit_reschedule_declined", label: "New dates declined (to Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("sit_reschedule_declined", sample) },
-    { id: "arrival_vault_prompt", label: "Arrival Check-In prompt (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("arrival_vault_prompt", sample) },
-    { id: "application_withdrawn", label: "Application withdrawn (to Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("application_withdrawn", sample) },
-    { id: "listing_dates_changed", label: "Listing dates changed (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("listing_dates_changed", sample) },
-    { id: "reliability_strike", label: "Reliability strike heads-up", group: "Notifications", build: () => buildNotificationEmail("reliability_strike", sample) },
-    { id: "community_strike_heads_up_host", label: "Community strike heads-up (Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("community_strike_heads_up_host", sample) },
-    { id: "community_strike_heads_up_nomad", label: "Community strike heads-up (Nomad)", group: "Notifications", build: () => buildNotificationEmail("community_strike_heads_up_nomad", sample) },
+    { id: "new_application", label: "New application (to Pet Parent)", group: "Notifications", subgroup: "Applications & Invites", build: () => buildNotificationEmail("new_application", sample) },
+    { id: "application_status", label: "Application accepted (to Nomad)", group: "Notifications", subgroup: "Applications & Invites", build: () => buildNotificationEmail("application_status", sample) },
+    { id: "new_message", label: "New message", group: "Notifications", subgroup: "Messages", build: () => buildNotificationEmail("new_message", sample) },
+    { id: "invite", label: "Sit invitation (to Nomad)", group: "Notifications", subgroup: "Applications & Invites", build: () => buildNotificationEmail("invite", sample) },
+    { id: "review", label: "New review", group: "Notifications", subgroup: "Reviews", build: () => buildNotificationEmail("review", sample) },
+    { id: "review_reminder", label: "Review reminder", group: "Notifications", subgroup: "Reviews", build: () => buildNotificationEmail("review_reminder", sample) },
+    { id: "sit_cancelled", label: "Sit cancelled", group: "Notifications", subgroup: "Sits & Dates", build: () => buildNotificationEmail("sit_cancelled", sample) },
+    { id: "id_verification_approved", label: "ID verified", group: "Notifications", subgroup: "Verification", build: () => buildNotificationEmail("id_verification_approved", sample) },
+    { id: "sit_reschedule_proposed", label: "New dates proposed (to Nomad)", group: "Notifications", subgroup: "Sits & Dates", build: () => buildNotificationEmail("sit_reschedule_proposed", sample) },
+    { id: "sit_reschedule_accepted", label: "New dates accepted (to Pet Parent)", group: "Notifications", subgroup: "Sits & Dates", build: () => buildNotificationEmail("sit_reschedule_accepted", sample) },
+    { id: "sit_reschedule_declined", label: "New dates declined (to Pet Parent)", group: "Notifications", subgroup: "Sits & Dates", build: () => buildNotificationEmail("sit_reschedule_declined", sample) },
+    { id: "arrival_vault_prompt", label: "Arrival Check-In prompt (to Nomad)", group: "Notifications", subgroup: "Sits & Dates", build: () => buildNotificationEmail("arrival_vault_prompt", sample) },
+    { id: "application_withdrawn", label: "Application withdrawn (to Pet Parent)", group: "Notifications", subgroup: "Applications & Invites", build: () => buildNotificationEmail("application_withdrawn", sample) },
+    { id: "listing_dates_changed", label: "Listing dates changed (to Nomad)", group: "Notifications", subgroup: "Sits & Dates", build: () => buildNotificationEmail("listing_dates_changed", sample) },
+    { id: "reliability_strike", label: "Reliability strike heads-up", group: "Notifications", subgroup: "Trust & Safety", build: () => buildNotificationEmail("reliability_strike", sample) },
+    { id: "community_strike_heads_up_host", label: "Community strike heads-up (Pet Parent)", group: "Notifications", subgroup: "Trust & Safety", build: () => buildNotificationEmail("community_strike_heads_up_host", sample) },
+    { id: "community_strike_heads_up_nomad", label: "Community strike heads-up (Nomad)", group: "Notifications", subgroup: "Trust & Safety", build: () => buildNotificationEmail("community_strike_heads_up_nomad", sample) },
     { id: "welcome", label: "Welcome email", group: "Notifications", build: () => buildWelcomeEmail("Alex") },
     { id: "membership_activated", label: "Membership activated", group: "Membership", build: () => buildMembershipEmail("activated", { planName: "Combined Membership", endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },
     { id: "membership_renewal_reminder", label: "Renewal reminder", group: "Membership", build: () => buildMembershipEmail("renewal_reminder", { endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },

@@ -6,19 +6,82 @@ import { FunctionsHttpError } from "@supabase/supabase-js";
 import Navbar from "@/components/layout/Navbar";
 import AdminNav from "@/components/admin/AdminNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Mail, Send, ArrowLeft } from "lucide-react";
+import { Loader2, Mail, Send, ArrowLeft, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface EmailTemplatePreview {
   id: string;
   label: string;
   group: string;
+  subgroup?: string;
   subject: string;
   html: string;
 }
+
+const TemplateButton = ({
+  template,
+  selected,
+  onSelect,
+}: {
+  template: EmailTemplatePreview;
+  selected: boolean;
+  onSelect: (t: EmailTemplatePreview) => void;
+}) => (
+  <button
+    onClick={() => onSelect(template)}
+    className={cn(
+      "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
+      selected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"
+    )}
+  >
+    {template.label}
+  </button>
+);
+
+// Collapsed by default — the Notifications group has grown too big for a
+// flat list, so its templates are split into named sub-categories.
+const NotificationSubgroup = ({
+  title,
+  templates,
+  selectedId,
+  onSelect,
+}: {
+  title: string;
+  templates: EmailTemplatePreview[];
+  selectedId?: string;
+  onSelect: (t: EmailTemplatePreview) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+        >
+          <span className="flex items-center gap-2">
+            {title}
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+              {templates.length}
+            </Badge>
+          </span>
+          <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-1 pl-1">
+        {templates.map((t) => (
+          <TemplateButton key={t.id} template={t} selected={selectedId === t.id} onSelect={onSelect} />
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
 
 const AdminEmails = () => {
   const navigate = useNavigate();
@@ -76,6 +139,17 @@ const AdminEmails = () => {
 
   const groups = [...new Set(templates.map((t) => t.group))];
 
+  // Within "Notifications" only, split into named sub-categories (collapsed
+  // by default) plus anything with no subgroup, shown as a flat list.
+  const notificationTemplates = templates.filter((t) => t.group === "Notifications");
+  const notificationUngrouped = notificationTemplates.filter((t) => !t.subgroup);
+  const notificationSubgroupOrder: string[] = [];
+  for (const t of notificationTemplates) {
+    if (t.subgroup && !notificationSubgroupOrder.includes(t.subgroup)) {
+      notificationSubgroupOrder.push(t.subgroup);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -112,21 +186,38 @@ const AdminEmails = () => {
                     <CardTitle className="text-sm">{group}</CardTitle>
                   </CardHeader>
                   <CardContent className="py-2 space-y-1">
-                    {templates
-                      .filter((t) => t.group === group)
-                      .map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => setSelected(t)}
-                          className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                            selected?.id === t.id
-                              ? "bg-primary/10 text-primary font-medium"
-                              : "hover:bg-muted"
-                          }`}
-                        >
-                          {t.label}
-                        </button>
-                      ))}
+                    {group === "Notifications" ? (
+                      <>
+                        {notificationUngrouped.map((t) => (
+                          <TemplateButton
+                            key={t.id}
+                            template={t}
+                            selected={selected?.id === t.id}
+                            onSelect={setSelected}
+                          />
+                        ))}
+                        {notificationSubgroupOrder.map((subgroup) => (
+                          <NotificationSubgroup
+                            key={subgroup}
+                            title={subgroup}
+                            templates={notificationTemplates.filter((t) => t.subgroup === subgroup)}
+                            selectedId={selected?.id}
+                            onSelect={setSelected}
+                          />
+                        ))}
+                      </>
+                    ) : (
+                      templates
+                        .filter((t) => t.group === group)
+                        .map((t) => (
+                          <TemplateButton
+                            key={t.id}
+                            template={t}
+                            selected={selected?.id === t.id}
+                            onSelect={setSelected}
+                          />
+                        ))
+                    )}
                   </CardContent>
                 </Card>
               ))}

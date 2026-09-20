@@ -55,6 +55,7 @@ serve(async (req) => {
             id: t.id,
             label: t.label,
             group: t.group,
+            subgroup: t.subgroup,
             subject: email.subject,
             html: renderBrandedEmail(email, {
               preview: email.preview,
