@@ -19,6 +19,7 @@ export interface SitterReview {
   };
   sit: {
     listing: {
+      id: string;
       title: string;
       city: string | null;
       country: string | null;
@@ -112,6 +113,7 @@ export const useSitterReviews = (sitterUserId: string | undefined) => {
           },
           sit: {
             listing: {
+              id: listing?.id || "",
               title: listing?.title || "Unknown listing",
               city: listing?.city || null,
               country: listing?.country || null,

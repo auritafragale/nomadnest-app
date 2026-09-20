@@ -14,7 +14,7 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { ArrowLeft, Star, User, Calendar, Users } from "lucide-react";
+import { ArrowLeft, Star, User, Calendar, Users, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { useSitterReviews } from "@/hooks/useSitterReviews";
 import { useAuth } from "@/contexts/AuthContext";
@@ -115,6 +115,10 @@ const SitterReviewsCarousel = () => {
                         .filter(Boolean)
                         .join(" ") || "A Pet Parent";
 
+                    const location = [review.sit?.listing?.city, review.sit?.listing?.country]
+                      .filter(Boolean)
+                      .join(", ");
+
                     const breakdown = (
                       [
                         { label: "Pet Care", value: review.rating_pet_care },
@@ -141,7 +145,16 @@ const SitterReviewsCarousel = () => {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-semibold">{reviewerName}</p>
+                              {review.sit?.listing?.id ? (
+                                <Link
+                                  to={`/listing/${review.sit.listing.id}`}
+                                  className="font-semibold hover:underline"
+                                >
+                                  {reviewerName}
+                                </Link>
+                              ) : (
+                                <p className="font-semibold">{reviewerName}</p>
+                              )}
                               <p className="text-sm text-primary-foreground/80">Pet Parent</p>
                             </div>
                             {review.sit?.dates && (
@@ -149,6 +162,12 @@ const SitterReviewsCarousel = () => {
                                 <Calendar className="w-3.5 h-3.5" />
                                 {format(new Date(review.sit.dates.start_date), "MMM d")} –{" "}
                                 {format(new Date(review.sit.dates.end_date), "MMM d, yyyy")}
+                              </p>
+                            )}
+                            {location && (
+                              <p className="flex items-center justify-center gap-1.5 text-sm text-primary-foreground/80">
+                                <MapPin className="w-3.5 h-3.5" />
+                                {location}
                               </p>
                             )}
                           </div>
