@@ -377,6 +377,38 @@ export type Database = {
           },
         ]
       }
+      community_strike_notes: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          id: string
+          note: string
+          strike_id: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          note: string
+          strike_id: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          strike_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_strike_notes_strike_id_fkey"
+            columns: ["strike_id"]
+            isOneToOne: false
+            referencedRelation: "community_strikes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_strikes: {
         Row: {
           category: string
@@ -1822,6 +1854,14 @@ export type Database = {
           pending_verifications: number
           published_listings: number
           total_members: number
+        }[]
+      }
+      admin_get_pending_counts: {
+        Args: never
+        Returns: {
+          flags_pending: number
+          reports_pending: number
+          verifications_pending: number
         }[]
       }
       admin_list_community_strikes: {

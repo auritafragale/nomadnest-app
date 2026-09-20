@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import AdminNav from "@/components/admin/AdminNav";
@@ -6,10 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, ShieldAlert, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { flagLabel } from "@/lib/trustFlags";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 type ReviewStatus = "pending" | "reviewed" | "follow_up_needed";
@@ -33,6 +36,7 @@ interface StrikeGroup {
   key: string;
   subject_type: string;
   subject_id: string;
+  subject_user_id: string;
   subject_name: string | null;
   listing_title: string | null;
   rows: Strike[];
@@ -46,6 +50,15 @@ interface FlagIncident {
   evidence_reason: string | null;
   evidence_photo_url: string | null;
   evidence_photo_signed_url?: string | null;
+}
+
+interface StrikeNote {
+  id: string;
+  strike_id: string;
+  admin_user_id: string;
+  note: string;
+  created_at: string;
+  admin_name?: string | null;
 }
 
 const EVIDENCE_BUCKET = "arrival-vault-photos";
@@ -73,6 +86,7 @@ interface ReliabilityRow {
 
 const AdminTrust = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [strikes, setStrikes] = useState<Strike[]>([]);
   const [reliability, setReliability] = useState<ReliabilityRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +95,10 @@ const AdminTrust = () => {
   const [incidentsByStrike, setIncidentsByStrike] = useState<Record<string, FlagIncident[]>>({});
   const [loadingIncidents, setLoadingIncidents] = useState<Record<string, boolean>>({});
   const [updatingStatusFor, setUpdatingStatusFor] = useState<string | null>(null);
+  const [notesByStrike, setNotesByStrike] = useState<Record<string, StrikeNote[]>>({});
+  const [loadingNotes, setLoadingNotes] = useState<Record<string, boolean>>({});
+  const [noteDraftByStrike, setNoteDraftByStrike] = useState<Record<string, string>>({});
+  const [addingNoteFor, setAddingNoteFor] = useState<string | null>(null);
 
   const loadTrustData = useCallback(async () => {
     setLoading(true);
@@ -118,6 +136,7 @@ const AdminTrust = () => {
           key,
           subject_type: s.subject_type,
           subject_id: s.subject_id,
+          subject_user_id: s.subject_user_id,
           subject_name: s.subject_name,
           listing_title: s.listing_title,
           rows: [],
@@ -136,14 +155,17 @@ const AdminTrust = () => {
 
   const visibleGroups = groupsForStatus(activeStatusTab);
 
-  const toggleStrike = async (s: Strike) => {
+  const toggleStrike = (s: Strike) => {
     if (expandedStrikeId === s.id) {
       setExpandedStrikeId(null);
       return;
     }
     setExpandedStrikeId(s.id);
-    if (incidentsByStrike[s.id]) return;
+    if (!incidentsByStrike[s.id]) void loadIncidents(s);
+    if (!notesByStrike[s.id]) void loadNotes(s.id);
+  };
 
+  const loadIncidents = async (s: Strike) => {
     setLoadingIncidents((prev) => ({ ...prev, [s.id]: true }));
     const { data, error } = await supabase.rpc("admin_list_flag_incidents" as never, {
       p_subject_type: s.subject_type,
@@ -182,6 +204,64 @@ const AdminTrust = () => {
 
     setIncidentsByStrike((prev) => ({ ...prev, [s.id]: incidents }));
     setLoadingIncidents((prev) => ({ ...prev, [s.id]: false }));
+  };
+
+  const loadNotes = async (strikeId: string) => {
+    setLoadingNotes((prev) => ({ ...prev, [strikeId]: true }));
+    const { data, error } = await supabase
+      .from("community_strike_notes")
+      .select("*")
+      .eq("strike_id", strikeId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Could not load notes",
+        description: error.message,
+      });
+      setLoadingNotes((prev) => ({ ...prev, [strikeId]: false }));
+      return;
+    }
+
+    const notes = (data || []) as unknown as StrikeNote[];
+    const adminIds = [...new Set(notes.map((n) => n.admin_user_id))];
+    if (adminIds.length > 0) {
+      const { data: admins } = await supabase.from("profiles").select("id, full_name").in("id", adminIds);
+      const nameById = new Map((admins || []).map((a) => [a.id, a.full_name]));
+      for (const note of notes) {
+        note.admin_name = nameById.get(note.admin_user_id) ?? null;
+      }
+    }
+
+    setNotesByStrike((prev) => ({ ...prev, [strikeId]: notes }));
+    setLoadingNotes((prev) => ({ ...prev, [strikeId]: false }));
+  };
+
+  const addNote = async (strike: Strike) => {
+    const text = (noteDraftByStrike[strike.id] || "").trim();
+    if (!text || !user || addingNoteFor === strike.id) return;
+
+    setAddingNoteFor(strike.id);
+    const { error } = await supabase.from("community_strike_notes").insert({
+      strike_id: strike.id,
+      admin_user_id: user.id,
+      note: text,
+    });
+    setAddingNoteFor(null);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Could not add note",
+        description: error.message,
+      });
+      return;
+    }
+
+    setNoteDraftByStrike((prev) => ({ ...prev, [strike.id]: "" }));
+    // Refetch so the new note appears immediately at the top.
+    await loadNotes(strike.id);
   };
 
   const updateReviewStatus = async (strike: Strike, next: ReviewStatus) => {
@@ -266,14 +346,28 @@ const AdminTrust = () => {
                   <div key={group.key} className="rounded-xl border border-border overflow-hidden">
                     <div className="px-3 py-2.5 bg-muted/30 border-b border-border">
                       <p className="font-medium truncate">
-                        {group.subject_type === "listing"
-                          ? group.listing_title || "Listing"
-                          : group.subject_name || "Member"}
+                        {group.subject_type === "listing" ? (
+                          <Link to={`/listing/${group.subject_id}`} className="hover:underline">
+                            {group.listing_title || "Listing"}
+                          </Link>
+                        ) : (
+                          group.subject_name || "Member"
+                        )}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {group.subject_type === "listing" ? "Home" : "Nomad"} · {group.rows.length} flagged categor
                         {group.rows.length === 1 ? "y" : "ies"}
                       </p>
+                      <Link
+                        to={
+                          group.subject_type === "listing"
+                            ? `/owner/${group.subject_user_id}`
+                            : `/sitter/${group.subject_user_id}`
+                        }
+                        className="text-xs text-primary hover:underline"
+                      >
+                        View {group.subject_name || (group.subject_type === "listing" ? "owner" : "member")}'s profile
+                      </Link>
                     </div>
 
                     <div className="divide-y divide-border">
@@ -368,6 +462,50 @@ const AdminTrust = () => {
                                     ))}
                                   </div>
                                 )}
+
+                                <div className="space-y-2 pt-2 border-t border-border/60">
+                                  <span className="text-xs font-medium text-muted-foreground">Admin notes:</span>
+                                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                                    <Textarea
+                                      value={noteDraftByStrike[s.id] || ""}
+                                      onChange={(e) =>
+                                        setNoteDraftByStrike((prev) => ({ ...prev, [s.id]: e.target.value }))
+                                      }
+                                      placeholder="Add a note for other admins..."
+                                      className="min-h-[60px] text-sm bg-background"
+                                    />
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      className="shrink-0"
+                                      disabled={!noteDraftByStrike[s.id]?.trim() || addingNoteFor === s.id}
+                                      onClick={() => addNote(s)}
+                                    >
+                                      Add note
+                                    </Button>
+                                  </div>
+
+                                  {loadingNotes[s.id] ? (
+                                    <Skeleton className="h-10 w-full" />
+                                  ) : notesByStrike[s.id] && notesByStrike[s.id].length > 0 ? (
+                                    <div className="space-y-2">
+                                      {notesByStrike[s.id].map((note) => (
+                                        <div
+                                          key={note.id}
+                                          className="rounded-lg border border-border bg-background p-2.5 space-y-1"
+                                        >
+                                          <p className="text-sm">{note.note}</p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {note.admin_name || "Admin"} ·{" "}
+                                            {format(new Date(note.created_at), "d MMM yyyy, HH:mm")}
+                                          </p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-muted-foreground">No notes yet.</p>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </div>
