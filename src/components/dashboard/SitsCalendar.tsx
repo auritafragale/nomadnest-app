@@ -637,12 +637,21 @@ export const SitsCalendar = ({ viewAs, openReview, onAutoOpened }: SitsCalendarP
       });
   }, [filteredSits, today]);
 
+  // openReview is cleared back to null by the parent (via onAutoOpened) the
+  // instant the matching SitCard consumes it — pin it locally so the
+  // truncation-safety check below doesn't drop that sit the moment the
+  // prop clears, which would silently close the dialog it just opened.
+  const [pinnedReviewSitId, setPinnedReviewSitId] = useState<string | null>(null);
+  useEffect(() => {
+    if (openReview) setPinnedReviewSitId(openReview);
+  }, [openReview]);
+
   const pastSitsToShow = useMemo(() => {
     const firstThree = pastSits.slice(0, 3);
-    if (!openReview || firstThree.some((sit) => sit.id === openReview)) return firstThree;
-    const match = pastSits.find((sit) => sit.id === openReview);
+    if (!pinnedReviewSitId || firstThree.some((sit) => sit.id === pinnedReviewSitId)) return firstThree;
+    const match = pastSits.find((sit) => sit.id === pinnedReviewSitId);
     return match ? [...firstThree, match] : firstThree;
-  }, [pastSits, openReview]);
+  }, [pastSits, pinnedReviewSitId]);
 
   const calendarDays = useMemo(() => {
     const start = startOfMonth(currentMonth);

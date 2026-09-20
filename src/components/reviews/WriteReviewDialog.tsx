@@ -308,7 +308,17 @@ const WriteReviewDialog = ({
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto"
+        // Selecting a file/photo hands focus to the native OS picker and
+        // back; on some mobile browsers that return trips Radix's outside-
+        // interaction detection and silently closes the dialog, discarding
+        // whatever the reviewer had filled in. This form has no other way
+        // to lose unsaved progress, so outside taps are ignored — Escape
+        // and the explicit Cancel/X button still close it.
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Review {revieweeName}</DialogTitle>
           <DialogDescription>

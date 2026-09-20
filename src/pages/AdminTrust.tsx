@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import AdminNav from "@/components/admin/AdminNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, ShieldAlert, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { flagLabel } from "@/lib/trustFlags";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+
+type ReviewStatus = "pending" | "reviewed" | "follow_up_needed";
 
 interface Strike {
   id: string;
@@ -23,6 +26,16 @@ interface Strike {
   strike_two_email_sent_at: string | null;
   show_strike_three_warning: boolean;
   updated_at: string;
+  review_status: ReviewStatus;
+}
+
+interface StrikeGroup {
+  key: string;
+  subject_type: string;
+  subject_id: string;
+  subject_name: string | null;
+  listing_title: string | null;
+  rows: Strike[];
 }
 
 interface FlagIncident {
@@ -36,6 +49,18 @@ interface FlagIncident {
 }
 
 const EVIDENCE_BUCKET = "arrival-vault-photos";
+
+const STATUS_TABS: { value: ReviewStatus; label: string }[] = [
+  { value: "pending", label: "Pending" },
+  { value: "reviewed", label: "Reviewed" },
+  { value: "follow_up_needed", label: "Follow-up needed" },
+];
+
+const STATUS_BADGE_VARIANT: Record<ReviewStatus, "muted" | "secondary" | "destructive"> = {
+  pending: "muted",
+  reviewed: "secondary",
+  follow_up_needed: "destructive",
+};
 
 interface ReliabilityRow {
   user_id: string;
@@ -51,32 +76,65 @@ const AdminTrust = () => {
   const [strikes, setStrikes] = useState<Strike[]>([]);
   const [reliability, setReliability] = useState<ReliabilityRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeStatusTab, setActiveStatusTab] = useState<ReviewStatus>("pending");
   const [expandedStrikeId, setExpandedStrikeId] = useState<string | null>(null);
   const [incidentsByStrike, setIncidentsByStrike] = useState<Record<string, FlagIncident[]>>({});
   const [loadingIncidents, setLoadingIncidents] = useState<Record<string, boolean>>({});
+  const [updatingStatusFor, setUpdatingStatusFor] = useState<string | null>(null);
+
+  const loadTrustData = useCallback(async () => {
+    setLoading(true);
+    const [strikesRes, reliabilityRes] = await Promise.all([
+      supabase.rpc("admin_list_community_strikes" as never),
+      supabase.rpc("admin_list_reliability_reviews" as never),
+    ]);
+
+    if (strikesRes.error || reliabilityRes.error) {
+      toast({
+        variant: "destructive",
+        title: "Could not load trust data",
+        description: (strikesRes.error || reliabilityRes.error)?.message,
+      });
+    }
+
+    setStrikes((strikesRes.data || []) as unknown as Strike[]);
+    setReliability((reliabilityRes.data || []) as unknown as ReliabilityRow[]);
+    setLoading(false);
+  }, [toast]);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const [strikesRes, reliabilityRes] = await Promise.all([
-        supabase.rpc("admin_list_community_strikes" as never),
-        supabase.rpc("admin_list_reliability_reviews" as never),
-      ]);
+    loadTrustData();
+  }, [loadTrustData]);
 
-      if (strikesRes.error || reliabilityRes.error) {
-        toast({
-          variant: "destructive",
-          title: "Could not load trust data",
-          description: (strikesRes.error || reliabilityRes.error)?.message,
-        });
+  // Strikes sharing a subject render as one card, with each category as a
+  // row inside it.
+  const groups = useMemo(() => {
+    const byKey = new Map<string, StrikeGroup>();
+    for (const s of strikes) {
+      const key = `${s.subject_type}:${s.subject_id}`;
+      let group = byKey.get(key);
+      if (!group) {
+        group = {
+          key,
+          subject_type: s.subject_type,
+          subject_id: s.subject_id,
+          subject_name: s.subject_name,
+          listing_title: s.listing_title,
+          rows: [],
+        };
+        byKey.set(key, group);
       }
+      group.rows.push(s);
+    }
+    return [...byKey.values()];
+  }, [strikes]);
 
-      setStrikes((strikesRes.data || []) as unknown as Strike[]);
-      setReliability((reliabilityRes.data || []) as unknown as ReliabilityRow[]);
-      setLoading(false);
-    };
-    load();
-  }, [toast]);
+  // A group appears under a tab if any of its category rows currently has
+  // that status — a group can appear under more than one tab.
+  const groupsForStatus = (status: ReviewStatus) =>
+    groups.filter((g) => g.rows.some((r) => r.review_status === status));
+
+  const visibleGroups = groupsForStatus(activeStatusTab);
 
   const toggleStrike = async (s: Strike) => {
     if (expandedStrikeId === s.id) {
@@ -126,6 +184,28 @@ const AdminTrust = () => {
     setLoadingIncidents((prev) => ({ ...prev, [s.id]: false }));
   };
 
+  const updateReviewStatus = async (strike: Strike, next: ReviewStatus) => {
+    if (strike.review_status === next || updatingStatusFor === strike.id) return;
+    setUpdatingStatusFor(strike.id);
+    const { error } = await supabase
+      .from("community_strikes")
+      .update({ review_status: next })
+      .eq("id", strike.id);
+    setUpdatingStatusFor(null);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Could not update status",
+        description: error.message,
+      });
+      return;
+    }
+
+    // Refetch so the tab counts and grouping reflect the change live.
+    await loadTrustData();
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -140,7 +220,33 @@ const AdminTrust = () => {
               Private community flags
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
+            {!loading && strikes.length > 0 && (
+              <div className="flex flex-wrap gap-2 border-b border-border pb-3">
+                {STATUS_TABS.map((tab) => {
+                  const count = groupsForStatus(tab.value).length;
+                  return (
+                    <Button
+                      key={tab.value}
+                      type="button"
+                      size="sm"
+                      variant={activeStatusTab === tab.value ? "default" : "outline"}
+                      onClick={() => setActiveStatusTab(tab.value)}
+                      className="gap-1.5"
+                    >
+                      {tab.label}
+                      <Badge
+                        variant={activeStatusTab === tab.value ? "secondary" : "muted"}
+                        className="h-5 px-1.5"
+                      >
+                        {count}
+                      </Badge>
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
+
             {loading ? (
               <>
                 <Skeleton className="h-16 w-full" />
@@ -150,88 +256,127 @@ const AdminTrust = () => {
               <p className="text-sm text-muted-foreground">
                 No private flags recorded. Nothing to review.
               </p>
+            ) : visibleGroups.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nothing in this tab right now.
+              </p>
             ) : (
-              strikes.map((s) => {
-                const expanded = expandedStrikeId === s.id;
-                const incidents = incidentsByStrike[s.id];
-                return (
-                  <div key={s.id} className="rounded-xl border border-border overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => toggleStrike(s)}
-                      className="flex w-full flex-wrap items-center justify-between gap-2 p-3 text-left hover:bg-muted/40 transition-colors"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-medium truncate">
-                          {s.subject_type === "listing"
-                            ? s.listing_title || "Listing"
-                            : s.subject_name || "Member"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {flagLabel(s.category)} · {s.subject_type === "listing" ? "Home" : "Nomad"}
-                          {" · "}
-                          last updated {format(new Date(s.updated_at), "d MMM yyyy")}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="muted">{s.flag_count} report{s.flag_count === 1 ? "" : "s"}</Badge>
-                        {s.strike_two_email_sent_at && <Badge variant="muted">Heads-up sent</Badge>}
-                        {s.show_strike_three_warning && (
-                          <Badge variant="destructive">Notice showing</Badge>
-                        )}
-                        <ChevronDown
-                          className={cn(
-                            "w-4 h-4 text-muted-foreground transition-transform shrink-0",
-                            expanded && "rotate-180"
-                          )}
-                        />
-                      </div>
-                    </button>
+              <div className="space-y-4">
+                {visibleGroups.map((group) => (
+                  <div key={group.key} className="rounded-xl border border-border overflow-hidden">
+                    <div className="px-3 py-2.5 bg-muted/30 border-b border-border">
+                      <p className="font-medium truncate">
+                        {group.subject_type === "listing"
+                          ? group.listing_title || "Listing"
+                          : group.subject_name || "Member"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {group.subject_type === "listing" ? "Home" : "Nomad"} · {group.rows.length} flagged categor
+                        {group.rows.length === 1 ? "y" : "ies"}
+                      </p>
+                    </div>
 
-                    {expanded && (
-                      <div className="border-t border-border bg-muted/20 p-3 space-y-2">
-                        {loadingIncidents[s.id] ? (
-                          <Skeleton className="h-12 w-full" />
-                        ) : !incidents || incidents.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">
-                            No individual incidents found for this flag.
-                          </p>
-                        ) : (
-                          incidents.map((incident) => (
-                            <div
-                              key={incident.review_id}
-                              className="rounded-lg border border-border bg-background p-3 space-y-1.5"
+                    <div className="divide-y divide-border">
+                      {group.rows.map((s) => {
+                        const expanded = expandedStrikeId === s.id;
+                        const incidents = incidentsByStrike[s.id];
+                        return (
+                          <div key={s.id}>
+                            <button
+                              type="button"
+                              onClick={() => toggleStrike(s)}
+                              className="flex w-full flex-wrap items-center justify-between gap-2 p-3 text-left hover:bg-muted/40 transition-colors"
                             >
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="text-sm font-medium">{incident.reporter_name}</p>
-                                <p className="text-xs text-muted-foreground shrink-0">
-                                  {format(new Date(incident.flagged_at), "d MMM yyyy")}
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{flagLabel(s.category)}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  last updated {format(new Date(s.updated_at), "d MMM yyyy")}
                                 </p>
                               </div>
-                              {incident.review_text && (
-                                <p className="text-sm text-muted-foreground">{incident.review_text}</p>
-                              )}
-                              {incident.evidence_reason && (
-                                <p className="text-sm">
-                                  <span className="font-medium">Evidence note: </span>
-                                  {incident.evidence_reason}
-                                </p>
-                              )}
-                              {incident.evidence_photo_signed_url && (
-                                <img
-                                  src={incident.evidence_photo_signed_url}
-                                  alt="Flag evidence"
-                                  className="mt-1 rounded-lg max-h-48 object-cover"
+                              <div className="flex items-center gap-2">
+                                <Badge variant="muted">{s.flag_count} report{s.flag_count === 1 ? "" : "s"}</Badge>
+                                {s.strike_two_email_sent_at && <Badge variant="muted">Heads-up sent</Badge>}
+                                {s.show_strike_three_warning && (
+                                  <Badge variant="destructive">Notice showing</Badge>
+                                )}
+                                <Badge variant={STATUS_BADGE_VARIANT[s.review_status]}>
+                                  {STATUS_TABS.find((t) => t.value === s.review_status)?.label ?? s.review_status}
+                                </Badge>
+                                <ChevronDown
+                                  className={cn(
+                                    "w-4 h-4 text-muted-foreground transition-transform shrink-0",
+                                    expanded && "rotate-180"
+                                  )}
                                 />
-                              )}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
+                              </div>
+                            </button>
+
+                            {expanded && (
+                              <div className="border-t border-border bg-muted/20 p-3 space-y-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-xs font-medium text-muted-foreground">Status:</span>
+                                  {STATUS_TABS.map((tab) => (
+                                    <Button
+                                      key={tab.value}
+                                      type="button"
+                                      size="sm"
+                                      variant={s.review_status === tab.value ? "default" : "outline"}
+                                      disabled={updatingStatusFor === s.id}
+                                      onClick={() => updateReviewStatus(s, tab.value)}
+                                    >
+                                      {tab.label}
+                                    </Button>
+                                  ))}
+                                </div>
+
+                                {loadingIncidents[s.id] ? (
+                                  <Skeleton className="h-12 w-full" />
+                                ) : !incidents || incidents.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">
+                                    No individual incidents found for this flag.
+                                  </p>
+                                ) : (
+                                  <div className="space-y-2">
+                                    {incidents.map((incident) => (
+                                      <div
+                                        key={incident.review_id}
+                                        className="rounded-lg border border-border bg-background p-3 space-y-1.5"
+                                      >
+                                        <div className="flex items-center justify-between gap-2">
+                                          <p className="text-sm font-medium">{incident.reporter_name}</p>
+                                          <p className="text-xs text-muted-foreground shrink-0">
+                                            {format(new Date(incident.flagged_at), "d MMM yyyy")}
+                                          </p>
+                                        </div>
+                                        {incident.review_text && (
+                                          <p className="text-sm text-muted-foreground">{incident.review_text}</p>
+                                        )}
+                                        {incident.evidence_reason && (
+                                          <p className="text-sm">
+                                            <span className="font-medium">Evidence note: </span>
+                                            {incident.evidence_reason}
+                                          </p>
+                                        )}
+                                        {incident.evidence_photo_signed_url && (
+                                          <img
+                                            src={incident.evidence_photo_signed_url}
+                                            alt="Flag evidence"
+                                            className="mt-1 rounded-lg max-h-48 object-cover"
+                                          />
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                );
-              })
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>

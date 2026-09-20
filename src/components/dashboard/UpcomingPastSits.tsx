@@ -67,20 +67,33 @@ export const UpcomingPastSits = ({ viewAs, openReview, onAutoOpened }: UpcomingP
       });
   }, [filteredSits, today]);
 
+  // openReview is cleared back to null by the parent (via onAutoOpened) the
+  // instant the matching SitCard consumes it — otherwise it's a one-shot
+  // trigger, not a durable "this sit is the target" flag. But this
+  // component's own membership logic below (which tab is active, whether
+  // the target sit is kept visible past the usual truncation) needs that
+  // fact to stay true for the rest of this mount, or the target's SitCard
+  // — and the review dialog it just auto-opened — would disappear the
+  // moment the prop clears. Pin it locally so it survives that clear.
+  const [pinnedReviewSitId, setPinnedReviewSitId] = useState<string | null>(null);
+  useEffect(() => {
+    if (openReview) setPinnedReviewSitId(openReview);
+  }, [openReview]);
+
   // A past sit is where a completed sit's review dialog would auto-open —
   // switch to that tab so there's actually something on screen to open.
   useEffect(() => {
-    if (openReview && pastSits.some((sit) => sit.id === openReview)) {
+    if (pinnedReviewSitId && pastSits.some((sit) => sit.id === pinnedReviewSitId)) {
       setActiveTab("past");
     }
-  }, [openReview, pastSits]);
+  }, [pinnedReviewSitId, pastSits]);
 
   const pastSitsToShow = useMemo(() => {
     const firstThree = pastSits.slice(0, 3);
-    if (!openReview || firstThree.some((sit) => sit.id === openReview)) return firstThree;
-    const match = pastSits.find((sit) => sit.id === openReview);
+    if (!pinnedReviewSitId || firstThree.some((sit) => sit.id === pinnedReviewSitId)) return firstThree;
+    const match = pastSits.find((sit) => sit.id === pinnedReviewSitId);
     return match ? [...firstThree, match] : firstThree;
-  }, [pastSits, openReview]);
+  }, [pastSits, pinnedReviewSitId]);
 
   if (isLoading) {
     return <Skeleton className="h-64 w-full rounded-lg" />;

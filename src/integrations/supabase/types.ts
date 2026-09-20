@@ -383,6 +383,7 @@ export type Database = {
           created_at: string
           flag_count: number
           id: string
+          review_status: string
           show_strike_three_warning: boolean
           strike_two_email_sent_at: string | null
           subject_id: string
@@ -395,6 +396,7 @@ export type Database = {
           created_at?: string
           flag_count?: number
           id?: string
+          review_status?: string
           show_strike_three_warning?: boolean
           strike_two_email_sent_at?: string | null
           subject_id: string
@@ -407,6 +409,7 @@ export type Database = {
           created_at?: string
           flag_count?: number
           id?: string
+          review_status?: string
           show_strike_three_warning?: boolean
           strike_two_email_sent_at?: string | null
           subject_id?: string
@@ -1816,6 +1819,7 @@ export type Database = {
           flag_count: number
           id: string
           listing_title: string
+          review_status: string
           show_strike_three_warning: boolean
           strike_two_email_sent_at: string
           subject_id: string
