@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import AdminNav from "@/components/admin/AdminNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -60,12 +61,38 @@ const roleLabel = (role: string | null) => {
   return "No role yet";
 };
 
+type MembersTab = "all" | "owner" | "sitter" | "both" | "founding" | "no_membership" | "active";
+
+const MEMBER_TABS: { value: MembersTab; label: string; filter: (m: Member) => boolean }[] = [
+  { value: "all", label: "All", filter: () => true },
+  { value: "owner", label: "Pet Parent", filter: (m) => m.role === "owner" },
+  { value: "sitter", label: "Nomad", filter: (m) => m.role === "sitter" },
+  { value: "both", label: "Combined", filter: (m) => m.role === "both" },
+  { value: "founding", label: "Founding Members", filter: (m) => m.founding_member === true },
+  { value: "no_membership", label: "No Membership", filter: (m) => m.membership_status !== "active" },
+  { value: "active", label: "Active", filter: (m) => m.membership_status === "active" },
+];
+
 const AdminHub = () => {
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [stats, setStats] = useState<Stats | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const initialMembersTab = searchParams.get("membersTab");
+  const [membersTab, setMembersTab] = useState<MembersTab>(
+    MEMBER_TABS.some((t) => t.value === initialMembersTab) ? (initialMembersTab as MembersTab) : "all"
+  );
+
+  // Deep links (e.g. from a stat card) land on the Members section.
+  useEffect(() => {
+    if (!initialMembersTab) return;
+    const t = setTimeout(() => {
+      document.getElementById("members")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [initialMembersTab]);
 
   useEffect(() => {
     const load = async () => {
@@ -101,14 +128,16 @@ const AdminHub = () => {
   }, [toast]);
 
   const filtered = useMemo(() => {
+    const tab = MEMBER_TABS.find((t) => t.value === membersTab) ?? MEMBER_TABS[0];
     const q = query.trim().toLowerCase();
-    if (!q) return members;
-    return members.filter((m) =>
-      [m.first_name, m.last_name, m.email, m.city, m.country]
-        .filter(Boolean)
-        .some((v) => (v as string).toLowerCase().includes(q))
+    return members.filter(tab.filter).filter(
+      (m) =>
+        !q ||
+        [m.first_name, m.last_name, m.email, m.city, m.country]
+          .filter(Boolean)
+          .some((v) => (v as string).toLowerCase().includes(q))
     );
-  }, [members, query]);
+  }, [members, query, membersTab]);
 
   const admins = useMemo(() => members.filter((m) => m.is_admin), [members]);
   const unexpectedAdmins = useMemo(
@@ -141,12 +170,12 @@ const AdminHub = () => {
   ];
 
   const statCards = [
-    { label: "Members", value: stats?.total_members, icon: Users },
-    { label: "Active memberships", value: stats?.active_members, icon: Crown },
-    { label: "Founding members", value: stats?.founding_members, icon: Crown },
-    { label: "Published listings", value: stats?.published_listings, icon: Home },
-    { label: "Open sit dates", value: stats?.open_sit_dates, icon: CalendarDays },
-    { label: "Pending ID reviews", value: stats?.pending_verifications, icon: ShieldCheck },
+    { label: "Members", value: stats?.total_members, icon: Users, href: "/admin?membersTab=all#members" },
+    { label: "Active memberships", value: stats?.active_members, icon: Crown, href: "/admin?membersTab=active#members" },
+    { label: "Founding members", value: stats?.founding_members, icon: Crown, href: "/admin?membersTab=founding#members" },
+    { label: "Published listings", value: stats?.published_listings, icon: Home, href: "/browse-sits" },
+    { label: "Open sit dates", value: stats?.open_sit_dates, icon: CalendarDays, href: "/browse-sits" },
+    { label: "Pending ID reviews", value: stats?.pending_verifications, icon: ShieldCheck, href: "/admin/verifications" },
   ];
 
   const spotsLeft = stats ? stats.founding_code_max - stats.founding_code_used : null;
@@ -167,20 +196,22 @@ const AdminHub = () => {
 
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
-            {statCards.map(({ label, value, icon: Icon }) => (
-              <Card key={label}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                    <Icon className="w-4 h-4" />
-                    <span className="text-xs font-medium">{label}</span>
-                  </div>
-                  {loading ? (
-                    <Skeleton className="h-7 w-12" />
-                  ) : (
-                    <p className="text-2xl font-bold">{value ?? 0}</p>
-                  )}
-                </CardContent>
-              </Card>
+            {statCards.map(({ label, value, icon: Icon, href }) => (
+              <Link key={label} to={href}>
+                <Card className="h-full transition-shadow hover:shadow-md">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                      <Icon className="w-4 h-4" />
+                      <span className="text-xs font-medium">{label}</span>
+                    </div>
+                    {loading ? (
+                      <Skeleton className="h-7 w-12" />
+                    ) : (
+                      <p className="text-2xl font-bold">{value ?? 0}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
 
@@ -267,7 +298,9 @@ const AdminHub = () => {
 
           {/* Members */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-            <h2 className="text-lg font-semibold">Members ({members.length})</h2>
+            <h2 id="members" className="text-lg font-semibold scroll-mt-24">
+              Members ({members.length})
+            </h2>
             <div className="relative sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -278,6 +311,27 @@ const AdminHub = () => {
                 aria-label="Search members"
               />
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-4">
+            {MEMBER_TABS.map((tab) => {
+              const count = members.filter(tab.filter).length;
+              return (
+                <Button
+                  key={tab.value}
+                  type="button"
+                  size="sm"
+                  variant={membersTab === tab.value ? "default" : "outline"}
+                  onClick={() => setMembersTab(tab.value)}
+                  className="gap-1.5"
+                >
+                  {tab.label}
+                  <Badge variant={membersTab === tab.value ? "secondary" : "muted"} className="h-5 px-1.5">
+                    {count}
+                  </Badge>
+                </Button>
+              );
+            })}
           </div>
 
           {loading ? (
