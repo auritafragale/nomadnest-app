@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,6 +35,50 @@ interface FlagEvidenceDraft {
   photoFile?: File;
   vaultPhotoPath?: string;
 }
+
+// Installed-PWA Android devices (this app is one — see manifest.json/sw.js)
+// can have their whole web view killed and reloaded by the OS while a native
+// file/photo picker is in front, wiping all in-memory React state. Persisting
+// the in-progress review to sessionStorage means a reviewer who gets caught
+// by that never has to start over from a blank form.
+const REVIEW_DRAFT_PREFIX = "nomadnest_review_draft_";
+const draftStorageKey = (sitId: string) => `${REVIEW_DRAFT_PREFIX}${sitId}`;
+// Stay well under sessionStorage's typical ~5MB per-origin quota — a photo
+// that doesn't fit is simply not persisted; the rest of the draft still is.
+const MAX_DRAFT_PHOTO_BYTES = 3 * 1024 * 1024;
+
+interface StoredFlagEvidence {
+  reasonText: string;
+  vaultPhotoPath?: string;
+  photo?: { dataUrl: string; name: string; type: string };
+}
+
+interface ReviewDraft {
+  text: string;
+  ratings: Record<CategoryKey, number>;
+  flagAnswers: Record<string, "yes" | "no" | undefined>;
+  flagEvidence: Record<string, StoredFlagEvidence>;
+}
+
+const fileToDataUrl = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+const dataUrlToFile = (dataUrl: string, name: string, type: string): File | undefined => {
+  try {
+    const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new File([bytes], name, { type });
+  } catch {
+    return undefined;
+  }
+};
 
 interface WriteReviewDialogProps {
   sitId: string;
@@ -80,6 +124,18 @@ const OWNER_CATEGORIES: CategoryDef[] = [
   { key: "rating_clear_expectations", label: "Clear Expectations" },
 ];
 
+const EMPTY_RATINGS: Record<CategoryKey, number> = {
+  rating_pet_care: 0,
+  rating_communication: 0,
+  rating_cleanliness: 0,
+  rating_reliability: 0,
+  rating_respect_home: 0,
+  rating_home_accuracy: 0,
+  rating_pet_preparedness: 0,
+  rating_hospitality: 0,
+  rating_clear_expectations: 0,
+};
+
 const WriteReviewDialog = ({
   sitId,
   revieweeUserId,
@@ -99,17 +155,7 @@ const WriteReviewDialog = ({
   };
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [ratings, setRatings] = useState<Record<CategoryKey, number>>({
-    rating_pet_care: 0,
-    rating_communication: 0,
-    rating_cleanliness: 0,
-    rating_reliability: 0,
-    rating_respect_home: 0,
-    rating_home_accuracy: 0,
-    rating_pet_preparedness: 0,
-    rating_hospitality: 0,
-    rating_clear_expectations: 0,
-  });
+  const [ratings, setRatings] = useState<Record<CategoryKey, number>>(EMPTY_RATINGS);
   const [hovered, setHovered] = useState<{ key: CategoryKey | null; value: number }>({
     key: null,
     value: 0,
@@ -125,6 +171,116 @@ const WriteReviewDialog = ({
   const flagQuestions = reviewType === "sitter" ? NOMAD_FLAG_QUESTIONS : HOME_FLAG_QUESTIONS;
   const [flagAnswers, setFlagAnswers] = useState<Record<string, "yes" | "no" | undefined>>({});
   const [flagEvidence, setFlagEvidence] = useState<Record<string, FlagEvidenceDraft>>({});
+
+  // Restore a saved draft once per sit each time this dialog opens, then
+  // persist further edits back to sessionStorage. See REVIEW_DRAFT_PREFIX
+  // above for why: an installed PWA on Android can lose all in-memory state
+  // to an OS-triggered reload while the native photo picker is in front.
+  const [restoredForSitId, setRestoredForSitId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !sitId || restoredForSitId === sitId) return;
+    setRestoredForSitId(sitId);
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(draftStorageKey(sitId));
+    } catch {
+      return;
+    }
+    if (!raw) return;
+    try {
+      const draft: ReviewDraft = JSON.parse(raw);
+      setText(draft.text || "");
+      setRatings({ ...EMPTY_RATINGS, ...draft.ratings });
+      setFlagAnswers(draft.flagAnswers || {});
+      const restoredEvidence: Record<string, FlagEvidenceDraft> = {};
+      for (const [column, evidence] of Object.entries(draft.flagEvidence || {})) {
+        restoredEvidence[column] = {
+          reasonText: evidence.reasonText || "",
+          vaultPhotoPath: evidence.vaultPhotoPath,
+          photoFile: evidence.photo
+            ? dataUrlToFile(evidence.photo.dataUrl, evidence.photo.name, evidence.photo.type)
+            : undefined,
+        };
+      }
+      setFlagEvidence(restoredEvidence);
+      toast({
+        title: "Draft restored",
+        description: "We recovered the review you were writing.",
+      });
+    } catch (e) {
+      console.warn("Could not restore review draft:", e);
+    }
+  }, [open, sitId, restoredForSitId, toast]);
+
+  useEffect(() => {
+    if (!open || !sitId || restoredForSitId !== sitId) return;
+
+    const isEmpty =
+      !text &&
+      Object.values(ratings).every((v) => !v) &&
+      Object.keys(flagAnswers).length === 0 &&
+      Object.keys(flagEvidence).length === 0;
+    if (isEmpty) return;
+
+    let cancelled = false;
+    (async () => {
+      const evidenceEntries = await Promise.all(
+        Object.entries(flagEvidence).map(async ([column, evidence]) => {
+          let photo: StoredFlagEvidence["photo"];
+          if (evidence.photoFile && evidence.photoFile.size <= MAX_DRAFT_PHOTO_BYTES) {
+            try {
+              photo = {
+                dataUrl: await fileToDataUrl(evidence.photoFile),
+                name: evidence.photoFile.name,
+                type: evidence.photoFile.type,
+              };
+            } catch {
+              photo = undefined;
+            }
+          }
+          const stored: StoredFlagEvidence = {
+            reasonText: evidence.reasonText,
+            vaultPhotoPath: evidence.vaultPhotoPath,
+            photo,
+          };
+          return [column, stored] as const;
+        })
+      );
+      if (cancelled) return;
+
+      const draft: ReviewDraft = {
+        text,
+        ratings,
+        flagAnswers,
+        flagEvidence: Object.fromEntries(evidenceEntries),
+      };
+      try {
+        sessionStorage.setItem(draftStorageKey(sitId), JSON.stringify(draft));
+      } catch {
+        // Likely quota exceeded because of an attached photo — retry without
+        // photos so the text/ratings/answers still survive a reload.
+        try {
+          const withoutPhotos: ReviewDraft = {
+            ...draft,
+            flagEvidence: Object.fromEntries(
+              Object.entries(draft.flagEvidence).map(([column, evidence]) => [
+                column,
+                { ...evidence, photo: undefined },
+              ])
+            ),
+          };
+          sessionStorage.setItem(draftStorageKey(sitId), JSON.stringify(withoutPhotos));
+        } catch {
+          // Persistence is a nicety, not a hard requirement — give up quietly.
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, sitId, restoredForSitId, text, ratings, flagAnswers, flagEvidence]);
   const isFlagRaised = (column: string, answer: "yes" | "no" | undefined) => {
     const q = flagQuestions.find((fq) => fq.column === column);
     if (!q || !answer) return false;
@@ -265,19 +421,15 @@ const WriteReviewDialog = ({
       queryClient.invalidateQueries({ queryKey: ["sitter-reviews"] });
       queryClient.invalidateQueries({ queryKey: ["sits"] });
 
+      try {
+        sessionStorage.removeItem(draftStorageKey(sitId));
+      } catch {
+        // Non-critical — the draft just lingers until it's overwritten or expires with the tab.
+      }
+
       setOpen(false);
       setText("");
-      setRatings({
-        rating_pet_care: 0,
-        rating_communication: 0,
-        rating_cleanliness: 0,
-        rating_reliability: 0,
-        rating_respect_home: 0,
-        rating_home_accuracy: 0,
-        rating_pet_preparedness: 0,
-        rating_hospitality: 0,
-        rating_clear_expectations: 0,
-      });
+      setRatings(EMPTY_RATINGS);
       setFlagAnswers({});
       setFlagEvidence({});
       onReviewSubmitted?.();
