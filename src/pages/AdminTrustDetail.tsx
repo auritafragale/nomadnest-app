@@ -56,7 +56,7 @@ const EVIDENCE_BUCKET = "arrival-vault-photos";
 const STATUS_TABS: { value: ReviewStatus; label: string }[] = [
   { value: "pending", label: "Pending" },
   { value: "reviewed", label: "Reviewed" },
-  { value: "follow_up_needed", label: "Follow-up needed" },
+  { value: "follow_up_needed", label: "To Follow Up" },
 ];
 
 const STATUS_BADGE_VARIANT: Record<ReviewStatus, "muted" | "secondary" | "destructive"> = {

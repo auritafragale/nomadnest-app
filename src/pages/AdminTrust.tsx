@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Eye, ShieldAlert } from "lucide-react";
+import { AlertTriangle, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -41,7 +41,7 @@ interface StrikeGroup {
 const STATUS_TABS: { value: ReviewStatus; label: string }[] = [
   { value: "pending", label: "Pending" },
   { value: "reviewed", label: "Reviewed" },
-  { value: "follow_up_needed", label: "Follow-up needed" },
+  { value: "follow_up_needed", label: "To Follow Up" },
 ];
 
 interface ReliabilityRow {
@@ -172,19 +172,14 @@ const AdminTrust = () => {
             ) : (
               <div className="space-y-3">
                 {visibleGroups.map((group) => (
-                  <div
+                  <Link
                     key={group.key}
-                    className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-border p-3"
+                    to={`/admin/trust/${group.subject_type}/${group.subject_id}`}
+                    className="block rounded-xl border border-border p-3 hover:bg-muted/40 transition-colors"
                   >
                     <div className="min-w-0">
                       <p className="font-medium truncate">
-                        {group.subject_type === "listing" ? (
-                          <Link to={`/listing/${group.subject_id}`} className="hover:underline">
-                            {group.listing_title || "Listing"}
-                          </Link>
-                        ) : (
-                          group.subject_name || "Member"
-                        )}
+                        {group.subject_type === "listing" ? group.listing_title || "Listing" : group.subject_name || "Member"}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {group.subject_type === "listing" ? "Home" : "Nomad"} · {group.rows.length} flagged categor
@@ -196,18 +191,13 @@ const AdminTrust = () => {
                             ? `/owner/${group.subject_user_id}`
                             : `/sitter/${group.subject_user_id}`
                         }
+                        onClick={(e) => e.stopPropagation()}
                         className="text-xs text-primary hover:underline"
                       >
                         View {group.subject_name || (group.subject_type === "listing" ? "owner" : "member")}'s profile
                       </Link>
                     </div>
-                    <Button asChild type="button" size="sm" variant="outline" className="shrink-0 gap-1.5">
-                      <Link to={`/admin/trust/${group.subject_type}/${group.subject_id}`}>
-                        <Eye className="w-4 h-4" />
-                        View
-                      </Link>
-                    </Button>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -230,9 +220,10 @@ const AdminTrust = () => {
               </p>
             ) : (
               reliability.map((r) => (
-                <div
+                <Link
                   key={r.user_id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3"
+                  to={`/admin/reliability/${r.user_id}`}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3 hover:bg-muted/40 transition-colors"
                 >
                   <div className="min-w-0">
                     <p className="font-medium truncate">{r.full_name || r.email}</p>
@@ -243,7 +234,7 @@ const AdminTrust = () => {
                     </p>
                   </div>
                   <Badge variant="muted">Reliability {r.reliability_score ?? 100}</Badge>
-                </div>
+                </Link>
               ))
             )}
           </CardContent>

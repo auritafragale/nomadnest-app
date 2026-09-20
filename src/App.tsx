@@ -56,6 +56,7 @@ import AdminPerks from "./pages/AdminPerks";
 import AdminEmails from "./pages/AdminEmails";
 import AdminTrust from "./pages/AdminTrust";
 import AdminTrustDetail from "./pages/AdminTrustDetail";
+import AdminReliabilityDetail from "./pages/AdminReliabilityDetail";
 import AdminReports from "./pages/AdminReports";
 
 import Perks from "./pages/Perks";
@@ -163,6 +164,7 @@ const AppShell = () => {
         <Route path="/admin/verifications" element={<AdminRoute><AdminVerifications /></AdminRoute>} />
         <Route path="/admin/trust" element={<AdminRoute><AdminTrust /></AdminRoute>} />
         <Route path="/admin/trust/:subjectType/:subjectId" element={<AdminRoute><AdminTrustDetail /></AdminRoute>} />
+        <Route path="/admin/reliability/:userId" element={<AdminRoute><AdminReliabilityDetail /></AdminRoute>} />
         <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
         <Route path="/admin/emails" element={<AdminRoute><AdminEmails /></AdminRoute>} />
 
