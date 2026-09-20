@@ -220,16 +220,16 @@ export const ApplicationCard = ({
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                size="icon"
                 className="shrink-0"
                 onClick={handleMessageSitter}
                 disabled={isStartingChat}
               >
                 {isStartingChat ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle className="h-4 w-4 mr-2" />
                 )}
+                Message
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
