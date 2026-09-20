@@ -163,7 +163,16 @@ const OwnerCard = ({
   return (
     <Card>
       <CardContent className="pt-6">
-        <Link to={`/owner/${listing.owner_user_id}`} className="flex items-center gap-4 mb-4 group">
+        <Link
+          to={`/owner/${listing.owner_user_id}`}
+          className="flex items-center gap-4 mb-4 group"
+          onClick={(e) => {
+            if (!user) {
+              e.preventDefault();
+              setSignUpPromptOpen(true);
+            }
+          }}
+        >
           <Avatar className="w-14 h-14">
             <AvatarImage src={listing.profiles?.avatar_url || ""} />
             <AvatarFallback>
