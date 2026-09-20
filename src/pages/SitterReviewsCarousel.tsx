@@ -47,7 +47,7 @@ const SitterReviewsCarousel = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: reviews = [], isLoading } = useSitterReviews(userId);
+  const { data: reviews = [], isLoading } = useSitterReviews(user ? userId : undefined);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
 

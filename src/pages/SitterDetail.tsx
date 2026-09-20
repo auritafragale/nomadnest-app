@@ -159,8 +159,8 @@ const SitterDetail = () => {
   }, [isPetParentViewer, nomadWarning.hasWarning]);
   
   const startConversation = useStartConversation();
-  const { data: ratingData } = useSitterAverageRating(userId);
-  const { data: sitterReviewsForCategories = [] } = useSitterReviews(userId);
+  const { data: ratingData } = useSitterAverageRating(user ? userId : undefined);
+  const { data: sitterReviewsForCategories = [] } = useSitterReviews(user ? userId : undefined);
   const sitterCategoryAverages = aggregateCategoryRatings(
     sitterReviewsForCategories,
     SITTER_RATING_CATEGORIES
