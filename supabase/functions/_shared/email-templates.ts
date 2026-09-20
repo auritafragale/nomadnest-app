@@ -50,7 +50,10 @@ export type NotificationType =
   | "sit_reschedule_declined"
   | "arrival_vault_prompt"
   | "application_withdrawn"
-  | "listing_dates_changed";
+  | "listing_dates_changed"
+  | "reliability_strike"
+  | "community_strike_heads_up_host"
+  | "community_strike_heads_up_nomad";
 
 export function buildNotificationEmail(
   type: string,
@@ -291,6 +294,79 @@ export function buildNotificationEmail(
         pushTitle: "Sit dates changed",
         pushBody: `The dates for ${data.listingTitle} changed to ${data.dates}`,
         pushUrl: data.url || "/dashboard",
+      };
+    case "reliability_strike":
+      return {
+        subject: "A quick heads-up about your recent cancellation",
+        preview: "A private note about your recent cancellation",
+        heading: "A quick heads-up",
+        body: `
+          <p>Hi ${data.firstName},</p>
+          <p>We hope you're doing well. We wanted to give you a private heads-up as part of
+          keeping NomadNest reliable for everyone.</p>
+          <p>You've now cancelled a confirmed sit within 7 days of its start date twice. This
+          kind of last-minute change can be really disruptive for the other side, a Nomad
+          who's already planned their travel around it, or a Pet Parent who now has very
+          little time to find someone new.</p>
+          <p>This note is private. No one else can see it, and it doesn't affect your public
+          profile right now. We just want to make sure you're aware, since a pattern like
+          this can affect your reliability score and, over time, your chances of being
+          matched with sits or Nomads in the future.</p>
+          <p>If something's come up that's making it hard to commit to your sits, we're happy
+          to help you think it through, just reply to this email.</p>
+          <p>Warmly,<br/>The NomadNest Team</p>
+        `,
+        footerReason: "You're receiving this private note because you're a NomadNest member.",
+      };
+    case "community_strike_heads_up_host":
+      return {
+        subject: "An important update regarding your recent stay on NomadNest",
+        preview: "Private feedback from the NomadNest community",
+        heading: "An important update regarding your recent stay",
+        body: `
+          <p>Hi ${data.firstName},</p>
+          <p>We hope you're well. As part of our commitment to keeping the NomadNest
+          community transparent and safe for everyone, we wanted to reach out privately.</p>
+          <p>Two independent sitters have now shared feedback regarding
+          <strong>${data.categoryLabel}</strong> after staying in your home. This feedback is
+          completely private, it is not shown on your listing and no one else can see it.</p>
+          <p>We're sharing it early so you have the chance to address it before it becomes
+          something future members see. If a third independent report mentions the same
+          thing, a short cautionary note about this topic will be shown to members
+          considering a sit with you.</p>
+          <p>The good news: this clears itself. If your next completed stay passes without
+          the same feedback, everything is automatically reset and your good standing is
+          fully restored.</p>
+          <p>If you'd like to talk it through, just reply to this email, we're here to help.</p>
+          <p>Warmly,<br/>The NomadNest Team</p>
+        `,
+        footerReason: "You're receiving this private note because you're a NomadNest member.",
+      };
+    case "community_strike_heads_up_nomad":
+      return {
+        subject: "An important update regarding your recent sits on NomadNest",
+        preview: "Private feedback from the NomadNest community",
+        heading: "An important update regarding your recent sits",
+        body: `
+          <p>Hi ${data.firstName},</p>
+          <p>We hope your travels are going well. As part of our commitment to keeping the
+          NomadNest community transparent and safe for everyone, we wanted to reach out
+          privately.</p>
+          <p>Two independent Pet Parents have now shared feedback regarding
+          <strong>${data.categoryLabel}</strong> following your recent sits. This feedback is
+          completely private, it is not shown on your Nomad profile and no one else can
+          see it.</p>
+          <p>We're sharing it early so you have the chance to address it before it becomes
+          something future Pet Parents see. If a third independent report mentions the same
+          thing, a short cautionary note about this topic will be shown to Pet Parents
+          considering you for a sit.</p>
+          <p>The good news: this clears itself. If your next completed sit passes without
+          the same feedback, everything is automatically reset and your good standing is
+          fully restored.</p>
+          <p>If you'd like to talk it through, just reply to this email, we're here to help.</p>
+          <p>Warmly,<br/>The NomadNest Team</p>
+        `,
+        footerReason: "You're receiving this private note because you're a NomadNest member.",
       };
     default:
       return {
@@ -572,6 +648,8 @@ const sample = {
   proposedEndDate: "16 Nov 2026",
   url: "/sits/sample-sit-id/arrival-vault",
   dates: "Sep 20 – Sep 30, 2026",
+  firstName: "Alex",
+  categoryLabel: "Home Cleanliness",
 };
 
 export function getPreviewTemplates(): PreviewTemplate[] {
@@ -599,6 +677,9 @@ export function getPreviewTemplates(): PreviewTemplate[] {
     { id: "arrival_vault_prompt", label: "Arrival Check-In prompt (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("arrival_vault_prompt", sample) },
     { id: "application_withdrawn", label: "Application withdrawn (to Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("application_withdrawn", sample) },
     { id: "listing_dates_changed", label: "Listing dates changed (to Nomad)", group: "Notifications", build: () => buildNotificationEmail("listing_dates_changed", sample) },
+    { id: "reliability_strike", label: "Reliability strike heads-up", group: "Notifications", build: () => buildNotificationEmail("reliability_strike", sample) },
+    { id: "community_strike_heads_up_host", label: "Community strike heads-up (Pet Parent)", group: "Notifications", build: () => buildNotificationEmail("community_strike_heads_up_host", sample) },
+    { id: "community_strike_heads_up_nomad", label: "Community strike heads-up (Nomad)", group: "Notifications", build: () => buildNotificationEmail("community_strike_heads_up_nomad", sample) },
     { id: "welcome", label: "Welcome email", group: "Notifications", build: () => buildWelcomeEmail("Alex") },
     { id: "membership_activated", label: "Membership activated", group: "Membership", build: () => buildMembershipEmail("activated", { planName: "Combined Membership", endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },
     { id: "membership_renewal_reminder", label: "Renewal reminder", group: "Membership", build: () => buildMembershipEmail("renewal_reminder", { endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },

@@ -8,20 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const JOB_NAME = "trust-strike-emails";
+const JOB_NAME = "reliability-strike-emails";
 const LEASE_SECONDS = 300;
-
-const FLAG_LABELS: Record<string, string> = {
-  home_cleanliness: "Home Cleanliness",
-  undisclosed_cameras: "Unmapped Security Cameras",
-  pet_aggression: "Pet Behavioural Quirks",
-  sitter_cleanliness: "Home Cleanliness",
-  pet_neglect: "Pet Care Protocol",
-  abandonment: "Timeline Reliability",
-};
-
-const label = (category: string) =>
-  FLAG_LABELS[category] || category.replace(/_/g, " ");
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -55,31 +43,20 @@ const handler = async (req: Request): Promise<Response> => {
   const summary = { sent: 0, errors: 0 };
 
   try {
-    const { data: strikes, error } = await supabase
-      .from("community_strikes")
-      .select("id, subject_type, subject_user_id, category, flag_count")
-      .gte("flag_count", 2)
-      .is("strike_two_email_sent_at", null)
+    const { data: profiles, error } = await supabase
+      .from("profiles")
+      .select("id, email, first_name")
+      .eq("flagged_for_admin_review", true)
+      .is("reliability_strike_email_sent_at", null)
       .limit(100);
 
     if (error) throw error;
 
-    for (const strike of strikes ?? []) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("email, first_name")
-        .eq("id", strike.subject_user_id)
-        .maybeSingle();
+    for (const profile of profiles ?? []) {
+      if (!profile.email) continue;
 
-      if (!profile?.email) continue;
-
-      // Listing flags belong to the Pet Parent; user flags belong to the Nomad
-      const isHost = strike.subject_type === "listing";
       const firstName = profile.first_name || "there";
-      const emailContent = buildNotificationEmail(
-        isHost ? "community_strike_heads_up_host" : "community_strike_heads_up_nomad",
-        { firstName, categoryLabel: label(strike.category) },
-      );
+      const emailContent = buildNotificationEmail("reliability_strike", { firstName });
       const html = renderBrandedEmail(emailContent, {
         preview: emailContent.preview,
         footerReason: emailContent.footerReason,
@@ -88,17 +65,17 @@ const handler = async (req: Request): Promise<Response> => {
       try {
         await sendBrandedEmail(profile.email, emailContent.subject, html);
         await supabase
-          .from("community_strikes")
-          .update({ strike_two_email_sent_at: new Date().toISOString() })
-          .eq("id", strike.id);
+          .from("profiles")
+          .update({ reliability_strike_email_sent_at: new Date().toISOString() })
+          .eq("id", profile.id);
         summary.sent++;
       } catch (e) {
-        console.error("Failed to send strike-two email", strike.id, e);
+        console.error("Failed to send reliability-strike email", profile.id, e);
         summary.errors++;
       }
     }
   } catch (e) {
-    console.error("trust-strike-emails failed", e);
+    console.error("reliability-strike-emails failed", e);
     summary.errors++;
   } finally {
     await supabase.rpc("release_job_lease", { p_job_name: JOB_NAME });

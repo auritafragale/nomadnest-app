@@ -1083,6 +1083,7 @@ export type Database = {
           phone_verified: boolean
           phone_verified_at: string | null
           reliability_score: number
+          reliability_strike_email_sent_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1112,6 +1113,7 @@ export type Database = {
           phone_verified?: boolean
           phone_verified_at?: string | null
           reliability_score?: number
+          reliability_strike_email_sent_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -1141,6 +1143,7 @@ export type Database = {
           phone_verified?: boolean
           phone_verified_at?: string | null
           reliability_score?: number
+          reliability_strike_email_sent_at?: string | null
           updated_at?: string
         }
         Relationships: []

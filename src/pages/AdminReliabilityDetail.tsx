@@ -19,6 +19,13 @@ interface ProfileInfo {
   reliability_score: number | null;
 }
 
+const roleLabel = (role: string | null) => {
+  if (role === "sitter") return "Nomad";
+  if (role === "owner") return "Pet Parent";
+  if (role === "both") return "Combined";
+  return null;
+};
+
 interface CancellationStrikeRow {
   id: string;
   created_at: string;
@@ -45,6 +52,7 @@ const AdminReliabilityDetail = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileInfo | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [strikes, setStrikes] = useState<CancellationStrikeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState<ReliabilityNote[]>([]);
@@ -55,13 +63,14 @@ const AdminReliabilityDetail = () => {
   const loadData = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
-    const [profileRes, strikesRes] = await Promise.all([
+    const [profileRes, strikesRes, roleRes] = await Promise.all([
       supabase.from("profiles").select("full_name, email, reliability_score").eq("id", userId).maybeSingle(),
       supabase
         .from("cancellation_strikes")
         .select("id, created_at, days_before_start, reason, sit_id, sits(listing_id, listings(title))")
         .eq("user_id", userId)
         .order("created_at", { ascending: false }),
+      supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
     ]);
 
     if (profileRes.error || strikesRes.error) {
@@ -74,6 +83,7 @@ const AdminReliabilityDetail = () => {
 
     setProfile((profileRes.data as ProfileInfo) ?? null);
     setStrikes((strikesRes.data || []) as unknown as CancellationStrikeRow[]);
+    setRole(roleRes.data?.role ?? null);
     setLoading(false);
   }, [toast, userId]);
 
@@ -171,6 +181,7 @@ const AdminReliabilityDetail = () => {
               <div className="min-w-0">
                 <h1 className="text-2xl font-bold truncate">{profile.full_name || profile.email}</h1>
                 <p className="text-sm text-muted-foreground">
+                  {roleLabel(role) && `${roleLabel(role)} · `}
                   {strikes.length} late cancellation{strikes.length === 1 ? "" : "s"}
                 </p>
               </div>
