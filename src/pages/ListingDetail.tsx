@@ -359,6 +359,28 @@ const ListingDetail = () => {
       });
   }, [listing?.id, isOwner, acceptedSitter]);
 
+  // For the Welcome Guide's print header: the Nomad's own confirmed sit on
+  // this listing, if any. The owner can have several sitters/date ranges
+  // over time with no single "the" sit, so dates are only resolved (and
+  // otherwise just omitted) for the accepted Nomad's own view.
+  const [guideSitDatesId, setGuideSitDatesId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!listing?.id || !user || !acceptedSitter) {
+      setGuideSitDatesId(null);
+      return;
+    }
+    supabase
+      .from("sits")
+      .select("sit_dates_id")
+      .eq("listing_id", listing.id)
+      .eq("sitter_user_id", user.id)
+      .in("status", ["confirmed", "in_progress", "completed"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setGuideSitDatesId(data?.sit_dates_id ?? null));
+  }, [listing?.id, user, acceptedSitter]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -387,6 +409,9 @@ const ListingDetail = () => {
   const ownerName = listing.profiles?.first_name
     ? `${listing.profiles.first_name} ${listing.profiles.last_name || ""}`.trim()
     : "Pet Owner";
+
+  const guideSitDates = listing.sit_dates.find((d) => d.id === guideSitDatesId) || null;
+  const guideLocation = [listing.area, listing.city, listing.country].filter(Boolean).join(", ") || null;
 
   const listingUrl = `https://nomadnest.global/listing/${listing.id}`;
   const listingTitleMeta = `${listing.title} | Pet Sit in ${listing.city || listing.country || "the world"}`.slice(0, 60);
@@ -561,8 +586,11 @@ const ListingDetail = () => {
               {(isOwner || acceptedSitter) && (
                 <InlineWelcomeGuide
                   ownerUserId={listing.owner_user_id}
-                  listingId={listing.id}
                   addressPrivate={listing.address_private}
+                  listingTitle={listing.title}
+                  location={guideLocation}
+                  sitStartDate={guideSitDates ? format(parseISO(guideSitDates.start_date), "d MMM yyyy") : null}
+                  sitEndDate={guideSitDates ? format(parseISO(guideSitDates.end_date), "d MMM yyyy") : null}
                 />
               )}
 

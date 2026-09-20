@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,13 +32,22 @@ const FIELDS = [
  */
 const InlineWelcomeGuide = ({
   ownerUserId,
-  listingId,
   addressPrivate,
+  listingTitle,
+  location,
+  sitStartDate,
+  sitEndDate,
 }: {
   ownerUserId: string;
-  listingId: string;
   /** listings.address_private — only ever passed in for the owner or an accepted Nomad. */
   addressPrivate?: string | null;
+  /** The following are print-only context: this card has no other way to show
+   *  which listing/sit it belongs to, since everything else identifying that
+   *  lives outside .print-guide-root in the DOM. */
+  listingTitle?: string;
+  location?: string | null;
+  sitStartDate?: string | null;
+  sitEndDate?: string | null;
 }) => {
   const { guide, isLoading, isOffline, cachedAt } = useWelcomeGuide(ownerUserId);
   const [open, setOpen] = useState(false);
@@ -60,6 +68,18 @@ const InlineWelcomeGuide = ({
 
   return (
     <Card id="welcome-guide" className="print-guide-root overflow-hidden">
+      {/* Print-only: everything else identifying the sit lives outside this
+          element in the DOM, so the printed page needs its own header. */}
+      <div className="hidden print-only px-4 pt-4">
+        <p className="print-guide-title">{listingTitle || "NomadNest Welcome Guide"}</p>
+        {location && <p className="print-guide-meta">{location}</p>}
+        {sitStartDate && sitEndDate && (
+          <p className="print-guide-meta">
+            {sitStartDate} – {sitEndDate}
+          </p>
+        )}
+      </div>
+
       <CardHeader
         className="cursor-pointer select-none bg-primary/10"
         onClick={() => setOpen((o) => !o)}
@@ -107,13 +127,13 @@ const InlineWelcomeGuide = ({
                   Download / Print
                 </Button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="print-guide-fields grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {filled.map((f) => (
                   <div
                     key={f.key}
-                    className="flex gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3"
+                    className="print-guide-field flex gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3"
                   >
-                    <div className="shrink-0 w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center">
+                    <div className="print-guide-field-icon shrink-0 w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center">
                       <f.icon className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
@@ -123,11 +143,6 @@ const InlineWelcomeGuide = ({
                   </div>
                 ))}
               </div>
-              <Link to={`/listing/${listingId}/welcome-guide`} className="print-hidden">
-                <Button variant="ghost" size="sm">
-                  Open full guide
-                </Button>
-              </Link>
             </>
           ) : (
             <p className="text-sm text-muted-foreground">

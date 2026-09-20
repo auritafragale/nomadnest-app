@@ -360,6 +360,7 @@ const HomeInfoStep = ({ formData, updateFormData }: HomeInfoStepProps) => {
             }}
             placeholder="e.g., Carrer de Mallorca 401, 08013 Barcelona"
             types={["address"]}
+            className="h-14 text-base"
           />
         </div>
         </CollapsibleFormSection>
