@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge, badgeVariants } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -345,6 +345,7 @@ const ListingDetail = () => {
   const isOwner = user?.id === listing?.owner_user_id;
   const { data: acceptedSitter = false } = useAcceptedSitter(listing?.id);
   const [petDialogId, setPetDialogId] = useState<string | null>(null);
+  const [amenitiesExpanded, setAmenitiesExpanded] = useState(false);
   const canApply = user && !isOwner && (role === "sitter" || role === "both");
 
   // The exact address is only ever shown in the Welcome Guide to the owner
@@ -858,11 +859,22 @@ const ListingDetail = () => {
                           <div>
                             <h4 className="font-medium mb-2">Amenities</h4>
                             <div className="flex flex-wrap gap-2">
-                              {listing.amenities.map((amenity) => (
-                                <Badge key={amenity} variant="secondary">
-                                  {amenity}
-                                </Badge>
-                              ))}
+                              {(amenitiesExpanded ? listing.amenities : listing.amenities.slice(0, 4)).map(
+                                (amenity) => (
+                                  <Badge key={amenity} variant="secondary">
+                                    {amenity}
+                                  </Badge>
+                                )
+                              )}
+                              {listing.amenities.length > 4 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setAmenitiesExpanded((v) => !v)}
+                                  className={cn(badgeVariants({ variant: "outline" }), "cursor-pointer hover:bg-muted")}
+                                >
+                                  {amenitiesExpanded ? "Show less" : `+${listing.amenities.length - 4} more`}
+                                </button>
+                              )}
                             </div>
                           </div>
                         </>
