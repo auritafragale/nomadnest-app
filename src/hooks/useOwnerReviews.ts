@@ -24,6 +24,10 @@ interface OwnerReview {
       city: string | null;
       country: string | null;
     } | null;
+    dates: {
+      start_date: string;
+      end_date: string;
+    } | null;
   } | null;
 }
 
@@ -58,7 +62,7 @@ export const useOwnerReviews = (ownerUserId: string | undefined) => {
           // Get reviewer profile
           const { data: sitData } = await supabase
             .from("sits")
-            .select("id, sitter_user_id, listing_id")
+            .select("id, sitter_user_id, listing_id, sit_dates_id")
             .eq("id", review.sit_id)
             .maybeSingle();
 
@@ -66,23 +70,30 @@ export const useOwnerReviews = (ownerUserId: string | undefined) => {
           let sit = null;
 
           if (sitData) {
-            const { data: reviewerData } = await supabase
-              .from("profiles")
-              .select("id, first_name, last_name, avatar_url")
-              .eq("id", sitData.sitter_user_id)
-              .maybeSingle();
+            const [reviewerResult, listingResult, datesResult] = await Promise.all([
+              supabase
+                .from("profiles")
+                .select("id, first_name, last_name, avatar_url")
+                .eq("id", sitData.sitter_user_id)
+                .maybeSingle(),
+              supabase
+                .from("listings")
+                .select("title, city, country")
+                .eq("id", sitData.listing_id)
+                .maybeSingle(),
+              supabase
+                .from("sit_dates")
+                .select("start_date, end_date")
+                .eq("id", sitData.sit_dates_id)
+                .maybeSingle(),
+            ]);
 
-            reviewer = reviewerData;
-
-            const { data: listingData } = await supabase
-              .from("listings")
-              .select("title, city, country")
-              .eq("id", sitData.listing_id)
-              .maybeSingle();
+            reviewer = reviewerResult.data;
 
             sit = {
               id: sitData.id,
-              listing: listingData,
+              listing: listingResult.data,
+              dates: datesResult.data,
             };
           }
 

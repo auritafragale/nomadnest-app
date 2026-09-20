@@ -47,7 +47,7 @@ import { useCommunityWarning } from "@/hooks/useCommunityWarning";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useStartConversation } from "@/hooks/useConversations";
-import OwnerReviewsSection from "@/components/reviews/OwnerReviewsSection";
+import OwnerReviewsSummaryCard from "@/components/reviews/OwnerReviewsSummaryCard";
 import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
 import { Star, BookOpen } from "lucide-react";
 import ReportDialog from "@/components/reports/ReportDialog";
@@ -933,7 +933,7 @@ const ListingDetail = () => {
               />
 
               {/* Owner Reviews */}
-              <OwnerReviewsSection ownerUserId={listing.owner_user_id} />
+              <OwnerReviewsSummaryCard ownerUserId={listing.owner_user_id} />
               <Card>
                 <CardHeader>
                   <CardTitle asChild>

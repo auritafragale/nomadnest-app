@@ -2,14 +2,12 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Calendar, Cat, Dog, Heart, Loader2, Star, CheckCircle } from "lucide-react";
+import { MapPin, Calendar, Cat, Dog, Heart, Loader2, CheckCircle } from "lucide-react";
 import { ListingWithDetails } from "@/hooks/useListings";
 import { format, differenceInDays } from "date-fns";
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
-import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
 
 interface ListingCardProps {
   listing: ListingWithDetails;
@@ -107,25 +105,6 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
                 {dateRange}
               </div>
             </div>
-            {listing.owner_rating && listing.owner_rating.count > 0 ? (
-              <div className="mb-3 space-y-1.5">
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium">{listing.owner_rating.average.toFixed(1)}</span>
-                  <span>({listing.owner_rating.count})</span>
-                </div>
-                <CategoryRatingsSummary
-                  categories={listing.owner_category_ratings || []}
-                  limit={4}
-                  compact={false}
-                  className="max-w-sm"
-                />
-              </div>
-            ) : (
-              <div className="mb-3">
-                <RatingPlaceholder compact={false} />
-              </div>
-            )}
             <div className="flex flex-wrap gap-2">
               {listing.pets.map((pet) => (
                 <Badge key={pet.id} variant="muted" className="gap-1">
@@ -218,42 +197,22 @@ const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
             </div>
           </div>
 
-          {/* Rating + Pets row */}
-          <div className="flex items-center justify-between flex-wrap gap-2 mt-auto pt-2">
-            {listing.owner_rating && listing.owner_rating.count > 0 ? (
-              <div className="flex items-center gap-1 text-sm">
-                <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                <span className="font-medium">{listing.owner_rating.average.toFixed(1)}</span>
-                <span className="text-muted-foreground">({listing.owner_rating.count})</span>
-              </div>
-            ) : (
-              <RatingPlaceholder />
-            )}
-            <div className="flex flex-wrap gap-1">
-              {(() => {
-                const counts: Record<string, number> = {};
-                listing.pets.forEach((pet) => {
-                  const key = pet.type.toLowerCase();
-                  counts[key] = (counts[key] || 0) + 1;
-                });
-                return Object.entries(counts).map(([type, count]) => (
-                  <Badge key={type} variant="muted" className="gap-1 text-xs px-1.5">
-                    {petIcon(type)}
-                    {count > 1 && <span className="font-medium">{count}</span>}
-                  </Badge>
-                ));
-              })()}
-            </div>
+          {/* Pets row */}
+          <div className="flex flex-wrap gap-1 mt-auto pt-2">
+            {(() => {
+              const counts: Record<string, number> = {};
+              listing.pets.forEach((pet) => {
+                const key = pet.type.toLowerCase();
+                counts[key] = (counts[key] || 0) + 1;
+              });
+              return Object.entries(counts).map(([type, count]) => (
+                <Badge key={type} variant="muted" className="gap-1 text-xs px-1.5">
+                  {petIcon(type)}
+                  {count > 1 && <span className="font-medium">{count}</span>}
+                </Badge>
+              ));
+            })()}
           </div>
-
-          {/* Category sub-ratings */}
-          {listing.owner_rating && listing.owner_rating.count > 0 && (
-            <CategoryRatingsSummary
-              categories={listing.owner_category_ratings || []}
-              limit={4}
-              className="mt-2"
-            />
-          )}
         </div>
       </Card>
     </Link>
