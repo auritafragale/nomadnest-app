@@ -423,6 +423,23 @@ export function buildWelcomeEmail(firstName: string): BuiltEmail {
 }
 
 // ---------------------------------------------------------------------------
+// Install-the-app email (sent by send-welcome-email, right after the welcome email)
+// ---------------------------------------------------------------------------
+
+export function buildInstallAppEmail(): BuiltEmail {
+  return {
+    subject: "Get the NomadNest app on your phone",
+    heading: "Get NomadNest on your home screen 📲",
+    body: `
+      <p style="margin:0 0 20px;">NomadNest works best installed right on your phone, no app store needed, just your browser.</p>
+      ${welcomeStep("🤖", "On Android", 'Open nomadnest.global in Chrome, tap the menu (⋮), then "Add to Home screen" or "Install app".')}
+      ${welcomeStep("🍎", "On iPhone", 'Open nomadnest.global in Safari, tap the Share icon, then "Add to Home Screen".')}
+    `,
+    footerReason: "You're receiving this because you just joined NomadNest.",
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Membership emails (sent by stripe-webhook)
 // ---------------------------------------------------------------------------
 
@@ -683,6 +700,7 @@ export function getPreviewTemplates(): PreviewTemplate[] {
     { id: "community_strike_heads_up_host", label: "Community strike heads-up (Pet Parent)", group: "Notifications", subgroup: "Trust & Safety", build: () => buildNotificationEmail("community_strike_heads_up_host", sample) },
     { id: "community_strike_heads_up_nomad", label: "Community strike heads-up (Nomad)", group: "Notifications", subgroup: "Trust & Safety", build: () => buildNotificationEmail("community_strike_heads_up_nomad", sample) },
     { id: "welcome", label: "Welcome email", group: "Notifications", build: () => buildWelcomeEmail("Alex") },
+    { id: "install_app", label: "Install the app", group: "Notifications", build: () => buildInstallAppEmail() },
     { id: "membership_activated", label: "Membership activated", group: "Membership", build: () => buildMembershipEmail("activated", { planName: "Combined Membership", endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },
     { id: "membership_renewal_reminder", label: "Renewal reminder", group: "Membership", build: () => buildMembershipEmail("renewal_reminder", { endDate: "2027-09-02T00:00:00Z", name: "Alex" }) },
     { id: "membership_payment_failed", label: "Payment failed", group: "Membership", build: () => buildMembershipEmail("payment_failed", { amount: "£99.00", name: "Alex" }) },

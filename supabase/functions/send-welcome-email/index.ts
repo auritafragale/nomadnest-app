@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { renderBrandedEmail, sendBrandedEmail } from "../_shared/branded-email.ts";
-import { buildWelcomeEmail } from "../_shared/email-templates.ts";
+import { buildInstallAppEmail, buildWelcomeEmail } from "../_shared/email-templates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,6 +66,27 @@ serve(async (req) => {
     );
 
     await sendBrandedEmail(profile.email, email.subject, html);
+
+    // Best-effort: sent right after the welcome email, but a failure here
+    // must never affect the welcome email that already went out above.
+    try {
+      const installEmail = buildInstallAppEmail();
+      const installHtml = renderBrandedEmail(
+        {
+          heading: installEmail.heading,
+          body: installEmail.body,
+          ctaLabel: installEmail.ctaLabel,
+          ctaUrl: installEmail.ctaUrl,
+        },
+        {
+          preview: installEmail.preview,
+          footerReason: installEmail.footerReason,
+        }
+      );
+      await sendBrandedEmail(profile.email, installEmail.subject, installHtml);
+    } catch (installErr) {
+      console.error("send-welcome-email: install-app email failed:", installErr);
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
