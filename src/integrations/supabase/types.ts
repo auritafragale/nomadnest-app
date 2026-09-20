@@ -565,11 +565,14 @@ export type Database = {
           house_rules: string[] | null
           house_rules_other: string | null
           id: string
+          ideal_nomad_types: string[]
           ideal_sitter_description: string | null
           latitude: number | null
+          location_type: string | null
           longitude: number | null
           owner_user_id: string
           photos: string[] | null
+          public_transport_accessible: boolean | null
           remote_location: boolean
           requirements: string[] | null
           requirements_other: string | null
@@ -578,6 +581,7 @@ export type Database = {
           timezone: string | null
           title: string
           updated_at: string
+          wheelchair_accessible: boolean
           wifi_quality: string | null
         }
         Insert: {
@@ -597,11 +601,14 @@ export type Database = {
           house_rules?: string[] | null
           house_rules_other?: string | null
           id?: string
+          ideal_nomad_types?: string[]
           ideal_sitter_description?: string | null
           latitude?: number | null
+          location_type?: string | null
           longitude?: number | null
           owner_user_id: string
           photos?: string[] | null
+          public_transport_accessible?: boolean | null
           remote_location?: boolean
           requirements?: string[] | null
           requirements_other?: string | null
@@ -610,6 +617,7 @@ export type Database = {
           timezone?: string | null
           title: string
           updated_at?: string
+          wheelchair_accessible?: boolean
           wifi_quality?: string | null
         }
         Update: {
@@ -629,11 +637,14 @@ export type Database = {
           house_rules?: string[] | null
           house_rules_other?: string | null
           id?: string
+          ideal_nomad_types?: string[]
           ideal_sitter_description?: string | null
           latitude?: number | null
+          location_type?: string | null
           longitude?: number | null
           owner_user_id?: string
           photos?: string[] | null
+          public_transport_accessible?: boolean | null
           remote_location?: boolean
           requirements?: string[] | null
           requirements_other?: string | null
@@ -642,6 +653,7 @@ export type Database = {
           timezone?: string | null
           title?: string
           updated_at?: string
+          wheelchair_accessible?: boolean
           wifi_quality?: string | null
         }
         Relationships: []
