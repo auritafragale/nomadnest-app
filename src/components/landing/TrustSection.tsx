@@ -5,25 +5,21 @@ const stats = [
     icon: Users,
     value: "900+",
     label: "Community Members",
-    sub: "and growing every week",
   },
   {
     icon: ShieldCheck,
     value: "ID Verified",
     label: "Members",
-    sub: "Onfido-powered identity checks",
   },
   {
     icon: PawPrint,
     value: "Pets First",
     label: "Loved in their own home",
-    sub: "No kennels, no stress — just home",
   },
   {
     icon: Heart,
     value: "Founded by",
     label: "2 girls who love pets & people",
-    sub: "Built from lived nomadic experience",
   },
 ];
 
@@ -40,7 +36,6 @@ const TrustSection = () => {
               <div>
                 <p className="text-lg sm:text-2xl md:text-3xl font-display text-white leading-tight">{stat.value}</p>
                 <p className="font-semibold text-white text-sm sm:text-base leading-tight">{stat.label}</p>
-                <p className="text-xs sm:text-sm text-white/70 mt-0.5 leading-tight">{stat.sub}</p>
               </div>
             </div>
           ))}

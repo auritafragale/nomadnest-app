@@ -23,7 +23,7 @@ const faqs = [
   {
     question: "How are sitters verified?",
     answer:
-      "We offer optional ID verification and background checks for Nomads. Look for the verification badges on Nomad profiles. We also have a two-way review system so you can see feedback from previous sits.",
+      "We offer ID verification and background checks for Nomads. Look for the verification badges on Nomad profiles. We also have a two way review system so you can see feedback from previous sits.",
   },
   {
     question: "What if something goes wrong during a sit?",
