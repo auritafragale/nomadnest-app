@@ -70,9 +70,7 @@ import {
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
 import SitterReviewsSummaryCard from "@/components/reviews/SitterReviewsSummaryCard";
-import { useSitterAverageRating, useSitterReviews } from "@/hooks/useSitterReviews";
-import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
-import { aggregateCategoryRatings, SITTER_RATING_CATEGORIES } from "@/lib/categoryRatings";
+import { useSitterAverageRating } from "@/hooks/useSitterReviews";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
@@ -160,11 +158,6 @@ const SitterDetail = () => {
   
   const startConversation = useStartConversation();
   const { data: ratingData } = useSitterAverageRating(user ? userId : undefined);
-  const { data: sitterReviewsForCategories = [] } = useSitterReviews(user ? userId : undefined);
-  const sitterCategoryAverages = aggregateCategoryRatings(
-    sitterReviewsForCategories,
-    SITTER_RATING_CATEGORIES
-  );
 
   useEffect(() => {
     const fetchSitterData = async () => {
@@ -507,6 +500,14 @@ const SitterDetail = () => {
                       </Avatar>
                     </div>
                   )}
+                  {/* Share — top left, plain icon */}
+                  <div className="absolute top-3 left-3">
+                    <ShareDialog
+                      title={`${name} - Pet Sitter`}
+                      description={sitter.headline || `Check out ${name}'s pet sitting profile`}
+                      triggerClassName="border-0 bg-transparent text-primary-foreground shadow-none hover:bg-transparent hover:text-primary-foreground [&_svg]:h-7 [&_svg]:w-7"
+                    />
+                  </div>
                 </div>
 
                 <PhotoLightbox
@@ -599,15 +600,6 @@ const SitterDetail = () => {
                 </div>
 
 
-                {sitterCategoryAverages.length > 0 && (
-                  <CategoryRatingsSummary
-                    categories={sitterCategoryAverages}
-                    compact={false}
-                    className="mb-6 max-w-md"
-                  />
-                )}
-
-
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2 mb-6">
                   {user && user.id !== userId && (
@@ -651,10 +643,6 @@ const SitterDetail = () => {
                       Invite to Sit
                     </Button>
                   )}
-                  <ShareDialog 
-                    title={`${name} - Pet Sitter`}
-                    description={sitter.headline || `Check out ${name}'s pet sitting profile`}
-                  />
                 </div>
 
 
