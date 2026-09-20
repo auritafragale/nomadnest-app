@@ -93,69 +93,47 @@ export const ApplicationCard = ({
       <Collapsible open={expanded} onOpenChange={setExpanded}>
         <CardHeader className="pb-3">
           <CollapsibleTrigger asChild>
-            <div className="flex items-start justify-between gap-4 flex-wrap cursor-pointer">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <Avatar className="h-12 w-12 shrink-0">
-                  <AvatarImage src={sitter?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {initials.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <Link
-                    to={`/sitter/${application.sitter_user_id}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="font-semibold text-foreground hover:text-primary transition-colors block truncate"
-                  >
-                    {sitter?.first_name} {sitter?.last_name}
-                  </Link>
-                  {sitter?.city && (
-                    <p className="text-sm text-muted-foreground flex items-center gap-1 min-w-0">
-                      <MapPin className="h-3 w-3 shrink-0" />
-                      <span className="truncate">
-                        {sitter.city}{sitter.country ? `, ${sitter.country}` : ""}
-                      </span>
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <Star className="h-3 w-3" />
+            <div className="flex items-center gap-3 cursor-pointer">
+              <Avatar className="h-12 w-12 shrink-0">
+                <AvatarImage src={sitter?.avatar_url || undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {initials.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <Link
+                  to={`/sitter/${application.sitter_user_id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="font-semibold text-foreground hover:text-primary transition-colors block truncate"
+                >
+                  {sitter?.first_name} {sitter?.last_name}
+                </Link>
+                {sitter?.city && (
+                  <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1 min-w-0">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span className="truncate">
+                      {sitter.city}{sitter.country ? `, ${sitter.country}` : ""}
+                    </span>
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 min-w-0">
+                  <Star className="h-3 w-3 shrink-0" />
+                  <span className="truncate">
                     {application.review_count > 0
                       ? `${application.avg_rating?.toFixed(1)} · ${application.review_count} review${application.review_count === 1 ? "" : "s"}`
                       : "No reviews yet"}
-                  </p>
-                </div>
+                  </span>
+                </p>
               </div>
 
+              {/* Just the badge and chevron here — the Shortlist/Decline menu
+                  only appears once expanded (in the Actions row below), so
+                  the always-visible header has one less fixed-width element
+                  competing with the name/location/rating column for space. */}
               <div className="flex items-center gap-2 shrink-0">
                 <Badge className={statusColors[application.status]}>
                   {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                 </Badge>
-                {canModify && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={isUpdating}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                      {application.status !== "shortlisted" && (
-                        <DropdownMenuItem onClick={() => onStatusChange("shortlisted")}>
-                          <Bookmark className="h-4 w-4 mr-2" />
-                          Shortlist
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem onClick={() => onStatusChange("declined")}>
-                        <X className="h-4 w-4 mr-2" />
-                        Decline
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 text-muted-foreground transition-transform shrink-0",
@@ -213,7 +191,7 @@ export const ApplicationCard = ({
 
         {/* Actions */}
         {canModify && (
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-wrap gap-2 pt-2">
             <Button
               className="flex-1"
               onClick={() => (nomadWarning.hasWarning ? setWarningOpen(true) : onAccept())}
@@ -252,6 +230,25 @@ export const ApplicationCard = ({
                 <MessageCircle className="h-4 w-4" />
               )}
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="shrink-0" disabled={isUpdating}>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {application.status !== "shortlisted" && (
+                  <DropdownMenuItem onClick={() => onStatusChange("shortlisted")}>
+                    <Bookmark className="h-4 w-4 mr-2" />
+                    Shortlist
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => onStatusChange("declined")}>
+                  <X className="h-4 w-4 mr-2" />
+                  Decline
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
 
