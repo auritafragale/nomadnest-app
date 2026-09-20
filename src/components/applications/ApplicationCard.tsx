@@ -42,6 +42,7 @@ const statusColors: Record<string, string> = {
   shortlisted: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
   accepted: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   declined: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   withdrawn: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
 };
 
@@ -86,18 +87,18 @@ export const ApplicationCard = ({
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <Avatar className="h-12 w-12 shrink-0">
               <AvatarImage src={sitter?.avatar_url || undefined} />
               <AvatarFallback className="bg-primary/10 text-primary">
                 {initials.toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div>
+            <div className="min-w-0 flex-1">
               <Link
                 to={`/sitter/${application.sitter_user_id}`}
-                className="font-semibold text-foreground hover:text-primary transition-colors"
+                className="font-semibold text-foreground hover:text-primary transition-colors block truncate"
               >
                 {sitter?.first_name} {sitter?.last_name}
               </Link>
@@ -118,7 +119,7 @@ export const ApplicationCard = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Badge className={statusColors[application.status]}>
               {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
             </Badge>

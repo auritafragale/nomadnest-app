@@ -54,5 +54,8 @@ verify_jwt = false
 [functions.notify-admin-verification-submitted]
 verify_jwt = false
 
+[functions.notify-admin-reliability-strike]
+verify_jwt = false
+
 [functions.send-welcome-email]
 verify_jwt = false
