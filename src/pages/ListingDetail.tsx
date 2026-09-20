@@ -58,6 +58,7 @@ import { formatPetType, petTypeIcon, formatPetAge } from "@/lib/petTypes";
 import VerificationBadges from "@/components/ui/VerificationBadges";
 import InlineWelcomeGuide from "@/components/listing/InlineWelcomeGuide";
 import { useAcceptedSitter } from "@/hooks/useAcceptedSitter";
+import SignUpPromptDialog from "@/components/auth/SignUpPromptDialog";
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -157,7 +158,7 @@ const OwnerCard = ({
   role: string | null;
 }) => {
   const { averageRating, reviewCount } = useOwnerAverageRating(listing.owner_user_id);
-
+  const [signUpPromptOpen, setSignUpPromptOpen] = useState(false);
 
   return (
     <Card>
@@ -197,13 +198,22 @@ const OwnerCard = ({
             className="w-full"
             asChild
           >
-            <Link to={`/owner/${listing.owner_user_id}`}>
+            <Link
+              to={`/owner/${listing.owner_user_id}`}
+              onClick={(e) => {
+                if (!user) {
+                  e.preventDefault();
+                  setSignUpPromptOpen(true);
+                }
+              }}
+            >
               <User className="w-4 h-4 mr-2" />
               View Profile
             </Link>
           </Button>
         </div>
       </CardContent>
+      <SignUpPromptDialog open={signUpPromptOpen} onOpenChange={setSignUpPromptOpen} />
     </Card>
   );
 };

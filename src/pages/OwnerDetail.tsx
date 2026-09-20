@@ -21,6 +21,7 @@ import {
   Flag,
   Mail,
   CheckCircle,
+  Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -84,7 +85,10 @@ const OwnerDetail = () => {
 
   useEffect(() => {
     const fetchOwnerData = async () => {
-      if (!userId) return;
+      if (!userId || !user) {
+        setLoading(false);
+        return;
+      }
 
       try {
         const [ownerResult, profileResult, listingsResult] = await Promise.all([
@@ -132,7 +136,7 @@ const OwnerDetail = () => {
     };
 
     fetchOwnerData();
-  }, [userId]);
+  }, [userId, user]);
 
   const name = profile
     ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "Owner"
@@ -148,6 +152,27 @@ const OwnerDetail = () => {
   const location = profile
     ? [profile.city, profile.country].filter(Boolean).join(", ")
     : null;
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 container mx-auto px-4 pt-20 pb-8">
+          <div className="max-w-md mx-auto text-center py-12">
+            <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Sign in to view this profile</h2>
+            <p className="text-muted-foreground mb-6">
+              Pet Parent profiles are only visible to members, to protect their privacy.
+            </p>
+            <Button asChild>
+              <Link to="/auth">Log in or create a profile</Link>
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -65,6 +65,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Users,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
@@ -167,7 +168,10 @@ const SitterDetail = () => {
 
   useEffect(() => {
     const fetchSitterData = async () => {
-      if (!userId) return;
+      if (!userId || !user) {
+        setLoading(false);
+        return;
+      }
 
       try {
         const [sitterResult, profileResult] = await Promise.all([
@@ -347,6 +351,27 @@ const SitterDetail = () => {
   const availableDates = selectedListingData?.sit_dates.filter(
     (d) => d.status === "open"
   );
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 container mx-auto px-4 pt-20 pb-8">
+          <div className="max-w-md mx-auto text-center py-12">
+            <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Sign in to view this profile</h2>
+            <p className="text-muted-foreground mb-6">
+              Nomad profiles are only visible to members, to protect their privacy.
+            </p>
+            <Button asChild>
+              <Link to="/auth">Log in or create a profile</Link>
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
@@ -7,6 +8,8 @@ import MessageSitterButton from "@/components/browse/MessageSitterButton";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 import RatingPlaceholder from "@/components/reviews/RatingPlaceholder";
 import PetTypeIcons from "@/components/browse/PetTypeIcons";
+import SignUpPromptDialog from "@/components/auth/SignUpPromptDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 
@@ -15,6 +18,8 @@ interface SitterGridCardProps {
 }
 
 const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
+  const { user } = useAuth();
+  const [signUpPromptOpen, setSignUpPromptOpen] = useState(false);
   const name = sitter.profile
     ? `${sitter.profile.first_name || ""} ${sitter.profile.last_name || ""}`.trim() || "Nomad"
     : "Nomad";
@@ -33,7 +38,17 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
   const { average, count } = sitter.rating;
 
   return (
-    <Link to={`/sitter/${sitter.user_id}`} className="block h-full">
+    <>
+    <Link
+      to={`/sitter/${sitter.user_id}`}
+      className="block h-full"
+      onClick={(e) => {
+        if (!user) {
+          e.preventDefault();
+          setSignUpPromptOpen(true);
+        }
+      }}
+    >
       <Card
         variant="interactive"
         className="relative h-full overflow-hidden group flex flex-col items-center text-center p-3 md:p-4"
@@ -120,6 +135,8 @@ const SitterGridCard = ({ sitter }: SitterGridCardProps) => {
         </div>
       </Card>
     </Link>
+    <SignUpPromptDialog open={signUpPromptOpen} onOpenChange={setSignUpPromptOpen} />
+    </>
   );
 };
 
