@@ -123,7 +123,10 @@ export const useProposeSitReschedule = () => {
           ownerName: [me?.first_name, me?.last_name].filter(Boolean).join(" ") || "Your Pet Parent",
           proposedStartDate: format(parseISO(proposedStartDate), "d MMM yyyy"),
           proposedEndDate: format(parseISO(proposedEndDate), "d MMM yyyy"),
-          url: "/dashboard",
+          // No dedicated reschedule page exists — the response UI lives
+          // inline on the sit's card in the sitter's own dashboard, so at
+          // minimum land the recipient in the right dashboard mode.
+          url: "/dashboard?mode=sitter",
         },
       });
     },
@@ -180,6 +183,9 @@ export const useRespondToSitReschedule = () => {
         data: {
           listingTitle,
           sitterName: [me?.first_name, me?.last_name].filter(Boolean).join(" ") || "Your Nomad",
+          // Same reasoning as the proposal notification above — no dedicated
+          // page, so land in the owner's dashboard mode at minimum.
+          url: "/dashboard?mode=owner",
         },
       });
 

@@ -401,6 +401,10 @@ const WriteReviewDialog = ({
         .single();
 
       // Send notification to reviewee
+      // reviewType "sitter" means a Pet Parent is reviewing a Nomad, so the
+      // reviewee is the Nomad; "owner" means the reverse.
+      const revieweeReviewsUrl =
+        reviewType === "sitter" ? `/sitter/${revieweeUserId}/reviews` : `/owner/${revieweeUserId}/reviews`;
       sendNotification({
         type: "review",
         recipientUserId: revieweeUserId,
@@ -408,6 +412,7 @@ const WriteReviewDialog = ({
           reviewerName: [reviewerProfile?.first_name, reviewerProfile?.last_name].filter(Boolean).join(" ") || "Someone",
           rating: overallRating.toString(),
           text: text.trim() || "",
+          url: revieweeReviewsUrl,
         },
       });
 

@@ -174,6 +174,9 @@ export const useCreateInvite = () => {
       }
 
       // 4) Existing push/email notification pipeline
+      // The Nomad responds to invites from their own dashboard's Invites
+      // section — land there directly (and in the right mode, for a
+      // combined-role account) instead of a blind dashboard visit.
       sendNotification({
         type: "invite",
         recipientUserId: invite.sitter_user_id,
@@ -182,6 +185,7 @@ export const useCreateInvite = () => {
           listingTitle: listingTitleSafe,
           startDate: startDate || "",
           endDate: endDate || "",
+          url: "/dashboard?mode=sitter&section=invites",
         },
       });
 

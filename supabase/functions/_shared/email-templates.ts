@@ -115,10 +115,10 @@ export function buildNotificationEmail(
           <p>Dates: ${data.startDate} – ${data.endDate}</p>
         `,
         ctaLabel: "View the invitation",
-        ctaUrl: `${APP_URL}/dashboard`,
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
         pushTitle: "New Invitation!",
         pushBody: `${data.ownerName} invited you to ${data.listingTitle}`,
-        pushUrl: "/dashboard",
+        pushUrl: data.url || "/dashboard",
       };
     case "review":
       return {
@@ -130,10 +130,10 @@ export function buildNotificationEmail(
           ${data.text ? quote(data.text) : ""}
         `,
         ctaLabel: "View your profile",
-        ctaUrl: `${APP_URL}/dashboard`,
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
         pushTitle: "New Review!",
         pushBody: `${data.reviewerName} left you a ${data.rating}-star review`,
-        pushUrl: "/dashboard",
+        pushUrl: data.url || "/dashboard",
       };
     case "review_reminder": {
       const days = Number(data.daysLeft);
@@ -215,10 +215,10 @@ export function buildNotificationEmail(
           <p>Review the new dates and accept or decline from your dashboard.</p>
         `,
         ctaLabel: "Review the proposed dates",
-        ctaUrl: `${APP_URL}/dashboard`,
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
         pushTitle: "New dates proposed",
         pushBody: `${data.ownerName || "Your Pet Parent"} proposed new dates for ${data.listingTitle}`,
-        pushUrl: "/dashboard",
+        pushUrl: data.url || "/dashboard",
       };
     case "sit_reschedule_accepted":
       return {
@@ -230,10 +230,10 @@ export function buildNotificationEmail(
           <p>The sit is now confirmed for the new dates.</p>
         `,
         ctaLabel: "View your dashboard",
-        ctaUrl: `${APP_URL}/dashboard`,
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
         pushTitle: "New dates accepted",
         pushBody: `${data.sitterName || "Your Nomad"} accepted the new dates for ${data.listingTitle}`,
-        pushUrl: "/dashboard",
+        pushUrl: data.url || "/dashboard",
       };
     case "sit_reschedule_declined":
       return {
@@ -245,10 +245,10 @@ export function buildNotificationEmail(
           <p>The sit's original dates remain unchanged.</p>
         `,
         ctaLabel: "View your dashboard",
-        ctaUrl: `${APP_URL}/dashboard`,
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
         pushTitle: "New dates declined",
         pushBody: `${data.sitterName || "Your Nomad"} declined the new dates for ${data.listingTitle}. Dates are unchanged`,
-        pushUrl: "/dashboard",
+        pushUrl: data.url || "/dashboard",
       };
     case "arrival_vault_prompt":
       return {

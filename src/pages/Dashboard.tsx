@@ -301,6 +301,18 @@ const SitterDashboard = ({
     return () => clearTimeout(t);
   }, [initialAppTab]);
 
+  // Deep link from an invite notification: land on the Invites section.
+  const section = dashParams.get("section");
+  useEffect(() => {
+    if (section !== "invites") return;
+    const t = setTimeout(() => {
+      document
+        .getElementById("sitter-invites")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [section]);
+
   const todayISO = new Date().toISOString().slice(0, 10);
   // Re-applying to the same date range after a cancellation (e.g. applied,
   // accepted, cancelled, applied again, cancelled again) produces one
@@ -418,7 +430,9 @@ const SitterDashboard = ({
         </Card>
 
         {/* Sitter Invites */}
-        <SitterInvitesSection />
+        <div id="sitter-invites">
+          <SitterInvitesSection />
+        </div>
 
         {/* Availability Calendar */}
         <SitterAvailabilityCalendar />
