@@ -39,7 +39,7 @@ interface ApplyDialogProps {
   onSuccess?: () => void;
 }
 
-const MAX_ACTIVE_APPLICANTS = 5;
+const MAX_ACTIVE_APPLICANTS = 15;
 
 const HIGHLIGHT_OPTIONS = [
   "Experienced with this pet type",

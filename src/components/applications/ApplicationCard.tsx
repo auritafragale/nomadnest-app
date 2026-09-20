@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,7 @@ import { format } from "date-fns";
 import PetTypeIcons from "@/components/browse/PetTypeIcons";
 import {
   Calendar,
+  ChevronDown,
   MapPin,
   MoreVertical,
   Star,
@@ -29,6 +31,7 @@ import { useStartConversation } from "@/hooks/useConversations";
 import { useToast } from "@/hooks/use-toast";
 import CommunityWarningModal from "@/components/trust/CommunityWarningModal";
 import { useCommunityWarning } from "@/hooks/useCommunityWarning";
+import { cn } from "@/lib/utils";
 
 interface ApplicationCardProps {
   application: Application;
@@ -57,6 +60,7 @@ export const ApplicationCard = ({
   const startConversation = useStartConversation();
   const [isStartingChat, setIsStartingChat] = useState(false);
   const [warningOpen, setWarningOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const nomadWarning = useCommunityWarning("user", application.sitter_user_id);
 
   const sitter = application.sitter_user;
@@ -86,69 +90,85 @@ export const ApplicationCard = ({
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <Avatar className="h-12 w-12 shrink-0">
-              <AvatarImage src={sitter?.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary">
-                {initials.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <Link
-                to={`/sitter/${application.sitter_user_id}`}
-                className="font-semibold text-foreground hover:text-primary transition-colors block truncate"
-              >
-                {sitter?.first_name} {sitter?.last_name}
-              </Link>
-              {sitter?.city && (
-                <p className="text-sm text-muted-foreground flex items-center gap-1 min-w-0">
-                  <MapPin className="h-3 w-3 shrink-0" />
-                  <span className="truncate">
-                    {sitter.city}{sitter.country ? `, ${sitter.country}` : ""}
-                  </span>
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                <Star className="h-3 w-3" />
-                {application.review_count > 0
-                  ? `${application.avg_rating?.toFixed(1)} · ${application.review_count} review${application.review_count === 1 ? "" : "s"}`
-                  : "No reviews yet"}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Badge className={statusColors[application.status]}>
-              {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-            </Badge>
-            {canModify && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" disabled={isUpdating}>
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {application.status !== "shortlisted" && (
-                    <DropdownMenuItem onClick={() => onStatusChange("shortlisted")}>
-                      <Bookmark className="h-4 w-4 mr-2" />
-                      Shortlist
-                    </DropdownMenuItem>
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <CardHeader className="pb-3">
+          <CollapsibleTrigger asChild>
+            <div className="flex items-start justify-between gap-4 flex-wrap cursor-pointer">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <Avatar className="h-12 w-12 shrink-0">
+                  <AvatarImage src={sitter?.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {initials.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <Link
+                    to={`/sitter/${application.sitter_user_id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="font-semibold text-foreground hover:text-primary transition-colors block truncate"
+                  >
+                    {sitter?.first_name} {sitter?.last_name}
+                  </Link>
+                  {sitter?.city && (
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 min-w-0">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span className="truncate">
+                        {sitter.city}{sitter.country ? `, ${sitter.country}` : ""}
+                      </span>
+                    </p>
                   )}
-                  <DropdownMenuItem onClick={() => onStatusChange("declined")}>
-                    <X className="h-4 w-4 mr-2" />
-                    Decline
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        </div>
-      </CardHeader>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <Star className="h-3 w-3" />
+                    {application.review_count > 0
+                      ? `${application.avg_rating?.toFixed(1)} · ${application.review_count} review${application.review_count === 1 ? "" : "s"}`
+                      : "No reviews yet"}
+                  </p>
+                </div>
+              </div>
 
-      <CardContent className="space-y-4">
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge className={statusColors[application.status]}>
+                  {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                </Badge>
+                {canModify && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={isUpdating}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      {application.status !== "shortlisted" && (
+                        <DropdownMenuItem onClick={() => onStatusChange("shortlisted")}>
+                          <Bookmark className="h-4 w-4 mr-2" />
+                          Shortlist
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={() => onStatusChange("declined")}>
+                        <X className="h-4 w-4 mr-2" />
+                        Decline
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 text-muted-foreground transition-transform shrink-0",
+                    expanded && "rotate-180"
+                  )}
+                />
+              </div>
+            </div>
+          </CollapsibleTrigger>
+        </CardHeader>
+
+        <CollapsibleContent>
+        <CardContent className="space-y-4">
         {/* Listing & Dates */}
         <div className="p-3 rounded-lg bg-muted/50">
           <p className="text-sm font-medium text-foreground">
@@ -239,7 +259,9 @@ export const ApplicationCard = ({
         <p className="text-xs text-muted-foreground">
           Applied {format(new Date(application.created_at), "MMM d, yyyy 'at' h:mm a")}
         </p>
-      </CardContent>
+        </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 };
