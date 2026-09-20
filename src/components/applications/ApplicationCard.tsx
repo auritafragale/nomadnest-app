@@ -102,9 +102,11 @@ export const ApplicationCard = ({
                 {sitter?.first_name} {sitter?.last_name}
               </Link>
               {sitter?.city && (
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {sitter.city}{sitter.country ? `, ${sitter.country}` : ""}
+                <p className="text-sm text-muted-foreground flex items-center gap-1 min-w-0">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  <span className="truncate">
+                    {sitter.city}{sitter.country ? `, ${sitter.country}` : ""}
+                  </span>
                 </p>
               )}
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -213,12 +215,13 @@ export const ApplicationCard = ({
             <Button variant="outline" asChild>
               <Link to={`/sitter/${application.sitter_user_id}`}>
                 <User className="h-4 w-4 mr-2" />
-                View Profile
+                View
               </Link>
             </Button>
             <Button
               variant="outline"
               size="icon"
+              className="shrink-0"
               onClick={handleMessageSitter}
               disabled={isStartingChat}
             >

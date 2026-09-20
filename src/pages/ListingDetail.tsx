@@ -131,6 +131,13 @@ interface Listing {
   wheelchair_accessible?: boolean | null;
   latitude: number | null;
   longitude: number | null;
+  /**
+   * Fetched separately via the get_listing_private_address RPC, never via a
+   * raw table select — RLS on `listings` is row-level only, so a plain
+   * select("address_private") would hand it to every visitor a listing is
+   * visible to, not just the owner/accepted Nomad the RPC restricts it to.
+   */
+  address_private: string | null;
   pets: Pet[];
   sit_dates: SitDate[];
   profiles: Profile;
@@ -289,6 +296,7 @@ const ListingDetail = () => {
 
         setListing({
           ...listingRow,
+          address_private: null,
           pets: petsResult.data || [],
           sit_dates: datesResult.data || [],
           profiles: profileResult.data || null,
@@ -338,6 +346,18 @@ const ListingDetail = () => {
   const { data: acceptedSitter = false } = useAcceptedSitter(listing?.id);
   const [petDialogId, setPetDialogId] = useState<string | null>(null);
   const canApply = user && !isOwner && (role === "sitter" || role === "both");
+
+  // The exact address is only ever shown in the Welcome Guide to the owner
+  // or an accepted Nomad — fetched via the access-checked RPC rather than
+  // added to the listing select, which would leak it to every visitor.
+  useEffect(() => {
+    if (!listing?.id || !(isOwner || acceptedSitter)) return;
+    supabase
+      .rpc("get_listing_private_address", { p_listing_id: listing.id })
+      .then(({ data }) => {
+        setListing((prev) => (prev ? { ...prev, address_private: data ?? null } : prev));
+      });
+  }, [listing?.id, isOwner, acceptedSitter]);
 
   if (loading) {
     return (
@@ -539,7 +559,11 @@ const ListingDetail = () => {
             <div className="lg:col-span-2 space-y-6">
               {/* Welcome Guide — shown to the owner or an accepted Nomad */}
               {(isOwner || acceptedSitter) && (
-                <InlineWelcomeGuide ownerUserId={listing.owner_user_id} listingId={listing.id} />
+                <InlineWelcomeGuide
+                  ownerUserId={listing.owner_user_id}
+                  listingId={listing.id}
+                  addressPrivate={listing.address_private}
+                />
               )}
 
               {/* Description */}
