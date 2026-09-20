@@ -26,10 +26,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
-import OwnerReviewsSection from "@/components/reviews/OwnerReviewsSection";
-import { useOwnerAverageRating, useOwnerReviews } from "@/hooks/useOwnerReviews";
-import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
-import { aggregateCategoryRatings, OWNER_RATING_CATEGORIES } from "@/lib/categoryRatings";
+import OwnerReviewsSummaryCard from "@/components/reviews/OwnerReviewsSummaryCard";
+import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
 import ReportDialog from "@/components/reports/ReportDialog";
 
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
@@ -77,11 +75,6 @@ const OwnerDetail = () => {
   
   const startConversation = useStartConversation();
   const ratingData = useOwnerAverageRating(userId);
-  const { data: ownerReviewsForCategories = [] } = useOwnerReviews(userId);
-  const ownerCategoryAverages = aggregateCategoryRatings(
-    ownerReviewsForCategories,
-    OWNER_RATING_CATEGORIES
-  );
 
   useEffect(() => {
     const fetchOwnerData = async () => {
@@ -413,7 +406,7 @@ const OwnerDetail = () => {
             )}
 
             {/* Reviews Section */}
-            {userId && <OwnerReviewsSection ownerUserId={userId} />}
+            {userId && <OwnerReviewsSummaryCard ownerUserId={userId} />}
           </div>
         </div>
       </main>
