@@ -241,28 +241,41 @@
 }
 /* Print: isolate the Welcome Guide so only it goes on paper, and compact it
    so short content genuinely fits on one sheet instead of sprawling across
-   several. The rest of the page stays in the DOM (visibility:hidden keeps
-   layout, unlike display:none) but is collapsed to zero height so it can't
-   push the print pagination past a single page, and the guide is pinned to
-   the viewport with position:fixed so it isn't constrained by any of its
-   now-collapsed ancestors' boxes. */
+   several.
+
+   Hiding mechanism: :has() to keep exactly the ancestor chain down to
+   .print-guide-root, the root itself, and its descendants — everything
+   else (unrelated siblings at any depth) gets display:none, which
+   genuinely removes it from layout (unlike visibility:hidden, which keeps
+   its box and reserves space), so print pagination follows only the
+   guide's own height.
+
+   .print-guide-root stays in normal static flow deliberately.
+   position:fixed here was a print anti-pattern: fixed-position elements
+   are viewport-relative, and each printed page is effectively its own
+   viewport, so the browser repeated the guide on every page (the 3-page
+   duplicate output that was reported) instead of printing it once. */
 @media print {
-  body.printing-guide {
-    height: 0 !important;
-    overflow: hidden !important;
+  body.printing-guide *:not(.print-guide-root):not(.print-guide-root *):not(:has(.print-guide-root)) {
+    display: none !important;
   }
-  body.printing-guide * {
-    visibility: hidden !important;
-  }
-  body.printing-guide .print-guide-root,
-  body.printing-guide .print-guide-root * {
-    visibility: visible !important;
+  /* The preserved ancestor chain still carries the page's normal layout
+     spacing/sizing (e.g. min-h-screen, container padding, grid gaps) —
+     strip it so the guide starts at the top of the sheet instead of
+     leaving a screen's worth of blank space above it. */
+  body.printing-guide *:has(.print-guide-root) {
+    display: block !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: none !important;
   }
   body.printing-guide .print-guide-root {
-    position: fixed !important;
-    left: 0;
-    top: 0;
-    width: 100%;
     margin: 0 !important;
     padding: 0 !important;
     border: none !important;
