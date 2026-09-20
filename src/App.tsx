@@ -39,6 +39,7 @@ import EditOwnerProfile from "./pages/EditOwnerProfile";
 import SitterDetail from "./pages/SitterDetail";
 import OwnerDetail from "./pages/OwnerDetail";
 import OwnerReviewsCarousel from "./pages/OwnerReviewsCarousel";
+import SitterReviewsCarousel from "./pages/SitterReviewsCarousel";
 import Inbox from "./pages/Inbox";
 import Applications from "./pages/Applications";
 import SavedListings from "./pages/SavedListings";
@@ -147,6 +148,7 @@ const AppShell = () => {
         <Route path="/edit-sitter-profile" element={<ProtectedRoute><EditSitterProfile /></ProtectedRoute>} />
         <Route path="/edit-owner-profile" element={<ProtectedRoute><EditOwnerProfile /></ProtectedRoute>} />
         <Route path="/sitter/:userId" element={<SitterDetail />} />
+        <Route path="/sitter/:userId/reviews" element={<SitterReviewsCarousel />} />
         <Route path="/owner/:userId" element={<OwnerDetail />} />
         <Route path="/owner/:userId/reviews" element={<OwnerReviewsCarousel />} />
         <Route path="/inbox" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />

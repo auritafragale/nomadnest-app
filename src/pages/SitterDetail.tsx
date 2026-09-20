@@ -69,7 +69,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useStartConversation } from "@/hooks/useConversations";
-import { SitterReviewsSection } from "@/components/reviews/SitterReviewsSection";
+import SitterReviewsSummaryCard from "@/components/reviews/SitterReviewsSummaryCard";
 import { useSitterAverageRating, useSitterReviews } from "@/hooks/useSitterReviews";
 import CategoryRatingsSummary from "@/components/reviews/CategoryRatingsSummary";
 import { aggregateCategoryRatings, SITTER_RATING_CATEGORIES } from "@/lib/categoryRatings";
@@ -901,10 +901,7 @@ const SitterDetail = () => {
             )}
 
             {/* Reviews Section */}
-            <SitterReviewsSection
-              sitterUserId={userId!}
-              sitterFirstName={profile.first_name}
-            />
+            <SitterReviewsSummaryCard sitterUserId={userId!} />
           </div>
         </div>
       </main>

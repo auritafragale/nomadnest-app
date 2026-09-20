@@ -23,6 +23,10 @@ export interface SitterReview {
       city: string | null;
       country: string | null;
     };
+    dates: {
+      start_date: string;
+      end_date: string;
+    } | null;
   };
 }
 
@@ -65,21 +69,23 @@ export const useSitterReviews = (sitterUserId: string | undefined) => {
           .in("id", reviewerIds),
         supabase
           .from("sits")
-          .select("id, listing_id")
+          .select("id, listing_id, sit_dates_id")
           .in("id", sitIds),
       ]);
 
       const profiles = profilesResult.data || [];
       const sits = sitsResult.data || [];
 
-      // Get listing details
+      // Get listing and date details
       const listingIds = [...new Set(sits.map((s) => s.listing_id))];
-      const { data: listings } = await supabase
-        .from("listings")
-        .select("id, title, city, country")
-        .in("id", listingIds);
+      const sitDatesIds = [...new Set(sits.map((s) => s.sit_dates_id))];
+      const [{ data: listings }, { data: sitDates }] = await Promise.all([
+        supabase.from("listings").select("id, title, city, country").in("id", listingIds),
+        supabase.from("sit_dates").select("id, start_date, end_date").in("id", sitDatesIds),
+      ]);
 
       const listingsMap = new Map((listings || []).map((l) => [l.id, l]));
+      const sitDatesMap = new Map((sitDates || []).map((d) => [d.id, d]));
       const sitsMap = new Map(sits.map((s) => [s.id, s]));
       const profilesMap = new Map(profiles.map((p) => [p.id, p]));
 
@@ -87,6 +93,7 @@ export const useSitterReviews = (sitterUserId: string | undefined) => {
         const reviewer = profilesMap.get(review.reviewer_user_id);
         const sit = sitsMap.get(review.sit_id);
         const listing = sit ? listingsMap.get(sit.listing_id) : null;
+        const dates = sit ? sitDatesMap.get(sit.sit_dates_id) : null;
 
         return {
           id: review.id,
@@ -109,6 +116,9 @@ export const useSitterReviews = (sitterUserId: string | undefined) => {
               city: listing?.city || null,
               country: listing?.country || null,
             },
+            dates: dates
+              ? { start_date: dates.start_date, end_date: dates.end_date }
+              : null,
           },
         } as SitterReview;
       });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,9 +14,10 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { ArrowLeft, Star, User, Calendar } from "lucide-react";
+import { ArrowLeft, Star, User, Calendar, Users } from "lucide-react";
 import { format } from "date-fns";
-import { useOwnerReviews } from "@/hooks/useOwnerReviews";
+import { useSitterReviews } from "@/hooks/useSitterReviews";
+import { useAuth } from "@/contexts/AuthContext";
 
 const StarRowLight = ({ rating }: { rating: number }) => (
   <div className="flex items-center gap-1">
@@ -42,10 +43,11 @@ const StarRow = ({ rating }: { rating: number }) => (
   </div>
 );
 
-const OwnerReviewsCarousel = () => {
+const SitterReviewsCarousel = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { data: reviews = [], isLoading } = useOwnerReviews(userId);
+  const { user } = useAuth();
+  const { data: reviews = [], isLoading } = useSitterReviews(userId);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
 
@@ -59,6 +61,27 @@ const OwnerReviewsCarousel = () => {
     };
   }, [api]);
 
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 container mx-auto px-4 pt-20 pb-8">
+          <div className="max-w-md mx-auto text-center py-12">
+            <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Sign in to view this profile</h2>
+            <p className="text-muted-foreground mb-6">
+              Nomad profiles are only visible to members, to protect their privacy.
+            </p>
+            <Button asChild>
+              <Link to="/auth">Log in or create a profile</Link>
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
@@ -69,7 +92,7 @@ const OwnerReviewsCarousel = () => {
             Back
           </Button>
 
-          <h1 className="text-xl md:text-2xl font-bold mb-4">Reviews from Nomads</h1>
+          <h1 className="text-xl md:text-2xl font-bold mb-4">Reviews</h1>
 
           {isLoading ? (
             <Skeleton className="h-96 w-full rounded-xl" />
@@ -90,15 +113,15 @@ const OwnerReviewsCarousel = () => {
                     const reviewerName =
                       [review.reviewer?.first_name, review.reviewer?.last_name]
                         .filter(Boolean)
-                        .join(" ") || "A Nomad";
+                        .join(" ") || "A Pet Parent";
 
                     const breakdown = (
                       [
+                        { label: "Pet Care", value: review.rating_pet_care },
                         { label: "Communication", value: review.rating_communication },
-                        { label: "Home Accuracy", value: review.rating_home_accuracy },
-                        { label: "Pet Preparedness", value: review.rating_pet_preparedness },
-                        { label: "Hospitality", value: review.rating_hospitality },
-                        { label: "Clear Expectations", value: review.rating_clear_expectations },
+                        { label: "Cleanliness", value: review.rating_cleanliness },
+                        { label: "Reliability", value: review.rating_reliability },
+                        { label: "Respect for Home", value: review.rating_respect_home },
                       ] as { label: string; value: number | null }[]
                     ).filter(
                       (b): b is { label: string; value: number } => b.value != null
@@ -119,9 +142,7 @@ const OwnerReviewsCarousel = () => {
                             </Avatar>
                             <div>
                               <p className="font-semibold">{reviewerName}</p>
-                              <p className="text-sm text-primary-foreground/80">
-                                cared for this home
-                              </p>
+                              <p className="text-sm text-primary-foreground/80">Pet Parent</p>
                             </div>
                             {review.sit?.dates && (
                               <p className="flex items-center justify-center gap-1.5 text-sm text-primary-foreground/80">
@@ -176,4 +197,4 @@ const OwnerReviewsCarousel = () => {
   );
 };
 
-export default OwnerReviewsCarousel;
+export default SitterReviewsCarousel;
