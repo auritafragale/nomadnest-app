@@ -217,38 +217,40 @@ export const ApplicationCard = ({
                 View
               </Link>
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="shrink-0"
-              onClick={handleMessageSitter}
-              disabled={isStartingChat}
-            >
-              {isStartingChat ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <MessageCircle className="h-4 w-4" />
-              )}
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="shrink-0" disabled={isUpdating}>
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {application.status !== "shortlisted" && (
-                  <DropdownMenuItem onClick={() => onStatusChange("shortlisted")}>
-                    <Bookmark className="h-4 w-4 mr-2" />
-                    Shortlist
-                  </DropdownMenuItem>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={handleMessageSitter}
+                disabled={isStartingChat}
+              >
+                {isStartingChat ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <MessageCircle className="h-4 w-4" />
                 )}
-                <DropdownMenuItem onClick={() => onStatusChange("declined")}>
-                  <X className="h-4 w-4 mr-2" />
-                  Decline
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="shrink-0" disabled={isUpdating}>
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {application.status !== "shortlisted" && (
+                    <DropdownMenuItem onClick={() => onStatusChange("shortlisted")}>
+                      <Bookmark className="h-4 w-4 mr-2" />
+                      Shortlist
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={() => onStatusChange("declined")}>
+                    <X className="h-4 w-4 mr-2" />
+                    Decline
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         )}
 
