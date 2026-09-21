@@ -82,7 +82,7 @@ export function buildNotificationEmail(
         heading: "Application update",
         body: `
           <p>Your application for <strong>${data.listingTitle}</strong> has been <strong>${data.status}</strong>.</p>
-          ${data.status === "accepted" ? "<p>Congratulations! The Pet Parent will be in touch soon.</p>" : ""}
+          ${data.status === "accepted" ? "<p>Congratulations! Make sure you get in touch with the Pet Parent as soon as possible.</p>" : ""}
         `,
         ctaLabel: "View your dashboard",
         ctaUrl: `${APP_URL}/dashboard`,
