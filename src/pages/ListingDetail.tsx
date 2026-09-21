@@ -690,12 +690,15 @@ const ListingDetail = () => {
                   )}
                 </div>
                 {listing.ideal_nomad_types.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {listing.ideal_nomad_types.map((type) => (
-                      <Badge key={type} variant="secondary">
-                        {type}
-                      </Badge>
-                    ))}
+                  <div className="mt-3">
+                    <h4 className="font-medium mb-2">Best suited for</h4>
+                    <div className="flex gap-2 overflow-x-auto">
+                      {listing.ideal_nomad_types.map((type) => (
+                        <Badge key={type} variant="secondary" className="whitespace-nowrap shrink-0">
+                          {type}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
