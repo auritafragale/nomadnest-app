@@ -65,28 +65,11 @@ const SitRescheduleSection = ({
   isSitter: boolean;
 }) => {
   const { data: pendingRequest, isLoading } = useSitRescheduleRequest(sit.id);
-  const proposeReschedule = useProposeSitReschedule();
   const respondToReschedule = useRespondToSitReschedule();
-  const [proposedRange, setProposedRange] = useState<DateRange | undefined>(undefined);
-  const [proposeNote, setProposeNote] = useState("");
 
   if (isLoading) return null;
 
   const listingTitle = sit.listing?.title || "your sit";
-
-  const handlePropose = () => {
-    if (!proposedRange?.from || !proposedRange?.to) return;
-    proposeReschedule.mutate({
-      sitId: sit.id,
-      sitterUserId: sit.sitter_user_id,
-      listingTitle,
-      proposedStartDate: format(proposedRange.from, "yyyy-MM-dd"),
-      proposedEndDate: format(proposedRange.to, "yyyy-MM-dd"),
-      note: proposeNote,
-    });
-    setProposedRange(undefined);
-    setProposeNote("");
-  };
 
   const handleRespond = (accept: boolean) => {
     if (!pendingRequest) return;
@@ -99,72 +82,9 @@ const SitRescheduleSection = ({
     });
   };
 
-  // Owner, no pending request yet — offer to propose new dates.
-  if (isOwner && !pendingRequest) {
-    return (
-      <div className="mt-3 pt-2 border-t">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button size="sm" variant="outline" className="w-full">
-              <CalendarClock className="w-3 h-3 mr-1" />
-              Propose New Dates
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Propose new dates</AlertDialogTitle>
-              <AlertDialogDescription>
-                Suggest new dates for this sit. The Nomad will be notified and can accept
-                or decline.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start font-normal">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  {proposedRange?.from ? (
-                    proposedRange.to ? (
-                      `${format(proposedRange.from, "MMM d")} - ${format(proposedRange.to, "MMM d, yyyy")}`
-                    ) : (
-                      format(proposedRange.from, "MMM d, yyyy")
-                    )
-                  ) : (
-                    "Select new dates"
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <DatePickerCalendar
-                  mode="range"
-                  selected={proposedRange}
-                  onSelect={setProposedRange}
-                  numberOfMonths={2}
-                  disabled={{ before: new Date() }}
-                />
-              </PopoverContent>
-            </Popover>
-            <Textarea
-              value={proposeNote}
-              onChange={(e) => setProposeNote(e.target.value)}
-              placeholder="Add a short note (optional)"
-              rows={2}
-            />
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                disabled={
-                  !proposedRange?.from || !proposedRange?.to || proposeReschedule.isPending
-                }
-                onClick={handlePropose}
-              >
-                Propose Dates
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    );
-  }
+  // Owner, no pending request yet — the "Propose New Dates" trigger now lives
+  // in SitCard's main actions row, alongside Cancel, so there's nothing to
+  // render here for this case.
 
   // Owner, pending request already out — quiet status, no cancel-your-own
   // proposal action for now.
@@ -245,6 +165,10 @@ export const SitCard = ({
   const otherPartyLabel = isOwner ? "Sitter" : "Owner";
   const { mutate: updateStatus, isPending } = useUpdateSitStatus();
   const { data: declinedRequest } = useLatestDeclinedReschedule(sit.id);
+  const { data: pendingRequest } = useSitRescheduleRequest(sit.id);
+  const proposeReschedule = useProposeSitReschedule();
+  const [proposedRange, setProposedRange] = useState<DateRange | undefined>(undefined);
+  const [proposeNote, setProposeNote] = useState("");
   const [hasReviewed, setHasReviewed] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [reopenChoice, setReopenChoice] = useState<"original" | "proposed">("proposed");
@@ -288,6 +212,20 @@ export const SitCard = ({
       setOpeningChat(false);
     }
 
+  };
+
+  const handlePropose = () => {
+    if (!proposedRange?.from || !proposedRange?.to) return;
+    proposeReschedule.mutate({
+      sitId: sit.id,
+      sitterUserId: sit.sitter_user_id,
+      listingTitle: sit.listing?.title || "your sit",
+      proposedStartDate: format(proposedRange.from, "yyyy-MM-dd"),
+      proposedEndDate: format(proposedRange.to, "yyyy-MM-dd"),
+      note: proposeNote,
+    });
+    setProposedRange(undefined);
+    setProposeNote("");
   };
 
   // A declined reschedule proposal means the sit's original dates aren't
@@ -463,6 +401,67 @@ export const SitCard = ({
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction onClick={() => updateStatus({ sitId: sit.id, status: "completed" })}>
                     Complete Sit
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          {isOwner && !pendingRequest && (sit.status === "confirmed" || sit.status === "in_progress") && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <CalendarClock className="w-3 h-3 mr-1" />
+                  Propose New Dates
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Propose new dates</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Suggest new dates for this sit. The Nomad will be notified and can accept
+                    or decline.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start font-normal">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {proposedRange?.from ? (
+                        proposedRange.to ? (
+                          `${format(proposedRange.from, "MMM d")} - ${format(proposedRange.to, "MMM d, yyyy")}`
+                        ) : (
+                          format(proposedRange.from, "MMM d, yyyy")
+                        )
+                      ) : (
+                        "Select new dates"
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <DatePickerCalendar
+                      mode="range"
+                      selected={proposedRange}
+                      onSelect={setProposedRange}
+                      numberOfMonths={2}
+                      disabled={{ before: new Date() }}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Textarea
+                  value={proposeNote}
+                  onChange={(e) => setProposeNote(e.target.value)}
+                  placeholder="Add a short note (optional)"
+                  rows={2}
+                />
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={
+                      !proposedRange?.from || !proposedRange?.to || proposeReschedule.isPending
+                    }
+                    onClick={handlePropose}
+                  >
+                    Propose Dates
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
