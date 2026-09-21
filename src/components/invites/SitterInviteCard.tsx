@@ -42,7 +42,7 @@ export const SitterInviteCard = ({ invite }: SitterInviteCardProps) => {
     if (invite.status === "pending") {
       updateStatus.mutate({ inviteId: invite.id, status: "viewed" });
     }
-    navigate(`/listing/${invite.listing_id}`);
+    navigate(`/listing/${invite.listing_id}?invite=${invite.id}`);
   };
 
   const handleDecline = () => {

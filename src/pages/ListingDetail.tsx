@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, badgeVariants } from "@/components/ui/badge";
@@ -62,6 +62,7 @@ import SignUpPromptDialog from "@/components/auth/SignUpPromptDialog";
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useUpdateInviteStatus } from "@/hooks/useSitterInvites";
 
 interface Pet {
   id: string;
@@ -237,6 +238,7 @@ const OwnerCard = ({
 const ListingDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, role } = useAuth();
   const { toast } = useToast();
 
@@ -248,6 +250,62 @@ const ListingDetail = () => {
   const [selectedDateIds, setSelectedDateIds] = useState<string[]>([]);
   const [warningOpen, setWarningOpen] = useState(false);
   const listingWarning = useCommunityWarning("listing", id);
+  const updateInviteStatus = useUpdateInviteStatus();
+
+  // A Nomad arriving via "View" on an invitation carries the invite id in
+  // the URL. Only honor it once it's confirmed to belong to this listing
+  // and this Nomad, and is still actionable — an already-declined/applied
+  // or stale invite (e.g. a copied/bookmarked link) is silently ignored.
+  const inviteIdParam = searchParams.get("invite");
+  const [invite, setInvite] = useState<{ id: string; status: string } | null>(null);
+  useEffect(() => {
+    if (!inviteIdParam || !listing?.id || !user) {
+      setInvite(null);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from("sitter_invites")
+      .select("id, listing_id, sitter_user_id, status")
+      .eq("id", inviteIdParam)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        if (
+          data &&
+          data.listing_id === listing.id &&
+          data.sitter_user_id === user.id &&
+          (data.status === "pending" || data.status === "viewed")
+        ) {
+          setInvite({ id: data.id, status: data.status });
+        } else {
+          setInvite(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [inviteIdParam, listing?.id, user]);
+
+  const handleDeclineInvite = () => {
+    if (!invite) return;
+    updateInviteStatus.mutate(
+      { inviteId: invite.id, status: "declined" },
+      {
+        onSuccess: () => {
+          setInvite(null);
+          toast({ title: "Invite declined" });
+        },
+        onError: () => {
+          toast({
+            title: "Could not decline invite",
+            description: "Please check your connection and try again.",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
 
   const { data: favoriteIds = [] } = useFavorites();
   const toggleFavorite = useToggleFavorite();
@@ -1052,8 +1110,8 @@ const ListingDetail = () => {
               {/* Apply Button */}
               {canApply && openDates.length > 0 && (
                 <>
-                  <Button 
-                    className="w-full" 
+                  <Button
+                    className="w-full"
                     size="lg"
                     onClick={() =>
                       listingWarning.hasWarning
@@ -1064,10 +1122,23 @@ const ListingDetail = () => {
                   >
                     {selectedDateIds.length === 0
                       ? "Select dates to apply"
-                      : selectedDateIds.length === 1
-                        ? "Apply for this Sit"
-                        : `Apply for ${selectedDateIds.length} date ranges`}
+                      : invite
+                        ? "Accept Invitation"
+                        : selectedDateIds.length === 1
+                          ? "Apply for this Sit"
+                          : `Apply for ${selectedDateIds.length} date ranges`}
                   </Button>
+                  {invite && (
+                    <Button
+                      className="w-full mt-2"
+                      size="lg"
+                      variant="destructive"
+                      onClick={handleDeclineInvite}
+                      disabled={updateInviteStatus.isPending}
+                    >
+                      Decline Invitation
+                    </Button>
+                  )}
                   <CommunityWarningModal
                     open={warningOpen}
                     onOpenChange={setWarningOpen}
@@ -1085,7 +1156,12 @@ const ListingDetail = () => {
                     listingId={listing.id}
                     listingTitle={listing.title}
                     sitDates={selectedSitDates}
-                    onSuccess={() => setSelectedDateIds([])}
+                    onSuccess={() => {
+                      setSelectedDateIds([]);
+                      if (invite) {
+                        updateInviteStatus.mutate({ inviteId: invite.id, status: "applied" });
+                      }
+                    }}
                   />
                 </>
               )}

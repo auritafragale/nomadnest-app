@@ -282,10 +282,11 @@ const SitterDashboard = ({
   const { data: applications = [], isLoading: applicationsLoading } = useSitterApplications();
   const [dashParams] = useSearchParams();
   const initialAppTab = dashParams.get("appTab");
-  const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "cancelled">(
+  const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "past" | "cancelled">(
     initialAppTab === "cancelled" ||
       initialAppTab === "accepted" ||
-      initialAppTab === "pending"
+      initialAppTab === "pending" ||
+      initialAppTab === "past"
       ? initialAppTab
       : "all",
   );
@@ -331,6 +332,7 @@ const SitterDashboard = ({
     }
     const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
     if (appTab === "accepted") return a.status === "accepted" && !ended;
+    if (appTab === "past") return a.status === "accepted" && ended;
     if (appTab === "pending") return a.status === "applied" || a.status === "shortlisted";
     if (appTab === "all") return a.status !== "cancelled";
     return true;
@@ -340,7 +342,7 @@ const SitterDashboard = ({
     const bStart = b.sit_dates?.start_date ?? "";
     return aStart.localeCompare(bStart);
   });
-  const showApplications = (tab: "all" | "accepted" | "pending" | "cancelled") => {
+  const showApplications = (tab: "all" | "accepted" | "pending" | "past" | "cancelled") => {
     setAppTab(tab);
     document.getElementById("my-applications")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -392,7 +394,7 @@ const SitterDashboard = ({
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="accepted">Accepted</TabsTrigger>
                 <TabsTrigger value="pending">Pending</TabsTrigger>
-                
+                <TabsTrigger value="past">Past</TabsTrigger>
                 <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
               </TabsList>
             </Tabs>

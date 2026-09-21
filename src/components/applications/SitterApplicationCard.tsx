@@ -55,7 +55,15 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 export const SitterApplicationCard = ({ application }: SitterApplicationCardProps) => {
   const { listing, sit_dates, owner, status } = application;
-  const statusInfo = statusConfig[status] || statusConfig.applied;
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const ended = !!sit_dates?.end_date && sit_dates.end_date < todayISO;
+  const statusInfo =
+    status === "accepted" && ended
+      ? {
+          label: "Past",
+          className: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+        }
+      : statusConfig[status] || statusConfig.applied;
   const { toast } = useToast();
   const withdrawMutation = useWithdrawApplication();
   const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);

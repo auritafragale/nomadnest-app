@@ -328,7 +328,7 @@ export const SitCard = ({
           </div>
         </div>
       </Link>
-      <div className="mt-2 pt-2 border-t flex items-center justify-between text-xs text-muted-foreground">
+      <div className="mt-2 pt-2 border-t flex items-center gap-3 text-xs text-muted-foreground">
         <span>
           {sit.sit_dates && format(parseISO(sit.sit_dates.start_date), "MMM d")} - {sit.sit_dates && format(parseISO(sit.sit_dates.end_date), "MMM d, yyyy")}
         </span>
