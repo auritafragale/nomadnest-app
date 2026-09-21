@@ -65,7 +65,7 @@ interface Listing {
 
 const OwnerDetail = () => {
   const { userId } = useParams();
-  const { user, role } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -145,6 +145,31 @@ const OwnerDetail = () => {
   const location = profile
     ? [profile.city, profile.country].filter(Boolean).join(", ")
     : null;
+
+  // AuthContext.loading starts true and user starts null until the session
+  // check resolves — check it first so a genuinely signed-in member doesn't
+  // briefly see the "sign in" wall while their session is still loading in.
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <main className="flex-1 container mx-auto px-4 pt-20 pb-8">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <Skeleton className="h-10 w-48" />
+            <div className="grid md:grid-cols-3 gap-6">
+              <Skeleton className="aspect-square rounded-xl" />
+              <div className="md:col-span-2 space-y-4">
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!user) {
     return (
