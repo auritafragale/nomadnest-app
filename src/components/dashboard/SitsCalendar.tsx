@@ -406,6 +406,7 @@ export const SitCard = ({
               </AlertDialogContent>
             </AlertDialog>
           )}
+          <div className="flex gap-2">
           {isOwner && !pendingRequest && (sit.status === "confirmed" || sit.status === "in_progress") && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -470,7 +471,7 @@ export const SitCard = ({
           {canCancelSit && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" disabled={isPending}>
+                <Button size="sm" variant="destructive" disabled={isPending}>
                   <XCircle className="w-3 h-3 mr-1" />
                   Cancel
                 </Button>
@@ -529,6 +530,7 @@ export const SitCard = ({
               </AlertDialogContent>
             </AlertDialog>
           )}
+          </div>
           </div>
         </div>
       )}
