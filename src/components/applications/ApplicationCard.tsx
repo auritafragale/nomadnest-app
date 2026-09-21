@@ -202,6 +202,7 @@ export const ApplicationCard = ({
                 Accept
               </Button>
               <Button
+                variant="destructive"
                 className="flex-1"
                 onClick={() => onStatusChange("declined")}
                 disabled={isUpdating}
