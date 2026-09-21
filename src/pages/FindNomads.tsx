@@ -115,7 +115,23 @@ const FindNomads = () => {
                 content="Your visibility toggle controls whether other nomads can see you on this map. Hide it any time to pause discovery without losing your profile."
               />
             </div>
-            <NomadVisibilityBanner bare transparent={viewMode === "map"} />
+            <div className="mt-3 rounded-2xl border border-border bg-surface shadow-soft overflow-hidden">
+              <NomadVisibilityBanner bare transparent={viewMode === "map"} />
+              <Link
+                to="/city-chats"
+                className="flex items-center justify-between gap-3 px-4 py-4 bg-gradient-to-r from-primary/5 via-transparent to-secondary/10 hover:from-primary/10 hover:to-secondary/15 transition-colors"
+              >
+                <span className="flex items-center gap-3 min-w-0">
+                  <span className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/15 text-primary shrink-0">
+                    <MessageCircle className="w-4 h-4" />
+                  </span>
+                  <span className="text-sm md:text-base font-medium truncate">
+                    Looking for local community? Browse City Chats
+                  </span>
+                </span>
+                <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -181,19 +197,6 @@ const FindNomads = () => {
               )}
             </>
           )}
-
-          <Link
-            to="/city-chats"
-            className="mt-10 flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface px-4 py-4 hover:border-primary/40 transition-colors"
-          >
-            <span className="flex items-center gap-3">
-              <MessageCircle className="w-5 h-5 text-primary shrink-0" />
-              <span className="text-sm md:text-base">
-                Looking for local community? Browse City Chats
-              </span>
-            </span>
-            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
-          </Link>
         </div>
 
       </main>

@@ -99,15 +99,15 @@ const NomadVisibilityBanner = ({ transparent = false, bare = false }: NomadVisib
 
   const pill = (
     <div
-      className={`flex items-start justify-between gap-4 rounded-2xl border px-4 py-3 ${borderClass} ${fillClass} ${
-        bare ? "mt-3" : ""
+      className={`flex items-start justify-between gap-4 px-4 py-3 ${
+        bare
+          ? `rounded-t-2xl border-b ${borderClass} ${fillClass}`
+          : `mt-3 rounded-2xl border ${borderClass} ${fillClass}`
       }`}
     >
       <p className="text-sm md:text-base">
         {isVisible ? (
-          <>
-            ✅ You're visible{city ? ` in ${city}` : ""}, nomads nearby can find you
-          </>
+          <>✅ You're visible to Nomads Near You</>
         ) : (
           <>
             👁️ You're hidden. Turn on visibility to appear on the map and connect with nomads nearby
