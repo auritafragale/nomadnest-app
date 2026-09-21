@@ -2,6 +2,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CityChatsSection from "@/components/city-chat/CityChatsSection";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { MessageCircle } from "lucide-react";
 
 const CityChats = () => (
   <div className="min-h-screen flex flex-col bg-background">
@@ -11,6 +12,7 @@ const CityChats = () => (
       <div className="bg-surface border-b border-border">
         <div className="container py-8">
           <div className="flex items-center gap-1.5">
+            <MessageCircle className="w-7 h-7 md:w-8 md:h-8 text-primary" />
             <h1 className="text-3xl md:text-4xl font-display">City Chats</h1>
             <HelpTooltip
               label="About city chats"

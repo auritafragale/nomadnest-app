@@ -126,7 +126,7 @@ const FindNomads = () => {
                     <MessageCircle className="w-4 h-4" />
                   </span>
                   <span className="text-sm md:text-base font-medium truncate">
-                    Looking for local community? Browse City Chats
+                    Looking for a local community?
                   </span>
                 </span>
                 <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
