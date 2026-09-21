@@ -89,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
       .select(
         "id, sitter_user_id, owner_user_id, listing:listing_id(id, title, timezone)",
       )
-      .in("status", ["confirmed", "in_progress"])
+      .eq("status", "in_progress")
       .limit(500);
 
     if (sitsError) throw sitsError;
