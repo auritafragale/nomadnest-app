@@ -923,7 +923,7 @@ const ListingDetail = () => {
               {/* Home & Requirements — tabbed */}
               <Card>
                 <CardHeader>
-                  <CardTitle asChild>
+                  <CardTitle asChild className="text-lg sm:text-2xl">
                     <h2 className="flex items-center gap-2">
                       <Home className="w-5 h-5" />
                       The Home &amp; What&apos;s Expected
