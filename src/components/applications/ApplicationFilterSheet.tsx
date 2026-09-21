@@ -86,7 +86,7 @@ const ApplicationFilterSheet = ({ open, onClose, filters, dateOptions, onApply }
             <p className="text-sm font-medium mb-2">Sort by</p>
             <div className="flex flex-wrap gap-2">
               {([
-                ["soonest", "Soonest sit"],
+                ["soonest", "Earliest sit"],
                 ["recent", "Most recent"],
                 ["reviews", "Most reviews"],
                 ["rating", "Highest rating"],
