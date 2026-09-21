@@ -692,9 +692,9 @@ const ListingDetail = () => {
                 {listing.ideal_nomad_types.length > 0 && (
                   <div className="mt-3">
                     <h4 className="font-medium mb-2">Best suited for</h4>
-                    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                    <div className="flex flex-wrap gap-2">
                       {listing.ideal_nomad_types.map((type) => (
-                        <Badge key={type} variant="secondary" className="whitespace-nowrap shrink-0">
+                        <Badge key={type} variant="secondary" className="whitespace-nowrap">
                           {type}
                         </Badge>
                       ))}
