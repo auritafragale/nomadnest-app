@@ -9,8 +9,13 @@ import { SitterInviteCard } from "./SitterInviteCard";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 export const SitterInvitesSection = () => {
-  const { data: invites = [], isLoading } = useSitterInvites();
+  const { data: allInvites = [], isLoading } = useSitterInvites();
   const { data: pendingCount = 0 } = usePendingInvitesCount();
+
+  // Only invites still awaiting a decision — applied/declined ones stay in
+  // the shared hook's data (relied on elsewhere for the full history) but
+  // have no reason to keep showing up here.
+  const invites = allInvites.filter((i) => i.status === "pending" || i.status === "viewed");
 
   if (isLoading) {
     return (
