@@ -13,13 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { Calendar, Loader2, Star, User, Sparkles, Lock } from "lucide-react";
-import { sendNotification } from "@/lib/notifications";
-import { useMembership } from "@/hooks/useMembership";
-import { useVerification } from "@/hooks/useVerification";
+import { useApplicationSubmission, MAX_ACTIVE_APPLICANTS } from "@/hooks/useApplicationSubmission";
 import { useNavigate } from "react-router-dom";
 
 interface SitDate {
@@ -38,8 +35,6 @@ interface ApplyDialogProps {
   sitDates: SitDate[];
   onSuccess?: () => void;
 }
-
-const MAX_ACTIVE_APPLICANTS = 15;
 
 const HIGHLIGHT_OPTIONS = [
   "Experienced with this pet type",
@@ -63,8 +58,14 @@ export const ApplyDialog = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { hasAccess, loading: membershipLoading } = useMembership();
-  const { data: verificationData, isLoading: verificationLoading } = useVerification();
+  const {
+    hasAccess,
+    membershipLoading,
+    verificationData,
+    verificationLoading,
+    checkApplicability,
+    submitApplications,
+  } = useApplicationSubmission();
 
   const [message, setMessage] = useState("");
   const [whoApplying, setWhoApplying] = useState("");
@@ -87,43 +88,15 @@ export const ApplyDialog = ({
       if (!open || !user || sitDates.length === 0) return;
 
       setCheckingApplication(true);
-      const ids = sitDates.map((d) => d.id);
-
-      // Only LIVE applications block re-applying. Cancelled / declined /
-      // withdrawn rounds are free to apply for again (dates can be re-opened
-      // or edited in place by the Pet Parent).
-      const { data: mine } = await supabase
-        .from("applications")
-        .select("sit_dates_id, status")
-        .eq("listing_id", listingId)
-        .eq("sitter_user_id", user.id)
-        .in("sit_dates_id", ids);
-
-
-      const { data: active } = await supabase
-        .from("applications")
-        .select("sit_dates_id")
-        .in("sit_dates_id", ids)
-        .in("status", ["applied", "shortlisted"]);
-
-      const counts = new Map<string, number>();
-      (active || []).forEach((a) => {
-        counts.set(a.sit_dates_id, (counts.get(a.sit_dates_id) || 0) + 1);
-      });
-
-      const live = (mine || []).filter((a) =>
-        ["applied", "shortlisted", "accepted"].includes(a.status),
-      );
-      setAlreadyApplied(new Set(live.map((a) => a.sit_dates_id)));
-      setHadPastApplication((mine || []).length > live.length);
-
-
-      setFullDates(new Set(ids.filter((id) => (counts.get(id) || 0) >= MAX_ACTIVE_APPLICANTS)));
+      const result = await checkApplicability(listingId, sitDates);
+      setAlreadyApplied(result.alreadyApplied);
+      setFullDates(result.fullDates);
+      setHadPastApplication(result.hadPastApplication);
       setCheckingApplication(false);
     };
 
     checkExisting();
-  }, [open, user, listingId, sitDates]);
+  }, [open, user, listingId, sitDates, checkApplicability]);
 
   const toggleHighlight = (highlight: string) => {
     setSelectedHighlights((prev) =>
@@ -154,50 +127,14 @@ export const ApplyDialog = ({
     setIsSubmitting(true);
 
     try {
-      // One application row per selected date range.
-      const { error } = await supabase.from("applications").insert(
-        applicableDates.map((d) => ({
-          listing_id: listingId,
-          sit_dates_id: d.id,
-          sitter_user_id: user.id,
-          message: message.trim(),
-          who_applying: whoApplying.trim() || null,
-          highlights: selectedHighlights.length > 0 ? selectedHighlights : null,
-          status: "applied" as const,
-        })),
-      );
-
-      if (error) throw error;
-
-      const { data: listing } = await supabase
-        .from("listings")
-        .select("owner_user_id")
-        .eq("id", listingId)
-        .single();
-
-      const { data: sitterProfile } = await supabase
-        .from("profiles")
-        .select("first_name, last_name")
-        .eq("id", user.id)
-        .single();
-
-      if (listing?.owner_user_id) {
-        applicableDates.forEach((d) => {
-          sendNotification({
-            type: "new_application",
-            recipientUserId: listing.owner_user_id,
-            data: {
-              listingTitle,
-              sitterName:
-                [sitterProfile?.first_name, sitterProfile?.last_name]
-                  .filter(Boolean)
-                  .join(" ") || "A nomad",
-              startDate: format(parseISO(d.start_date), "MMM d, yyyy"),
-              endDate: format(parseISO(d.end_date), "MMM d, yyyy"),
-            },
-          });
-        });
-      }
+      await submitApplications({
+        listingId,
+        listingTitle,
+        dates: applicableDates,
+        message,
+        whoApplying,
+        highlights: selectedHighlights,
+      });
 
       toast({
         title:

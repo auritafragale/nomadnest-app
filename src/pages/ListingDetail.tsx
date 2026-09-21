@@ -63,6 +63,7 @@ import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUpdateInviteStatus } from "@/hooks/useSitterInvites";
+import { useApplicationSubmission } from "@/hooks/useApplicationSubmission";
 
 interface Pet {
   id: string;
@@ -251,6 +252,15 @@ const ListingDetail = () => {
   const [warningOpen, setWarningOpen] = useState(false);
   const listingWarning = useCommunityWarning("listing", id);
   const updateInviteStatus = useUpdateInviteStatus();
+  const {
+    hasAccess,
+    membershipLoading,
+    verificationData,
+    verificationLoading,
+    checkApplicability,
+    submitApplications,
+  } = useApplicationSubmission();
+  const [acceptingInvite, setAcceptingInvite] = useState(false);
 
   // A Nomad arriving via "View" on an invitation carries the invite id in
   // the URL. Only honor it once it's confirmed to belong to this listing
@@ -400,6 +410,77 @@ const ListingDetail = () => {
     setSelectedDateIds((prev) =>
       prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id],
     );
+
+  // The Pet Parent already reviewed and chose this Nomad by sending the
+  // invite, so accepting it skips ApplyDialog's form entirely and submits
+  // straight away — but it still has to pass every gate the normal form
+  // flow enforces (membership, verification, already-applied/full-round),
+  // just with the equivalent blocking messaging/redirect instead of a
+  // silent bypass.
+  const handleAcceptInvitation = async () => {
+    if (!invite || !listing || selectedSitDates.length === 0) return;
+
+    if (!membershipLoading && !hasAccess("sitter")) {
+      toast({
+        title: "Nomad Membership Required",
+        description: "You need an active Nomad or Combined membership to apply for sits.",
+        variant: "destructive",
+      });
+      navigate("/membership");
+      return;
+    }
+    if (!verificationLoading && !verificationData?.id_verified) {
+      toast({
+        title: "Identity Verification Required",
+        description: "You need to verify your identity before applying for sits. It only takes 5 minutes.",
+        variant: "destructive",
+      });
+      navigate("/verify-identity");
+      return;
+    }
+
+    setAcceptingInvite(true);
+    try {
+      const check = await checkApplicability(listing.id, selectedSitDates);
+      if (check.hasExistingApplication) {
+        toast({
+          title: "Not available",
+          description:
+            "You've already applied for these dates, or this round already has too many nomads under review. Try other dates or check back soon.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await submitApplications({
+        listingId: listing.id,
+        listingTitle: listing.title,
+        dates: check.applicableDates,
+        message: "I'm happy to accept this invitation!",
+      });
+
+      toast({
+        title:
+          check.applicableDates.length > 1
+            ? `${check.applicableDates.length} applications sent!`
+            : "Application sent!",
+        description: "The Pet Parent will review your application soon.",
+      });
+
+      updateInviteStatus.mutate({ inviteId: invite.id, status: "applied" });
+      setSelectedDateIds([]);
+    } catch (error: any) {
+      console.error("Error accepting invitation:", error);
+      toast({
+        title: "Failed to apply",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setAcceptingInvite(false);
+    }
+  };
+
   const isOwner = user?.id === listing?.owner_user_id;
   const { data: acceptedSitter = false } = useAcceptedSitter(listing?.id);
   const [petDialogId, setPetDialogId] = useState<string | null>(null);
@@ -1113,20 +1194,31 @@ const ListingDetail = () => {
                   <Button
                     className="w-full"
                     size="lg"
-                    onClick={() =>
-                      listingWarning.hasWarning
-                        ? setWarningOpen(true)
-                        : setApplyDialogOpen(true)
-                    }
-                    disabled={selectedDateIds.length === 0}
+                    onClick={() => {
+                      if (listingWarning.hasWarning) {
+                        setWarningOpen(true);
+                      } else if (invite) {
+                        handleAcceptInvitation();
+                      } else {
+                        setApplyDialogOpen(true);
+                      }
+                    }}
+                    disabled={selectedDateIds.length === 0 || acceptingInvite}
                   >
-                    {selectedDateIds.length === 0
-                      ? "Select dates to apply"
-                      : invite
-                        ? "Accept Invitation"
-                        : selectedDateIds.length === 1
-                          ? "Apply for this Sit"
-                          : `Apply for ${selectedDateIds.length} date ranges`}
+                    {acceptingInvite ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : selectedDateIds.length === 0 ? (
+                      "Select dates to apply"
+                    ) : invite ? (
+                      "Accept Invitation"
+                    ) : selectedDateIds.length === 1 ? (
+                      "Apply for this Sit"
+                    ) : (
+                      `Apply for ${selectedDateIds.length} date ranges`
+                    )}
                   </Button>
                   {invite && (
                     <Button
@@ -1134,7 +1226,7 @@ const ListingDetail = () => {
                       size="lg"
                       variant="destructive"
                       onClick={handleDeclineInvite}
-                      disabled={updateInviteStatus.isPending}
+                      disabled={updateInviteStatus.isPending || acceptingInvite}
                     >
                       Decline Invitation
                     </Button>
@@ -1147,7 +1239,11 @@ const ListingDetail = () => {
                     continueLabel="Continue to Application"
                     onContinue={() => {
                       setWarningOpen(false);
-                      setApplyDialogOpen(true);
+                      if (invite) {
+                        handleAcceptInvitation();
+                      } else {
+                        setApplyDialogOpen(true);
+                      }
                     }}
                   />
                   <ApplyDialog
@@ -1156,12 +1252,7 @@ const ListingDetail = () => {
                     listingId={listing.id}
                     listingTitle={listing.title}
                     sitDates={selectedSitDates}
-                    onSuccess={() => {
-                      setSelectedDateIds([]);
-                      if (invite) {
-                        updateInviteStatus.mutate({ inviteId: invite.id, status: "applied" });
-                      }
-                    }}
+                    onSuccess={() => setSelectedDateIds([])}
                   />
                 </>
               )}
