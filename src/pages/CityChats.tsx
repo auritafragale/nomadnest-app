@@ -16,7 +16,7 @@ const CityChats = () => {
       <main className="flex-1 pt-20">
         <div className="bg-surface border-b border-border">
           <div className="container py-8">
-            <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 -ml-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-1 -ml-2">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
