@@ -9,11 +9,11 @@ import { buildNotificationEmail } from "../_shared/email-templates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-secret",
 };
 
 interface NotificationEmailRequest {
-  type: "new_application" | "application_status" | "new_message" | "invite" | "review" | "review_reminder" | "sit_cancelled" | "sit_checkin" | "id_verification_approved" | "arrival_vault_prompt";
+  type: "new_application" | "application_status" | "new_message" | "invite" | "review" | "review_reminder" | "sit_cancelled" | "sit_checkin" | "sit_started" | "id_verification_approved" | "arrival_vault_prompt";
   recipientUserId: string;
   data: Record<string, string>;
   /** When true, skip writing the in-app notifications row (already created by a DB trigger). */
@@ -117,11 +117,29 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Require either a signed-in caller or a trusted internal (service-role)
-    // caller such as the scheduled review-reminders job.
+    // Require either a signed-in caller or a trusted internal caller: either
+    // the raw service-role key, or (for a Postgres trigger, which shouldn't
+    // hold that key) a shared secret matching vault.decrypted_secrets'
+    // internal_trigger_secret row — the same secret those triggers already
+    // send as the x-internal-secret header.
     const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const isInternalCaller = serviceKey.length > 0 && jwt === serviceKey;
+    let isInternalCaller = serviceKey.length > 0 && jwt === serviceKey;
+
+    if (!isInternalCaller) {
+      const internalSecretHeader = req.headers.get("x-internal-secret");
+      if (internalSecretHeader) {
+        const { data: secretRow } = await supabaseClient
+          .schema("vault")
+          .from("decrypted_secrets")
+          .select("decrypted_secret")
+          .eq("name", "internal_trigger_secret")
+          .maybeSingle();
+        if (secretRow?.decrypted_secret && internalSecretHeader === secretRow.decrypted_secret) {
+          isInternalCaller = true;
+        }
+      }
+    }
 
     let callerUserId: string | null = null;
     if (!isInternalCaller) {
@@ -186,6 +204,7 @@ const handler = async (req: Request): Promise<Response> => {
       invite: "email_sit_updates",
       sit_cancelled: "email_sit_updates",
       sit_checkin: "email_sit_updates",
+      sit_started: "email_sit_updates",
       review: "email_reviews",
       review_reminder: "email_reviews",
     };

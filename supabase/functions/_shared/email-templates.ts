@@ -44,6 +44,7 @@ export type NotificationType =
   | "review_reminder"
   | "sit_cancelled"
   | "sit_checkin"
+  | "sit_started"
   | "id_verification_approved"
   | "sit_reschedule_proposed"
   | "sit_reschedule_accepted"
@@ -187,6 +188,21 @@ export function buildNotificationEmail(
         pushTitle: `${data.checkinLabel}. ${data.listingTitle}`,
         pushBody: data.note ? data.note : `Your Nomad posted a ${data.checkinLabel} update.`,
         pushUrl: data.url || "/dashboard",
+      };
+    case "sit_started":
+      return {
+        subject: `Your sit at ${data.listingTitle} has started!`,
+        preview: "Pop into the chat and log today's care to get started",
+        heading: "Your sit has started! 🏡",
+        body: `
+          <p>Your sit at <strong>${data.listingTitle}</strong> is officially underway.</p>
+          <p>Pop into the chat with your Pet Parent each day and tap Fed, Meds and Walk to log today's care. A photo and short note make it even better.</p>
+        `,
+        ctaLabel: "Open the chat",
+        ctaUrl: `${APP_URL}${data.url || "/inbox"}`,
+        pushTitle: "Your sit has started",
+        pushBody: "Pop into the chat with your Pet Parent each day and tap Fed, Meds and Walk to log today's care. A photo and short note make it even better.",
+        pushUrl: data.url || "/inbox",
       };
     case "id_verification_approved":
       return {
@@ -689,6 +705,7 @@ export function getPreviewTemplates(): PreviewTemplate[] {
     { id: "review", label: "New review", group: "Notifications", subgroup: "Reviews", build: () => buildNotificationEmail("review", sample) },
     { id: "review_reminder", label: "Review reminder", group: "Notifications", subgroup: "Reviews", build: () => buildNotificationEmail("review_reminder", sample) },
     { id: "sit_cancelled", label: "Sit cancelled", group: "Notifications", subgroup: "Sits & Dates", build: () => buildNotificationEmail("sit_cancelled", sample) },
+    { id: "sit_started", label: "Sit started (to Nomad)", group: "Notifications", subgroup: "Sits & Dates", build: () => buildNotificationEmail("sit_started", sample) },
     { id: "id_verification_approved", label: "ID verified", group: "Notifications", subgroup: "Verification", build: () => buildNotificationEmail("id_verification_approved", sample) },
     { id: "sit_reschedule_proposed", label: "New dates proposed (to Nomad)", group: "Notifications", subgroup: "Sits & Dates", build: () => buildNotificationEmail("sit_reschedule_proposed", sample) },
     { id: "sit_reschedule_accepted", label: "New dates accepted (to Pet Parent)", group: "Notifications", subgroup: "Sits & Dates", build: () => buildNotificationEmail("sit_reschedule_accepted", sample) },
