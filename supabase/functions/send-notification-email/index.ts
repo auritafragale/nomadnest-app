@@ -119,25 +119,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Require either a signed-in caller or a trusted internal caller: either
     // the raw service-role key, or (for a Postgres trigger, which shouldn't
-    // hold that key) a shared secret matching vault.decrypted_secrets'
-    // internal_trigger_secret row — the same secret those triggers already
-    // send as the x-internal-secret header.
+    // hold that key) a shared secret matching this function's own
+    // INTERNAL_TRIGGER_SECRET env var — the same secret those triggers
+    // already send as the x-internal-secret header. Matches the pattern
+    // used by notify-admin-reliability-strike: the vault schema isn't
+    // exposed over PostgREST, so it can't be queried from here directly.
     const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     let isInternalCaller = serviceKey.length > 0 && jwt === serviceKey;
 
     if (!isInternalCaller) {
       const internalSecretHeader = req.headers.get("x-internal-secret");
-      if (internalSecretHeader) {
-        const { data: secretRow } = await supabaseClient
-          .schema("vault")
-          .from("decrypted_secrets")
-          .select("decrypted_secret")
-          .eq("name", "internal_trigger_secret")
-          .maybeSingle();
-        if (secretRow?.decrypted_secret && internalSecretHeader === secretRow.decrypted_secret) {
-          isInternalCaller = true;
-        }
+      const expectedInternalSecret = Deno.env.get("INTERNAL_TRIGGER_SECRET");
+      if (internalSecretHeader && expectedInternalSecret && internalSecretHeader === expectedInternalSecret) {
+        isInternalCaller = true;
       }
     }
 
