@@ -35,6 +35,7 @@ import { Label } from "@/components/ui/label";
 import WriteReviewDialog from "@/components/reviews/WriteReviewDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveListingConversation } from "@/lib/conversations";
+import { NOMAD_FLAG_QUESTIONS } from "@/lib/trustFlags";
 
 interface SitsCalendarProps {
   viewAs: "sitter" | "owner";
@@ -172,6 +173,9 @@ export const SitCard = ({
   const [hasReviewed, setHasReviewed] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [reopenChoice, setReopenChoice] = useState<"original" | "proposed">("proposed");
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [abandonmentAnswer, setAbandonmentAnswer] = useState<"yes" | "no" | undefined>(undefined);
+  const [abandonmentNote, setAbandonmentNote] = useState("");
   const [openingChat, setOpeningChat] = useState(false);
   const navigate = useNavigate();
   const isReviewDeepLinkTarget = !!openReview && openReview === sit.id;
@@ -228,6 +232,15 @@ export const SitCard = ({
     setProposeNote("");
   };
 
+  // Closing the Cancel dialog (whether by submitting, "Keep Sit", or
+  // clicking away) always clears its fields, so reopening it never shows
+  // a stale reason/answer from a previous attempt.
+  const resetCancelDialogState = () => {
+    setCancelReason("");
+    setAbandonmentAnswer(undefined);
+    setAbandonmentNote("");
+  };
+
   // A declined reschedule proposal means the sit's original dates aren't
   // necessarily what should reopen for a new Nomad — let the owner pick.
   // "original" means the sit's existing sit_dates row is reopened directly
@@ -241,13 +254,30 @@ export const SitCard = ({
         end_date: declinedRequest.proposed_end_date,
       };
     }
-    updateStatus({
-      sitId: sit.id,
-      sitDatesId: sit.sit_dates_id,
-      status: "cancelled",
-      reason: cancelReason.trim(),
-      reopenWith,
-    });
+    const flagAbandonment = sit.status === "in_progress" && abandonmentAnswer === "yes";
+    const note = abandonmentNote;
+    updateStatus(
+      {
+        sitId: sit.id,
+        sitDatesId: sit.sit_dates_id,
+        status: "cancelled",
+        reason: cancelReason.trim(),
+        reopenWith,
+      },
+      {
+        onSuccess: async () => {
+          if (!flagAbandonment) return;
+          try {
+            await supabase.rpc("log_sit_abandonment_flag", {
+              p_sit_id: sit.id,
+              p_note: note.trim() || null,
+            });
+          } catch (err) {
+            console.warn("Failed to log sit abandonment flag:", err);
+          }
+        },
+      },
+    );
   };
 
   // Status is derived live from the dates so the badge is right even before the
@@ -269,7 +299,6 @@ export const SitCard = ({
       ? "completed"
       : sit.status;
 
-  const canCompleteSit = isOwner && sit.status === "in_progress" && !isFinished;
   const canCancelSit = (sit.status === "confirmed" || sit.status === "in_progress") && !isFinished;
   // Reviews stay open for 14 days after the sit's end date.
   const REVIEW_WINDOW_DAYS = 14;
@@ -339,7 +368,7 @@ export const SitCard = ({
       </div>
 
       {/* Sit actions */}
-      {(canCompleteSit || canCancelSit || isCurrent || sit.status === "confirmed") && (
+      {(canCancelSit || isCurrent || sit.status === "confirmed") && (
         <div className="mt-3 pt-2 border-t space-y-2">
           <div className="flex gap-2 flex-wrap">
           {(sit.status === "confirmed" || sit.status === "in_progress") && (
@@ -381,30 +410,6 @@ export const SitCard = ({
                 Arrival Check-In
               </Link>
             </Button>
-          )}
-          {canCompleteSit && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="secondary" className="flex-1" disabled={isPending}>
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Complete Sit
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Complete this sit?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will mark the sit as "completed". The sitter has finished and the sit has ended successfully.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => updateStatus({ sitId: sit.id, status: "completed" })}>
-                    Complete Sit
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
           )}
           <div className="flex gap-2">
           {isOwner && !pendingRequest && (sit.status === "confirmed" || sit.status === "in_progress") && (
@@ -469,7 +474,13 @@ export const SitCard = ({
             </AlertDialog>
           )}
           {canCancelSit && (
-            <AlertDialog>
+            <AlertDialog
+              open={cancelDialogOpen}
+              onOpenChange={(next) => {
+                setCancelDialogOpen(next);
+                if (!next) resetCancelDialogState();
+              }}
+            >
               <AlertDialogTrigger asChild>
                 <Button size="sm" variant="destructive" disabled={isPending}>
                   <XCircle className="w-3 h-3 mr-1" />
@@ -517,6 +528,42 @@ export const SitCard = ({
                   placeholder="Why are you cancelling? (required)"
                   rows={3}
                 />
+                {sit.status === "in_progress" && (
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">
+                      {NOMAD_FLAG_QUESTIONS.find((q) => q.category === "abandonment")?.question}
+                    </Label>
+                    <div className="flex gap-2">
+                      {(["yes", "no"] as const).map((option) => (
+                        <Button
+                          key={option}
+                          type="button"
+                          size="sm"
+                          variant={abandonmentAnswer === option ? "default" : "outline"}
+                          className="flex-1 capitalize"
+                          onClick={() => setAbandonmentAnswer(option)}
+                        >
+                          {option}
+                        </Button>
+                      ))}
+                    </div>
+                    {abandonmentAnswer === "yes" && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`abandonment-note-${sit.id}`} className="text-xs font-medium">
+                          What happened? (optional)
+                        </Label>
+                        <Textarea
+                          id={`abandonment-note-${sit.id}`}
+                          value={abandonmentNote}
+                          onChange={(e) => setAbandonmentNote(e.target.value)}
+                          placeholder="What happened?"
+                          rows={2}
+                          maxLength={500}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
                 <AlertDialogFooter>
                   <AlertDialogCancel>Keep Sit</AlertDialogCancel>
                   <AlertDialogAction

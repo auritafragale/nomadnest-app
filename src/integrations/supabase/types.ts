@@ -2153,6 +2153,10 @@ export type Database = {
       is_active_member: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       is_owner_active: { Args: { _owner_user_id: string }; Returns: boolean }
+      log_sit_abandonment_flag: {
+        Args: { p_sit_id: string; p_note: string | null }
+        Returns: undefined
+      }
       mark_conversation_messages_read: {
         Args: { _conversation_id: string }
         Returns: undefined
