@@ -33,8 +33,10 @@ import { Calendar as DatePickerCalendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import WriteReviewDialog from "@/components/reviews/WriteReviewDialog";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveListingConversation } from "@/lib/conversations";
+import { useSendMessage } from "@/hooks/useConversations";
 import { NOMAD_FLAG_QUESTIONS } from "@/lib/trustFlags";
 
 interface SitsCalendarProps {
@@ -165,6 +167,7 @@ export const SitCard = ({
   const otherParty = isOwner ? sit.sitter_profile : sit.owner_profile;
   const otherPartyLabel = isOwner ? "Sitter" : "Owner";
   const { mutate: updateStatus, isPending } = useUpdateSitStatus();
+  const sendMessage = useSendMessage();
   const { data: declinedRequest } = useLatestDeclinedReschedule(sit.id);
   const { data: pendingRequest } = useSitRescheduleRequest(sit.id);
   const proposeReschedule = useProposeSitReschedule();
@@ -176,6 +179,7 @@ export const SitCard = ({
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [abandonmentAnswer, setAbandonmentAnswer] = useState<"yes" | "no" | undefined>(undefined);
   const [abandonmentNote, setAbandonmentNote] = useState("");
+  const [republishDates, setRepublishDates] = useState<"yes" | "no" | undefined>(undefined);
   const [openingChat, setOpeningChat] = useState(false);
   const navigate = useNavigate();
   const isReviewDeepLinkTarget = !!openReview && openReview === sit.id;
@@ -239,6 +243,7 @@ export const SitCard = ({
     setCancelReason("");
     setAbandonmentAnswer(undefined);
     setAbandonmentNote("");
+    setRepublishDates(undefined);
   };
 
   // A declined reschedule proposal means the sit's original dates aren't
@@ -247,6 +252,7 @@ export const SitCard = ({
   // (no reopenWith), rather than inserting a duplicate of the same dates.
   const handleCancel = () => {
     if (!cancelReason.trim()) return;
+    if (sit.status === "in_progress" && !republishDates) return;
     let reopenWith: { start_date: string; end_date: string } | undefined;
     if (declinedRequest && reopenChoice === "proposed") {
       reopenWith = {
@@ -254,26 +260,52 @@ export const SitCard = ({
         end_date: declinedRequest.proposed_end_date,
       };
     }
+    const reason = cancelReason.trim();
     const flagAbandonment = sit.status === "in_progress" && abandonmentAnswer === "yes";
     const note = abandonmentNote;
+    // Only asked (and only ever "no") for an in-progress cancellation —
+    // a pre-start cancel always reopens the dates, same as always.
+    const reopenStatus: "open" | "closed" =
+      sit.status === "in_progress" && republishDates === "no" ? "closed" : "open";
     updateStatus(
       {
         sitId: sit.id,
         sitDatesId: sit.sit_dates_id,
         status: "cancelled",
-        reason: cancelReason.trim(),
+        reason,
         reopenWith,
+        reopenStatus,
       },
       {
         onSuccess: async () => {
-          if (!flagAbandonment) return;
+          if (flagAbandonment) {
+            try {
+              await supabase.rpc("log_sit_abandonment_flag", {
+                p_sit_id: sit.id,
+                p_note: note.trim() || null,
+              });
+            } catch (err) {
+              console.warn("Failed to log sit abandonment flag:", err);
+            }
+          }
+
+          // Post the reason into the actual chat thread too, not just the
+          // notification — a failure here must never revert the
+          // cancellation, which has already gone through above.
           try {
-            await supabase.rpc("log_sit_abandonment_flag", {
-              p_sit_id: sit.id,
-              p_note: note.trim() || null,
+            const conversationId = await resolveListingConversation({
+              listingId: sit.listing_id,
+              ownerUserId: sit.owner_user_id,
+              sitterUserId: sit.sitter_user_id,
             });
+            if (conversationId) {
+              await sendMessage.mutateAsync({
+                conversationId,
+                body: `I've had to cancel this sit. Reason: ${reason}`,
+              });
+            }
           } catch (err) {
-            console.warn("Failed to log sit abandonment flag:", err);
+            console.warn("Failed to post cancellation message to chat:", err);
           }
         },
       },
@@ -531,6 +563,34 @@ export const SitCard = ({
                 {sit.status === "in_progress" && (
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">
+                      Would you like these dates to be open again for a new Nomad to apply?
+                    </Label>
+                    <div className="flex gap-2">
+                      {(["yes", "no"] as const).map((option) => (
+                        <Button
+                          key={option}
+                          type="button"
+                          size="sm"
+                          variant={republishDates === option ? "default" : "outline"}
+                          className="flex-1 capitalize"
+                          onClick={() => setRepublishDates(option)}
+                        >
+                          {option}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {sit.status === "in_progress" && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Label className="text-sm font-semibold">Private question</Label>
+                      <HelpTooltip
+                        label="About this question"
+                        content="This answer is never shown on anyone's profile. It only helps our community team spot repeated patterns."
+                      />
+                    </div>
+                    <Label className="text-sm font-medium">
                       {NOMAD_FLAG_QUESTIONS.find((q) => q.category === "abandonment")?.question}
                     </Label>
                     <div className="flex gap-2">
@@ -567,7 +627,7 @@ export const SitCard = ({
                 <AlertDialogFooter>
                   <AlertDialogCancel>Keep Sit</AlertDialogCancel>
                   <AlertDialogAction
-                    disabled={!cancelReason.trim()}
+                    disabled={!cancelReason.trim() || (sit.status === "in_progress" && !republishDates)}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={handleCancel}
                   >

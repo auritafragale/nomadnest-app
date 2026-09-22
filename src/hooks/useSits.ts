@@ -89,6 +89,7 @@ export const useUpdateSitStatus = () => {
       status,
       reason,
       reopenWith,
+      reopenStatus,
     }: {
       sitId: string;
       sitDatesId?: string;
@@ -104,6 +105,12 @@ export const useUpdateSitStatus = () => {
        * become available to a new Nomad. Omit for today's default behavior.
        */
       reopenWith?: { start_date: string; end_date: string };
+      /**
+       * Status to give the reopened/reused sit_dates row when cancelling —
+       * "open" (the default) makes it bookable again, "closed" takes it off
+       * the market entirely. Only meaningful when status is "cancelled".
+       */
+      reopenStatus?: "open" | "closed";
     }) => {
       const updateData: {
         status: "in_progress" | "completed" | "cancelled";
@@ -179,7 +186,7 @@ export const useUpdateSitStatus = () => {
             listing_id: sit.listing_id,
             start_date: reopenWith.start_date,
             end_date: reopenWith.end_date,
-            status: "open" as const,
+            status: reopenStatus ?? "open",
           });
 
           if (newDateError) {
@@ -188,7 +195,7 @@ export const useUpdateSitStatus = () => {
         } else if (sitDatesId) {
           const { error: sitDatesError } = await supabase
             .from("sit_dates")
-            .update({ status: "open" as const })
+            .update({ status: reopenStatus ?? "open" })
             .eq("id", sitDatesId);
 
           if (sitDatesError) {
