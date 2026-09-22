@@ -1,7 +1,7 @@
 project_id = "vcmfvmspymqzwqyxjepi"
 
 [functions.send-notification-email]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-auth-email]
 verify_jwt = false
