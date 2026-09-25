@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 
 // AI Application Co-Writer: drafts a personalised application from the
 // signed-in Nomad to a listing's Pet Parent. It only ever RETURNS text for
