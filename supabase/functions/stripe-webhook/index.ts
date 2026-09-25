@@ -215,7 +215,7 @@ serve(async (req) => {
     }
   } catch (err) {
     console.error("Webhook handler error:", err);
-    return new Response(`Handler error: ${err.message}`, { status: 500 });
+    return new Response(`Handler error: ${(err as Error).message}`, { status: 500 });
   }
 
   return new Response(JSON.stringify({ received: true }), {
