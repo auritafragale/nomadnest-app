@@ -17,6 +17,21 @@ import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { Calendar, Loader2, Star, User, Sparkles, Lock } from "lucide-react";
 import { useApplicationSubmission, MAX_ACTIVE_APPLICANTS } from "@/hooks/useApplicationSubmission";
+import {
+  useAiCowriter,
+  AiCowriterError,
+  AI_COWRITER_NOTE_MAX_LENGTH,
+} from "@/hooks/useAiCowriter";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
 
 interface SitDate {
@@ -76,6 +91,10 @@ export const ApplyDialog = ({
   const [fullDates, setFullDates] = useState<Set<string>>(new Set());
   const [checkingApplication, setCheckingApplication] = useState(false);
   const [hadPastApplication, setHadPastApplication] = useState(false);
+  const { visible: aiVisible, remaining: aiRemaining, draft: aiDraft } = useAiCowriter();
+  const [aiNote, setAiNote] = useState("");
+  const [hasAiDraft, setHasAiDraft] = useState(false);
+  const [confirmReplaceOpen, setConfirmReplaceOpen] = useState(false);
 
   const applicableDates = sitDates.filter(
     (d) => !alreadyApplied.has(d.id) && !fullDates.has(d.id),
@@ -113,6 +132,37 @@ export const ApplyDialog = ({
     }
   };
 
+  // Fills the message box with an AI draft for the Nomad to edit. Never submits.
+  const generateAiDraft = async () => {
+    try {
+      const result = await aiDraft.mutateAsync({
+        listingId,
+        sitDateIds: applicableDates.map((d) => d.id),
+        note: aiNote,
+      });
+      setMessage(result.draft);
+      setHasAiDraft(true);
+    } catch (error) {
+      const status = error instanceof AiCowriterError ? error.status : null;
+      toast({
+        title: status === 429 ? "Daily AI draft limit reached" : "Couldn't draft your application",
+        description:
+          error instanceof AiCowriterError
+            ? error.message
+            : "Please try again in a moment, or write it yourself.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAiDraftClick = () => {
+    if (message.trim()) {
+      setConfirmReplaceOpen(true);
+      return;
+    }
+    generateAiDraft();
+  };
+
   const handleSubmit = async () => {
     if (!user || applicableDates.length === 0) return;
     if (!message.trim()) {
@@ -145,6 +195,8 @@ export const ApplyDialog = ({
       });
 
       setMessage("");
+      setAiNote("");
+      setHasAiDraft(false);
       setWhoApplying("");
       setSelectedHighlights([]);
       onOpenChange(false);
@@ -317,18 +369,84 @@ export const ApplyDialog = ({
               <Label htmlFor="message">
                 Your message to the Pet Parent <span className="text-destructive">*</span>
               </Label>
+              {aiVisible && (
+                <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+                  <Label htmlFor="ai-note" className="text-xs font-normal text-muted-foreground">
+                    Anything you'd like mentioned? (optional)
+                  </Label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      id="ai-note"
+                      value={aiNote}
+                      onChange={(e) => setAiNote(e.target.value.slice(0, AI_COWRITER_NOTE_MAX_LENGTH))}
+                      maxLength={AI_COWRITER_NOTE_MAX_LENGTH}
+                      placeholder="e.g., mention I work remotely"
+                      disabled={aiDraft.isPending}
+                      className="sm:flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAiDraftClick}
+                      disabled={aiDraft.isPending || aiRemaining === 0}
+                      className="gap-2 w-full sm:w-auto shrink-0"
+                    >
+                      {aiDraft.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Drafting...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          Draft my application with AI
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
               <Textarea
                 id="message"
                 placeholder="Introduce yourself, share your experience with pets, and explain why you'd be a great fit for this sit..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                rows={5}
+                readOnly={aiDraft.isPending}
+                rows={hasAiDraft ? 10 : 5}
                 className="resize-none"
               />
+              {hasAiDraft && (
+                <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+                  <Sparkles className="w-3 h-3 mt-0.5 shrink-0" />
+                  AI draft. Please review and make it your own before sending.
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 A personal message is required — it helps your application stand out
               </p>
+              {aiVisible && aiRemaining !== null && (
+                <p className="text-xs text-muted-foreground">
+                  {aiRemaining === 0
+                    ? "You've used all your AI drafts for today. More will be available within 24 hours."
+                    : `${aiRemaining} AI draft${aiRemaining === 1 ? "" : "s"} left today`}
+                </p>
+              )}
             </div>
+
+            <AlertDialog open={confirmReplaceOpen} onOpenChange={setConfirmReplaceOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Replace your message?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    The AI draft will replace what you've already written in the message box.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep my message</AlertDialogCancel>
+                  <AlertDialogAction onClick={generateAiDraft}>Replace with AI draft</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
             {/* Submit */}
             <Button
