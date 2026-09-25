@@ -28,6 +28,7 @@ const json = (body: Record<string, unknown>, status = 200) =>
 
 const GENERIC_ERROR =
   "Sorry, we couldn't draft your application right now. Please try again in a moment, or write it yourself.";
+const TIMEOUT_ERROR = "The AI is taking longer than usual. Please try again in a moment.";
 
 // ─── Contact-detail scrubbing ────────────────────────────────────────────────
 // Applied to every piece of member-written text before it reaches the model,
@@ -106,12 +107,42 @@ WRITING RULES
 12. Write in the same language as the listing's title and description.
 13. Output only the application text, with no preamble, heading, notes or quotation marks around it.`;
 
+// ─── Timing ──────────────────────────────────────────────────────────────────
+// Per-step durations, logged as one JSON line per request so slow steps are
+// easy to spot in the function logs. No user data is logged.
+
+type Timings = Record<string, number>;
+
+const timed = async <T>(timings: Timings, step: string, work: PromiseLike<T>): Promise<T> => {
+  const start = performance.now();
+  try {
+    return await work;
+  } finally {
+    timings[step] = Math.round(performance.now() - start);
+  }
+};
+
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
+  const timings: Timings = {};
+  const start = performance.now();
+  const response = await handleDraft(req, timings);
+  console.log(
+    JSON.stringify({
+      fn: "draft-application",
+      status: response.status,
+      total_ms: Math.round(performance.now() - start),
+      ...timings,
+    }),
+  );
+  return response;
+});
+
+const handleDraft = async (req: Request, timings: Timings): Promise<Response> => {
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -124,23 +155,51 @@ serve(async (req) => {
     if (!authHeader?.startsWith("Bearer ")) {
       return json({ error: "Please sign in to use the AI Co-Writer." }, 401);
     }
-    const { data: userData, error: authError } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", ""),
+    const { data: userData, error: authError } = await timed(
+      timings,
+      "auth_ms",
+      supabase.auth.getUser(authHeader.replace("Bearer ", "")),
     );
     const user = userData?.user;
     if (authError || !user) {
       return json({ error: "Please sign in to use the AI Co-Writer." }, 401);
     }
 
-    // 2) Feature flag + membership (one profile read, service role).
-    const [{ data: profile, error: profileError }, { data: flagRow }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("first_name, is_admin, founding_member, membership_status, membership_type, membership_expiry")
-        .eq("id", user.id)
-        .maybeSingle(),
-      supabase.from("app_settings").select("value").eq("key", FLAG_KEY).maybeSingle(),
+    // 2) Feature flag, membership and rate-limit count are independent reads,
+    // so they run in parallel (service role).
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const gateStart = performance.now();
+    const [
+      { data: profile, error: profileError },
+      { data: flagRow },
+      { count: usedCount, error: countError },
+    ] = await Promise.all([
+      timed(
+        timings,
+        "membership_ms",
+        supabase
+          .from("profiles")
+          .select("first_name, is_admin, founding_member, membership_status, membership_type, membership_expiry")
+          .eq("id", user.id)
+          .maybeSingle(),
+      ),
+      timed(
+        timings,
+        "flag_ms",
+        supabase.from("app_settings").select("value").eq("key", FLAG_KEY).maybeSingle(),
+      ),
+      timed(
+        timings,
+        "rate_limit_ms",
+        supabase
+          .from("ai_usage")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("feature", FEATURE)
+          .gte("created_at", since),
+      ),
     ]);
+    timings.gate_total_ms = Math.round(performance.now() - gateStart);
     if (profileError) throw new Error(`profile lookup failed: ${profileError.message}`);
     if (!profile) return json({ error: "Please complete your profile first." }, 403);
 
@@ -163,13 +222,6 @@ serve(async (req) => {
     }
 
     // 3) Rate limit: rolling 24 hours.
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count: usedCount, error: countError } = await supabase
-      .from("ai_usage")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("feature", FEATURE)
-      .gte("created_at", since);
     if (countError) throw new Error(`usage count failed: ${countError.message}`);
     const used = usedCount ?? 0;
     if (used >= DAILY_LIMIT) {
@@ -212,22 +264,10 @@ serve(async (req) => {
       sitDateIds = [...new Set(body.sit_date_ids as string[])];
     }
 
-    // 5) Fetch only what the draft needs (service role, whitelisted columns).
-    const { data: listing, error: listingError } = await supabase
-      .from("listings")
-      .select(
-        "id, owner_user_id, status, title, city, country, description, home_care_tasks, home_care_tasks_other, requirements, requirements_other, ideal_sitter_description",
-      )
-      .eq("id", listingId)
-      .maybeSingle();
-    if (listingError) throw new Error(`listing lookup failed: ${listingError.message}`);
-    if (!listing || listing.status !== "published") {
-      return json({ error: "This listing isn't available." }, 404);
-    }
-    if (listing.owner_user_id === user.id) {
-      return json({ error: "You can't apply to your own listing." }, 400);
-    }
-
+    // 5) Fetch only what the draft needs (service role, whitelisted columns),
+    // all in one parallel round. The owner's first name needs the listing's
+    // owner_user_id, so it's chained onto the listing fetch rather than
+    // waiting for the whole batch.
     let datesQuery = supabase
       .from("sit_dates")
       .select("id, start_date, end_date, flexibility")
@@ -240,29 +280,87 @@ serve(async (req) => {
           .gte("end_date", new Date().toISOString().slice(0, 10))
           .limit(5);
 
+    const listingWithOwner = (async () => {
+      const listingResult = await supabase
+        .from("listings")
+        .select(
+          "id, owner_user_id, status, title, city, country, description, home_care_tasks, home_care_tasks_other, requirements, requirements_other, ideal_sitter_description",
+        )
+        .eq("id", listingId)
+        .maybeSingle();
+      const ownerId = listingResult.data?.owner_user_id;
+      const ownerResult = ownerId
+        ? await supabase.from("profiles").select("first_name").eq("id", ownerId).maybeSingle()
+        : { data: null };
+      return { listingResult, owner: ownerResult.data as { first_name: string | null } | null };
+    })();
+
+    const fetchStart = performance.now();
     const [
+      { listingResult: { data: listing, error: listingError }, owner },
       { data: dates, error: datesError },
       { data: pets, error: petsError },
-      { data: owner },
       { data: sitterProfile },
-      { data: sitterSits },
+      { count: completedCount },
+      { data: reviewRows },
     ] = await Promise.all([
-      datesQuery,
-      supabase
-        .from("pets")
-        .select(
-          "name, type, age, personality, daily_routine, feeding_details, walks_exercise, requires_medication, medication_instructions, separation_anxiety_tolerance, reactive_to_animals",
-        )
-        .eq("listing_id", listingId)
-        .order("created_at", { ascending: true }),
-      supabase.from("profiles").select("first_name").eq("id", listing.owner_user_id).maybeSingle(),
-      supabase
-        .from("sitter_profiles")
-        .select("bio, headline, experience_level, experience_details, pet_types, comfortable_with, why_i_sit")
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      supabase.from("sits").select("id, status").eq("sitter_user_id", user.id),
+      timed(timings, "db_listing_owner_ms", listingWithOwner),
+      timed(timings, "db_dates_ms", datesQuery),
+      timed(
+        timings,
+        "db_pets_ms",
+        supabase
+          .from("pets")
+          .select(
+            "name, type, age, personality, daily_routine, feeding_details, walks_exercise, requires_medication, medication_instructions, separation_anxiety_tolerance, reactive_to_animals",
+          )
+          .eq("listing_id", listingId)
+          .order("created_at", { ascending: true }),
+      ),
+      timed(
+        timings,
+        "db_sitter_profile_ms",
+        supabase
+          .from("sitter_profiles")
+          .select("bio, headline, experience_level, experience_details, pet_types, comfortable_with, why_i_sit")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ),
+      // Count only; no need to download every sit row.
+      timed(
+        timings,
+        "db_completed_sits_ms",
+        supabase
+          .from("sits")
+          .select("id", { count: "exact", head: true })
+          .eq("sitter_user_id", user.id)
+          .eq("status", "completed"),
+      ),
+      // Best reviews the Nomad received AS A SITTER (reviewee on sits where
+      // they were the sitter), joined in one query instead of two.
+      timed(
+        timings,
+        "db_reviews_ms",
+        supabase
+          .from("reviews")
+          .select("rating, text, sits!inner(sitter_user_id)")
+          .eq("reviewee_user_id", user.id)
+          .eq("sits.sitter_user_id", user.id)
+          .not("text", "is", null)
+          .order("rating", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(3),
+      ),
     ]);
+    timings.db_total_ms = Math.round(performance.now() - fetchStart);
+
+    if (listingError) throw new Error(`listing lookup failed: ${listingError.message}`);
+    if (!listing || listing.status !== "published") {
+      return json({ error: "This listing isn't available." }, 404);
+    }
+    if (listing.owner_user_id === user.id) {
+      return json({ error: "You can't apply to your own listing." }, 400);
+    }
     if (datesError) throw new Error(`dates lookup failed: ${datesError.message}`);
     if (petsError) throw new Error(`pets lookup failed: ${petsError.message}`);
 
@@ -271,23 +369,8 @@ serve(async (req) => {
       return json({ error: "Those dates don't belong to this listing." }, 400);
     }
 
-    const sitIds = (sitterSits ?? []).map((s) => s.id);
-    const completedSits = (sitterSits ?? []).filter((s) => s.status === "completed").length;
-
-    // Best reviews the Nomad received AS A SITTER (reviewee on their own sits).
-    let reviews: { rating: number; text: string | null }[] = [];
-    if (sitIds.length > 0) {
-      const { data: reviewRows } = await supabase
-        .from("reviews")
-        .select("rating, text")
-        .eq("reviewee_user_id", user.id)
-        .in("sit_id", sitIds)
-        .not("text", "is", null)
-        .order("rating", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(3);
-      reviews = reviewRows ?? [];
-    }
+    const completedSits = completedCount ?? 0;
+    const reviews = (reviewRows ?? []) as { rating: number; text: string | null }[];
 
     // 6) Build the prompt. All member-written text is scrubbed and tagged.
     const petBlocks = (pets ?? []).map((p) => {
@@ -364,11 +447,14 @@ serve(async (req) => {
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
 
+    // The timeout covers the whole exchange (headers AND body), so a stalled
+    // response can't hang past it. No usage is recorded on any failure.
+    const anthropicStart = performance.now();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), ANTHROPIC_TIMEOUT_MS);
-    let aiResponse: Response;
+    let aiJson: { content?: { type?: string; text?: string }[]; stop_reason?: string };
     try {
-      aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
+      const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "x-api-key": apiKey,
@@ -383,28 +469,39 @@ serve(async (req) => {
         }),
         signal: controller.signal,
       });
+
+      if (!aiResponse.ok) {
+        const detail = await aiResponse.text().catch(() => "");
+        console.error("Anthropic API error", aiResponse.status, detail.slice(0, 1000));
+        const busy = aiResponse.status === 429 || aiResponse.status === 529;
+        return json(
+          {
+            error: busy
+              ? "The AI Co-Writer is busy right now. Please try again in a minute."
+              : GENERIC_ERROR,
+          },
+          busy ? 503 : 502,
+        );
+      }
+
+      aiJson = await aiResponse.json();
+    } catch (err) {
+      if (controller.signal.aborted) {
+        console.error(`Anthropic call timed out after ${ANTHROPIC_TIMEOUT_MS}ms`);
+        return json({ error: TIMEOUT_ERROR }, 504);
+      }
+      throw err;
     } finally {
       clearTimeout(timeout);
+      timings.anthropic_ms = Math.round(performance.now() - anthropicStart);
+      timings.prompt_chars = userPrompt.length;
     }
 
-    if (!aiResponse.ok) {
-      const detail = await aiResponse.text().catch(() => "");
-      console.error("Anthropic API error", aiResponse.status, detail.slice(0, 1000));
-      const busy = aiResponse.status === 429 || aiResponse.status === 529;
-      return json(
-        {
-          error: busy
-            ? "The AI Co-Writer is busy right now. Please try again in a minute."
-            : GENERIC_ERROR,
-        },
-        busy ? 503 : 502,
-      );
-    }
-
-    const aiJson = await aiResponse.json();
+    // 8) Scrub the output, then record usage only after a successful draft.
+    const finishStart = performance.now();
     const rawDraft = (aiJson?.content ?? [])
-      .filter((block: { type?: string }) => block?.type === "text")
-      .map((block: { text?: string }) => block.text ?? "")
+      .filter((block) => block?.type === "text")
+      .map((block) => block.text ?? "")
       .join("")
       .trim();
     const draft = cleanOutput(rawDraft);
@@ -412,16 +509,17 @@ serve(async (req) => {
       console.error("Anthropic returned an empty draft", aiJson?.stop_reason);
       return json({ error: GENERIC_ERROR }, 502);
     }
+    timings.hit_max_tokens = aiJson?.stop_reason === "max_tokens" ? 1 : 0;
 
-    // 8) Record usage only after a successful draft.
     const { error: usageError } = await supabase
       .from("ai_usage")
       .insert({ user_id: user.id, feature: FEATURE });
-    if (usageError) console.error("Failed to record ai_usage", user.id, usageError);
+    if (usageError) console.error("Failed to record ai_usage", usageError.message);
+    timings.scrub_insert_ms = Math.round(performance.now() - finishStart);
 
     return json({ draft, remaining: Math.max(0, DAILY_LIMIT - (used + 1)) });
   } catch (err) {
     console.error("draft-application failed:", err);
     return json({ error: GENERIC_ERROR }, 500);
   }
-});
+};

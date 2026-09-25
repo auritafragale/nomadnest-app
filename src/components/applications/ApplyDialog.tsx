@@ -51,6 +51,14 @@ interface ApplyDialogProps {
   onSuccess?: () => void;
 }
 
+const AI_DRAFT_STATUS_MESSAGES = [
+  "Reading the listing…",
+  "Getting to know the pets…",
+  "Writing your draft…",
+  "Almost there…",
+];
+const AI_DRAFT_STATUS_INTERVAL_MS = 4000;
+
 const HIGHLIGHT_OPTIONS = [
   "Experienced with this pet type",
   "Flexible schedule",
@@ -95,6 +103,20 @@ export const ApplyDialog = ({
   const [aiNote, setAiNote] = useState("");
   const [hasAiDraft, setHasAiDraft] = useState(false);
   const [confirmReplaceOpen, setConfirmReplaceOpen] = useState(false);
+  const [aiStatusIndex, setAiStatusIndex] = useState(0);
+
+  // Step through the status messages while a draft is generating, then hold
+  // on the last one ("Almost there…") rather than looping back to the start.
+  useEffect(() => {
+    if (!aiDraft.isPending) {
+      setAiStatusIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setAiStatusIndex((i) => Math.min(i + 1, AI_DRAFT_STATUS_MESSAGES.length - 1));
+    }, AI_DRAFT_STATUS_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [aiDraft.isPending]);
 
   const applicableDates = sitDates.filter(
     (d) => !alreadyApplied.has(d.id) && !fullDates.has(d.id),
@@ -145,7 +167,12 @@ export const ApplyDialog = ({
     } catch (error) {
       const status = error instanceof AiCowriterError ? error.status : null;
       toast({
-        title: status === 429 ? "Daily AI draft limit reached" : "Couldn't draft your application",
+        title:
+          status === 429
+            ? "Daily AI draft limit reached"
+            : status === 504
+              ? "Taking longer than usual"
+              : "Couldn't draft your application",
         description:
           error instanceof AiCowriterError
             ? error.message
@@ -394,7 +421,7 @@ export const ApplyDialog = ({
                       {aiDraft.isPending ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Drafting...
+                          <span aria-live="polite">{AI_DRAFT_STATUS_MESSAGES[aiStatusIndex]}</span>
                         </>
                       ) : (
                         <>

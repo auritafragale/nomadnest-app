@@ -10,6 +10,12 @@ const FEATURE = "draft_application";
 
 const FRIENDLY_ERROR =
   "Sorry, we couldn't draft your application right now. Please try again in a moment, or write it yourself.";
+export const AI_COWRITER_TIMEOUT_ERROR =
+  "The AI is taking longer than usual. Please try again in a moment.";
+// Slightly longer than the edge function's 45s Anthropic timeout, so the
+// server's own friendly timeout normally arrives first; this is the backstop
+// that guarantees the spinner can never run forever.
+const CLIENT_TIMEOUT_MS = 50_000;
 
 export class AiCowriterError extends Error {
   constructor(
@@ -18,6 +24,11 @@ export class AiCowriterError extends Error {
   ) {
     super(message);
   }
+}
+
+interface DraftApplicationResponse {
+  draft?: string;
+  remaining?: number;
 }
 
 export interface DraftApplicationInput {
@@ -70,13 +81,31 @@ export const useAiCowriter = () => {
 
   const draft = useMutation({
     mutationFn: async ({ listingId, sitDateIds, note }: DraftApplicationInput) => {
-      const { data, error } = await supabase.functions.invoke("draft-application", {
-        body: {
-          listing_id: listingId,
-          sit_date_ids: sitDateIds && sitDateIds.length > 0 ? sitDateIds : undefined,
-          note: note?.trim() || undefined,
-        },
-      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+      let result: Awaited<ReturnType<typeof supabase.functions.invoke<DraftApplicationResponse>>>;
+      try {
+        result = await supabase.functions.invoke<DraftApplicationResponse>("draft-application", {
+          body: {
+            listing_id: listingId,
+            sit_date_ids: sitDateIds && sitDateIds.length > 0 ? sitDateIds : undefined,
+            note: note?.trim() || undefined,
+          },
+          signal: controller.signal,
+        });
+      } catch {
+        throw new AiCowriterError(
+          controller.signal.aborted ? AI_COWRITER_TIMEOUT_ERROR : FRIENDLY_ERROR,
+          controller.signal.aborted ? 504 : null,
+        );
+      } finally {
+        clearTimeout(timer);
+      }
+
+      const { data, error } = result;
+      if (controller.signal.aborted) {
+        throw new AiCowriterError(AI_COWRITER_TIMEOUT_ERROR, 504);
+      }
 
       if (error) {
         if (error instanceof FunctionsHttpError) {
@@ -84,7 +113,11 @@ export const useAiCowriter = () => {
           if (typeof body?.remaining === "number") {
             queryClient.setQueryData(remainingKey, body.remaining);
           }
-          throw new AiCowriterError(body?.error || FRIENDLY_ERROR, error.context.status ?? null);
+          const status = error.context.status ?? null;
+          throw new AiCowriterError(
+            body?.error || (status === 504 ? AI_COWRITER_TIMEOUT_ERROR : FRIENDLY_ERROR),
+            status,
+          );
         }
         throw new AiCowriterError(FRIENDLY_ERROR, null);
       }
