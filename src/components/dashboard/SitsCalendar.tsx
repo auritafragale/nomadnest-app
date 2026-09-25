@@ -332,20 +332,25 @@ export const SitCard = ({
       : sit.status;
 
   const canCancelSit = (sit.status === "confirmed" || sit.status === "in_progress") && !isFinished;
-  // Reviews stay open for 14 days after the sit's end date.
+  const isEarlyCancelled = sit.status === "cancelled" && sit.cancelled_from_status === "in_progress";
+  const isReviewable = sit.status === "completed" || isEarlyCancelled;
+  // Reviews stay open for 14 days after the sit ended — its end date, or for a
+  // sit cut short mid-stay, the day it was cancelled (its original end date
+  // may still be in the future).
   const REVIEW_WINDOW_DAYS = 14;
-  const daysSinceEnd = sit.sit_dates?.end_date
-    ? differenceInCalendarDays(startOfToday(), parseISO(sit.sit_dates.end_date))
+  const reviewAnchor = isEarlyCancelled ? sit.cancelled_at : sit.sit_dates?.end_date;
+  const daysSinceEnd = reviewAnchor
+    ? differenceInCalendarDays(startOfToday(), parseISO(reviewAnchor))
     : null;
   const reviewDaysLeft =
     daysSinceEnd === null ? null : Math.max(0, REVIEW_WINDOW_DAYS - daysSinceEnd);
   const reviewWindowOpen = reviewDaysLeft === null || reviewDaysLeft > 0;
-  const canReview = sit.status === "completed" && !hasReviewed && reviewWindowOpen;
+  const canReview = isReviewable && !hasReviewed && reviewWindowOpen;
 
   // Check if user has already reviewed for this sit
   useEffect(() => {
     const checkReview = async () => {
-      if (sit.status !== "completed") return;
+      if (!isReviewable) return;
       
       const { data } = await supabase
         .from("reviews")
@@ -358,7 +363,7 @@ export const SitCard = ({
     };
     
     checkReview();
-  }, [sit.id, sit.status, userId]);
+  }, [sit.id, isReviewable, userId]);
 
   return (
     <div className="p-3 rounded-lg border bg-card hover:shadow-md transition-shadow">
@@ -384,7 +389,11 @@ export const SitCard = ({
           )}
           <div className="flex items-center gap-2 mt-1.5">
             <Badge variant="outline" className={cn("text-xs", statusColors[displayStatus])}>
-              {isCurrent ? "Current" : displayStatus.replace("_", " ")}
+              {isCurrent
+                ? "Current"
+                : isEarlyCancelled
+                  ? "Cancelled early"
+                  : displayStatus.replace("_", " ")}
             </Badge>
           </div>
         </div>
@@ -676,7 +685,7 @@ export const SitCard = ({
         </div>
       )}
 
-      {sit.status === "completed" && !hasReviewed && !reviewWindowOpen && (
+      {isReviewable && !hasReviewed && !reviewWindowOpen && (
         <div className="mt-3 pt-2 border-t">
           <p className="text-xs text-muted-foreground text-center">
             The {REVIEW_WINDOW_DAYS}-day review window for this sit has closed
@@ -684,7 +693,7 @@ export const SitCard = ({
         </div>
       )}
 
-      {sit.status === "completed" && hasReviewed && (
+      {isReviewable && hasReviewed && (
         <div className="mt-3 pt-2 border-t">
           <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
             <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
@@ -733,8 +742,9 @@ export const SitsCalendar = ({ viewAs, openReview, onAutoOpened }: SitsCalendarP
       .filter((sit) => {
         if (!sit.sit_dates) return false;
         const endDate = parseISO(sit.sit_dates.end_date);
-        // Cancelled sits never happened — they only show in the Cancelled application tabs.
-        if (sit.status === "cancelled") return false;
+        // Only early cancellations (cut short mid-sit) belong in Past; a sit
+        // cancelled before it started lives only in the Cancelled tabs.
+        if (sit.status === "cancelled") return sit.cancelled_from_status === "in_progress";
         return sit.status === "completed" || isBefore(endDate, today);
       })
 

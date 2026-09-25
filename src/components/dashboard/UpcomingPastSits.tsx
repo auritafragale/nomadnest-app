@@ -57,7 +57,9 @@ export const UpcomingPastSits = ({ viewAs, openReview, onAutoOpened }: UpcomingP
       .filter((sit) => {
         if (!sit.sit_dates) return false;
         const endDate = parseISO(sit.sit_dates.end_date);
-        if (sit.status === "cancelled") return false;
+        // Only early cancellations (cut short mid-sit) belong in Past; a sit
+        // cancelled before it started lives only in the Cancelled tabs.
+        if (sit.status === "cancelled") return sit.cancelled_from_status === "in_progress";
         return sit.status === "completed" || isBefore(endDate, today);
       })
       .sort((a, b) => {

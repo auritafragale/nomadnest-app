@@ -1583,6 +1583,8 @@ export type Database = {
       sits: {
         Row: {
           arrival_prompt_sent_at: string | null
+          cancelled_at: string | null
+          cancelled_from_status: Database["public"]["Enums"]["sit_status"] | null
           completed_at: string | null
           confirmed_at: string | null
           created_at: string
@@ -1596,6 +1598,8 @@ export type Database = {
         }
         Insert: {
           arrival_prompt_sent_at?: string | null
+          cancelled_at?: string | null
+          cancelled_from_status?: Database["public"]["Enums"]["sit_status"] | null
           completed_at?: string | null
           confirmed_at?: string | null
           created_at?: string
@@ -1609,6 +1613,8 @@ export type Database = {
         }
         Update: {
           arrival_prompt_sent_at?: string | null
+          cancelled_at?: string | null
+          cancelled_from_status?: Database["public"]["Enums"]["sit_status"] | null
           completed_at?: string | null
           confirmed_at?: string | null
           created_at?: string

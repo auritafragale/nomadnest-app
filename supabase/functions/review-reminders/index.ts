@@ -86,13 +86,14 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // 2) Reminders for completed sits still inside the review window.
+    // 2) Reminders for completed sits (and sits cancelled early, mid-stay)
+    // still inside the review window.
     const { data: completedSits, error: completedError } = await supabase
       .from("sits")
       .select(
-        "id, owner_user_id, sitter_user_id, listing:listing_id(title), sit_dates:sit_dates_id(end_date)"
+        "id, status, cancelled_at, owner_user_id, sitter_user_id, listing:listing_id(title), sit_dates:sit_dates_id(end_date)"
       )
-      .eq("status", "completed")
+      .or("status.eq.completed,and(status.eq.cancelled,cancelled_from_status.eq.in_progress)")
       .limit(500);
 
     if (completedError) throw completedError;
@@ -100,7 +101,13 @@ const handler = async (req: Request): Promise<Response> => {
     for (const sit of completedSits ?? []) {
       if (summary.remindersSent >= MAX_REMINDERS_PER_RUN) break;
 
-      const endDate = (sit as any).sit_dates?.end_date as string | undefined;
+      // An early-cancelled sit ended when it was cancelled, not on its
+      // original end date (which may still be in the future).
+      const endDate = (
+        (sit as any).status === "cancelled"
+          ? ((sit as any).cancelled_at as string | null)?.slice(0, 10)
+          : (sit as any).sit_dates?.end_date
+      ) as string | undefined;
       if (!endDate) continue;
 
       const days = daysBetween(endDate, today);

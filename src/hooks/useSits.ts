@@ -13,6 +13,10 @@ export interface Sit {
   status: "confirmed" | "in_progress" | "completed" | "cancelled";
   confirmed_at: string | null;
   completed_at: string | null;
+  /** Set by a DB trigger when status transitions to "cancelled". */
+  cancelled_at: string | null;
+  /** Status right before cancellation — "in_progress" means cancelled early (mid-sit). */
+  cancelled_from_status: Sit["status"] | null;
   created_at: string;
   listing: {
     title: string;
