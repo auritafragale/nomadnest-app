@@ -224,7 +224,8 @@ serve(async (req) => {
 });
 
 async function syncSubscription(
-  supabase: ReturnType<typeof createClient>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   stripe: Stripe,
   sub: Stripe.Subscription
 ) {
