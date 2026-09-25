@@ -129,7 +129,8 @@ WRITING RULES
 14. Never include contact details (email, phone number, social media handles, websites or addresses), and never suggest moving the conversation or any payment off NomadNest.
 15. Write in the same language as the listing's title and description.
 16. Layout: after the greeting line, always write 3 or 4 short paragraphs separated by blank lines, in this order: the intro, the pets, anything else (home tasks, the proof point or the Nomad's note; leave this paragraph out if there's nothing to add), then the dates and video call. Put the sign-off on its own line after the last paragraph. Never output one block of text.
-17. Output only the application text, with no preamble, heading, notes or quotation marks around it.`;
+17. Never repeat the same claim or skill twice in one draft.
+18. Output only the application text, with no preamble, heading, notes or quotation marks around it.`;
 
 // ─── Timing ──────────────────────────────────────────────────────────────────
 // Per-step durations, logged as one JSON line per request so slow steps are

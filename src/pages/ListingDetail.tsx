@@ -446,7 +446,9 @@ const ListingDetail = () => {
         toast({
           title: "Not available",
           description:
-            "You've already applied for these dates, or this round already has too many nomads under review. Try other dates or check back soon.",
+            check.alreadyApplied.size > 0
+              ? "You've already applied for these dates."
+              : "Applications are paused for these dates. Check back soon.",
           variant: "destructive",
         });
         return;
@@ -1140,7 +1142,7 @@ const ListingDetail = () => {
 
               {/* Owner Reviews */}
               <OwnerReviewsSummaryCard ownerUserId={listing.owner_user_id} />
-              <Card>
+              <Card id="available-dates" className="scroll-mt-24">
                 <CardHeader>
                   <CardTitle asChild>
                     <h2 className="flex items-center gap-2">
@@ -1259,6 +1261,17 @@ const ListingDetail = () => {
                     listingPhoto={listing.photos?.[0] ?? null}
                     listingLocation={[listing.city, listing.country].filter(Boolean).join(", ") || null}
                     petNames={listing.pets.map((pet) => pet.name).filter(Boolean)}
+                    otherDates={openDates.filter((d) => !selectedDateIds.includes(d.id))}
+                    onChooseOtherDates={() => {
+                      setApplyDialogOpen(false);
+                      setSelectedDateIds([]);
+                      // Let the dialog close before scrolling to the date picker.
+                      setTimeout(() => {
+                        document
+                          .getElementById("available-dates")
+                          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }, 250);
+                    }}
                   />
                 </>
               )}

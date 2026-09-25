@@ -23,11 +23,12 @@ import {
   Plus,
   ShieldCheck,
   Sparkles,
-  Star,
+  CheckCircle2,
+  Hourglass,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useApplicationSubmission, MAX_ACTIVE_APPLICANTS } from "@/hooks/useApplicationSubmission";
+import { useApplicationSubmission } from "@/hooks/useApplicationSubmission";
 import {
   useAiCowriter,
   AiCowriterError,
@@ -65,6 +66,10 @@ interface ApplyDialogProps {
   listingPhoto?: string | null;
   listingLocation?: string | null;
   petNames?: string[];
+  /** The listing's other open date ranges (not selected), to offer "Choose other dates". */
+  otherDates?: SitDate[];
+  /** Takes the Nomad back to date selection on the listing. */
+  onChooseOtherDates?: () => void;
 }
 
 const AI_DRAFT_STATUS_MESSAGES = [
@@ -114,6 +119,8 @@ export const ApplyDialog = ({
   listingPhoto,
   listingLocation,
   petNames,
+  otherDates,
+  onChooseOtherDates,
 }: ApplyDialogProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -167,6 +174,28 @@ export const ApplyDialog = ({
     (d) => !alreadyApplied.has(d.id) && !fullDates.has(d.id),
   );
   const hasExistingApplication = sitDates.length > 0 && applicableDates.length === 0;
+
+  // When none of the selected ranges can be applied for, check (with the same
+  // eligibility rules) whether any of the listing's OTHER open ranges can.
+  const [hasOtherApplicableDates, setHasOtherApplicableDates] = useState(false);
+  // Keyed on the ids so a new array with the same ranges doesn't re-query.
+  const otherDatesKey = (otherDates ?? []).map((d) => d.id).join(",");
+  const otherDatesRef = useRef(otherDates);
+  otherDatesRef.current = otherDates;
+  useEffect(() => {
+    let cancelled = false;
+    const others = otherDatesRef.current ?? [];
+    if (!open || !hasExistingApplication || others.length === 0) {
+      setHasOtherApplicableDates(false);
+      return;
+    }
+    checkApplicability(listingId, others).then((result) => {
+      if (!cancelled) setHasOtherApplicableDates(result.applicableDates.length > 0);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, hasExistingApplication, otherDatesKey, listingId, checkApplicability]);
   // Only the ranges the Nomad keeps ticked are submitted (and sent to the AI).
   const datesToSubmit = applicableDates.filter((d) => selectedDateIds.has(d.id));
 
@@ -354,11 +383,17 @@ export const ApplyDialog = ({
     title,
     body,
     action,
+    secondaryAction,
+    linkAction,
   }: {
     icon: ReactNode;
     title: string;
     body: string;
     action?: { label: string; onClick: () => void };
+    /** Optional outline button under the primary action. */
+    secondaryAction?: { label: string; onClick: () => void };
+    /** Optional quiet text link at the bottom. */
+    linkAction?: { label: string; onClick: () => void };
   }) => (
     <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
       <div className="w-full max-w-sm rounded-2xl border bg-card p-6 text-center shadow-sm sm:p-8">
@@ -370,6 +405,16 @@ export const ApplyDialog = ({
         {action && (
           <Button className="mt-6 w-full" size="lg" onClick={action.onClick}>
             {action.label}
+          </Button>
+        )}
+        {secondaryAction && (
+          <Button className="mt-3 w-full" size="lg" variant="outline" onClick={secondaryAction.onClick}>
+            {secondaryAction.label}
+          </Button>
+        )}
+        {linkAction && (
+          <Button className="mt-3" variant="link" onClick={linkAction.onClick}>
+            {linkAction.label}
           </Button>
         )}
       </div>
@@ -481,7 +526,7 @@ export const ApplyDialog = ({
                     )}
                     {unavailable && (
                       <Badge variant="outline" className="font-normal">
-                        {alreadyApplied.has(d.id) ? "Already applied" : "Full"}
+                        {alreadyApplied.has(d.id) ? "Already applied" : "Paused"}
                       </Badge>
                     )}
                   </div>
@@ -504,11 +549,6 @@ export const ApplyDialog = ({
         {hadPastApplication && (
           <p className="text-xs text-muted-foreground">
             You applied for these dates before. You're welcome to apply again.
-          </p>
-        )}
-        {fullDates.size > 0 && (
-          <p className="text-xs text-muted-foreground">
-            "Full" means {MAX_ACTIVE_APPLICANTS} Nomads are already under review for that range.
           </p>
         )}
       </section>
@@ -865,12 +905,43 @@ export const ApplyDialog = ({
       </div>
     );
   } else if (hasExistingApplication) {
-    body = gateCard({
-      icon: <Star className="h-6 w-6" aria-hidden="true" />,
-      title: "These dates aren't available",
-      body: `You've already applied, or ${MAX_ACTIVE_APPLICANTS} Nomads are already under review. Try other dates or check back soon.`,
-      action: { label: "Choose other dates", onClick: () => onOpenChange(false) },
-    });
+    // Every selected range is unavailable. If any was already applied for,
+    // lead with that; otherwise the ranges are paused for new applications.
+    const anyApplied = sitDates.some((d) => alreadyApplied.has(d.id));
+    const backToListing = { label: "Back to listing", onClick: () => onOpenChange(false) };
+    const chooseOtherDates =
+      hasOtherApplicableDates && onChooseOtherDates
+        ? { label: "Choose other dates", onClick: onChooseOtherDates }
+        : undefined;
+    body = anyApplied
+      ? gateCard({
+          icon: <CheckCircle2 className="h-6 w-6" aria-hidden="true" />,
+          title: "You've already applied",
+          body: "Your application is with the Pet Parent. We'll let you know as soon as they reply.",
+          action: {
+            label: "View my applications",
+            onClick: () => {
+              onOpenChange(false);
+              navigate("/dashboard?mode=sitter&appTab=pending#my-applications");
+            },
+          },
+          secondaryAction: chooseOtherDates,
+          linkAction: backToListing,
+        })
+      : gateCard({
+          icon: <Hourglass className="h-6 w-6" aria-hidden="true" />,
+          title: "Applications are paused",
+          body: "This Pet Parent has plenty to review right now. Check back soon or find another sit you'll love.",
+          action: {
+            label: "Explore other sits",
+            onClick: () => {
+              onOpenChange(false);
+              navigate("/browse-sits");
+            },
+          },
+          secondaryAction: chooseOtherDates,
+          linkAction: backToListing,
+        });
   } else {
     body = (
       <>
