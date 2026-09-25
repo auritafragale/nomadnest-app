@@ -129,7 +129,7 @@ serve(async (req) => {
   try {
     event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
   } catch (err) {
-    return new Response(`Webhook signature verification failed: ${err.message}`, {
+    return new Response(`Webhook signature verification failed: ${(err as Error).message}`, {
       status: 400,
     });
   }
@@ -215,7 +215,7 @@ serve(async (req) => {
     }
   } catch (err) {
     console.error("Webhook handler error:", err);
-    return new Response(`Handler error: ${err.message}`, { status: 500 });
+    return new Response(`Handler error: ${(err as Error).message}`, { status: 500 });
   }
 
   return new Response(JSON.stringify({ received: true }), {
@@ -224,7 +224,8 @@ serve(async (req) => {
 });
 
 async function syncSubscription(
-  supabase: ReturnType<typeof createClient>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   stripe: Stripe,
   sub: Stripe.Subscription
 ) {
