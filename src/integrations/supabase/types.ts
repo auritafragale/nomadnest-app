@@ -331,6 +331,7 @@ export type Database = {
           category: string
           created_at: string
           id: string
+          note: string | null
           reporter_user_id: string
           review_id: string | null
           sit_id: string | null
@@ -342,6 +343,7 @@ export type Database = {
           category: string
           created_at?: string
           id?: string
+          note?: string | null
           reporter_user_id: string
           review_id?: string | null
           sit_id?: string | null
@@ -353,6 +355,7 @@ export type Database = {
           category?: string
           created_at?: string
           id?: string
+          note?: string | null
           reporter_user_id?: string
           review_id?: string | null
           sit_id?: string | null
@@ -1584,7 +1587,9 @@ export type Database = {
         Row: {
           arrival_prompt_sent_at: string | null
           cancelled_at: string | null
-          cancelled_from_status: Database["public"]["Enums"]["sit_status"] | null
+          cancelled_from_status:
+            | Database["public"]["Enums"]["sit_status"]
+            | null
           completed_at: string | null
           confirmed_at: string | null
           created_at: string
@@ -1599,7 +1604,9 @@ export type Database = {
         Insert: {
           arrival_prompt_sent_at?: string | null
           cancelled_at?: string | null
-          cancelled_from_status?: Database["public"]["Enums"]["sit_status"] | null
+          cancelled_from_status?:
+            | Database["public"]["Enums"]["sit_status"]
+            | null
           completed_at?: string | null
           confirmed_at?: string | null
           created_at?: string
@@ -1614,7 +1621,9 @@ export type Database = {
         Update: {
           arrival_prompt_sent_at?: string | null
           cancelled_at?: string | null
-          cancelled_from_status?: Database["public"]["Enums"]["sit_status"] | null
+          cancelled_from_status?:
+            | Database["public"]["Enums"]["sit_status"]
+            | null
           completed_at?: string | null
           confirmed_at?: string | null
           created_at?: string
@@ -2160,7 +2169,7 @@ export type Database = {
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       is_owner_active: { Args: { _owner_user_id: string }; Returns: boolean }
       log_sit_abandonment_flag: {
-        Args: { p_sit_id: string; p_note: string | null }
+        Args: { p_note?: string; p_sit_id: string }
         Returns: undefined
       }
       mark_conversation_messages_read: {
