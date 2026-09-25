@@ -52,7 +52,7 @@ const InlineWelcomeGuide = ({
   const { guide, isLoading, isOffline, cachedAt } = useWelcomeGuide(ownerUserId);
   const [open, setOpen] = useState(false);
 
-  const filled = guide
+  const filled: { key: string; label: string; icon: typeof FIELDS[number]["icon"]; value: string }[] = guide
     ? FIELDS.filter((f) => (guide[f.key] || "").trim().length > 0).map((f) => ({
         key: f.key as string,
         label: f.label,
