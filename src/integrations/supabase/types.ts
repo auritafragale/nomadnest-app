@@ -14,45 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      ai_usage: {
-        Row: {
-          created_at: string
-          feature: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          feature: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          feature?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      app_settings: {
-        Row: {
-          key: string
-          updated_at: string
-          value: Json
-        }
-        Insert: {
-          key: string
-          updated_at?: string
-          value: Json
-        }
-        Update: {
-          key?: string
-          updated_at?: string
-          value?: Json
-        }
-        Relationships: []
-      }
       applications: {
         Row: {
           created_at: string
