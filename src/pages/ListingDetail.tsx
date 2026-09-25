@@ -1256,6 +1256,9 @@ const ListingDetail = () => {
                     listingTitle={listing.title}
                     sitDates={selectedSitDates}
                     onSuccess={() => setSelectedDateIds([])}
+                    listingPhoto={listing.photos?.[0] ?? null}
+                    listingLocation={[listing.city, listing.country].filter(Boolean).join(", ") || null}
+                    petNames={listing.pets.map((pet) => pet.name).filter(Boolean)}
                   />
                 </>
               )}

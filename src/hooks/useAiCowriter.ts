@@ -6,6 +6,8 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 export const AI_COWRITER_DAILY_LIMIT = 10;
 export const AI_COWRITER_NOTE_MAX_LENGTH = 300;
+/** Matches the edge function's limits on the optional highlights array. */
+export const AI_COWRITER_MAX_HIGHLIGHTS = 12;
 const FEATURE = "draft_application";
 
 const FRIENDLY_ERROR =
@@ -35,6 +37,8 @@ export interface DraftApplicationInput {
   listingId: string;
   sitDateIds?: string[];
   note?: string;
+  /** The Nomad's selected "Why you're a great fit" highlights. */
+  highlights?: string[];
 }
 
 /**
@@ -80,7 +84,11 @@ export const useAiCowriter = () => {
   });
 
   const draft = useMutation({
-    mutationFn: async ({ listingId, sitDateIds, note }: DraftApplicationInput) => {
+    mutationFn: async ({ listingId, sitDateIds, note, highlights }: DraftApplicationInput) => {
+      const cleanHighlights = (highlights ?? [])
+        .map((h) => h.trim())
+        .filter(Boolean)
+        .slice(0, AI_COWRITER_MAX_HIGHLIGHTS);
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
       let result: Awaited<ReturnType<typeof supabase.functions.invoke<DraftApplicationResponse>>>;
@@ -90,6 +98,7 @@ export const useAiCowriter = () => {
             listing_id: listingId,
             sit_date_ids: sitDateIds && sitDateIds.length > 0 ? sitDateIds : undefined,
             note: note?.trim() || undefined,
+            highlights: cleanHighlights.length > 0 ? cleanHighlights : undefined,
           },
           signal: controller.signal,
         });
