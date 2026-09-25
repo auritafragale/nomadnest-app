@@ -401,6 +401,13 @@ export const ApplyDialog = ({
         ))}
       </div>
       {heading(STEP_TITLES[step])}
+      {step === 2 && (
+        <p className="-mt-1 text-sm text-muted-foreground">
+          {aiVisible
+            ? "Write it yourself, or let AI write a first draft you can edit."
+            : "Tell the Pet Parent a little about you and why you'd love this sit."}
+        </p>
+      )}
     </div>
   );
 
@@ -683,7 +690,7 @@ export const ApplyDialog = ({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ai-note" className="text-xs font-normal text-muted-foreground">
-              Anything you'd like mentioned? (optional)
+              Optional: anything you'd like mentioned?
             </Label>
             <Input
               id="ai-note"
@@ -710,7 +717,7 @@ export const ApplyDialog = ({
             ) : (
               <>
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
-                Draft my application with AI
+                Write my draft with AI
               </>
             )}
           </Button>
@@ -719,6 +726,15 @@ export const ApplyDialog = ({
               You've used all your AI drafts for today. More will be available within 24 hours.
             </p>
           )}
+        </div>
+      )}
+
+      {/* Divider: AI is one option, writing it yourself is the other */}
+      {aiVisible && (
+        <div className="flex items-center gap-3" role="separator" aria-label="or write it yourself">
+          <div className="h-px flex-1 bg-border" />
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">or write it yourself</span>
+          <div className="h-px flex-1 bg-border" />
         </div>
       )}
 
@@ -737,7 +753,7 @@ export const ApplyDialog = ({
         )}
         <Textarea
           id="message"
-          placeholder="Say hello and tell them a bit about you…"
+          placeholder="Hi, I'm... Tell them about you, your experience and why this sit suits you."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           readOnly={aiDraft.isPending}
