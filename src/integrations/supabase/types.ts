@@ -1962,6 +1962,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_application: { Args: { p_application_id: string }; Returns: Json }
       acquire_job_lease: {
         Args: { p_job_name: string; p_lease_seconds: number }
         Returns: boolean
@@ -2165,6 +2166,7 @@ export type Database = {
           reply_count: number
         }[]
       }
+      decline_application: { Args: { p_application_id: string }; Returns: Json }
       get_listing_private_address: {
         Args: { p_listing_id: string }
         Returns: string
@@ -2232,6 +2234,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      notify_application_status: {
+        Args: { p_application_id: string; p_sit_id?: string; p_status: string }
+        Returns: undefined
+      }
       redeem_founding_member_code: {
         Args: { p_code: string; p_user_id: string }
         Returns: string
@@ -2245,6 +2251,10 @@ export type Database = {
       set_my_profile_phone: {
         Args: { p_phone: string; p_target: string }
         Returns: undefined
+      }
+      shortlist_application: {
+        Args: { p_application_id: string }
+        Returns: Json
       }
       unaccent_fallback: { Args: { p_text: string }; Returns: string }
       upsert_push_subscription: {
