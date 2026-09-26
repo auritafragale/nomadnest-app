@@ -180,6 +180,9 @@ export const useCreateInvite = () => {
       sendNotification({
         type: "invite",
         recipientUserId: invite.sitter_user_id,
+        // The notify_sitter_on_invite trigger already created the in-app row
+        // (which also triggers the push); this call only sends the email.
+        skipInAppNotification: true,
         data: {
           ownerName,
           listingTitle: listingTitleSafe,

@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
-import webpush from "https://esm.sh/web-push@3.6.7";
 import {
   renderBrandedEmail,
   sendBrandedEmail,
@@ -19,92 +18,6 @@ interface NotificationEmailRequest {
   /** When true, skip writing the in-app notifications row (already created by a DB trigger). */
   skipInAppNotification?: boolean;
 }
-
-const sendPushNotification = async (
-  supabase: any,
-  userId: string,
-  title: string,
-  body: string,
-  url: string,
-  type: string
-) => {
-  const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
-  const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
-
-  if (!vapidPublicKey || !vapidPrivateKey) {
-    console.log('VAPID keys not configured, skipping push notification');
-    return;
-  }
-
-  try {
-    // Get user's push subscriptions
-    const { data: subscriptions, error } = await supabase
-      .from('push_subscriptions')
-      .select('*')
-      .eq('user_id', userId);
-
-    if (error) {
-      console.error('Error fetching push subscriptions:', error);
-      return;
-    }
-
-    if (!subscriptions || subscriptions.length === 0) {
-      console.log('No push subscriptions found for user:', userId);
-      return;
-    }
-
-    console.log(`Sending push to ${subscriptions.length} subscription(s) for user ${userId}`);
-
-    // Configure web-push
-    webpush.setVapidDetails(
-      'mailto:hello@nomadnest.global',
-      vapidPublicKey,
-      vapidPrivateKey
-    );
-
-    const payload = JSON.stringify({
-      title,
-      body,
-      url,
-      tag: type,
-    });
-
-    // Send to all subscriptions
-    const results = await Promise.allSettled(
-      subscriptions.map(async (sub: any) => {
-        try {
-          await webpush.sendNotification(
-            {
-              endpoint: sub.endpoint,
-              keys: { p256dh: sub.p256dh, auth: sub.auth },
-            },
-            payload
-          );
-          console.log('Push sent to:', sub.endpoint.substring(0, 50));
-          return { success: true };
-        } catch (err: any) {
-          console.error('Push failed:', err.message);
-          // Remove invalid subscriptions
-          if (err.statusCode === 404 || err.statusCode === 410) {
-            await supabase
-              .from('push_subscriptions')
-              .delete()
-              .eq('id', sub.id);
-            console.log('Removed invalid subscription:', sub.id);
-          }
-          return { success: false };
-        }
-      })
-    );
-
-    const successCount = results.filter(
-      (r) => r.status === 'fulfilled' && (r.value as any).success
-    ).length;
-    console.log(`Push notifications: ${successCount}/${subscriptions.length} successful`);
-  } catch (error) {
-    console.error('Error sending push notifications:', error);
-  }
-};
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -222,22 +135,17 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Always send push notification (regardless of email preferences)
-    await sendPushNotification(
-      supabaseClient,
-      recipientUserId,
-      emailContent.pushTitle ?? emailContent.subject,
-      emailContent.pushBody ?? "",
-      emailContent.pushUrl ?? "/dashboard",
-      type
-    );
+    // Push is NOT sent here: every in-app notifications row triggers exactly one
+    // push via the AFTER INSERT trigger on public.notifications, which calls
+    // send-push-notification with the row's own title, message and url. That
+    // covers rows created above and rows created elsewhere (skipInAppNotification).
 
     // Check if email notifications are enabled
     const prefKey = prefMap[type];
     if (prefs && prefKey && !prefs[prefKey]) {
       console.log(`User has disabled ${type} email notifications`);
       return new Response(
-        JSON.stringify({ message: "Email notifications disabled, push sent" }),
+        JSON.stringify({ message: "Email notifications disabled" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

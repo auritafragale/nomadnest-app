@@ -13,7 +13,7 @@ BEGIN
     url     := 'https://vcmfvmspymqzwqyxjepi.supabase.co/functions/v1/notify-admin-verification-submitted',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'x-internal-secret', '07922646fa622b6769591a390dba505152aeeb80a4544b98462fce2f9f30352f'
+      'x-internal-secret', 'REDACTED-read-internal_trigger_secret-from-vault' /* secret removed from repo; rotated. Superseded by 20260908031408, which reads vault.decrypted_secrets */
     ),
     body    := jsonb_build_object('verification_id', NEW.id::text)
   );
@@ -68,7 +68,7 @@ BEGIN
     url     := 'https://vcmfvmspymqzwqyxjepi.supabase.co/functions/v1/notify-verification-decision',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'x-internal-secret', '07922646fa622b6769591a390dba505152aeeb80a4544b98462fce2f9f30352f'
+      'x-internal-secret', 'REDACTED-read-internal_trigger_secret-from-vault' /* secret removed from repo; rotated. Superseded by 20260908031408, which reads vault.decrypted_secrets */
     ),
     body    := jsonb_build_object('verification_id', NEW.id::text)
   );

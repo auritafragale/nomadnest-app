@@ -190,56 +190,8 @@ const handler = async (req: Request): Promise<Response> => {
         continue;
       }
 
-      // Send push notification if the nomad has push enabled.
-      try {
-        const { data: subs } = await supabase
-          .from("push_subscriptions")
-          .select("endpoint, p256dh, auth")
-          .eq("user_id", sitterId);
-
-        if (subs && subs.length > 0) {
-          const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY");
-          const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY");
-          if (vapidPublic && vapidPrivate) {
-            const { default: webpush } = await import(
-              "https://esm.sh/web-push@3.6.7"
-            );
-            webpush.setVapidDetails(
-              "mailto:hello@nomadnest.global",
-              vapidPublic,
-              vapidPrivate,
-            );
-            await Promise.allSettled(
-              subs.map(async (sub: any) => {
-                try {
-                  await webpush.sendNotification(
-                    {
-                      endpoint: sub.endpoint,
-                      keys: { p256dh: sub.p256dh, auth: sub.auth },
-                    },
-                    JSON.stringify({
-                      title: "Time for today's check-in",
-                      body: `Log Fed, Meds and Walk for ${listingTitle}.`,
-                      url,
-                      tag: `checkin-${sitId}`,
-                    }),
-                  );
-                } catch (err: any) {
-                  if (err?.statusCode === 404 || err?.statusCode === 410) {
-                    await supabase
-                      .from("push_subscriptions")
-                      .delete()
-                      .eq("endpoint", sub.endpoint);
-                  }
-                }
-              }),
-            );
-          }
-        }
-      } catch (pushErr) {
-        // Push failure is non-critical; the in-app notification already exists.
-        console.warn("Push send failed for", sitterId, pushErr);
-      }
+      // Push is sent automatically by the AFTER INSERT trigger on
+      // public.notifications (see send-push-notification), from the row above.
 
       summary.remindersSent++;
     }

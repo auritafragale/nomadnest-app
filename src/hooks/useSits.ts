@@ -149,16 +149,10 @@ export const useUpdateSitStatus = () => {
           const url = otherIsSitter
             ? "/dashboard?appTab=cancelled#my-applications"
             : "/applications?status=cancelled";
-          await supabase.from("notifications").insert({
-            user_id: otherUserId,
-            type: "sit_cancelled",
-            title: "Sit Cancelled",
-            message: `${(sit.listing as { title?: string } | null)?.title || "A sit"} was cancelled. Reason: ${reason?.trim() || "no reason given"}`,
-            data: { url, sit_id: sitId },
-          });
-
-
-          // Email + push for the other party.
+          // In-app notification + email for the other party, both created by
+          // send-notification-email (members can't insert notification rows
+          // for someone else). The push follows automatically from the
+          // in-app row via the notifications trigger.
           const { data: me } = await supabase
             .from("profiles")
             .select("first_name, last_name")
@@ -168,11 +162,8 @@ export const useUpdateSitStatus = () => {
           await sendNotification({
             type: "sit_cancelled",
             recipientUserId: otherUserId,
-            // The in-app row was already inserted directly above — without
-            // this, send-notification-email would insert a second one for
-            // the same event.
-            skipInAppNotification: true,
             data: {
+              sit_id: sitId,
               listingTitle: (sit.listing as { title?: string } | null)?.title || "a sit",
               cancelledByName: [me?.first_name, me?.last_name].filter(Boolean).join(" ") || "The other party",
               reason: reason?.trim() || "",
