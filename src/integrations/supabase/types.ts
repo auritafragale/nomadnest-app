@@ -2169,14 +2169,6 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: string
       }
-      get_pet_private_details: {
-        Args: { p_listing_id: string }
-        Returns: {
-          id: string
-          medication_instructions: string | null
-          vet_info: string | null
-        }[]
-      }
       get_my_contact_info: {
         Args: never
         Returns: {
@@ -2206,6 +2198,14 @@ export type Database = {
         }[]
       }
       get_perk_discount_code: { Args: { p_slug: string }; Returns: string }
+      get_pet_private_details: {
+        Args: { p_listing_id: string }
+        Returns: {
+          id: string
+          medication_instructions: string
+          vet_info: string
+        }[]
+      }
       get_unread_conversations_count: { Args: never; Returns: number }
       get_unread_messages_count: { Args: never; Returns: number }
       get_user_role: {
