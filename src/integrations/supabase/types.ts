@@ -2198,18 +2198,6 @@ export type Database = {
         }[]
       }
       get_perk_discount_code: { Args: { p_slug: string }; Returns: string }
-      accept_application: {
-        Args: { p_application_id: string }
-        Returns: Json
-      }
-      decline_application: {
-        Args: { p_application_id: string }
-        Returns: Json
-      }
-      shortlist_application: {
-        Args: { p_application_id: string }
-        Returns: Json
-      }
       get_pet_private_details: {
         Args: { p_listing_id: string }
         Returns: {
