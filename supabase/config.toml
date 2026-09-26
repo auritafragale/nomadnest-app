@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.welcome-guide-photo-urls]
 verify_jwt = false
+
+[functions.ask-the-nest]
+verify_jwt = false

@@ -50,6 +50,10 @@ export interface SitterGuide {
   } | null;
   pets: SitterGuidePet[];
   photos: SitterGuidePhoto[];
+  /** Added in Stage 3 (older cached copies may not have them). */
+  owner_user_id?: string;
+  owner_first_name?: string;
+  qa?: { id: string; question: string; answer: string; arrival_only: boolean }[];
 }
 
 /**

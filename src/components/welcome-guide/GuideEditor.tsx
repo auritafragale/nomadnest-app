@@ -35,6 +35,7 @@ import {
 } from "@/lib/welcomeGuide";
 import { GuideTextField } from "./GuideTextField";
 import { GuidePhotos } from "./GuidePhotos";
+import { GuideQuestionsCard, SavedQaCard } from "./GuideQuestionsCards";
 
 const SECTION_ICON: Record<GuideSection, typeof PawPrint> = {
   pets: PawPrint,
@@ -259,6 +260,9 @@ export const GuideEditor = ({
             );
           })}
         </ul>
+
+        <GuideQuestionsCard listingId={listingId} />
+        <SavedQaCard listingId={listingId} />
       </div>
     );
   }

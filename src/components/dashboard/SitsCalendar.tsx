@@ -7,6 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar, CalendarClock, ChevronLeft, ChevronRight, MapPin, User, MessageSquare, CheckCircle, XCircle, Star, Bone, Camera, BookOpen, KeyRound, Lock } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { daysUntil, useMyGuideWindows } from "@/hooks/useSitterGuide";
+import { useAskNestAvailable } from "@/hooks/useAskNest";
+import { AskNestSheet } from "@/components/welcome-guide/AskNestSheet";
+import { Sparkles } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { useSits, Sit, useUpdateSitStatus } from "@/hooks/useSits";
 import {
@@ -186,6 +189,8 @@ export const SitCard = ({
   const location = useLocation();
   const { data: guideWindows = [] } = useMyGuideWindows();
   const guideWindow = guideWindows.find((w) => w.sit_id === sit.id);
+  const askNestAvailable = useAskNestAvailable();
+  const [askOpen, setAskOpen] = useState(false);
   const isReviewDeepLinkTarget = !!openReview && openReview === sit.id;
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   // Stays true only until the auto-opened dialog is closed (submitted or
@@ -437,6 +442,15 @@ export const SitCard = ({
           </div>
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </Link>
+      )}
+      {isSitter && guideWindow && askNestAvailable && (
+        <>
+          <Button size="sm" variant="outline" className="mt-2 w-full gap-1.5" onClick={() => setAskOpen(true)}>
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+            Ask the Nest
+          </Button>
+          <AskNestSheet listingId={sit.listing_id} open={askOpen} onOpenChange={setAskOpen} />
+        </>
       )}
 
       {/* Sit actions */}

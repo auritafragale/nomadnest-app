@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   BookOpen,
+  Sparkles,
   Home,
   KeyRound,
   Lock,
@@ -12,6 +13,7 @@ import {
   Printer,
   Stethoscope,
   WifiOff,
+  MessageCircleQuestion,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printWelcomeGuide } from "@/lib/printGuide";
@@ -23,6 +25,8 @@ import {
   type SitterGuidePhoto,
 } from "@/hooks/useSitterGuide";
 import { ACCESS_FIELDS, EMERGENCY_FIELDS, HOUSE_FIELDS, PET_FIELDS, type GuideSection } from "@/lib/welcomeGuide";
+import { useAskNestAvailable } from "@/hooks/useAskNest";
+import { AskNestSheet } from "./AskNestSheet";
 
 const Section = ({
   icon: Icon,
@@ -93,6 +97,8 @@ export const SitterGuideView = ({ listingId }: { listingId: string }) => {
   const { guide, isLoading, error, fromCache, savedAt } = useSitterGuide(listingId);
   const { data: urls = {} } = useSitterGuidePhotoUrls(listingId, !!guide && !fromCache);
   const [petId, setPetId] = useState<string | null>(null);
+  const askNestAvailable = useAskNestAvailable();
+  const [askOpen, setAskOpen] = useState(false);
 
   if (isLoading) return <Skeleton className="h-96 w-full rounded-2xl" />;
   if (error && !guide) {
@@ -142,6 +148,7 @@ export const SitterGuideView = ({ listingId }: { listingId: string }) => {
 
   return (
     <div className="space-y-6 print-guide-root">
+      {askNestAvailable && <AskNestSheet listingId={listingId} open={askOpen} onOpenChange={setAskOpen} />}
       <header className="space-y-2">
         <h1 className="flex items-center gap-2 font-display text-2xl font-semibold sm:text-3xl">
           <BookOpen className="h-6 w-6 text-primary" aria-hidden="true" />
@@ -154,6 +161,12 @@ export const SitterGuideView = ({ listingId }: { listingId: string }) => {
               <WifiOff className="h-3 w-3" aria-hidden="true" />
               Offline copy{savedAt ? `, saved ${new Date(savedAt).toLocaleDateString()}` : ""}
             </Badge>
+          )}
+          {askNestAvailable && !fromCache && (
+            <Button size="sm" className="gap-1.5" onClick={() => setAskOpen(true)}>
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              Ask the Nest
+            </Button>
           )}
           <Button variant="outline" size="sm" onClick={printWelcomeGuide}>
             <Printer className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -237,6 +250,14 @@ export const SitterGuideView = ({ listingId }: { listingId: string }) => {
         )}
         <Photos photos={photosFor("house")} urls={urls} pets={guide.pets} />
       </Section>
+
+      {(guide.qa ?? []).length > 0 && (
+        <Section icon={MessageCircleQuestion} title="Questions and answers">
+          {(guide.qa ?? []).map((q) => (
+            <Item key={q.id} label={q.question} value={q.answer} />
+          ))}
+        </Section>
+      )}
 
       <Section icon={KeyRound} title="Arrival and access">
         {guide.access_open && guide.access ? (
