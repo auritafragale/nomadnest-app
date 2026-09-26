@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { clearAllGuideCaches } from "@/lib/guideCache";
 import { useNavigate } from "react-router-dom";
 
 type AppRole = "sitter" | "owner" | "both" | null;
@@ -153,6 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
     await supabase.auth.signOut();
+    clearAllGuideCaches();
     setRole(null);
     setOnboardingCompleted(false);
   };

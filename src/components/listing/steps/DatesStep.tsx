@@ -6,7 +6,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, CalendarIcon, ChevronDown } from "lucide-react";
+import { Plus, Trash2, CalendarIcon, ChevronDown, Lock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { SitDate, ListingFormData } from "@/hooks/useListingForm";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -81,6 +82,29 @@ const DatesStep = ({ formData, addSitDate, updateSitDate, removeSitDate, showHea
 
       <div className="space-y-6">
         {formData.sit_dates.map((sitDate, index) => {
+          // Booked by a sit: read-only. The database blocks edits too; these
+          // dates change only through Propose new dates on the sit.
+          if (sitDate.locked) {
+            return (
+              <Card key={sitDate.id} className="border-dashed bg-muted/30">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <CardTitle className="text-lg">Date Range {index + 1}</CardTitle>
+                      <p className="text-xs text-muted-foreground">{dateSummary(sitDate)}</p>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 gap-1">
+                      <Lock className="h-3 w-3" aria-hidden="true" />
+                      Booked
+                    </Badge>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    These dates belong to a confirmed sit. To change them, use Propose new dates on the sit.
+                  </p>
+                </CardHeader>
+              </Card>
+            );
+          }
           const expanded = expandedDateIds.has(sitDate.id);
           return (
           <Card key={sitDate.id}>

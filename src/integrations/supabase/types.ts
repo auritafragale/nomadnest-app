@@ -2336,6 +2336,21 @@ export type Database = {
         }[]
       }
       decline_application: { Args: { p_application_id: string }; Returns: Json }
+      get_my_guide_windows: {
+        Args: never
+        Returns: {
+          access_open: boolean
+          ends_at: string
+          listing_id: string
+          sit_id: string
+          timezone: string
+          unlock_at: string
+        }[]
+      }
+      get_sitter_guide: {
+        Args: { p_listing_id: string }
+        Returns: Json
+      }
       get_guide_completion: { Args: { p_listing_id: string }; Returns: Json }
       get_listing_private_address: {
         Args: { p_listing_id: string }

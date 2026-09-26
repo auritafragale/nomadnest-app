@@ -71,6 +71,8 @@ export interface ListingWithDetails {
   wheelchair_accessible?: boolean | null;
   pets: DatabasePet[];
   sit_dates: DatabaseSitDate[];
+  /** Date ranges used by a confirmed, in-progress or completed sit (read-only). */
+  locked_sit_date_ids: string[];
 }
 
 export const useListingDetails = (listingId: string | undefined) => {
@@ -121,8 +123,17 @@ export const useListingDetails = (listingId: string | undefined) => {
 
       if (datesError) throw datesError;
 
+      // Dates in use by a sit are read-only here (the database blocks edits
+      // too); they change only through Propose new dates.
+      const { data: usedBySits } = await supabase
+        .from("sits")
+        .select("sit_dates_id")
+        .eq("listing_id", listingId)
+        .in("status", ["confirmed", "in_progress", "completed"]);
+
       return {
         ...listing,
+        locked_sit_date_ids: Array.from(new Set((usedBySits || []).map((s) => s.sit_dates_id))),
         address_private: addressPrivate,
         pets,
         sit_dates: sitDates || [],
@@ -186,7 +197,6 @@ export const useUpdateListing = () => {
           car_needed: formData.car_needed,
           heavy_gardening: formData.heavy_gardening,
           wheelchair_accessible: formData.wheelchair_accessible,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
         })
         .eq("id", listingId);
 
@@ -258,8 +268,9 @@ export const useUpdateListing = () => {
       const currentSitDateIds = formData.sit_dates
         .map((d) => d.id)
         .filter((id) => originalSitDateIds.includes(id));
+      const lockedDateIds = new Set(formData.sit_dates.filter((d) => d.locked).map((d) => d.id));
       const datesToDelete = originalSitDateIds.filter(
-        (id) => !currentSitDateIds.includes(id)
+        (id) => !currentSitDateIds.includes(id) && !lockedDateIds.has(id)
       );
 
       if (datesToDelete.length > 0) {
@@ -300,6 +311,8 @@ export const useUpdateListing = () => {
       }
 
       for (const date of formData.sit_dates) {
+        // Booked ranges are read-only here: changed only via Propose new dates.
+        if (date.locked) continue;
         if (originalSitDateIds.includes(date.id)) {
           // Update existing date. A stale closed/booked status left over from
           // before editing must not permanently block rebooking, unless a
@@ -420,6 +433,7 @@ export const convertToFormData = (listing: ListingWithDetails): ListingFormData 
       end_date: date.end_date,
       flexibility: date.flexibility || "fixed",
       handover_preference: date.handover_preference || "flexible",
+      locked: (listing.locked_sit_date_ids || []).includes(date.id),
     })),
     home_type: listing.home_type || "",
     location_type: listing.location_type || "",

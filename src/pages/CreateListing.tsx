@@ -234,7 +234,9 @@ const CreateListing = () => {
           car_needed: formData.car_needed,
           heavy_gardening: formData.heavy_gardening,
           wheelchair_accessible: formData.wheelchair_accessible,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
+          // With coordinates, the database derives the home's time zone from
+          // them (listing-timezone). Without, fall back to the browser's.
+          timezone: latitude && longitude ? null : Intl.DateTimeFormat().resolvedOptions().timeZone || null,
         })
         // Only the id is needed; a bare select() would ask for address_private,
         // which isn't directly readable.

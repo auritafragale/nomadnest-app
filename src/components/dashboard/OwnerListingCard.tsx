@@ -81,7 +81,7 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
         <CardContent className="p-4">
           <div className="flex gap-3 sm:gap-4">
             {/* Thumbnail only */}
-            <div className="w-20 sm:w-24 flex-shrink-0">
+            <Link to={`/listing/${listing.id}`} className="w-20 sm:w-24 flex-shrink-0" aria-label={`View ${listing.title}`}>
               <div className="w-full h-20 sm:h-24 rounded-lg bg-muted overflow-hidden">
                 {listing.photos && listing.photos.length > 0 ? (
                   <img
@@ -95,14 +95,16 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                   </div>
                 )}
               </div>
-            </div>
+            </Link>
 
             {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="min-w-0 flex-1">
                   <h3 className="font-semibold text-foreground truncate">
-                    {listing.title}
+                    <Link to={`/listing/${listing.id}`} className="hover:text-primary hover:underline">
+                      {listing.title}
+                    </Link>
                   </h3>
                   {listing.city && listing.country && (
                     <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
@@ -123,6 +125,12 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link to={`/listing/${listing.id}`}>
+                          <Eye className="w-4 h-4 mr-2" />
+                          View listing
+                        </Link>
+                      </DropdownMenuItem>
                       {listing.status === "published" && (
                         <DropdownMenuItem onClick={handlePause}>
                           <Pause className="w-4 h-4 mr-2" />
@@ -225,9 +233,9 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
             </Collapsible>
           )}
 
-          {/* Actions — Edit and Welcome Guide on the left, View on the right */}
-          <div className="flex items-center justify-between gap-2 mt-3">
-            <div className="flex items-center gap-2">
+          {/* Actions: Edit and Welcome Guide (View listing is in the menu, and on the photo and title) */}
+          <div className="mt-3">
+            <div className="flex flex-wrap items-center gap-2">
               <Link to={`/edit-listing/${listing.id}`}>
                 <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
                   <Edit className="w-3 h-3 mr-1" />
@@ -249,14 +257,6 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
                 </Button>
               </Link>
             </div>
-            {listing.status === "published" && (
-              <Link to={`/listing/${listing.id}`}>
-                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
-                  <Eye className="w-3 h-3 mr-1" />
-                  View
-                </Button>
-              </Link>
-            )}
           </div>
 
         </CardContent>

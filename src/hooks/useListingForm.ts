@@ -24,6 +24,8 @@ export interface SitDate {
   end_date: string;
   flexibility: string;
   handover_preference: string;
+  /** Booked by a confirmed, in-progress or completed sit: read-only here. */
+  locked?: boolean;
 }
 
 export interface ListingFormData {

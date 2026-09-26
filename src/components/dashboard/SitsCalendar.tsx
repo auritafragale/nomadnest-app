@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, CalendarClock, ChevronLeft, ChevronRight, MapPin, User, MessageSquare, CheckCircle, XCircle, Star, Bone, Camera } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Calendar, CalendarClock, ChevronLeft, ChevronRight, MapPin, User, MessageSquare, CheckCircle, XCircle, Star, Bone, Camera, BookOpen, KeyRound, Lock } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { daysUntil, useMyGuideWindows } from "@/hooks/useSitterGuide";
 import type { DateRange } from "react-day-picker";
 import { useSits, Sit, useUpdateSitStatus } from "@/hooks/useSits";
 import {
@@ -182,6 +183,9 @@ export const SitCard = ({
   const [republishDates, setRepublishDates] = useState<"yes" | "no" | undefined>(undefined);
   const [openingChat, setOpeningChat] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { data: guideWindows = [] } = useMyGuideWindows();
+  const guideWindow = guideWindows.find((w) => w.sit_id === sit.id);
   const isReviewDeepLinkTarget = !!openReview && openReview === sit.id;
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   // Stays true only until the auto-opened dialog is closed (submitted or
@@ -408,6 +412,33 @@ export const SitCard = ({
         </span>
       </div>
 
+      {/* Welcome Guide for the confirmed sitter, with the arrival-details status */}
+      {isSitter && guideWindow && (
+        <Link
+          to={`/listing/${sit.listing_id}/welcome-guide`}
+          className="mt-3 flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+        >
+          <BookOpen className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">Welcome Guide</p>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              {guideWindow.access_open ? (
+                <>
+                  <KeyRound className="h-3 w-3 text-emerald-600" aria-hidden="true" />
+                  Arrival details ready
+                </>
+              ) : (
+                <>
+                  <Lock className="h-3 w-3" aria-hidden="true" />
+                  Arrival details unlock in {daysUntil(guideWindow.unlock_at)} day{daysUntil(guideWindow.unlock_at) === 1 ? "" : "s"}
+                </>
+              )}
+            </p>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        </Link>
+      )}
+
       {/* Sit actions */}
       {(canCancelSit || isCurrent || sit.status === "confirmed") && (
         <div className="mt-3 pt-2 border-t space-y-2">
@@ -446,7 +477,10 @@ export const SitCard = ({
           )}
           {isSitter && (sit.status === "confirmed" || sit.status === "in_progress") && (
             <Button size="sm" variant="outline" className="flex-1" asChild>
-              <Link to={`/sits/${sit.id}/arrival-vault`}>
+              <Link
+                to={`/sits/${sit.id}/arrival-vault`}
+                state={{ from: `${location.pathname}${location.search}${location.hash}` }}
+              >
                 <Camera className="w-3 h-3 mr-1" />
                 Arrival Check-In
               </Link>

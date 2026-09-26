@@ -65,3 +65,9 @@ verify_jwt = false
 
 [functions.welcome-guide-ai]
 verify_jwt = false
+
+[functions.listing-timezone]
+verify_jwt = false
+
+[functions.welcome-guide-photo-urls]
+verify_jwt = false

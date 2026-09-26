@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useParams, Navigate, Link } from "react-router-dom";
+import { useParams, Navigate, Link, useLocation } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,12 @@ import { ArrowLeft, Plus, Loader2, ShieldCheck } from "lucide-react";
 
 const ArrivalVault = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  // Return to where the Nomad came from (the sit card passes it). Without it
+  // (a notification or push tap), go to the sitter dashboard where the sit
+  // card lives, not the daily check-in page.
+  const from = (location.state as { from?: string } | null)?.from;
+  const backTo = from && from.startsWith("/") && !from.startsWith("//") ? from : "/dashboard?mode=sitter";
   const { user, loading: authLoading } = useAuth();
   const { data: sits, isLoading: sitsLoading } = useSits();
   const { data: photos, isLoading: photosLoading } = useArrivalVaultPhotos(id);
@@ -38,7 +44,7 @@ const ArrivalVault = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1 pt-20 container py-8 max-w-2xl">
-        <Link to={`/sits/${id}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-4">
+        <Link to={backTo} replace className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-4">
           <ArrowLeft className="w-4 h-4" /> Back to sit
         </Link>
 
@@ -137,7 +143,7 @@ const ArrivalVault = () => {
             </Card>
 
             <Button asChild variant="outline" className="w-full">
-              <Link to={`/sits/${id}`}>Done</Link>
+              <Link to={backTo} replace>Done</Link>
             </Button>
           </div>
         )}

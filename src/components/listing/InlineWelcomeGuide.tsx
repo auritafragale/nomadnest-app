@@ -1,173 +1,84 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  BookOpen,
-  WifiOff,
-  Printer,
-  ChevronDown,
-  ChevronUp,
-  Stethoscope,
-  Phone,
-  StickyNote,
-  MapPin,
-  Trash2,
-  Leaf,
-  WashingMachine,
-  Thermometer,
-  Car,
-  Users,
-} from "lucide-react";
-import { useState } from "react";
-import { useWelcomeGuide } from "@/hooks/useWelcomeGuide";
-import { EMERGENCY_FIELDS, HOUSE_FIELDS } from "@/lib/welcomeGuide";
-import { printWelcomeGuide } from "@/lib/printGuide";
-
-// Non-sensitive guide fields only. Access details (keys, codes, alarm, Wi-Fi)
-// and private pet fields are owner-only until Stage 2 adds the sitter unlock.
-const ICONS: Record<string, typeof Phone> = {
-  emergency_contacts: Phone,
-  out_of_hours_vet: Stethoscope,
-  house_notes: StickyNote,
-  bins_recycling: Trash2,
-  plants: Leaf,
-  appliances: WashingMachine,
-  heating_cooling: Thermometer,
-  parking: Car,
-  neighbours: Users,
-};
-const FIELDS = [...EMERGENCY_FIELDS, ...HOUSE_FIELDS].map((f) => ({ ...f, icon: ICONS[f.key] ?? StickyNote }));
+import { BookOpen, KeyRound, Lock, MapPin } from "lucide-react";
+import { useGuideCompletion } from "@/hooks/useWelcomeGuide";
+import { daysUntil, formatUnlock, useMyGuideWindows } from "@/hooks/useSitterGuide";
+import { GUIDE_COPY } from "@/lib/welcomeGuide";
 
 /**
- * Inline, read-only Welcome Guide shown on a listing to an accepted Nomad or
- * the owner. Collapsible; cached for offline; printable.
+ * Compact Welcome Guide entry on the listing page.
+ * Owner: progress + open the editor. Confirmed sitter: exact address (only
+ * while get_listing_private_address allows it), the arrival-details status,
+ * and a link to the full guide. Nothing for anyone else.
  */
 const InlineWelcomeGuide = ({
   listingId,
+  isOwner,
   addressPrivate,
-  listingTitle,
-  location,
-  sitStartDate,
-  sitEndDate,
 }: {
   listingId: string;
-  /** listings.address_private — only ever passed in for the owner or an accepted Nomad. */
+  isOwner: boolean;
+  /** From get_listing_private_address: NULL outside the sitter's window. */
   addressPrivate?: string | null;
-  /** The following are print-only context: this card has no other way to show
-   *  which listing/sit it belongs to, since everything else identifying that
-   *  lives outside .print-guide-root in the DOM. */
-  listingTitle?: string;
-  location?: string | null;
-  sitStartDate?: string | null;
-  sitEndDate?: string | null;
 }) => {
-  const { guide, isLoading, isOffline, cachedAt } = useWelcomeGuide(listingId);
-  const [open, setOpen] = useState(false);
+  const { data: completion } = useGuideCompletion(listingId, isOwner);
+  const { data: windows = [] } = useMyGuideWindows();
+  const guideWindow = !isOwner ? windows.find((w) => w.listing_id === listingId) : undefined;
 
-  const naFields = guide?.na_fields ?? [];
-  const filled: { key: string; label: string; icon: typeof Phone; value: string }[] = guide
-    ? FIELDS.flatMap((f) => {
-        const text = (guide[f.key] || "").trim();
-        if (text) return [{ key: f.key as string, label: f.label, icon: f.icon, value: text }];
-        // Marked "Not applicable": show e.g. "No parking" rather than a blank.
-        if ("naLabel" in f && f.naLabel && naFields.includes(f.key)) {
-          return [{ key: f.key as string, label: f.label, icon: f.icon, value: f.naLabel }];
-        }
-        return [];
-      })
-    : [];
-  if ((addressPrivate || "").trim().length > 0) {
-    filled.push({ key: "address_private", label: "Exact Address", icon: MapPin, value: addressPrivate! });
-  }
-  const totalFields = FIELDS.length + (addressPrivate != null ? 1 : 0);
-  const hasContent = filled.length > 0;
+  if (!isOwner && !guideWindow) return null;
+
+  const openLink = (
+    <Link to={`/listing/${listingId}/welcome-guide`} state={{ from: `/listing/${listingId}` }}>
+      <Button className="w-full gap-2 sm:w-auto">
+        <BookOpen className="h-4 w-4" aria-hidden="true" />
+        Open Welcome Guide
+      </Button>
+    </Link>
+  );
 
   return (
-    <Card id="welcome-guide" className="print-guide-root overflow-hidden">
-      {/* Print-only: everything else identifying the sit lives outside this
-          element in the DOM, so the printed page needs its own header. */}
-      <div className="hidden print-only px-4 pt-4">
-        <p className="print-guide-title">{listingTitle || "NomadNest Welcome Guide"}</p>
-        {location && <p className="print-guide-meta">{location}</p>}
-        {sitStartDate && sitEndDate && (
-          <p className="print-guide-meta">
-            {sitStartDate} – {sitEndDate}
-          </p>
-        )}
-      </div>
+    <section id="welcome-guide" className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+      <h2 className="flex items-center gap-2 text-lg font-semibold">
+        <BookOpen className="h-5 w-5 text-primary" aria-hidden="true" />
+        Welcome Guide
+      </h2>
 
-      <CardHeader
-        className="cursor-pointer select-none bg-primary/10"
-        onClick={() => setOpen((o) => !o)}
-        role="button"
-        aria-expanded={open}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <BookOpen className="w-5 h-5 text-primary" />
-            Welcome Guide
-          </CardTitle>
-          <div className="flex items-center gap-2 print-hidden">
-            {isOffline && (
-              <Badge variant="outline" className="gap-1 text-xs">
-                <WifiOff className="w-3 h-3" /> Offline
-              </Badge>
-            )}
-            {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </div>
-        </div>
-        <CardDescription>
-          {cachedAt
-            ? `Saved for offline · updated ${new Date(cachedAt).toLocaleDateString()}`
-            : "Everything a Nomad needs on arrival"}
-        </CardDescription>
-      </CardHeader>
-
-      {open && (
-        <CardContent className="space-y-4 pt-4">
-          {isLoading && !guide ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : hasContent ? (
-            <>
-              <div className="flex items-center justify-between gap-2">
-                <Badge variant="secondary" className="gap-1 print-hidden">
-                  {filled.length}/{totalFields} fields
-                </Badge>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="print-hidden"
-                  onClick={printWelcomeGuide}
-                >
-                  <Printer className="w-4 h-4 mr-2" />
-                  Download / Print
-                </Button>
-              </div>
-              <div className="print-guide-fields grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {filled.map((f) => (
-                  <div
-                    key={f.key}
-                    className="print-guide-field flex gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3"
-                  >
-                    <div className="print-guide-field-icon shrink-0 w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center">
-                      <f.icon className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground mb-1">{f.label}</p>
-                      <p className="text-sm whitespace-pre-line">{f.value}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              The Pet Parent hasn't added a Welcome Guide yet.
+      {isOwner ? (
+        <p className="text-sm text-muted-foreground">
+          {completion ? GUIDE_COPY.progress(completion.percent) : "Everything your sitter needs, in one place."}
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {addressPrivate && (
+            <p className="flex items-start gap-2 text-sm">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <span className="whitespace-pre-line">{addressPrivate}</span>
             </p>
           )}
-        </CardContent>
+          {guideWindow && (
+            <p className="flex items-start gap-2 text-sm">
+              {guideWindow.access_open ? (
+                <>
+                  <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+                  Arrival details ready
+                </>
+              ) : (
+                <>
+                  <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <span>
+                    Arrival details unlock in {daysUntil(guideWindow.unlock_at)} day
+                    {daysUntil(guideWindow.unlock_at) === 1 ? "" : "s"} (
+                    {formatUnlock(guideWindow.unlock_at, guideWindow.timezone)})
+                  </span>
+                </>
+              )}
+            </p>
+          )}
+        </div>
       )}
-    </Card>
+
+      {openLink}
+    </section>
   );
 };
 

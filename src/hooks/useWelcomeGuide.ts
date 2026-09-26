@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,17 +7,7 @@ import { PET_PUBLIC_COLUMNS, fetchOwnPetPrivateDetails } from "@/lib/privateColu
 import { resizeImage } from "@/lib/imageResize";
 import { GUIDE_PHOTO_BUCKET, type GuideCompletion, type GuideSection } from "@/lib/welcomeGuide";
 
-// ─── Read-only guide (owner or the listing's confirmed sitter) ──────────────
-
-/**
- * Non-sensitive guide fields for one listing. Never includes section d (access
- * details live in welcome_guide_access, owner-only) or private pet fields.
- *
- * STAGE 2: this caches for offline use. Access details must never be cached on
- * a sitter's device, or must be cleared when their access ends.
- */
-const READ_COLUMNS =
-  "listing_id, emergency_contacts, out_of_hours_vet, house_notes, bins_recycling, plants, appliances, heating_cooling, parking, neighbours, na_fields, updated_at";
+// Sitters read the guide only through get_sitter_guide (see useSitterGuide).
 
 export interface WelcomeGuide {
   listing_id: string;
@@ -34,51 +23,6 @@ export interface WelcomeGuide {
   na_fields: string[];
   updated_at?: string | null;
 }
-
-const cacheKey = (listingId: string) => `nn_welcome_guide_v2_${listingId}`;
-
-export const useWelcomeGuide = (listingId: string | undefined) => {
-  const [cached, setCached] = useState<WelcomeGuide | null>(null);
-
-  useEffect(() => {
-    if (!listingId) return;
-    try {
-      const raw = localStorage.getItem(cacheKey(listingId));
-      if (raw) setCached(JSON.parse(raw) as WelcomeGuide);
-    } catch {
-      /* ignore unreadable cache */
-    }
-  }, [listingId]);
-
-  const query = useQuery({
-    queryKey: ["welcome-guide", listingId],
-    queryFn: async (): Promise<WelcomeGuide | null> => {
-      if (!listingId) return null;
-      const { data, error } = await supabase
-        .from("welcome_guides")
-        .select(READ_COLUMNS)
-        .eq("listing_id", listingId)
-        .maybeSingle();
-      if (error) throw error;
-      if (data) {
-        try {
-          localStorage.setItem(cacheKey(listingId), JSON.stringify(data));
-        } catch {
-          /* storage full or blocked; online view still works */
-        }
-      }
-      return (data as WelcomeGuide) || null;
-    },
-    enabled: !!listingId,
-  });
-
-  return {
-    ...query,
-    guide: query.data ?? cached,
-    isOffline: !query.data && !!cached,
-    cachedAt: cached?.updated_at ?? null,
-  };
-};
 
 // ─── Completion (single source: get_guide_completion) ───────────────────────
 

@@ -46,13 +46,20 @@ const SECTION_ICON: Record<GuideSection, typeof PawPrint> = {
 const str = (v: string | null | undefined) => v ?? "";
 
 /** Owner editor for one listing's Welcome Guide: overview + one section at a time. */
-export const GuideEditor = ({ listingId }: { listingId: string }) => {
+export const GuideEditor = ({
+  listingId,
+  initialSection = null,
+}: {
+  listingId: string;
+  /** Open straight on a section (e.g. from the "arrives soon" nudge). */
+  initialSection?: GuideSection | null;
+}) => {
   const { data, isLoading, error } = useGuideEditorData(listingId);
   const { data: completion } = useGuideCompletion(listingId);
   const actions = useGuideEditorActions(listingId);
   const ai = useGuideAi();
 
-  const [active, setActive] = useState<GuideSection | null>(null);
+  const [active, setActive] = useState<GuideSection | null>(initialSection);
   const [guideDraft, setGuideDraft] = useState<Record<string, string>>({});
   const [guideNa, setGuideNa] = useState<string[]>([]);
   const [accessDraft, setAccessDraft] = useState<Record<string, string>>({});
