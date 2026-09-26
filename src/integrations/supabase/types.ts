@@ -2625,10 +2625,7 @@ export type Database = {
         Returns: string
       }
       release_job_lease: { Args: { p_job_name: string }; Returns: undefined }
-      remove_guide_question: {
-        Args: { p_question_id: string }
-        Returns: Json
-      }
+      remove_guide_question: { Args: { p_question_id: string }; Returns: Json }
       request_is_end_user: { Args: never; Returns: boolean }
       request_listing_timezone_backfill: { Args: never; Returns: undefined }
       respond_to_sit_reschedule: {
