@@ -666,7 +666,22 @@ export type Database = {
           source_question_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "guide_qa_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guide_qa_source_question_id_fkey"
+            columns: ["source_question_id"]
+            isOneToOne: false
+            referencedRelation: "guide_questions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       guide_questions: {
         Row: {
@@ -714,7 +729,22 @@ export type Database = {
           sitter_user_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "guide_questions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guide_questions_sit_id_fkey"
+            columns: ["sit_id"]
+            isOneToOne: false
+            referencedRelation: "sits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       guide_unlock_notifications: {
         Row: {
@@ -2427,6 +2457,14 @@ export type Database = {
         Returns: undefined
       }
       advance_sit_statuses: { Args: never; Returns: undefined }
+      answer_guide_question: {
+        Args: {
+          p_answer: string
+          p_arrival_only?: boolean
+          p_question_id: string
+        }
+        Returns: Json
+      }
       can_access_city_chat: {
         Args: { p_room_id: string; p_user_id: string }
         Returns: boolean
@@ -2446,14 +2484,6 @@ export type Database = {
         }[]
       }
       decline_application: { Args: { p_application_id: string }; Returns: Json }
-      answer_guide_question: {
-        Args: { p_answer: string; p_arrival_only?: boolean; p_question_id: string }
-        Returns: Json
-      }
-      mark_guide_question_asked: {
-        Args: { p_question_id: string }
-        Returns: undefined
-      }
       get_guide_completion: { Args: { p_listing_id: string }; Returns: Json }
       get_listing_private_address: {
         Args: { p_listing_id: string }
@@ -2525,6 +2555,10 @@ export type Database = {
       }
       mark_conversation_messages_read: {
         Args: { _conversation_id: string }
+        Returns: undefined
+      }
+      mark_guide_question_asked: {
+        Args: { p_question_id: string }
         Returns: undefined
       }
       member_review_rates: {
