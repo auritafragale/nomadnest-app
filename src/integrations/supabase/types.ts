@@ -737,17 +737,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "guide_questions_parent_question_id_fkey"
-            columns: ["parent_question_id"]
-            isOneToOne: false
-            referencedRelation: "guide_questions"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "guide_questions_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guide_questions_parent_question_id_fkey"
+            columns: ["parent_question_id"]
+            isOneToOne: false
+            referencedRelation: "guide_questions"
             referencedColumns: ["id"]
           },
           {
@@ -2508,10 +2508,6 @@ export type Database = {
       }
       decline_application: { Args: { p_application_id: string }; Returns: Json }
       get_guide_completion: { Args: { p_listing_id: string }; Returns: Json }
-      get_owner_guide_questions: {
-        Args: { p_listing_id: string }
-        Returns: Json
-      }
       get_listing_private_address: {
         Args: { p_listing_id: string }
         Returns: string
@@ -2555,6 +2551,10 @@ export type Database = {
           onfido_check_id: string
         }[]
       }
+      get_owner_guide_questions: {
+        Args: { p_listing_id: string }
+        Returns: Json
+      }
       get_perk_discount_code: { Args: { p_slug: string }; Returns: string }
       get_pet_private_details: {
         Args: { p_listing_id: string }
@@ -2583,6 +2583,10 @@ export type Database = {
       is_active_member: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       is_owner_active: { Args: { _owner_user_id: string }; Returns: boolean }
+      link_guide_question: {
+        Args: { p_parent_id: string; p_question_id: string }
+        Returns: boolean
+      }
       listing_timezone: { Args: { p_listing_id: string }; Returns: string }
       log_sit_abandonment_flag: {
         Args: { p_note?: string; p_sit_id: string }
@@ -2591,10 +2595,6 @@ export type Database = {
       mark_conversation_messages_read: {
         Args: { _conversation_id: string }
         Returns: undefined
-      }
-      link_guide_question: {
-        Args: { p_parent_id: string; p_question_id: string }
-        Returns: boolean
       }
       mark_guide_question_asked: {
         Args: { p_question_id: string }
