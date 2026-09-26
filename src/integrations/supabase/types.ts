@@ -635,6 +635,35 @@ export type Database = {
         }
         Relationships: []
       }
+      guide_unlock_notifications: {
+        Row: {
+          kind: string
+          notified_at: string
+          sit_dates_id: string
+          sit_id: string
+        }
+        Insert: {
+          kind: string
+          notified_at?: string
+          sit_dates_id: string
+          sit_id: string
+        }
+        Update: {
+          kind?: string
+          notified_at?: string
+          sit_dates_id?: string
+          sit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guide_unlock_notifications_sit_id_fkey"
+            columns: ["sit_id"]
+            isOneToOne: false
+            referencedRelation: "sits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           address_private: string | null
@@ -2352,6 +2381,17 @@ export type Database = {
           sitter_phone: string
         }[]
       }
+      get_my_guide_windows: {
+        Args: never
+        Returns: {
+          access_open: boolean
+          ends_at: string
+          listing_id: string
+          sit_id: string
+          timezone: string
+          unlock_at: string
+        }[]
+      }
       get_my_membership: {
         Args: never
         Returns: {
@@ -2379,6 +2419,7 @@ export type Database = {
           vet_info: string
         }[]
       }
+      get_sitter_guide: { Args: { p_listing_id: string }; Returns: Json }
       get_unread_conversations_count: { Args: never; Returns: number }
       get_unread_messages_count: { Args: never; Returns: number }
       get_user_role: {
@@ -2388,6 +2429,7 @@ export type Database = {
       is_active_member: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       is_owner_active: { Args: { _owner_user_id: string }; Returns: boolean }
+      listing_timezone: { Args: { p_listing_id: string }; Returns: string }
       log_sit_abandonment_flag: {
         Args: { p_note?: string; p_sit_id: string }
         Returns: undefined
@@ -2409,12 +2451,14 @@ export type Database = {
         Args: { p_application_id: string; p_sit_id?: string; p_status: string }
         Returns: undefined
       }
+      notify_guide_unlocks: { Args: never; Returns: number }
       redeem_founding_member_code: {
         Args: { p_code: string; p_user_id: string }
         Returns: string
       }
       release_job_lease: { Args: { p_job_name: string }; Returns: undefined }
       request_is_end_user: { Args: never; Returns: boolean }
+      request_listing_timezone_backfill: { Args: never; Returns: undefined }
       respond_to_sit_reschedule: {
         Args: { p_accept: boolean; p_request_id: string }
         Returns: Json
@@ -2426,6 +2470,24 @@ export type Database = {
       shortlist_application: {
         Args: { p_application_id: string }
         Returns: Json
+      }
+      sit_guide_window: {
+        Args: { p_sit_id: string }
+        Returns: {
+          ends_at: string
+          timezone: string
+          unlock_at: string
+        }[]
+      }
+      sitter_guide_sit: {
+        Args: { p_listing_id: string; p_user_id: string }
+        Returns: {
+          ends_at: string
+          sit_dates_id: string
+          sit_id: string
+          timezone: string
+          unlock_at: string
+        }[]
       }
       unaccent_fallback: { Args: { p_text: string }; Returns: string }
       upsert_push_subscription: {
