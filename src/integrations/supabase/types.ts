@@ -974,6 +974,7 @@ export type Database = {
           body?: string
           conversation_id?: string
           created_at?: string
+          guide_question_id?: string | null
           id?: string
           read_at?: string | null
           sender_user_id?: string
@@ -984,6 +985,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_guide_question_id_fkey"
+            columns: ["guide_question_id"]
+            isOneToOne: false
+            referencedRelation: "guide_questions"
             referencedColumns: ["id"]
           },
         ]
@@ -2546,6 +2554,14 @@ export type Database = {
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      guide_question_link_ok: {
+        Args: {
+          p_conversation_id: string
+          p_question_id: string
+          p_sender_id: string
+        }
+        Returns: boolean
       }
       is_active_member: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
