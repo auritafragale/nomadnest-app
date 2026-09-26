@@ -139,6 +139,7 @@ export const useWithdrawApplication = () => {
           data: {
             sitterName: [sitterProfile?.first_name, sitterProfile?.last_name].filter(Boolean).join(" ") || "A Nomad",
             listingTitle: listing.title || "your listing",
+            application_id: applicationId,
             url: "/dashboard?mode=owner",
           },
         });

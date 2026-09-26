@@ -16,10 +16,8 @@ export const notificationTarget = (n: DisplayNotification): string | null => {
   const data = asData(n);
   switch (n.type) {
     case "application_status":
-      // Accepted applications land straight on the applications list.
-      return data.status === "accepted"
-        ? "/dashboard?appTab=accepted"
-        : data.url || "/dashboard";
+      // The row's own url (sitter mode, right tab) — same target as the push.
+      return data.url || (data.status === "accepted" ? "/dashboard?appTab=accepted" : "/dashboard");
     case "new_application":
       return "/applications";
     case "new_message":
@@ -29,7 +27,7 @@ export const notificationTarget = (n: DisplayNotification): string | null => {
     case "sit_cancelled":
       return data.url || "/dashboard?appTab=cancelled";
     case "invite":
-      return "/dashboard";
+      return data.url || "/dashboard";
     default:
       return data.url || null;
   }

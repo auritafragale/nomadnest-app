@@ -413,6 +413,7 @@ const WriteReviewDialog = ({
           rating: overallRating.toString(),
           text: text.trim() || "",
           url: revieweeReviewsUrl,
+          sit_id: sitId,
         },
       });
 

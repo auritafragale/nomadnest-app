@@ -189,6 +189,7 @@ export const useCreateInvite = () => {
           startDate: startDate || "",
           endDate: endDate || "",
           url: "/dashboard?mode=sitter&section=invites",
+          invite_id: data.id,
         },
       });
 

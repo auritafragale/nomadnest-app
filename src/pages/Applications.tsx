@@ -130,29 +130,24 @@ const Applications = () => {
     });
 
 
+  const errorMessage = (error: unknown) =>
+    (error as { message?: string } | null)?.message || "Something went wrong. Please try again.";
+
   const handleStatusChange = async (
     application: (typeof applications)[0],
     status: "shortlisted" | "declined"
   ) => {
     try {
-      const { notified } = await updateStatus.mutateAsync({
-        applicationId: application.id,
-        status,
-        sitterUserId: application.sitter_user_id,
-        listingTitle: application.listing?.title,
-      });
+      await updateStatus.mutateAsync({ applicationId: application.id, status });
       toast({
         title: status === "shortlisted" ? "Shortlisted" : "Declined",
-        description: notified
-          ? `Application has been ${status}. The sitter has been notified.`
-          : `Application has been ${status}, but we couldn't notify the sitter.`,
-        variant: notified ? "default" : "destructive",
+        description: `Application ${status}. The sitter has been notified.`,
       });
     } catch (error) {
       console.error("Updating application status failed:", error);
       toast({
         title: "Couldn't update the application",
-        description: (error as { message?: string } | null)?.message || "Something went wrong. Please try again.",
+        description: errorMessage(error),
         variant: "destructive",
       });
     }
@@ -160,25 +155,19 @@ const Applications = () => {
 
   const handleAccept = async (application: (typeof applications)[0]) => {
     try {
-      const { warnings } = await acceptApplication.mutateAsync(application);
-      // One toast only (the toaster shows one at a time): warnings win.
-      toast(
-        warnings.length > 0
-          ? {
-              title: "Accepted, but something needs your attention",
-              description: warnings.join(" "),
-              variant: "destructive",
-            }
-          : {
-              title: "Application accepted",
-              description: "The sitter has been confirmed and notified.",
-            },
-      );
+      const { declinedCount } = await acceptApplication.mutateAsync(application);
+      toast({
+        title: "Application accepted",
+        description:
+          declinedCount > 0
+            ? `The sitter has been confirmed and notified. ${declinedCount} other applicant${declinedCount === 1 ? " has" : "s have"} been told.`
+            : "The sitter has been confirmed and notified.",
+      });
     } catch (error) {
       console.error("Accepting application failed:", error);
       toast({
         title: "Couldn't accept the application",
-        description: (error as { message?: string } | null)?.message || "Something went wrong. Please try again.",
+        description: errorMessage(error),
         variant: "destructive",
       });
     }

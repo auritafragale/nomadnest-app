@@ -289,6 +289,7 @@ export const useSendMessage = () => {
             senderName: [senderProfile?.first_name, senderProfile?.last_name].filter(Boolean).join(" ") || "Someone",
             messagePreview: messagePreviewText(body).substring(0, 150),
             conversationId,
+            conversation_id: conversationId,
           },
         });
       }

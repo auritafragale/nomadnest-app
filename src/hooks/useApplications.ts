@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import type { Database } from "@/integrations/supabase/types";
-import { sendNotification } from "@/lib/notifications";
 import { format } from "date-fns";
 
 type ApplicationStatus = Database["public"]["Enums"]["application_status"];
@@ -139,44 +138,26 @@ export const useUpdateApplicationStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
+    /**
+     * Shortlist or decline through the database (shortlist_application /
+     * decline_application): the status change and the sitter's notification
+     * happen in one transaction; the push and email follow automatically.
+     */
     mutationFn: async ({
       applicationId,
       status,
-      sitterUserId,
-      listingTitle,
     }: {
       applicationId: string;
-      status: ApplicationStatus;
-      sitterUserId?: string;
-      listingTitle?: string;
+      status: "shortlisted" | "declined";
     }) => {
-      const { data, error } = await supabase
-        .from("applications")
-        .update({ status })
-        .eq("id", applicationId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Tell the sitter about a shortlist or decline. The status change has
-      // already succeeded, so a notification failure is reported back to the
-      // Pet Parent (notified: false) rather than thrown.
-      let notified = true;
-      if ((status === "declined" || status === "shortlisted") && sitterUserId) {
-        notified = await sendNotification({
-          type: "application_status",
-          recipientUserId: sitterUserId,
-          data: {
-            listingTitle: listingTitle || "a listing",
-            status,
-          },
-        });
-      }
-
-      return { application: data, notified };
+      const { data, error } = await supabase.rpc(
+        status === "shortlisted" ? "shortlist_application" : "decline_application",
+        { p_application_id: applicationId },
+      );
+      if (error) throw new Error(error.message);
+      return data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-applications"] });
     },
   });
@@ -184,94 +165,22 @@ export const useUpdateApplicationStatus = () => {
 
 export const useAcceptApplication = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   return useMutation({
     /**
-     * Critical steps (throw on failure): accept the application, create the
-     * sit. As soon as the sit exists the sitter is notified, BEFORE the
-     * follow-up steps, so a later failure can never swallow it. Follow-up
-     * steps (book the dates, decline and notify the other applicants) each
-     * record a warning instead of aborting; the caller shows them.
+     * Accept through the database (accept_application): accepting, creating
+     * the sit, booking the dates, declining the other applicants and every
+     * notification happen in one transaction — all or nothing. Pushes and
+     * emails follow automatically.
      */
-    mutationFn: async (application: Application): Promise<{ warnings: string[] }> => {
-      if (!user) throw new Error("Not authenticated");
-      const listingTitle = application.listing?.title || "a listing";
-      const warnings: string[] = [];
-
-      // 1) Accept the application.
-      const { error: appError } = await supabase
-        .from("applications")
-        .update({ status: "accepted" })
-        .eq("id", application.id);
-      if (appError) {
-        console.error("Accept: updating the application failed", appError);
-        throw new Error(`Couldn't accept the application: ${appError.message}`);
-      }
-
-      // 2) Create the sit.
-      const { error: sitError } = await supabase.from("sits").insert({
-        listing_id: application.listing_id,
-        sit_dates_id: application.sit_dates_id,
-        sitter_user_id: application.sitter_user_id,
-        owner_user_id: user.id,
-        status: "confirmed",
+    mutationFn: async (application: Application) => {
+      const { data, error } = await supabase.rpc("accept_application", {
+        p_application_id: application.id,
       });
-      if (sitError) {
-        console.error("Accept: creating the sit failed", sitError);
-        throw new Error(`The application was accepted, but the sit couldn't be created: ${sitError.message}`);
-      }
-
-      // 3) Tell the accepted sitter right away.
-      const sitterNotified = await sendNotification({
-        type: "application_status",
-        recipientUserId: application.sitter_user_id,
-        data: { listingTitle, status: "accepted" },
-      });
-      if (!sitterNotified) {
-        warnings.push("We couldn't notify the sitter. Please send them a message to let them know.");
-      }
-
-      // 4) Mark the dates as booked.
-      const { error: datesError } = await supabase
-        .from("sit_dates")
-        .update({ status: "booked" })
-        .eq("id", application.sit_dates_id);
-      if (datesError) {
-        console.error("Accept: marking the dates booked failed", datesError);
-        warnings.push(`The dates couldn't be marked as booked (${datesError.message}). Please close them from your listing so no one else applies.`);
-      }
-
-      // 5) Decline the other applicants for these dates, and tell each of them.
-      const { data: declined, error: declineError } = await supabase
-        .from("applications")
-        .update({ status: "declined" })
-        .eq("sit_dates_id", application.sit_dates_id)
-        .neq("id", application.id)
-        .in("status", ["applied", "shortlisted"])
-        .select("id, sitter_user_id");
-      if (declineError) {
-        console.error("Accept: declining other applicants failed", declineError);
-        warnings.push(`Other applicants for these dates couldn't be declined (${declineError.message}). Please decline them from this page.`);
-      } else if (declined && declined.length > 0) {
-        const results = await Promise.all(
-          declined.map((row) =>
-            sendNotification({
-              type: "application_status",
-              recipientUserId: row.sitter_user_id,
-              data: { listingTitle, status: "declined" },
-            }),
-          ),
-        );
-        const failed = results.filter((ok) => !ok).length;
-        if (failed > 0) {
-          warnings.push(`${failed} declined applicant${failed === 1 ? "" : "s"} couldn't be notified.`);
-        }
-      }
-
-      return { warnings };
+      if (error) throw new Error(error.message);
+      const result = (data ?? {}) as { sit_id?: string; declined_count?: number };
+      return { sitId: result.sit_id ?? null, declinedCount: result.declined_count ?? 0 };
     },
-    // Refresh even after a failure: a step may have succeeded before it.
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-applications"] });
       queryClient.invalidateQueries({ queryKey: ["owner-listings"] });

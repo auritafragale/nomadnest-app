@@ -10,6 +10,9 @@ export interface BuiltEmail {
   body: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  /** Optional second, outlined button. */
+  secondaryCtaLabel?: string;
+  secondaryCtaUrl?: string;
   /** Hidden inbox preview text. */
   preview?: string;
   footerReason?: string;
@@ -76,21 +79,61 @@ export function buildNotificationEmail(
         pushBody: `${data.sitterName} applied for ${data.listingTitle}`,
         pushUrl: "/applications",
       };
-    case "application_status":
+    case "application_status": {
+      // Sent by the accept_application / shortlist_application /
+      // decline_application database functions, which build the same title
+      // and message for the in-app row (and so the push). Keep them in step.
+      const owner = data.ownerFirstName || "The Pet Parent";
+      const listing = data.listingTitle || "the sit";
+      const url = data.url || "/dashboard?mode=sitter#my-applications";
+      if (data.status === "accepted") {
+        const title = "You've been accepted";
+        const dates = data.dateRange ? `, ${data.dateRange}` : "";
+        const message = `${owner} has confirmed you for ${listing}${dates}. Say hello and start planning your stay.`;
+        return {
+          subject: `You're confirmed for ${listing}`,
+          preview: message,
+          heading: title,
+          body: `<p>${message}</p>`,
+          ctaLabel: "View your sit",
+          ctaUrl: `${APP_URL}${url}`,
+          pushTitle: title,
+          pushBody: message,
+          pushUrl: url,
+        };
+      }
+      if (data.status === "shortlisted") {
+        const title = "You've been shortlisted";
+        const message = `${owner} shortlisted you for ${listing}. They may reach out soon to get to know you.`;
+        return {
+          subject: `You've been shortlisted for ${listing}`,
+          preview: message,
+          heading: title,
+          body: `<p>${message}</p>`,
+          ctaLabel: "View your application",
+          ctaUrl: `${APP_URL}${url}`,
+          pushTitle: title,
+          pushBody: message,
+          pushUrl: url,
+        };
+      }
+      // declined (manual, or automatic when another sitter is accepted)
+      const title = "Update on your application";
+      const message = `${owner} has chosen another Nomad for ${listing} this time. There are plenty more sits waiting for you.`;
       return {
-        subject: `Your application has been ${data.status}`,
-        preview: `Update on your application for ${data.listingTitle}`,
-        heading: "Application update",
-        body: `
-          <p>Your application for <strong>${data.listingTitle}</strong> has been <strong>${data.status}</strong>.</p>
-          ${data.status === "accepted" ? "<p>Congratulations! Make sure you get in touch with the Pet Parent as soon as possible.</p>" : ""}
-        `,
-        ctaLabel: "View your dashboard",
-        ctaUrl: `${APP_URL}/dashboard`,
-        pushTitle: `Application ${data.status === "accepted" ? "Accepted!" : "Updated"}`,
-        pushBody: `Your application for ${data.listingTitle} was ${data.status}`,
-        pushUrl: data.status === "accepted" ? "/dashboard?appTab=accepted" : "/dashboard",
+        subject: `Update on your application for ${listing}`,
+        preview: message,
+        heading: title,
+        body: `<p>${message}</p>`,
+        ctaLabel: "View your applications",
+        ctaUrl: `${APP_URL}${url}`,
+        secondaryCtaLabel: "Browse sits",
+        secondaryCtaUrl: `${APP_URL}/browse-sits`,
+        pushTitle: title,
+        pushBody: message,
+        pushUrl: url,
       };
+    }
     case "new_message":
       return {
         subject: `New message from ${data.senderName}`,

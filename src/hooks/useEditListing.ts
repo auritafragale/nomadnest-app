@@ -350,6 +350,7 @@ export const useUpdateListing = () => {
                       listingTitle: formData.title,
                       dates: datesLabel,
                       url: `/listing/${listingId}`,
+                      listing_id: listingId,
                     },
                   })
                 )

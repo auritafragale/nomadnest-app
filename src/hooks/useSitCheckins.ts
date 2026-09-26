@@ -148,6 +148,7 @@ export const useAddSitCheckin = (sitId: string | undefined) => {
           checkinLabel: CHECKIN_LABELS[kind],
           note: note?.trim() || "",
           url: `/inbox?conversation=${conversationId}`,
+          sit_id: sitId,
         },
       });
     },

@@ -111,7 +111,7 @@ export const useApplicationSubmission = () => {
     }) => {
       if (!user || dates.length === 0) throw new Error("Nothing to submit");
 
-      const { error } = await supabase.from("applications").insert(
+      const { data: inserted, error } = await supabase.from("applications").insert(
         dates.map((d) => ({
           listing_id: listingId,
           sit_dates_id: d.id,
@@ -121,7 +121,7 @@ export const useApplicationSubmission = () => {
           highlights: highlights && highlights.length > 0 ? highlights : null,
           status: "applied" as const,
         })),
-      );
+      ).select("id, sit_dates_id");
 
       if (error) throw error;
 
@@ -139,6 +139,10 @@ export const useApplicationSubmission = () => {
 
       if (listing?.owner_user_id) {
         dates.forEach((d) => {
+          // The id lets send-notification-email verify this really is the
+          // caller's new application to the recipient's listing.
+          const applicationId = inserted?.find((row) => row.sit_dates_id === d.id)?.id;
+          if (!applicationId) return;
           sendNotification({
             type: "new_application",
             recipientUserId: listing.owner_user_id,
@@ -150,6 +154,7 @@ export const useApplicationSubmission = () => {
                   .join(" ") || "A nomad",
               startDate: format(parseISO(d.start_date), "MMM d, yyyy"),
               endDate: format(parseISO(d.end_date), "MMM d, yyyy"),
+              application_id: applicationId,
             },
           });
         });

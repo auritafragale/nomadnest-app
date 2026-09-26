@@ -18,6 +18,9 @@ export interface EmailContent {
   body: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  /** Optional second, outlined button under the main one. */
+  secondaryCtaLabel?: string;
+  secondaryCtaUrl?: string;
 }
 
 export interface RenderOptions {
@@ -31,7 +34,7 @@ export function renderBrandedEmail(
   content: EmailContent,
   opts: RenderOptions = {}
 ): string {
-  const { heading, body, ctaLabel, ctaUrl } = content;
+  const { heading, body, ctaLabel, ctaUrl, secondaryCtaLabel, secondaryCtaUrl } = content;
   const footerReason =
     opts.footerReason ??
     "You're receiving this because you have an account on NomadNest.";
@@ -60,6 +63,13 @@ export function renderBrandedEmail(
         ctaLabel && ctaUrl
           ? `<div style="text-align:center;margin:32px 0 8px;">
         <a href="${ctaUrl}" style="background-color:${BRAND.coral};color:#ffffff;font-size:16px;font-weight:bold;text-decoration:none;display:inline-block;padding:14px 32px;border-radius:10px;">${ctaLabel}</a>
+      </div>`
+          : ""
+      }
+      ${
+        secondaryCtaLabel && secondaryCtaUrl
+          ? `<div style="text-align:center;margin:12px 0 8px;">
+        <a href="${secondaryCtaUrl}" style="background-color:#ffffff;color:${BRAND.coral};font-size:16px;font-weight:bold;text-decoration:none;display:inline-block;padding:12px 30px;border-radius:10px;border:2px solid ${BRAND.coral};">${secondaryCtaLabel}</a>
       </div>`
           : ""
       }

@@ -127,6 +127,7 @@ export const useProposeSitReschedule = () => {
           // inline on the sit's card in the sitter's own dashboard, so at
           // minimum land the recipient in the right dashboard mode.
           url: "/dashboard?mode=sitter",
+          sit_id: sitId,
         },
       });
     },
@@ -186,6 +187,7 @@ export const useRespondToSitReschedule = () => {
           // Same reasoning as the proposal notification above — no dedicated
           // page, so land in the owner's dashboard mode at minimum.
           url: "/dashboard?mode=owner",
+          sit_id: sitId,
         },
       });
 
