@@ -101,7 +101,7 @@ export const MessageThread = ({
     const result = new Map<string, LinkedGuideQuestion[]>();
     if (!isCurrentUserOwner || !user) return result;
     const isPending = (q: LinkedGuideQuestion | undefined): q is LinkedGuideQuestion =>
-      !!q && !q.is_emergency && !q.answered_from_guide && !q.owner_answer;
+      !!q && !q.is_emergency && !q.answered_from_guide && !q.owner_answer && !q.dismissed_at;
     const askedSoFar: LinkedGuideQuestion[] = [];
     let awaitingReply = false;
     for (const m of messages) {

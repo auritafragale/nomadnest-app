@@ -102,7 +102,12 @@ export interface GuideQuestion {
   asked_owner_at: string | null;
   owner_answer: string | null;
   added_to_guide: boolean;
+  dismissed_at: string | null;
+  /** Set when Ask the Nest grouped this as a repeat of another open question. */
+  parent_question_id: string | null;
   created_at: string;
+  /** When the sit ended (or was cancelled); null if unknown. */
+  sit_ended_at: string | null;
 }
 
 export interface GuideQa {
@@ -112,21 +117,39 @@ export interface GuideQa {
   arrival_only: boolean;
 }
 
+/**
+ * The owner's unanswered sitter questions (open and dismissed), newest first.
+ * The server leaves out anything Ask the Nest answered from the guide.
+ */
 export const useOwnerGuideQuestions = (listingId: string | undefined) =>
   useQuery({
     queryKey: ["guide-questions", listingId],
     queryFn: async (): Promise<GuideQuestion[]> => {
-      const { data, error } = await supabase
-        .from("guide_questions")
-        .select("id, sitter_user_id, question, answered_from_guide, is_emergency, asked_owner_at, owner_answer, added_to_guide, created_at")
-        .eq("listing_id", listingId!)
-        .order("created_at", { ascending: false })
-        .limit(100);
+      const { data, error } = await supabase.rpc("get_owner_guide_questions", { p_listing_id: listingId! });
       if (error) throw error;
-      return (data ?? []) as GuideQuestion[];
+      return ((data ?? []) as unknown as GuideQuestion[]).filter((q) => !q.answered_from_guide && !q.owner_answer);
     },
     enabled: !!listingId,
   });
+
+/** "Dismiss" / "Don't add" and "Restore". Applies to the question's whole group. */
+export const useSetGuideQuestionDismissed = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ questionId, dismissed }: { questionId: string; dismissed: boolean }) => {
+      const { data, error } = await supabase.rpc("set_guide_question_dismissed", {
+        p_question_id: questionId,
+        p_dismissed: dismissed,
+      });
+      if (error) throw new Error(error.message);
+      return data as { listing_id: string };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["linked-guide-questions"] });
+      queryClient.invalidateQueries({ queryKey: ["guide-questions", result?.listing_id] });
+    },
+  });
+};
 
 export const useGuideQa = (listingId: string | undefined) =>
   useQuery({
@@ -162,18 +185,33 @@ export const useGuideQaActions = (listingId: string | undefined) => {
         p_arrival_only: arrivalOnly,
       });
       if (error) throw new Error(error.message);
-      const result = data as { sitter_user_id: string; question: string; sitter_arrival_open: boolean };
-      // Never send an arrival-only answer in chat before the sitter's window opens.
-      const body =
-        arrivalOnly && !result.sitter_arrival_open
-          ? `I've answered your Welcome Guide question: "${result.question}". You'll see the answer in the guide when your arrival details unlock.`
-          : `Answer to your Welcome Guide question: "${result.question}"\n${text.trim()}`;
-      try {
-        await sendChat.mutateAsync({ listingId, ownerUserId: user.id, sitterUserId: result.sitter_user_id, body });
-        return { chatSent: true };
-      } catch {
-        return { chatSent: false };
+      const result = data as {
+        sitter_user_id: string;
+        question: string;
+        sitter_arrival_open: boolean;
+        sitters?: { sitter_user_id: string; has_access: boolean; sitter_arrival_open: boolean }[];
+      };
+      // The sitter who asked this question hears back as before; other sitters
+      // in the same group only while their sit is on.
+      const sitters = [
+        { sitter_user_id: result.sitter_user_id, sitter_arrival_open: result.sitter_arrival_open },
+        ...(result.sitters ?? []).filter((s) => s.sitter_user_id !== result.sitter_user_id && s.has_access),
+      ];
+      let chatSent = false;
+      for (const sitter of sitters) {
+        // Never send an arrival-only answer in chat before the sitter's window opens.
+        const body =
+          arrivalOnly && !sitter.sitter_arrival_open
+            ? `I've answered your Welcome Guide question: "${result.question}". You'll see the answer in the guide when your arrival details unlock.`
+            : `Answer to your Welcome Guide question: "${result.question}"\n${text.trim()}`;
+        try {
+          await sendChat.mutateAsync({ listingId, ownerUserId: user.id, sitterUserId: sitter.sitter_user_id, body });
+          chatSent = true;
+        } catch {
+          /* the answer is saved; chat is best effort */
+        }
       }
+      return { chatSent };
     },
     onSuccess: refresh,
   });
@@ -206,6 +244,7 @@ export interface LinkedGuideQuestion {
   is_emergency: boolean;
   answered_from_guide: boolean;
   owner_answer: string | null;
+  dismissed_at: string | null;
 }
 
 /** The Ask the Nest questions linked to messages in a chat (sitter: own; owner: their listings'). */
@@ -215,7 +254,7 @@ export const useLinkedGuideQuestions = (ids: string[]) =>
     queryFn: async (): Promise<LinkedGuideQuestion[]> => {
       const { data, error } = await supabase
         .from("guide_questions")
-        .select("id, listing_id, question, is_emergency, answered_from_guide, owner_answer")
+        .select("id, listing_id, question, is_emergency, answered_from_guide, owner_answer, dismissed_at")
         .in("id", ids);
       if (error) throw error;
       return (data ?? []) as LinkedGuideQuestion[];

@@ -8,7 +8,15 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useGuideAi } from "@/hooks/useWelcomeGuide";
-import { useSaveGuideAnswerFromChat, type LinkedGuideQuestion } from "@/hooks/useAskNest";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useSaveGuideAnswerFromChat, useSetGuideQuestionDismissed, type LinkedGuideQuestion } from "@/hooks/useAskNest";
 import { mentionsArrivalDetails } from "@/lib/askNest";
 
 /** A chat message sent from Ask the Nest, shown to both people as a card. */
@@ -67,7 +75,30 @@ export const AddToGuidePrompt = ({
 }) => {
   const [hidden, setHidden] = useState(() => isPromptDismissed(messageId));
   const [open, setOpen] = useState(false);
+  const setDismissed = useSetGuideQuestionDismissed();
   if (hidden || candidates.length === 0) return null;
+
+  // "Don't add": the question leaves the owner's list (restorable in the editor).
+  const dontAdd = async (questions: LinkedGuideQuestion[]) => {
+    try {
+      for (const q of questions) await setDismissed.mutateAsync({ questionId: q.id, dismissed: true });
+      toast.success(questions.length > 1 ? "Questions dismissed" : "Question dismissed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't dismiss it. Please try again.");
+    }
+  };
+
+  const dontAddButton = (
+    <Button
+      size="sm"
+      variant="ghost"
+      className="h-7 px-2 text-xs"
+      disabled={setDismissed.isPending}
+      onClick={candidates.length === 1 ? () => dontAdd(candidates) : undefined}
+    >
+      Don't add
+    </Button>
+  );
 
   return (
     <div className="mt-1.5 flex flex-wrap items-center justify-end gap-2 text-xs">
@@ -80,6 +111,7 @@ export const AddToGuidePrompt = ({
         variant="ghost"
         className="h-7 px-2 text-xs"
         onClick={() => {
+          // "Later": hide here only; the question stays in the owner's list.
           try {
             localStorage.setItem(dismissKey(messageId), "1");
           } catch {
@@ -88,8 +120,27 @@ export const AddToGuidePrompt = ({
           setHidden(true);
         }}
       >
-        Not now
+        Later
       </Button>
+      {candidates.length === 1 ? (
+        dontAddButton
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>{dontAddButton}</DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-w-xs">
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Don't add which question?</DropdownMenuLabel>
+            {candidates.map((q) => (
+              <DropdownMenuItem key={q.id} className="text-sm" onSelect={() => dontAdd([q])}>
+                <span className="line-clamp-2">{q.question}</span>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-sm" onSelect={() => dontAdd(candidates)}>
+              All of these
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
       <AddToGuideSheet open={open} onOpenChange={setOpen} replyText={replyText} candidates={candidates} />
     </div>
   );

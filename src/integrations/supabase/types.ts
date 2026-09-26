@@ -690,10 +690,12 @@ export type Database = {
           answered_from_guide: boolean
           asked_owner_at: string | null
           created_at: string
+          dismissed_at: string | null
           id: string
           is_emergency: boolean
           listing_id: string
           owner_answer: string | null
+          parent_question_id: string | null
           question: string
           sit_id: string
           sitter_user_id: string
@@ -705,10 +707,12 @@ export type Database = {
           answered_from_guide?: boolean
           asked_owner_at?: string | null
           created_at?: string
+          dismissed_at?: string | null
           id?: string
           is_emergency?: boolean
           listing_id: string
           owner_answer?: string | null
+          parent_question_id?: string | null
           question: string
           sit_id: string
           sitter_user_id: string
@@ -720,16 +724,25 @@ export type Database = {
           answered_from_guide?: boolean
           asked_owner_at?: string | null
           created_at?: string
+          dismissed_at?: string | null
           id?: string
           is_emergency?: boolean
           listing_id?: string
           owner_answer?: string | null
+          parent_question_id?: string | null
           question?: string
           sit_id?: string
           sitter_user_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "guide_questions_parent_question_id_fkey"
+            columns: ["parent_question_id"]
+            isOneToOne: false
+            referencedRelation: "guide_questions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "guide_questions_listing_id_fkey"
             columns: ["listing_id"]
@@ -2495,6 +2508,10 @@ export type Database = {
       }
       decline_application: { Args: { p_application_id: string }; Returns: Json }
       get_guide_completion: { Args: { p_listing_id: string }; Returns: Json }
+      get_owner_guide_questions: {
+        Args: { p_listing_id: string }
+        Returns: Json
+      }
       get_listing_private_address: {
         Args: { p_listing_id: string }
         Returns: string
@@ -2575,6 +2592,10 @@ export type Database = {
         Args: { _conversation_id: string }
         Returns: undefined
       }
+      link_guide_question: {
+        Args: { p_parent_id: string; p_question_id: string }
+        Returns: boolean
+      }
       mark_guide_question_asked: {
         Args: { p_question_id: string }
         Returns: undefined
@@ -2602,6 +2623,10 @@ export type Database = {
       request_listing_timezone_backfill: { Args: never; Returns: undefined }
       respond_to_sit_reschedule: {
         Args: { p_accept: boolean; p_request_id: string }
+        Returns: Json
+      }
+      set_guide_question_dismissed: {
+        Args: { p_dismissed: boolean; p_question_id: string }
         Returns: Json
       }
       set_my_profile_phone: {
