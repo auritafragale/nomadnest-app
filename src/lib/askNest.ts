@@ -48,3 +48,7 @@ export const suggestedQuestions = (guide: SitterGuide): string[] => {
   if (filled(guide.guide?.house_notes)) out.push("Anything I should know about the house?");
   return out.slice(0, 4);
 };
+
+/** Text of a "Question/Urgent from your Welcome Guide: …" chat message, without the prefix. */
+export const questionFromBody = (body: string) =>
+  body.replace(/^(Question|Urgent) from your Welcome Guide:\s*/i, "").trim();

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,9 @@ import { CheckinBar } from "@/components/inbox/CheckinBar";
 import { useActiveSitForConversation } from "@/hooks/useActiveSitForConversation";
 import { parseCheckinMessage, CHECKIN_LABELS, type CheckinKind } from "@/hooks/useSitCheckins";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLinkedGuideQuestions, type LinkedGuideQuestion } from "@/hooks/useAskNest";
+import { AddToGuidePrompt, GuideQuestionCard } from "@/components/inbox/GuideQuestionChat";
+import { questionFromBody } from "@/lib/askNest";
 
 interface MessageThreadProps {
   conversation: Conversation | null;
@@ -82,6 +85,45 @@ export const MessageThread = ({
   // Current user is the sitter in this conversation?
   const isCurrentUserSitter = !!conversation && !!user && conversation.sitter_user_id === user.id;
   const isCurrentUserOwner = !!conversation && !!user && conversation.owner_user_id === user.id;
+
+  // Ask the Nest questions sent into this chat (messages.guide_question_id).
+  const guideQuestionIds = useMemo(
+    () => [...new Set(messages.map((m) => m.guide_question_id).filter((id): id is string => !!id))],
+    [messages],
+  );
+  const { data: linkedQuestions = [] } = useLinkedGuideQuestions(guideQuestionIds);
+  const guideQuestionById = useMemo(() => new Map(linkedQuestions.map((q) => [q.id, q])), [linkedQuestions]);
+
+  // Owner only: the first plain reply after an unanswered (non-emergency) guide
+  // question gets an "Add this to your Welcome Guide?" prompt. Its choices are
+  // every question still unanswered at that point, newest first.
+  const guidePromptByMessageId = useMemo(() => {
+    const result = new Map<string, LinkedGuideQuestion[]>();
+    if (!isCurrentUserOwner || !user) return result;
+    const isPending = (q: LinkedGuideQuestion | undefined): q is LinkedGuideQuestion =>
+      !!q && !q.is_emergency && !q.answered_from_guide && !q.owner_answer;
+    const askedSoFar: LinkedGuideQuestion[] = [];
+    let awaitingReply = false;
+    for (const m of messages) {
+      const q = m.guide_question_id ? guideQuestionById.get(m.guide_question_id) : undefined;
+      if (isPending(q)) {
+        if (!askedSoFar.some((a) => a.id === q.id)) askedSoFar.push(q);
+        awaitingReply = true;
+        continue;
+      }
+      const isPlainOwnerReply =
+        m.sender_user_id === user.id &&
+        !m.guide_question_id &&
+        !parseCheckinMessage(m.body) &&
+        !parseImageMessage(m.body) &&
+        m.body.trim().length > 0;
+      if (awaitingReply && isPlainOwnerReply) {
+        result.set(m.id, [...askedSoFar].reverse());
+        awaitingReply = false;
+      }
+    }
+    return result;
+  }, [messages, guideQuestionById, isCurrentUserOwner, user]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -262,6 +304,20 @@ export const MessageThread = ({
             {messages.map((message) => {
               const isOwn = message.sender_user_id === user?.id;
               const isRead = !!message.read_at;
+              if (message.guide_question_id) {
+                const linked = guideQuestionById.get(message.guide_question_id);
+                return (
+                  <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+                    <GuideQuestionCard
+                      question={linked?.question ?? questionFromBody(message.body)}
+                      isEmergency={linked?.is_emergency ?? /^Urgent from your Welcome Guide:/i.test(message.body)}
+                      isOwn={isOwn}
+                      time={formatMessageDate(message.created_at)}
+                    />
+                  </div>
+                );
+              }
+
               const checkin = parseCheckinMessage(message.body);
 
               if (checkin) {
@@ -353,9 +409,10 @@ export const MessageThread = ({
                 );
               }
 
+              const guidePrompt = guidePromptByMessageId.get(message.id);
               return (
+                <div key={message.id}>
                 <div
-                  key={message.id}
                   className={cn("flex group", isOwn ? "justify-end" : "justify-start")}
                 >
                   {/* Report button for received messages */}
@@ -398,6 +455,10 @@ export const MessageThread = ({
                       )}
                     </div>
                   </div>
+                </div>
+                {guidePrompt && (
+                  <AddToGuidePrompt messageId={message.id} replyText={message.body} candidates={guidePrompt} />
+                )}
                 </div>
               );
             })}

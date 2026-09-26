@@ -956,6 +956,7 @@ export type Database = {
           body: string
           conversation_id: string
           created_at: string
+          guide_question_id: string | null
           id: string
           read_at: string | null
           sender_user_id: string
@@ -964,6 +965,7 @@ export type Database = {
           body: string
           conversation_id: string
           created_at?: string
+          guide_question_id?: string | null
           id?: string
           read_at?: string | null
           sender_user_id: string

@@ -330,5 +330,8 @@ export const useGuideAi = () => {
       call({ action: "explain_photo", listing_id: listingId, photo_id: photoId }),
     polish: (listingId: string, section: GuideSection, text: string) =>
       call({ action: "polish", listing_id: listingId, section, text }),
+    /** A chat reply to a sitter's question, tidied into a standalone guide answer. */
+    polishAnswer: (listingId: string, question: string, text: string) =>
+      call({ action: "polish", purpose: "qa_answer", listing_id: listingId, question, text }),
   };
 };

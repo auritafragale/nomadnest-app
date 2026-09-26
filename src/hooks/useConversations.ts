@@ -46,6 +46,8 @@ export interface Message {
   body: string;
   created_at: string;
   read_at: string | null;
+  /** Set when the message was sent from Ask the Nest (a Welcome Guide question). */
+  guide_question_id?: string | null;
 }
 
 export const useConversations = () => {
@@ -242,7 +244,16 @@ export const useSendMessage = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ conversationId, body }: { conversationId: string; body: string }) => {
+    mutationFn: async ({
+      conversationId,
+      body,
+      guideQuestionId,
+    }: {
+      conversationId: string;
+      body: string;
+      /** Links an Ask the Nest question (checked by the database). */
+      guideQuestionId?: string | null;
+    }) => {
       if (!user) throw new Error("Not authenticated");
 
       const { data, error } = await supabase
@@ -251,6 +262,7 @@ export const useSendMessage = () => {
           conversation_id: conversationId,
           sender_user_id: user.id,
           body,
+          ...(guideQuestionId ? { guide_question_id: guideQuestionId } : {}),
         })
         .select()
         .single();

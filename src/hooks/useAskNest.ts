@@ -82,7 +82,7 @@ export const useSendGuideChatMessage = () => {
     }) => {
       const conversationId = await resolveListingConversation({ listingId, ownerUserId, sitterUserId });
       if (!conversationId) throw new Error("Couldn't open your chat. Please try again.");
-      await sendMessage.mutateAsync({ conversationId, body });
+      await sendMessage.mutateAsync({ conversationId, body, guideQuestionId: questionId ?? null });
       if (questionId) {
         await supabase.rpc("mark_guide_question_asked", { p_question_id: questionId });
       }
@@ -195,4 +195,55 @@ export const useGuideQaActions = (listingId: string | undefined) => {
   });
 
   return { answer, update, remove };
+};
+
+// ─── Chat: questions linked to messages ──────────────────────────────────────
+
+export interface LinkedGuideQuestion {
+  id: string;
+  listing_id: string;
+  question: string;
+  is_emergency: boolean;
+  answered_from_guide: boolean;
+  owner_answer: string | null;
+}
+
+/** The Ask the Nest questions linked to messages in a chat (sitter: own; owner: their listings'). */
+export const useLinkedGuideQuestions = (ids: string[]) =>
+  useQuery({
+    queryKey: ["linked-guide-questions", [...ids].sort().join(",")],
+    queryFn: async (): Promise<LinkedGuideQuestion[]> => {
+      const { data, error } = await supabase
+        .from("guide_questions")
+        .select("id, listing_id, question, is_emergency, answered_from_guide, owner_answer")
+        .in("id", ids);
+      if (error) throw error;
+      return (data ?? []) as LinkedGuideQuestion[];
+    },
+    enabled: ids.length > 0,
+  });
+
+/**
+ * Saves the owner's chat reply to the guide. No chat message is sent: the
+ * answer is already in the conversation. answer_guide_question still checks
+ * that the caller owns the listing.
+ */
+export const useSaveGuideAnswerFromChat = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ questionId, text, arrivalOnly }: { questionId: string; text: string; arrivalOnly: boolean }) => {
+      const { data, error } = await supabase.rpc("answer_guide_question", {
+        p_question_id: questionId,
+        p_answer: text,
+        p_arrival_only: arrivalOnly,
+      });
+      if (error) throw new Error(error.message);
+      return data as { listing_id: string };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["linked-guide-questions"] });
+      queryClient.invalidateQueries({ queryKey: ["guide-questions", result?.listing_id] });
+      queryClient.invalidateQueries({ queryKey: ["guide-qa", result?.listing_id] });
+    },
+  });
 };
