@@ -234,7 +234,9 @@ const CreateListing = () => {
           wheelchair_accessible: formData.wheelchair_accessible,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
         })
-        .select()
+        // Only the id is needed; a bare select() would ask for address_private,
+        // which isn't directly readable.
+        .select("id")
         .single();
 
       if (listingError) throw listingError;

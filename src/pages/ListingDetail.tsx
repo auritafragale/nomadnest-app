@@ -42,6 +42,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import { ApplyDialog } from "@/components/applications/ApplyDialog";
+import { PET_PUBLIC_COLUMNS, tryFetchOwnPetPrivateDetails } from "@/lib/privateColumns";
 import CommunityWarningModal from "@/components/trust/CommunityWarningModal";
 import { useCommunityWarning } from "@/hooks/useCommunityWarning";
 import { format, parseISO, differenceInDays } from "date-fns";
@@ -355,7 +356,9 @@ const ListingDetail = () => {
 
         // Fetch pets and sit_dates
         const [petsResult, datesResult, profileResult] = await Promise.all([
-          supabase.from("pets").select("*").eq("listing_id", id),
+          // Public columns only: vet info and medication instructions are
+          // private, and loaded below for the owner via their RPC.
+          supabase.from("pets").select(PET_PUBLIC_COLUMNS).eq("listing_id", id),
           supabase.from("sit_dates").select("*").eq("listing_id", id),
           publicProfiles("first_name, last_name, avatar_url, city, country, founding_member, full_name, id_verified")
             .eq("id", listingRow.owner_user_id)
@@ -500,6 +503,27 @@ const ListingDetail = () => {
         setListing((prev) => (prev ? { ...prev, address_private: data ?? null } : prev));
       });
   }, [listing?.id, isOwner, acceptedSitter]);
+
+  // The owner also sees their pets' vet info and medication instructions,
+  // which aren't in the public pet columns.
+  useEffect(() => {
+    if (!listing?.id || !isOwner) return;
+    tryFetchOwnPetPrivateDetails(listing.id).then((details) => {
+      if (details.size === 0) return;
+      setListing((prev) =>
+        prev
+          ? {
+              ...prev,
+              pets: prev.pets.map((pet) => ({
+                ...pet,
+                vet_info: details.get(pet.id)?.vet_info ?? null,
+                medication_instructions: details.get(pet.id)?.medication_instructions ?? null,
+              })),
+            }
+          : prev,
+      );
+    });
+  }, [listing?.id, isOwner]);
 
   // For the Welcome Guide's print header: the Nomad's own confirmed sit on
   // this listing, if any. The owner can have several sitters/date ranges

@@ -5,6 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 import { sendNotification } from "@/lib/notifications";
 import { format, parseISO } from "date-fns";
 import { ListingFormData, Pet, SitDate } from "./useListingForm";
+import {
+  LISTING_COLUMNS,
+  PET_PUBLIC_COLUMNS,
+  fetchListingPrivateAddress,
+  fetchOwnPetPrivateDetails,
+} from "@/lib/privateColumns";
 
 export interface DatabasePet {
   id: string;
@@ -77,7 +83,7 @@ export const useListingDetails = (listingId: string | undefined) => {
 
       const { data: listing, error: listingError } = await supabase
         .from("listings")
-        .select("*")
+        .select(LISTING_COLUMNS)
         .eq("id", listingId)
         .single();
 
@@ -88,12 +94,25 @@ export const useListingDetails = (listingId: string | undefined) => {
         throw new Error("You don't have permission to edit this listing");
       }
 
-      const { data: pets, error: petsError } = await supabase
+      // Private fields come through their RPCs. If they can't be loaded the
+      // form must not open, or saving would blank them out.
+      const [addressPrivate, petPrivate] = await Promise.all([
+        fetchListingPrivateAddress(listingId),
+        fetchOwnPetPrivateDetails(listingId),
+      ]);
+
+      const { data: publicPets, error: petsError } = await supabase
         .from("pets")
-        .select("*")
+        .select(PET_PUBLIC_COLUMNS)
         .eq("listing_id", listingId);
 
       if (petsError) throw petsError;
+
+      const pets = (publicPets || []).map((pet) => ({
+        ...pet,
+        vet_info: petPrivate.get(pet.id)?.vet_info ?? null,
+        medication_instructions: petPrivate.get(pet.id)?.medication_instructions ?? null,
+      }));
 
       const { data: sitDates, error: datesError } = await supabase
         .from("sit_dates")
@@ -104,7 +123,8 @@ export const useListingDetails = (listingId: string | undefined) => {
 
       return {
         ...listing,
-        pets: pets || [],
+        address_private: addressPrivate,
+        pets,
         sit_dates: sitDates || [],
       } as ListingWithDetails;
     },

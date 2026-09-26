@@ -6,7 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMembership } from "@/hooks/useMembership";
 import { useVerification } from "@/hooks/useVerification";
 
-export const MAX_ACTIVE_APPLICANTS = 15;
+// Must match the enforce_application_cap trigger in the database.
+export const MAX_ACTIVE_APPLICANTS = 10;
 
 export interface ApplicableSitDate {
   id: string;

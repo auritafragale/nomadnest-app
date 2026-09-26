@@ -2,6 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import {
+  LISTING_COLUMNS,
+  PET_PUBLIC_COLUMNS,
+  fetchListingPrivateAddress,
+  fetchOwnPetPrivateDetails,
+} from "@/lib/privateColumns";
 
 export const useDuplicateListing = () => {
   const { user } = useAuth();
@@ -15,11 +21,17 @@ export const useDuplicateListing = () => {
       // Fetch original listing
       const { data: original, error: fetchError } = await supabase
         .from("listings")
-        .select("*")
+        .select(LISTING_COLUMNS)
         .eq("id", listingId)
         .single();
 
       if (fetchError) throw fetchError;
+
+      // Private fields come through their RPCs (owner only).
+      const [addressPrivate, petPrivate] = await Promise.all([
+        fetchListingPrivateAddress(listingId),
+        fetchOwnPetPrivateDetails(listingId),
+      ]);
 
       // Create new listing with same data (as draft)
       const { data: newListing, error: createError } = await supabase
@@ -31,7 +43,7 @@ export const useDuplicateListing = () => {
           city: original.city,
           country: original.country,
           area: original.area,
-          address_private: original.address_private,
+          address_private: addressPrivate,
           photos: original.photos,
           home_type: original.home_type,
           sleeping_arrangement: original.sleeping_arrangement,
@@ -47,7 +59,7 @@ export const useDuplicateListing = () => {
           ideal_sitter_description: original.ideal_sitter_description,
           status: "draft",
         })
-        .select()
+        .select("id")
         .single();
 
       if (createError) throw createError;
@@ -55,7 +67,7 @@ export const useDuplicateListing = () => {
       // Fetch and duplicate pets
       const { data: pets } = await supabase
         .from("pets")
-        .select("*")
+        .select(PET_PUBLIC_COLUMNS)
         .eq("listing_id", listingId);
 
       if (pets && pets.length > 0) {
@@ -69,8 +81,8 @@ export const useDuplicateListing = () => {
           feeding_details: pet.feeding_details,
           walks_exercise: pet.walks_exercise,
           has_medication: pet.has_medication,
-          medication_instructions: pet.medication_instructions,
-          vet_info: pet.vet_info,
+          medication_instructions: petPrivate.get(pet.id)?.medication_instructions ?? null,
+          vet_info: petPrivate.get(pet.id)?.vet_info ?? null,
           photos: pet.photos,
         }));
 

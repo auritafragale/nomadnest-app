@@ -2169,6 +2169,14 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: string
       }
+      get_pet_private_details: {
+        Args: { p_listing_id: string }
+        Returns: {
+          id: string
+          medication_instructions: string | null
+          vet_info: string | null
+        }[]
+      }
       get_my_contact_info: {
         Args: never
         Returns: {
