@@ -1042,7 +1042,6 @@ export type Database = {
       }
       pets: {
         Row: {
-          behaviour_notes: string | null
           age: string | null
           created_at: string
           daily_routine: string | null
@@ -1063,7 +1062,6 @@ export type Database = {
           walks_exercise: string | null
         }
         Insert: {
-          behaviour_notes?: string | null
           age?: string | null
           created_at?: string
           daily_routine?: string | null
@@ -1084,7 +1082,6 @@ export type Database = {
           walks_exercise?: string | null
         }
         Update: {
-          behaviour_notes?: string | null
           age?: string | null
           created_at?: string
           daily_routine?: string | null
@@ -1874,164 +1871,44 @@ export type Database = {
         }
         Relationships: []
       }
-      welcome_guide_access: {
-        Row: {
-          alarm_instructions: string | null
-          created_at: string
-          door_codes: string | null
-          key_handover: string | null
-          listing_id: string
-          na_fields: string[]
-          owner_user_id: string
-          updated_at: string
-          wifi_details: string | null
-        }
-        Insert: {
-          alarm_instructions?: string | null
-          created_at?: string
-          door_codes?: string | null
-          key_handover?: string | null
-          listing_id: string
-          na_fields?: string[]
-          owner_user_id: string
-          updated_at?: string
-          wifi_details?: string | null
-        }
-        Update: {
-          alarm_instructions?: string | null
-          created_at?: string
-          door_codes?: string | null
-          key_handover?: string | null
-          listing_id?: string
-          na_fields?: string[]
-          owner_user_id?: string
-          updated_at?: string
-          wifi_details?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "welcome_guide_access_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: true
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      welcome_guide_photos: {
-        Row: {
-          created_at: string
-          id: string
-          instruction: string | null
-          listing_id: string
-          note: string | null
-          owner_user_id: string
-          pet_id: string | null
-          section: string
-          sort_order: number
-          storage_path: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          instruction?: string | null
-          listing_id: string
-          note?: string | null
-          owner_user_id: string
-          pet_id?: string | null
-          section: string
-          sort_order?: number
-          storage_path: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          instruction?: string | null
-          listing_id?: string
-          note?: string | null
-          owner_user_id?: string
-          pet_id?: string | null
-          section?: string
-          sort_order?: number
-          storage_path?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "welcome_guide_photos_pet_id_fkey"
-            columns: ["pet_id"]
-            isOneToOne: false
-            referencedRelation: "pets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       welcome_guides: {
         Row: {
-          appliances: string | null
-          bins_recycling: string | null
           created_at: string
           emergency_contacts: string | null
-          heating_cooling: string | null
+          feeding_schedule: string | null
           house_notes: string | null
           id: string
-          listing_id: string
-          migrated_notes: string | null
-          na_fields: string[]
-          neighbours: string | null
-          out_of_hours_vet: string | null
+          listing_id: string | null
           owner_user_id: string
-          parking: string | null
-          plants: string | null
           updated_at: string
+          vet_info: string | null
+          wifi_info: string | null
         }
         Insert: {
-          appliances?: string | null
-          bins_recycling?: string | null
           created_at?: string
           emergency_contacts?: string | null
-          heating_cooling?: string | null
+          feeding_schedule?: string | null
           house_notes?: string | null
           id?: string
-          listing_id: string
-          migrated_notes?: string | null
-          na_fields?: string[]
-          neighbours?: string | null
-          out_of_hours_vet?: string | null
+          listing_id?: string | null
           owner_user_id: string
-          parking?: string | null
-          plants?: string | null
           updated_at?: string
+          vet_info?: string | null
+          wifi_info?: string | null
         }
         Update: {
-          appliances?: string | null
-          bins_recycling?: string | null
           created_at?: string
           emergency_contacts?: string | null
-          heating_cooling?: string | null
+          feeding_schedule?: string | null
           house_notes?: string | null
           id?: string
-          listing_id?: string
-          migrated_notes?: string | null
-          na_fields?: string[]
-          neighbours?: string | null
-          out_of_hours_vet?: string | null
+          listing_id?: string | null
           owner_user_id?: string
-          parking?: string | null
-          plants?: string | null
           updated_at?: string
+          vet_info?: string | null
+          wifi_info?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "welcome_guides_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: true
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
@@ -2323,14 +2200,9 @@ export type Database = {
         }[]
       }
       get_perk_discount_code: { Args: { p_slug: string }; Returns: string }
-      get_guide_completion: {
-        Args: { p_listing_id: string }
-        Returns: Json
-      }
       get_pet_private_details: {
         Args: { p_listing_id: string }
         Returns: {
-          behaviour_notes: string
           id: string
           medication_instructions: string
           vet_info: string
