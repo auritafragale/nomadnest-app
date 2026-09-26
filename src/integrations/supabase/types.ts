@@ -691,12 +691,14 @@ export type Database = {
           asked_owner_at: string | null
           created_at: string
           dismissed_at: string | null
+          draft_answer: string | null
           id: string
           is_emergency: boolean
           listing_id: string
           owner_answer: string | null
           parent_question_id: string | null
           question: string
+          removed_at: string | null
           sit_id: string
           sitter_user_id: string
           updated_at: string
@@ -708,12 +710,14 @@ export type Database = {
           asked_owner_at?: string | null
           created_at?: string
           dismissed_at?: string | null
+          draft_answer?: string | null
           id?: string
           is_emergency?: boolean
           listing_id: string
           owner_answer?: string | null
           parent_question_id?: string | null
           question: string
+          removed_at?: string | null
           sit_id: string
           sitter_user_id: string
           updated_at?: string
@@ -725,12 +729,14 @@ export type Database = {
           asked_owner_at?: string | null
           created_at?: string
           dismissed_at?: string | null
+          draft_answer?: string | null
           id?: string
           is_emergency?: boolean
           listing_id?: string
           owner_answer?: string | null
           parent_question_id?: string | null
           question?: string
+          removed_at?: string | null
           sit_id?: string
           sitter_user_id?: string
           updated_at?: string
@@ -2619,6 +2625,10 @@ export type Database = {
         Returns: string
       }
       release_job_lease: { Args: { p_job_name: string }; Returns: undefined }
+      remove_guide_question: {
+        Args: { p_question_id: string }
+        Returns: Json
+      }
       request_is_end_user: { Args: never; Returns: boolean }
       request_listing_timezone_backfill: { Args: never; Returns: undefined }
       respond_to_sit_reschedule: {
@@ -2627,6 +2637,10 @@ export type Database = {
       }
       set_guide_question_dismissed: {
         Args: { p_dismissed: boolean; p_question_id: string }
+        Returns: Json
+      }
+      set_guide_question_draft: {
+        Args: { p_draft: string; p_question_id: string }
         Returns: Json
       }
       set_my_profile_phone: {

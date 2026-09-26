@@ -16,7 +16,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSaveGuideAnswerFromChat, useSetGuideQuestionDismissed, type LinkedGuideQuestion } from "@/hooks/useAskNest";
+import {
+  useSaveGuideAnswerFromChat,
+  useSetGuideQuestionDismissed,
+  useSetGuideQuestionDraft,
+  type LinkedGuideQuestion,
+} from "@/hooks/useAskNest";
 import { mentionsArrivalDetails } from "@/lib/askNest";
 
 /** A chat message sent from Ask the Nest, shown to both people as a card. */
@@ -76,6 +81,7 @@ export const AddToGuidePrompt = ({
   const [hidden, setHidden] = useState(() => isPromptDismissed(messageId));
   const [open, setOpen] = useState(false);
   const setDismissed = useSetGuideQuestionDismissed();
+  const setDraft = useSetGuideQuestionDraft();
   if (hidden || candidates.length === 0) return null;
 
   // "Don't add": the question leaves the owner's list (restorable in the editor).
@@ -111,7 +117,10 @@ export const AddToGuidePrompt = ({
         variant="ghost"
         className="h-7 px-2 text-xs"
         onClick={() => {
-          // "Later": hide here only; the question stays in the owner's list.
+          // "Later": hide here only; the question stays in the owner's list,
+          // with this reply kept as its draft answer. With several questions,
+          // it goes to the newest one (the one this reply directly follows).
+          setDraft.mutate({ questionId: candidates[0].id, draft: replyText });
           try {
             localStorage.setItem(dismissKey(messageId), "1");
           } catch {

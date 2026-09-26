@@ -4,7 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, HeartPulse, MessageCircleQuestion, Pencil, RotateCcw, Trash2, Users } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ChevronDown, HeartPulse, MessageCircle, MessageCircleQuestion, Pencil, RotateCcw, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { mentionsArrivalDetails } from "@/lib/askNest";
@@ -12,6 +22,7 @@ import {
   useGuideQa,
   useGuideQaActions,
   useOwnerGuideQuestions,
+  useRemoveGuideQuestion,
   useSetGuideQuestionDismissed,
   type GuideQuestion,
   type GuideQa,
@@ -38,7 +49,14 @@ interface QuestionGroup {
   sitEndedAt: number | null;
   sentInChat: boolean;
   dismissed: boolean;
+  /** Prefill for "Your answer": the saved draft, else the latest chat reply. */
+  prefill: string | null;
 }
+
+const latestChatReply = (members: GuideQuestion[]) =>
+  members
+    .filter((m) => m.chat_reply && m.chat_reply_at)
+    .sort((a, b) => b.chat_reply_at!.localeCompare(a.chat_reply_at!))[0]?.chat_reply ?? null;
 
 const buildGroups = (questions: GuideQuestion[]): QuestionGroup[] => {
   const byRoot = new Map<string, GuideQuestion[]>();
@@ -59,6 +77,7 @@ const buildGroups = (questions: GuideQuestion[]): QuestionGroup[] => {
       sitEndedAt: ends.some((e) => e === null) ? null : Math.max(...(ends as number[])),
       sentInChat: members.some((m) => !!m.asked_owner_at),
       dismissed: !!root.dismissed_at,
+      prefill: (root.draft_answer ?? members.find((m) => m.draft_answer)?.draft_answer ?? latestChatReply(members))?.slice(0, 2000) ?? null,
     };
   });
 };
@@ -83,9 +102,10 @@ const QuestionAnswer = ({
   dismissing: boolean;
 }) => {
   const q = group.root;
-  const [text, setText] = useState("");
+  const [text, setText] = useState(group.prefill ?? "");
   const [arrivalOnly, setArrivalOnly] = useState(() => mentionsArrivalDetails(q.question));
   const asked = askedLabel(group);
+  const fromChat = !!group.prefill && text.trim() !== "";
   return (
     <li className="space-y-2 rounded-xl border bg-background p-3">
       <div className="flex items-start justify-between gap-2">
@@ -102,6 +122,12 @@ const QuestionAnswer = ({
           )}
           {group.sentInChat && <span>Also sent to you in chat.</span>}
         </div>
+      )}
+      {fromChat && (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+          From your chat reply
+        </p>
       )}
       <Textarea
         value={text}
@@ -155,6 +181,8 @@ export const GuideQuestionsCard = ({ listingId }: { listingId: string }) => {
   const { data: questions = [] } = useOwnerGuideQuestions(listingId);
   const { answer } = useGuideQaActions(listingId);
   const setDismissed = useSetGuideQuestionDismissed();
+  const removeQuestion = useRemoveGuideQuestion();
+  const [confirmRemove, setConfirmRemove] = useState<GuideQuestion | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
 
@@ -255,21 +283,58 @@ export const GuideQuestionsCard = ({ listingId }: { listingId: string }) => {
                   <p className="text-sm">{g.root.question}</p>
                   {asked && <p className="text-xs text-muted-foreground">{asked}</p>}
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 shrink-0 gap-1 px-2 text-xs"
-                  disabled={setDismissed.isPending}
-                  onClick={() => dismiss(g.root, false)}
-                >
-                  <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                  Restore
-                </Button>
+                <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 gap-1 px-2 text-xs"
+                    disabled={setDismissed.isPending || removeQuestion.isPending}
+                    onClick={() => dismiss(g.root, false)}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                    Restore
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+                    disabled={setDismissed.isPending || removeQuestion.isPending}
+                    onClick={() => setConfirmRemove(g.root)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    Remove
+                  </Button>
+                </div>
               </li>
             );
           })}
         </ul>
       </CollapsedSection>
+
+      <AlertDialog open={!!confirmRemove} onOpenChange={(o) => !o && setConfirmRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this question?</AlertDialogTitle>
+            <AlertDialogDescription>It won't come back.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!confirmRemove) return;
+                removeQuestion.mutate(confirmRemove.id, {
+                  onSuccess: () => toast.success("Question removed"),
+                  onError: (err) => toast.error(err.message || "Couldn't remove it. Please try again."),
+                });
+                setConfirmRemove(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 };

@@ -108,6 +108,11 @@ export interface GuideQuestion {
   created_at: string;
   /** When the sit ended (or was cancelled); null if unknown. */
   sit_ended_at: string | null;
+  /** The owner's chat reply, kept when they tapped "Later". */
+  draft_answer: string | null;
+  /** The owner's most recent plain chat reply after this question. */
+  chat_reply: string | null;
+  chat_reply_at: string | null;
 }
 
 export interface GuideQa {
@@ -131,6 +136,40 @@ export const useOwnerGuideQuestions = (listingId: string | undefined) =>
     },
     enabled: !!listingId,
   });
+
+/** Keeps the owner's chat reply as the draft answer for the question's group. */
+export const useSetGuideQuestionDraft = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ questionId, draft }: { questionId: string; draft: string }) => {
+      const { data, error } = await supabase.rpc("set_guide_question_draft", {
+        p_question_id: questionId,
+        p_draft: draft.slice(0, 2000),
+      });
+      if (error) throw new Error(error.message);
+      return data as { listing_id: string };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["guide-questions", result?.listing_id] });
+    },
+  });
+};
+
+/** Soft-removes a dismissed question (whole group). The row is kept for admins. */
+export const useRemoveGuideQuestion = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (questionId: string) => {
+      const { data, error } = await supabase.rpc("remove_guide_question", { p_question_id: questionId });
+      if (error) throw new Error(error.message);
+      return data as { listing_id: string };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["linked-guide-questions"] });
+      queryClient.invalidateQueries({ queryKey: ["guide-questions", result?.listing_id] });
+    },
+  });
+};
 
 /** "Dismiss" / "Don't add" and "Restore". Applies to the question's whole group. */
 export const useSetGuideQuestionDismissed = () => {
@@ -245,6 +284,7 @@ export interface LinkedGuideQuestion {
   answered_from_guide: boolean;
   owner_answer: string | null;
   dismissed_at: string | null;
+  removed_at: string | null;
 }
 
 /** The Ask the Nest questions linked to messages in a chat (sitter: own; owner: their listings'). */
@@ -254,7 +294,7 @@ export const useLinkedGuideQuestions = (ids: string[]) =>
     queryFn: async (): Promise<LinkedGuideQuestion[]> => {
       const { data, error } = await supabase
         .from("guide_questions")
-        .select("id, listing_id, question, is_emergency, answered_from_guide, owner_answer, dismissed_at")
+        .select("id, listing_id, question, is_emergency, answered_from_guide, owner_answer, dismissed_at, removed_at")
         .in("id", ids);
       if (error) throw error;
       return (data ?? []) as LinkedGuideQuestion[];
