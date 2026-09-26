@@ -25,11 +25,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { MapPin, Calendar, Edit, Eye, Users, MoreVertical, Pause, Play, Trash2, ChevronDown, RotateCcw, Loader2 } from "lucide-react";
+import { MapPin, Calendar, Edit, Eye, Users, MoreVertical, Pause, Play, Trash2, ChevronDown, RotateCcw, Loader2, BookOpen } from "lucide-react";
 import { format } from "date-fns";
 import { OwnerListing } from "@/hooks/useOwnerListings";
 import { useUpdateListingStatus, useDeleteListing } from "@/hooks/useOwnerListingActions";
 import { useReopenSitDate } from "@/hooks/useReopenSitDate";
+import { useGuideCompletion } from "@/hooks/useWelcomeGuide";
 
 interface OwnerListingCardProps {
   listing: OwnerListing;
@@ -42,6 +43,7 @@ const statusColors = {
 };
 
 export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
+  const { data: guideCompletion } = useGuideCompletion(listing.id);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDatesOpen, setShowDatesOpen] = useState(false);
   const updateStatus = useUpdateListingStatus();
@@ -223,14 +225,30 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
             </Collapsible>
           )}
 
-          {/* Actions — Edit on the left, View on the right */}
+          {/* Actions — Edit and Welcome Guide on the left, View on the right */}
           <div className="flex items-center justify-between gap-2 mt-3">
-            <Link to={`/edit-listing/${listing.id}`}>
-              <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                <Edit className="w-3 h-3 mr-1" />
-                Edit
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link to={`/edit-listing/${listing.id}`}>
+                <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
+                  <Edit className="w-3 h-3 mr-1" />
+                  Edit
+                </Button>
+              </Link>
+              <Link to={`/listing/${listing.id}/welcome-guide`}>
+                <Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs">
+                  <BookOpen className="w-3 h-3" />
+                  Welcome Guide
+                  {guideCompletion && (
+                    <Badge
+                      variant={guideCompletion.percent >= 100 ? "secondary" : "outline"}
+                      className="ml-0.5 h-4 px-1 text-[10px] font-medium"
+                    >
+                      {guideCompletion.percent}%
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+            </div>
             {listing.status === "published" && (
               <Link to={`/listing/${listing.id}`}>
                 <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">

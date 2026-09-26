@@ -83,6 +83,7 @@ export const useDuplicateListing = () => {
           has_medication: pet.has_medication,
           medication_instructions: petPrivate.get(pet.id)?.medication_instructions ?? null,
           vet_info: petPrivate.get(pet.id)?.vet_info ?? null,
+          behaviour_notes: petPrivate.get(pet.id)?.behaviour_notes ?? null,
           photos: pet.photos,
         }));
 

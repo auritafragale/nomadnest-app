@@ -19,6 +19,8 @@ export interface PetPrivateDetails {
   id: string;
   vet_info: string | null;
   medication_instructions: string | null;
+  /** Added with the Welcome Guide; absent before that migration. */
+  behaviour_notes?: string | null;
 }
 
 /**

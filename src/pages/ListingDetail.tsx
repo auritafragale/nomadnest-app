@@ -754,7 +754,7 @@ const ListingDetail = () => {
               {/* Welcome Guide — shown to the owner or an accepted Nomad */}
               {(isOwner || acceptedSitter) && (
                 <InlineWelcomeGuide
-                  ownerUserId={listing.owner_user_id}
+                  listingId={listing.id}
                   addressPrivate={listing.address_private}
                   listingTitle={listing.title}
                   location={guideLocation}

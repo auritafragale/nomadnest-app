@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight, Loader2, Save } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Save, BookOpen, PartyPopper } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +30,8 @@ const CreateListing = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Set after a successful publish: shows the Welcome Guide handoff screen.
+  const [publishedListingId, setPublishedListingId] = useState<string | null>(null);
   const { hasAccess, loading: membershipLoading } = useMembership();
   const { data: verificationData, isLoading: verificationLoading } = useVerification();
 
@@ -281,12 +283,16 @@ const CreateListing = () => {
 
       if (datesError) throw datesError;
 
+      if (status === "published") {
+        // Hand off to the Welcome Guide instead of going straight to the dashboard.
+        setPublishedListingId(listing.id);
+        window.scrollTo({ top: 0 });
+        return;
+      }
+
       toast({
-        title: status === "published" ? "Listing published!" : "Draft saved!",
-        description:
-          status === "published"
-            ? "Your listing is now visible to nomads"
-            : "You can continue editing later",
+        title: "Draft saved!",
+        description: "You can continue editing later",
       });
 
       navigate("/dashboard");
@@ -338,6 +344,36 @@ const CreateListing = () => {
         return null;
     }
   };
+
+  if (publishedListingId) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="flex min-h-[80vh] items-center justify-center px-4 pt-20 pb-12">
+          <div className="w-full max-w-md rounded-2xl border bg-card p-6 text-center shadow-sm sm:p-8">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <PartyPopper className="h-7 w-7" aria-hidden="true" />
+            </div>
+            <h1 className="font-display text-2xl font-semibold">Your listing is live</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Next, set up your Welcome Guide. It takes about 10 minutes and means fewer messages while you're away.
+            </p>
+            <Button
+              size="lg"
+              className="mt-6 w-full gap-2"
+              onClick={() => navigate(`/listing/${publishedListingId}/welcome-guide`)}
+            >
+              <BookOpen className="h-4 w-4" aria-hidden="true" />
+              Set up my Welcome Guide
+            </Button>
+            <Button variant="link" className="mt-3" onClick={() => navigate("/dashboard")}>
+              Maybe later
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

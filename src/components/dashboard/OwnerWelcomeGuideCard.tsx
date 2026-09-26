@@ -1,31 +1,41 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { BookOpen, WifiOff } from "lucide-react";
+import { BookOpen, ChevronRight, CheckCircle2 } from "lucide-react";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
-import { useAuth } from "@/contexts/AuthContext";
-import { useWelcomeGuide } from "@/hooks/useWelcomeGuide";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
+import { useGuideCompletion } from "@/hooks/useWelcomeGuide";
 
-/**
- * Shows the Pet Parent's single reusable Welcome Guide from the dashboard,
- * with a quick status and an Edit button. One guide per Pet Parent, shared
- * across all listings.
- */
+const ListingGuideRow = ({ id, title }: { id: string; title: string }) => {
+  const { data: completion, isLoading } = useGuideCompletion(id);
+  const percent = completion?.percent ?? 0;
+  return (
+    <li>
+      <Link
+        to={`/listing/${id}/welcome-guide`}
+        className="flex items-center gap-3 rounded-xl border bg-card p-3 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+      >
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <p className="truncate text-sm font-medium">{title}</p>
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+            <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${percent}%` }} />
+          </div>
+        </div>
+        {percent >= 100 ? (
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" aria-label="Guide complete" />
+        ) : (
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">
+            {isLoading ? "…" : `${percent}%`}
+          </span>
+        )}
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </Link>
+    </li>
+  );
+};
+
+/** The Pet Parent's Welcome Guides: one per listing, each with its progress. */
 const OwnerWelcomeGuideCard = () => {
-  const { user } = useAuth();
-  const { data: listings = [] } = useOwnerListings();
-  const { guide, isLoading, isOffline } = useWelcomeGuide(user?.id);
-
-  const firstListingId = listings[0]?.id;
-  const editTo = firstListingId ? `/listing/${firstListingId}/welcome-guide` : null;
-
-  const filled = guide
-    ? [guide.wifi_info, guide.feeding_schedule, guide.vet_info, guide.emergency_contacts, guide.house_notes].filter(
-        (v) => (v || "").trim().length > 0,
-      ).length
-    : 0;
-  const complete = filled > 0;
+  const { data: listings = [], isLoading } = useOwnerListings();
 
   return (
     <Card>
@@ -33,46 +43,25 @@ const OwnerWelcomeGuideCard = () => {
         <CardTitle>
           <span className="flex items-center gap-2 whitespace-nowrap">
             <BookOpen className="w-5 h-5 text-primary" />
-            Welcome Guide
+            Welcome Guides
             <HelpTooltip
               label="About the Welcome Guide"
-              content="One guide is shared across all your listings. Nomads you confirm can see it on the listing and open it offline."
+              content="Each home has its own guide. Complete guides mean fewer questions while you're away and a smoother handover."
             />
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent>
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : complete ? (
-          <div className="space-y-2 pb-2">
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="font-medium">Guide progress</span>
-              <span className="text-muted-foreground">{filled}/5 fields filled</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Welcome Guide progress" aria-valuemin={0} aria-valuemax={5} aria-valuenow={filled}>
-              <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${(filled / 5) * 100}%` }} />
-            </div>
-            {isOffline && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <WifiOff className="w-3 h-3" /> Offline copy
-              </span>
-            )}
-          </div>
+        ) : listings.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Create a listing to start its Welcome Guide.</p>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            Add your WiFi, feeding schedule, vet, emergency contacts and house notes so your Nomad is set on day one.
-          </p>
-        )}
-
-        {editTo ? (
-          <Link to={editTo}>
-            <Button size="sm" variant={complete ? "outline" : "default"} className="w-full sm:w-auto">
-              {complete ? "Edit guide" : "Add your guide"}
-            </Button>
-          </Link>
-        ) : (
-          <p className="text-xs text-muted-foreground">Create a listing to start your guide.</p>
+          <ul className="space-y-2">
+            {listings.map((l) => (
+              <ListingGuideRow key={l.id} id={l.id} title={l.title} />
+            ))}
+          </ul>
         )}
       </CardContent>
     </Card>

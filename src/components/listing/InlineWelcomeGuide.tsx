@@ -7,38 +7,50 @@ import {
   Printer,
   ChevronDown,
   ChevronUp,
-  Wifi,
-  Utensils,
   Stethoscope,
   Phone,
   StickyNote,
   MapPin,
+  Trash2,
+  Leaf,
+  WashingMachine,
+  Thermometer,
+  Car,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 import { useWelcomeGuide } from "@/hooks/useWelcomeGuide";
+import { EMERGENCY_FIELDS, HOUSE_FIELDS } from "@/lib/welcomeGuide";
 import { printWelcomeGuide } from "@/lib/printGuide";
 
-const FIELDS = [
-  { key: "wifi_info", label: "WiFi", icon: Wifi },
-  { key: "feeding_schedule", label: "Feeding schedule", icon: Utensils },
-  { key: "vet_info", label: "Vet details", icon: Stethoscope },
-  { key: "emergency_contacts", label: "Emergency contacts", icon: Phone },
-  { key: "house_notes", label: "House notes", icon: StickyNote },
-] as const;
+// Non-sensitive guide fields only. Access details (keys, codes, alarm, Wi-Fi)
+// and private pet fields are owner-only until Stage 2 adds the sitter unlock.
+const ICONS: Record<string, typeof Phone> = {
+  emergency_contacts: Phone,
+  out_of_hours_vet: Stethoscope,
+  house_notes: StickyNote,
+  bins_recycling: Trash2,
+  plants: Leaf,
+  appliances: WashingMachine,
+  heating_cooling: Thermometer,
+  parking: Car,
+  neighbours: Users,
+};
+const FIELDS = [...EMERGENCY_FIELDS, ...HOUSE_FIELDS].map((f) => ({ ...f, icon: ICONS[f.key] ?? StickyNote }));
 
 /**
  * Inline, read-only Welcome Guide shown on a listing to an accepted Nomad or
  * the owner. Collapsible; cached for offline; printable.
  */
 const InlineWelcomeGuide = ({
-  ownerUserId,
+  listingId,
   addressPrivate,
   listingTitle,
   location,
   sitStartDate,
   sitEndDate,
 }: {
-  ownerUserId: string;
+  listingId: string;
   /** listings.address_private — only ever passed in for the owner or an accepted Nomad. */
   addressPrivate?: string | null;
   /** The following are print-only context: this card has no other way to show
@@ -49,16 +61,20 @@ const InlineWelcomeGuide = ({
   sitStartDate?: string | null;
   sitEndDate?: string | null;
 }) => {
-  const { guide, isLoading, isOffline, cachedAt } = useWelcomeGuide(ownerUserId);
+  const { guide, isLoading, isOffline, cachedAt } = useWelcomeGuide(listingId);
   const [open, setOpen] = useState(false);
 
-  const filled: { key: string; label: string; icon: typeof FIELDS[number]["icon"]; value: string }[] = guide
-    ? FIELDS.filter((f) => (guide[f.key] || "").trim().length > 0).map((f) => ({
-        key: f.key as string,
-        label: f.label,
-        icon: f.icon,
-        value: guide[f.key] as string,
-      }))
+  const naFields = guide?.na_fields ?? [];
+  const filled: { key: string; label: string; icon: typeof Phone; value: string }[] = guide
+    ? FIELDS.flatMap((f) => {
+        const text = (guide[f.key] || "").trim();
+        if (text) return [{ key: f.key as string, label: f.label, icon: f.icon, value: text }];
+        // Marked "Not applicable": show e.g. "No parking" rather than a blank.
+        if ("naLabel" in f && f.naLabel && naFields.includes(f.key)) {
+          return [{ key: f.key as string, label: f.label, icon: f.icon, value: f.naLabel }];
+        }
+        return [];
+      })
     : [];
   if ((addressPrivate || "").trim().length > 0) {
     filled.push({ key: "address_private", label: "Exact Address", icon: MapPin, value: addressPrivate! });
