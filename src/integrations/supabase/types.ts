@@ -690,10 +690,12 @@ export type Database = {
           answered_from_guide: boolean
           asked_owner_at: string | null
           created_at: string
+          dismissed_at: string | null
           id: string
           is_emergency: boolean
           listing_id: string
           owner_answer: string | null
+          parent_question_id: string | null
           question: string
           sit_id: string
           sitter_user_id: string
@@ -705,10 +707,12 @@ export type Database = {
           answered_from_guide?: boolean
           asked_owner_at?: string | null
           created_at?: string
+          dismissed_at?: string | null
           id?: string
           is_emergency?: boolean
           listing_id: string
           owner_answer?: string | null
+          parent_question_id?: string | null
           question: string
           sit_id: string
           sitter_user_id: string
@@ -720,10 +724,12 @@ export type Database = {
           answered_from_guide?: boolean
           asked_owner_at?: string | null
           created_at?: string
+          dismissed_at?: string | null
           id?: string
           is_emergency?: boolean
           listing_id?: string
           owner_answer?: string | null
+          parent_question_id?: string | null
           question?: string
           sit_id?: string
           sitter_user_id?: string
@@ -735,6 +741,13 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guide_questions_parent_question_id_fkey"
+            columns: ["parent_question_id"]
+            isOneToOne: false
+            referencedRelation: "guide_questions"
             referencedColumns: ["id"]
           },
           {
@@ -2538,6 +2551,10 @@ export type Database = {
           onfido_check_id: string
         }[]
       }
+      get_owner_guide_questions: {
+        Args: { p_listing_id: string }
+        Returns: Json
+      }
       get_perk_discount_code: { Args: { p_slug: string }; Returns: string }
       get_pet_private_details: {
         Args: { p_listing_id: string }
@@ -2566,6 +2583,10 @@ export type Database = {
       is_active_member: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       is_owner_active: { Args: { _owner_user_id: string }; Returns: boolean }
+      link_guide_question: {
+        Args: { p_parent_id: string; p_question_id: string }
+        Returns: boolean
+      }
       listing_timezone: { Args: { p_listing_id: string }; Returns: string }
       log_sit_abandonment_flag: {
         Args: { p_note?: string; p_sit_id: string }
@@ -2602,6 +2623,10 @@ export type Database = {
       request_listing_timezone_backfill: { Args: never; Returns: undefined }
       respond_to_sit_reschedule: {
         Args: { p_accept: boolean; p_request_id: string }
+        Returns: Json
+      }
+      set_guide_question_dismissed: {
+        Args: { p_dismissed: boolean; p_question_id: string }
         Returns: Json
       }
       set_my_profile_phone: {
