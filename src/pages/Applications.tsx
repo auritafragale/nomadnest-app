@@ -135,20 +135,24 @@ const Applications = () => {
     status: "shortlisted" | "declined"
   ) => {
     try {
-      await updateStatus.mutateAsync({ 
-        applicationId: application.id, 
+      const { notified } = await updateStatus.mutateAsync({
+        applicationId: application.id,
         status,
         sitterUserId: application.sitter_user_id,
         listingTitle: application.listing?.title,
       });
       toast({
         title: status === "shortlisted" ? "Shortlisted" : "Declined",
-        description: `Application has been ${status}.`,
+        description: notified
+          ? `Application has been ${status}. The sitter has been notified.`
+          : `Application has been ${status}, but we couldn't notify the sitter.`,
+        variant: notified ? "default" : "destructive",
       });
     } catch (error) {
+      console.error("Updating application status failed:", error);
       toast({
-        title: "Error",
-        description: "Failed to update application status.",
+        title: "Couldn't update the application",
+        description: (error as { message?: string } | null)?.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
     }
@@ -156,15 +160,25 @@ const Applications = () => {
 
   const handleAccept = async (application: (typeof applications)[0]) => {
     try {
-      await acceptApplication.mutateAsync(application);
-      toast({
-        title: "Application Accepted",
-        description: "The sitter has been confirmed for this sit!",
-      });
+      const { warnings } = await acceptApplication.mutateAsync(application);
+      // One toast only (the toaster shows one at a time): warnings win.
+      toast(
+        warnings.length > 0
+          ? {
+              title: "Accepted, but something needs your attention",
+              description: warnings.join(" "),
+              variant: "destructive",
+            }
+          : {
+              title: "Application accepted",
+              description: "The sitter has been confirmed and notified.",
+            },
+      );
     } catch (error) {
+      console.error("Accepting application failed:", error);
       toast({
-        title: "Error",
-        description: "Failed to accept application.",
+        title: "Couldn't accept the application",
+        description: (error as { message?: string } | null)?.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
     }

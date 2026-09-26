@@ -21,7 +21,12 @@ interface NotificationData {
   skipInAppNotification?: boolean;
 }
 
-export const sendNotification = async (notification: NotificationData) => {
+/**
+ * Creates the in-app notification (unless skipped) and sends the email via
+ * send-notification-email; the push follows from the in-app row. Never
+ * throws — returns false if the call failed, so callers can tell the user.
+ */
+export const sendNotification = async (notification: NotificationData): Promise<boolean> => {
   try {
     const appUrl = window.location.origin;
     
@@ -37,10 +42,12 @@ export const sendNotification = async (notification: NotificationData) => {
 
     if (error) {
       console.error("Error sending notification:", error);
-    } else {
-      console.log("Notification sent successfully:", notification.type);
+      return false;
     }
+    console.log("Notification sent successfully:", notification.type);
+    return true;
   } catch (error) {
     console.error("Failed to send notification:", error);
+    return false;
   }
 };
