@@ -635,87 +635,6 @@ export type Database = {
         }
         Relationships: []
       }
-      guide_qa: {
-        Row: {
-          answer: string
-          arrival_only: boolean
-          created_at: string
-          id: string
-          listing_id: string
-          question: string
-          source_question_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          answer: string
-          arrival_only?: boolean
-          created_at?: string
-          id?: string
-          listing_id: string
-          question: string
-          source_question_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          answer?: string
-          arrival_only?: boolean
-          created_at?: string
-          id?: string
-          listing_id?: string
-          question?: string
-          source_question_id?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      guide_questions: {
-        Row: {
-          added_to_guide: boolean
-          answered_at: string | null
-          answered_from_guide: boolean
-          asked_owner_at: string | null
-          created_at: string
-          id: string
-          is_emergency: boolean
-          listing_id: string
-          owner_answer: string | null
-          question: string
-          sit_id: string
-          sitter_user_id: string
-          updated_at: string
-        }
-        Insert: {
-          added_to_guide?: boolean
-          answered_at?: string | null
-          answered_from_guide?: boolean
-          asked_owner_at?: string | null
-          created_at?: string
-          id?: string
-          is_emergency?: boolean
-          listing_id: string
-          owner_answer?: string | null
-          question: string
-          sit_id: string
-          sitter_user_id: string
-          updated_at?: string
-        }
-        Update: {
-          added_to_guide?: boolean
-          answered_at?: string | null
-          answered_from_guide?: boolean
-          asked_owner_at?: string | null
-          created_at?: string
-          id?: string
-          is_emergency?: boolean
-          listing_id?: string
-          owner_answer?: string | null
-          question?: string
-          sit_id?: string
-          sitter_user_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       guide_unlock_notifications: {
         Row: {
           kind: string
@@ -2446,14 +2365,6 @@ export type Database = {
         }[]
       }
       decline_application: { Args: { p_application_id: string }; Returns: Json }
-      answer_guide_question: {
-        Args: { p_answer: string; p_arrival_only?: boolean; p_question_id: string }
-        Returns: Json
-      }
-      mark_guide_question_asked: {
-        Args: { p_question_id: string }
-        Returns: undefined
-      }
       get_guide_completion: { Args: { p_listing_id: string }; Returns: Json }
       get_listing_private_address: {
         Args: { p_listing_id: string }
