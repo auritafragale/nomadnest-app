@@ -48,6 +48,10 @@ export interface Message {
   read_at: string | null;
   /** Set when the message was sent from Ask the Nest (a Welcome Guide question). */
   guide_question_id?: string | null;
+  /** Translation for the recipient (chat-translate); the sender sees the original. */
+  translated_body?: string | null;
+  translated_lang?: string | null;
+  message_lang?: string | null;
 }
 
 export const useConversations = () => {
@@ -219,7 +223,14 @@ export const useMessages = (conversationIds: string[]) => {
               if (!old) return [];
               return old.map((m) =>
                 m.id === updatedMessage.id
-                  ? { ...m, read_at: updatedMessage.read_at }
+                  ? {
+                      ...m,
+                      read_at: updatedMessage.read_at,
+                      // The translation arrives a moment after the message.
+                      translated_body: updatedMessage.translated_body,
+                      translated_lang: updatedMessage.translated_lang,
+                      message_lang: updatedMessage.message_lang,
+                    }
                   : m
               );
             }

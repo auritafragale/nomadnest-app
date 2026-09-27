@@ -7,7 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, isToday, isYesterday } from "date-fns";
-import { Send, ArrowLeft, Camera, Check, CheckCheck, Flag, Bone, Pill, Footprints, ImagePlus, Loader2, X } from "lucide-react";
+import { Send, ArrowLeft, Camera, Check, CheckCheck, Flag, Bone, Pill, Footprints, ImagePlus, Languages, Loader2, X } from "lucide-react";
+import { languageLabel } from "@/lib/dailyUpdate";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,6 +89,16 @@ export const MessageThread = ({
   // Current user is the sitter in this conversation?
   const isCurrentUserSitter = !!conversation && !!user && conversation.sitter_user_id === user.id;
   const isCurrentUserOwner = !!conversation && !!user && conversation.owner_user_id === user.id;
+
+  // Translated messages the reader switched back to the original.
+  const [showingOriginal, setShowingOriginal] = useState<Set<string>>(new Set());
+  const toggleOriginal = (id: string) =>
+    setShowingOriginal((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   // Private chat photos: signed URLs for every photo message in view.
   const chatPhotoPaths = useMemo(
@@ -472,7 +483,29 @@ export const MessageThread = ({
                         : "bg-muted text-foreground"
                     )}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words">{message.body}</p>
+                    {(() => {
+                      // The recipient reads the translation (their language); the
+                      // sender always sees what they wrote.
+                      const translated = !isOwn && !!message.translated_body;
+                      const original = !translated || showingOriginal.has(message.id);
+                      return (
+                        <>
+                          <p className="text-sm whitespace-pre-wrap break-words">
+                            {original ? message.body : message.translated_body}
+                          </p>
+                          {translated && (
+                            <button
+                              type="button"
+                              onClick={() => toggleOriginal(message.id)}
+                              className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium opacity-75 hover:underline hover:opacity-100"
+                            >
+                              <Languages className="h-3 w-3" aria-hidden="true" />
+                              {original ? `See in ${languageLabel(message.translated_lang) ?? "your language"}` : "See original"}
+                            </button>
+                          )}
+                        </>
+                      );
+                    })()}
                     <div
                       className={cn(
                         "flex items-center justify-end gap-1 mt-1",

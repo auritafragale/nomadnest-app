@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, BookOpen, CheckCircle2, PawPrint } from "lucide-react";
+import { ArrowLeft, BookOpen, CalendarClock, CheckCircle2, PawPrint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { daysBetween, formatDay } from "@/lib/dailyUpdate";
+import { daysBetween, formatDay, updatePreferenceText } from "@/lib/dailyUpdate";
 import type { SitUpdateContext } from "@/hooks/useDailyUpdates";
 
 const PetAvatars = ({ pets }: { pets: SitUpdateContext["pets"] }) => (
@@ -40,6 +40,8 @@ export const SitProgressHeader = ({ context, sentToday }: { context: SitUpdateCo
   const progress = inSit ? Math.min(100, Math.round((context.day_number! / context.total_days) * 100)) : beforeSit ? 0 : 100;
   const names = petNames(context.pets);
   const other = isSitter ? context.owner.first_name : context.sitter.first_name;
+  // Only nudge on days an update is expected (the owner's update frequency).
+  const dueToday = context.schedule ? context.schedule.due_today : !sentToday;
 
   const title = inSit
     ? `Day ${context.day_number} of ${context.total_days}`
@@ -81,7 +83,7 @@ export const SitProgressHeader = ({ context, sentToday }: { context: SitUpdateCo
           <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
         </div>
 
-        {inSit && (
+        {inSit && (sentToday || dueToday) && (
           <p
             className={cn(
               "mt-4 flex items-center gap-2 rounded-2xl px-3 py-2 text-sm",
@@ -104,6 +106,13 @@ export const SitProgressHeader = ({ context, sentToday }: { context: SitUpdateCo
                 No update from {other} yet today.
               </>
             )}
+          </p>
+        )}
+
+        {isSitter && context.schedule && !context.other_member_left && (inSit || beforeSit) && (
+          <p className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+            <CalendarClock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            {updatePreferenceText(other, context.schedule)}
           </p>
         )}
 

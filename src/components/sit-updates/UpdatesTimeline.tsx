@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Languages, Loader2, MessageCircle, Send, Sparkles } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Heart, Languages, Loader2, MessageCircle, Pill, Send, Sparkles } from "lucide-react";
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -42,20 +43,15 @@ export const UpdatePhotos = ({ urls }: { urls: string[] }) => {
   if (urls.length === 0) return null;
   return (
     <>
-      <div
-        className={cn(
-          "-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:overflow-visible sm:px-0",
-          urls.length === 1 ? "sm:grid-cols-1" : "sm:grid-cols-2",
-        )}
-      >
+      {/* A grid, not a sideways row: the day cards themselves swipe sideways. */}
+      <div className={cn("grid gap-2", urls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
         {urls.map((url, i) => (
           <button
             key={url}
             type="button"
             onClick={() => setOpen(url)}
             className={cn(
-              "shrink-0 snap-center overflow-hidden rounded-2xl bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-              urls.length === 1 ? "w-full" : "w-[80%] sm:w-full",
+              "w-full overflow-hidden rounded-2xl bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
             )}
             aria-label={`Open photo ${i + 1}`}
           >
@@ -194,7 +190,29 @@ const UpdateItem = ({
   );
 };
 
-/** One card per day, newest first, like a story feed. */
+/** Meds line for a day, for sits where a pet needs medication. */
+const MedsLine = ({ day, items, today }: { day: string; items: SitCheckin[]; today: string }) => {
+  const logged = items.some((u) => (u.chips ?? []).includes("meds") || u.kind === "meds_given");
+  const isToday = day === today;
+  const text = logged ? (isToday ? "Meds logged today" : "Meds logged") : isToday ? "Meds not logged yet" : "No meds logged this day";
+  return (
+    <p
+      className={cn(
+        "mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+        logged ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300" : "bg-muted text-muted-foreground",
+      )}
+    >
+      {logged ? <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> : <Pill className="h-3.5 w-3.5" aria-hidden="true" />}
+      {text}
+    </p>
+  );
+};
+
+/**
+ * One card per day, newest first, as a swipeable row: touch swipe, mouse drag,
+ * arrow keys and previous/next buttons (the shared Carousel), with
+ * "Day 3 of 7" above and dots below.
+ */
 export const UpdatesTimeline = ({ updates, context }: { updates: SitCheckin[]; context: SitUpdateContext }) => {
   const days = useMemo(() => {
     const map = new Map<string, SitCheckin[]>();
@@ -205,6 +223,21 @@ export const UpdatesTimeline = ({ updates, context }: { updates: SitCheckin[]; c
     return [...map.entries()].sort(([a], [b]) => b.localeCompare(a));
   }, [updates]);
   const { data: photoUrls = {} } = useUpdatePhotoUrls(updates.flatMap((u) => u.photo_paths ?? []));
+  const needsMeds = context.pets.some((p) => p.needs_medication);
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    if (!api) return;
+    const onSelect = () => setCurrent(api.selectedScrollSnap());
+    onSelect();
+    api.on("select", onSelect);
+    api.on("reInit", onSelect);
+    return () => {
+      api.off("select", onSelect);
+      api.off("reInit", onSelect);
+    };
+  }, [api]);
 
   if (updates.length === 0) {
     return (
@@ -216,27 +249,96 @@ export const UpdatesTimeline = ({ updates, context }: { updates: SitCheckin[]; c
     );
   }
 
+  const dayLabel = (day: string) => {
+    const n = daysBetween(context.start_date, day) + 1;
+    return n >= 1 && n <= context.total_days ? `Day ${n} of ${context.total_days}` : null;
+  };
+  const currentDay = days[Math.min(current, days.length - 1)]?.[0];
+
   return (
-    <ol className="space-y-5">
-      {days.map(([day, items]) => {
-        const n = daysBetween(context.start_date, day) + 1;
-        const label = n >= 1 && n <= context.total_days ? `Day ${n}` : null;
-        return (
-          <li key={day} className="rounded-3xl border bg-card p-4 shadow-sm sm:p-5">
-            <h3 className="mb-3 flex items-baseline gap-2">
-              {label && <span className="font-display text-lg font-bold">{label}</span>}
-              <span className="text-sm text-muted-foreground">{formatDay(day)}</span>
-            </h3>
-            <div className="space-y-6 divide-y">
-              {items.map((u, i) => (
-                <div key={u.id} className={cn(i > 0 && "pt-6")}>
-                  <UpdateItem update={u} context={context} photoUrls={photoUrls} />
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium" aria-live="polite">
+          {currentDay && (
+            <>
+              {dayLabel(currentDay) && <span className="font-display font-bold">{dayLabel(currentDay)}</span>}
+              {dayLabel(currentDay) ? " · " : ""}
+              <span className="text-muted-foreground">{formatDay(currentDay)}</span>
+            </>
+          )}
+        </p>
+        {days.length > 1 && (
+          <div className="flex gap-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-full"
+              onClick={() => api?.scrollPrev()}
+              disabled={current === 0}
+              aria-label="Newer day"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-full"
+              onClick={() => api?.scrollNext()}
+              disabled={current >= days.length - 1}
+              aria-label="Older day"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <Carousel setApi={setApi} opts={{ align: "start" }} aria-label="Daily updates, newest first">
+        <CarouselContent className="-ml-3">
+          {days.map(([day, items]) => (
+            <CarouselItem
+              key={day}
+              className="basis-[92%] pl-3 sm:basis-full"
+              aria-label={`${dayLabel(day) ?? "Update"}, ${formatDay(day)}`}
+            >
+              <article className="max-h-[75vh] overflow-y-auto rounded-3xl border bg-card p-4 shadow-sm sm:p-5">
+                <h3 className="mb-3 flex items-baseline gap-2">
+                  {dayLabel(day) && <span className="font-display text-lg font-bold">{dayLabel(day)?.replace(/ of \d+$/, "")}</span>}
+                  <span className="text-sm text-muted-foreground">{formatDay(day)}</span>
+                </h3>
+                {needsMeds && <MedsLine day={day} items={items} today={context.today} />}
+                <div className="space-y-6 divide-y">
+                  {items.map((u, i) => (
+                    <div key={u.id} className={cn(i > 0 && "pt-6")}>
+                      <UpdateItem update={u} context={context} photoUrls={photoUrls} />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </li>
-        );
-      })}
-    </ol>
+              </article>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
+
+      {days.length > 1 && (
+        <div className="flex flex-wrap justify-center gap-1.5" role="group" aria-label="Choose a day">
+          {days.map(([day], i) => (
+            <button
+              key={day}
+              type="button"
+              onClick={() => api?.scrollTo(i)}
+              aria-label={`${dayLabel(day) ?? "Update"}, ${formatDay(day)}`}
+              aria-current={i === current ? "true" : undefined}
+              className={cn(
+                "h-2 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                i === current ? "w-5 bg-primary" : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50",
+              )}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 };

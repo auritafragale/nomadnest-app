@@ -22,7 +22,10 @@ const SitDetail = () => {
 
   if (!authLoading && !user) return <Navigate to="/auth" replace />;
 
-  const sentToday = !!context && updates.some((u) => u.local_day === context.today);
+  const todays = context ? updates.filter((u) => u.local_day === context.today) : [];
+  const sentToday = todays.length > 0;
+  // Chips already sent today (old one-tap "Meds Given" check-ins count as meds).
+  const todayChips = todays.flatMap((u) => [...(u.chips ?? []), ...(u.kind === "meds_given" ? ["meds"] : [])]);
   // During the sit's dates only (in the home's time zone).
   const showComposer = !!context?.can_post && context.day_number !== null;
 
@@ -40,7 +43,7 @@ const SitDetail = () => {
         ) : (
           <div className="space-y-6 pt-2">
             <SitProgressHeader context={context} sentToday={sentToday} />
-            {showComposer && <DailyUpdateComposer context={context} />}
+            {showComposer && <DailyUpdateComposer context={context} todayChips={todayChips} />}
             <section aria-labelledby="updates-heading" className="space-y-3">
               <h2 id="updates-heading" className="font-display text-xl font-bold">
                 {context.role === "owner" ? `Updates from ${context.sitter.first_name}` : "Your updates"}

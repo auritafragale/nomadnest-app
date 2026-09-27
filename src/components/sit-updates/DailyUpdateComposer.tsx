@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, ImagePlus, Loader2, Send, Sparkles, Undo2, X } from "lucide-react";
+import { Camera, ImagePlus, Loader2, Pill, Send, Sparkles, Undo2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +25,14 @@ const NOTE_MAX = 1000;
 const FLAG_NOTE_MAX = 500;
 
 /** The Nomad's "today's update": photos first, quick taps, a short message. */
-export const DailyUpdateComposer = ({ context }: { context: SitUpdateContext }) => {
+export const DailyUpdateComposer = ({
+  context,
+  todayChips = [],
+}: {
+  context: SitUpdateContext;
+  /** Chips already sent in today's updates (for the meds reminder). */
+  todayChips?: string[];
+}) => {
   const owner = context.owner.first_name;
   const needsMeds = context.pets.some((p) => p.needs_medication);
   const aiAvailable = useDailyUpdateAiAvailable();
@@ -44,7 +51,12 @@ export const DailyUpdateComposer = ({ context }: { context: SitUpdateContext }) 
   const previews = useRef<string[]>([]);
   useEffect(() => () => previews.current.forEach((u) => URL.revokeObjectURL(u)), []);
 
-  const chipOptions = UPDATE_CHIPS.filter((c) => c.code !== "meds" || needsMeds);
+  // Meds given only when a pet needs medication, and then first.
+  const chipOptions = needsMeds
+    ? [...UPDATE_CHIPS.filter((c) => c.code === "meds"), ...UPDATE_CHIPS.filter((c) => c.code !== "meds")]
+    : UPDATE_CHIPS.filter((c) => c.code !== "meds");
+  const medsPet = context.pets.find((p) => p.needs_medication)?.name;
+  const medsMissing = needsMeds && !todayChips.includes("meds") && !chips.includes("meds");
   const uploading = photos.some((p) => p.uploading);
   const readyPaths = photos.map((p) => p.path).filter((p): p is string => !!p);
   const flagged = chips.includes("flag");
@@ -217,6 +229,12 @@ export const DailyUpdateComposer = ({ context }: { context: SitUpdateContext }) 
             );
           })}
         </div>
+        {medsMissing && (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Pill className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+            {medsPet ? `${medsPet}'s meds aren't logged today yet.` : "Meds aren't logged today yet."}
+          </p>
+        )}
         {flagged && (
           <div className="space-y-1.5 rounded-2xl border border-amber-500/40 bg-amber-500/5 p-3">
             <label htmlFor="flag-note" className="text-sm font-medium">What should {owner} know?</label>

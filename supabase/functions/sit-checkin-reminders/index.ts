@@ -10,45 +10,8 @@ const corsHeaders = {
 
 const JOB_NAME = "sit-checkin-reminders";
 const LEASE_SECONDS = 600;
-const REMINDER_HOUR = 18; // 6pm local
-const FALLBACK_TZ = "UTC";
-
-/**
- * Returns the current hour (0-23) in the given IANA timezone.
- */
-function localHour(tz: string): number {
-  try {
-    const fmt = new Intl.DateTimeFormat("en-US", {
-      timeZone: tz,
-      hour: "numeric",
-      hour12: false,
-    });
-    const parts = fmt.formatToParts(new Date());
-    const hourPart = parts.find((p) => p.type === "hour");
-    if (!hourPart) return -1;
-    // Intl can return "24" for midnight in some envs.
-    const h = parseInt(hourPart.value, 10);
-    return h === 24 ? 0 : h;
-  } catch {
-    return -1;
-  }
-}
-
-/**
- * Returns the YYYY-MM-DD date string for "today" in the given timezone.
- */
-function localDateString(tz: string): string {
-  try {
-    return new Intl.DateTimeFormat("en-CA", {
-      timeZone: tz,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date());
-  } catch {
-    return new Date().toISOString().split("T")[0];
-  }
-}
+// The 6pm local time and the owner's update frequency are applied in SQL
+// (update_reminders_due / sit_update_due), shared with the sit page.
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -89,104 +52,36 @@ const handler = async (req: Request): Promise<Response> => {
   const summary = { remindersSent: 0, skipped: 0, errors: 0 };
 
   try {
-    // Only consider sits that are currently happening.
-    const { data: sits, error: sitsError } = await supabase
-      .from("sits")
-      .select(
-        "id, sitter_user_id, owner_user_id, listing:listing_id(id, title, timezone)",
-      )
-      .eq("status", "in_progress")
-      .limit(500);
+    // Which sitters to remind now: public.update_reminders_due() applies the
+    // owner's update frequency (sit_update_due: daily, every few days with a
+    // closing update, weekly with a closing update, or only when needed), the
+    // 6pm local time, "nothing sent today" and one reminder per sit per day.
+    const { data: due, error: dueError } = await supabase.rpc("update_reminders_due");
+    if (dueError) throw dueError;
 
-    if (sitsError) throw sitsError;
-
-    for (const sit of sits ?? []) {
-      const listing = (sit as any).listing;
-      const tz = listing?.timezone || FALLBACK_TZ;
-      const sitterId = (sit as any).sitter_user_id;
-      const sitId = (sit as any).id;
-      const listingTitle = listing?.title ?? "your sit";
-
-      // Only send when it is 6pm in the home's timezone.
-      if (localHour(tz) !== REMINDER_HOUR) {
-        summary.skipped++;
-        continue;
-      }
-
-      const todayStr = localDateString(tz);
-
-      // Once-per-day guard: skip if we already sent a reminder for this sit
-      // within the last 20 hours. A rolling window avoids reconstructing
-      // calendar-day boundaries from a local date string against a UTC
-      // column — that previously misaligned for timezones behind UTC, where
-      // `${todayStr}T00:00:00Z` doesn't actually correspond to the start of
-      // "today" in the home's timezone.
-      const { data: existingReminder } = await supabase
-        .from("notifications")
-        .select("id")
-        .eq("user_id", sitterId)
-        .eq("type", "sit_checkin_reminder")
-        .gte("created_at", new Date(Date.now() - 20 * 3600_000).toISOString())
-        .limit(1);
-
-      if (existingReminder && existingReminder.length > 0) {
-        summary.skipped++;
-        continue;
-      }
-
-      // Skip if the nomad already posted a check-in today.
-      // Fetch the last 48h of check-ins and filter in JS by local date.
-      const since = new Date(Date.now() - 48 * 3600_000).toISOString();
-      const { data: recentCheckins } = await supabase
-        .from("sit_checkins")
-        .select("created_at")
-        .eq("sit_id", sitId)
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      const alreadyCheckedInToday = (recentCheckins ?? []).some((c: any) => {
-        try {
-          const checkinDate = new Intl.DateTimeFormat("en-CA", {
-            timeZone: tz,
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-          }).format(new Date(c.created_at));
-          return checkinDate === todayStr;
-        } catch {
-          return false;
-        }
+    for (const row of (due ?? []) as {
+      sit_id: string;
+      sitter_user_id: string;
+      owner_first_name: string;
+      listing_title: string;
+      style: string;
+    }[]) {
+      const daily = row.style === "daily";
+      const { error: notifError } = await supabase.from("notifications").insert({
+        user_id: row.sitter_user_id,
+        type: "sit_checkin_reminder",
+        title: daily ? "Time for today's update" : `${row.owner_first_name} would love an update today`,
+        message: daily
+          ? `Share a photo and a few taps from ${row.listing_title}.`
+          : `${row.owner_first_name} would love an update from ${row.listing_title} today.`,
+        data: { url: `/sits/${row.sit_id}`, sit_id: row.sit_id },
       });
-
-      if (alreadyCheckedInToday) {
-        summary.skipped++;
-        continue;
-      }
-
-      // Deep link to the sit's updates page, where today's update is sent.
-      const url = `/sits/${sitId}`;
-
-      // Insert the in-app notification.
-      const { error: notifError } = await supabase
-        .from("notifications")
-        .insert({
-          user_id: sitterId,
-          type: "sit_checkin_reminder",
-          title: "Time for today's update",
-          message: `Share a photo and a few taps from ${listingTitle}.`,
-          data: { url, sit_id: sitId },
-        });
-
       if (notifError) {
-        console.error("Failed to insert reminder notification", sitId, redact(notifError));
+        console.error("Failed to insert reminder notification", row.sit_id, redact(notifError));
         summary.errors++;
         continue;
       }
-
-      // Push is sent automatically by the AFTER INSERT trigger on
-      // public.notifications (see send-push-notification), from the row above.
-
+      // Push is sent by the AFTER INSERT trigger on public.notifications.
       summary.remindersSent++;
     }
 

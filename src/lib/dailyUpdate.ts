@@ -59,3 +59,32 @@ export const formatDay = (day: string) =>
 /** Whole days between two YYYY-MM-DD dates. */
 export const daysBetween = (from: string, to: string) =>
   Math.round((new Date(`${to}T12:00:00`).getTime() - new Date(`${from}T12:00:00`).getTime()) / 86_400_000);
+
+/** When the next update is due, in words: "today", "Thursday" or "Mon 20 Oct". */
+export const dueDayLabel = (day: string, today: string) => {
+  const n = daysBetween(today, day);
+  if (n <= 0) return "today";
+  if (n === 1) return "tomorrow";
+  if (n <= 6) return new Date(`${day}T12:00:00`).toLocaleDateString("en-GB", { weekday: "long" });
+  return formatDay(day);
+};
+
+/** The owner's update preference as one sentence for the sitter. */
+export const updatePreferenceText = (
+  owner: string,
+  schedule: { style: string; next_due: string | null; next_due_is_last_day: boolean; today: string },
+) => {
+  const next = schedule.next_due
+    ? ` Next one due ${dueDayLabel(schedule.next_due, schedule.today)}${schedule.next_due_is_last_day ? " (last day)" : ""}.`
+    : "";
+  switch (schedule.style) {
+    case "every_few_days":
+      return `${owner} likes updates every few days.${next}`;
+    case "weekly":
+      return `${owner} likes a weekly update.${next}`;
+    case "as_needed":
+      return `${owner} would like updates only when there's something to share.`;
+    default:
+      return `${owner} likes a daily update.`;
+  }
+};

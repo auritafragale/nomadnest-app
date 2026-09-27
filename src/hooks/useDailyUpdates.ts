@@ -32,6 +32,22 @@ export interface SitUpdateContext {
   owner: { first_name: string; avatar_url: string | null };
   sitter: { first_name: string; avatar_url: string | null };
   pets: { name: string | null; type: string | null; photo: string | null; needs_medication: boolean }[];
+  /** The owner's update frequency applied to this sit (sit_update_due in SQL). */
+  schedule?: UpdateSchedule | null;
+}
+
+export interface UpdateSchedule {
+  style: "daily" | "every_few_days" | "weekly" | "as_needed";
+  interval_days: number | null;
+  today: string;
+  last_update_day: string | null;
+  sent_today: boolean;
+  /** Next day an update is expected (YYYY-MM-DD), or null. */
+  next_due: string | null;
+  /** The next due day is the sit's last day (closing update). */
+  next_due_is_last_day: boolean;
+  /** An update is expected today and none has been sent. */
+  due_today: boolean;
 }
 
 /** Everything the progress header needs; null if the caller isn't on this sit. */
