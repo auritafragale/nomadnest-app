@@ -2344,6 +2344,8 @@ export type Database = {
         Args: { p_job_name: string; p_lease_seconds: number }
         Returns: boolean
       }
+      admin_checkin_photo_cleanup_preview: { Args: never; Returns: Json }
+      admin_clear_public_checkin_photo_refs: { Args: never; Returns: Json }
       admin_dashboard_stats: {
         Args: never
         Returns: {
