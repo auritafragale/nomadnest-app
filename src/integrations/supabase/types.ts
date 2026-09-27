@@ -371,7 +371,7 @@ export type Database = {
           created_at: string
           id: string
           note: string | null
-          reporter_user_id: string
+          reporter_user_id: string | null
           review_id: string | null
           sit_id: string | null
           subject_id: string
@@ -383,7 +383,7 @@ export type Database = {
           created_at?: string
           id?: string
           note?: string | null
-          reporter_user_id: string
+          reporter_user_id?: string | null
           review_id?: string | null
           sit_id?: string | null
           subject_id: string
@@ -395,7 +395,7 @@ export type Database = {
           created_at?: string
           id?: string
           note?: string | null
-          reporter_user_id?: string
+          reporter_user_id?: string | null
           review_id?: string | null
           sit_id?: string | null
           subject_id?: string
@@ -578,6 +578,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      deleted_accounts: {
+        Row: {
+          deleted_at: string
+          listing_ids: string[]
+          notes: string | null
+          onfido_applicant_deleted: boolean | null
+          safety_purge_after: string
+          safety_purged_at: string | null
+          storage_files_deleted: number | null
+          stripe_customers_deleted: number | null
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string
+          listing_ids?: string[]
+          notes?: string | null
+          onfido_applicant_deleted?: boolean | null
+          safety_purge_after?: string
+          safety_purged_at?: string | null
+          storage_files_deleted?: number | null
+          stripe_customers_deleted?: number | null
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string
+          listing_ids?: string[]
+          notes?: string | null
+          onfido_applicant_deleted?: boolean | null
+          safety_purge_after?: string
+          safety_purged_at?: string | null
+          storage_files_deleted?: number | null
+          stripe_customers_deleted?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       favorites: {
         Row: {
@@ -914,34 +950,37 @@ export type Database = {
       manual_id_verifications: {
         Row: {
           created_at: string
+          documents_deleted_at: string | null
           id: string
-          id_photo_path: string
+          id_photo_path: string | null
           notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
-          selfie_path: string
+          selfie_path: string | null
           status: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          documents_deleted_at?: string | null
           id?: string
-          id_photo_path: string
+          id_photo_path?: string | null
           notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
-          selfie_path: string
+          selfie_path?: string | null
           status?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          documents_deleted_at?: string | null
           id?: string
-          id_photo_path?: string
+          id_photo_path?: string | null
           notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
-          selfie_path?: string
+          selfie_path?: string | null
           status?: string
           user_id?: string
         }
@@ -1481,7 +1520,7 @@ export type Database = {
           evidence_paths: string[] | null
           id: string
           reason: string
-          reporter_user_id: string
+          reporter_user_id: string | null
           status: Database["public"]["Enums"]["report_status"]
           target_id: string
           target_type: Database["public"]["Enums"]["report_target_type"]
@@ -1493,7 +1532,7 @@ export type Database = {
           evidence_paths?: string[] | null
           id?: string
           reason: string
-          reporter_user_id: string
+          reporter_user_id?: string | null
           status?: Database["public"]["Enums"]["report_status"]
           target_id: string
           target_type: Database["public"]["Enums"]["report_target_type"]
@@ -1505,7 +1544,7 @@ export type Database = {
           evidence_paths?: string[] | null
           id?: string
           reason?: string
-          reporter_user_id?: string
+          reporter_user_id?: string | null
           status?: Database["public"]["Enums"]["report_status"]
           target_id?: string
           target_type?: Database["public"]["Enums"]["report_target_type"]
@@ -1602,8 +1641,8 @@ export type Database = {
           rating_reliability: number | null
           rating_respect_home: number | null
           reviewee_user_id: string
-          reviewer_user_id: string
-          sit_id: string
+          reviewer_user_id: string | null
+          sit_id: string | null
           text: string | null
         }
         Insert: {
@@ -1627,8 +1666,8 @@ export type Database = {
           rating_reliability?: number | null
           rating_respect_home?: number | null
           reviewee_user_id: string
-          reviewer_user_id: string
-          sit_id: string
+          reviewer_user_id?: string | null
+          sit_id?: string | null
           text?: string | null
         }
         Update: {
@@ -1652,8 +1691,8 @@ export type Database = {
           rating_reliability?: number | null
           rating_respect_home?: number | null
           reviewee_user_id?: string
-          reviewer_user_id?: string
-          sit_id?: string
+          reviewer_user_id?: string | null
+          sit_id?: string | null
           text?: string | null
         }
         Relationships: [
@@ -2313,6 +2352,13 @@ export type Database = {
     }
     Functions: {
       accept_application: { Args: { p_application_id: string }; Returns: Json }
+      account_storage_objects: {
+        Args: { p_user_id: string }
+        Returns: {
+          bucket_id: string
+          name: string
+        }[]
+      }
       acquire_job_lease: {
         Args: { p_job_name: string; p_lease_seconds: number }
         Returns: boolean
@@ -2334,6 +2380,10 @@ export type Database = {
           published_listings: number
           total_members: number
         }[]
+      }
+      admin_decide_id_verification: {
+        Args: { p_decision: string; p_notes?: string; p_submission_id: string }
+        Returns: string
       }
       admin_get_member_contact: { Args: { p_user_id: string }; Returns: Json }
       admin_get_pending_counts: {
@@ -2538,6 +2588,22 @@ export type Database = {
         }[]
       }
       decline_application: { Args: { p_application_id: string }; Returns: Json }
+      expired_id_documents: {
+        Args: never
+        Returns: {
+          id: string
+          id_photo_path: string
+          selfie_path: string
+        }[]
+      }
+      export_account_data: { Args: { p_user_id: string }; Returns: Json }
+      export_account_files: {
+        Args: { p_user_id: string }
+        Returns: {
+          bucket_id: string
+          name: string
+        }[]
+      }
       get_community_warnings: {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: string[]
@@ -2641,6 +2707,7 @@ export type Database = {
         Args: { p_question_id: string }
         Returns: undefined
       }
+      mark_id_documents_deleted: { Args: { p_ids: string[] }; Returns: number }
       member_review_rates: {
         Args: { p_user_ids: string[] }
         Returns: {
@@ -2655,7 +2722,9 @@ export type Database = {
         Returns: undefined
       }
       notify_guide_unlocks: { Args: never; Returns: number }
+      prepare_account_deletion: { Args: { p_user_id: string }; Returns: Json }
       profile_is_discoverable: { Args: { p_user_id: string }; Returns: boolean }
+      purge_expired_safety_records: { Args: never; Returns: Json }
       random_point_near: {
         Args: { p_lat: number; p_lng: number; p_radius_m?: number }
         Returns: {
@@ -2671,6 +2740,7 @@ export type Database = {
       remove_guide_question: { Args: { p_question_id: string }; Returns: Json }
       request_is_end_user: { Args: never; Returns: boolean }
       request_listing_timezone_backfill: { Args: never; Returns: undefined }
+      request_privacy_retention: { Args: never; Returns: undefined }
       respond_to_sit_reschedule: {
         Args: { p_accept: boolean; p_request_id: string }
         Returns: Json
