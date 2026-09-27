@@ -9,11 +9,21 @@ import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
+type Kind = "checkin" | "chat";
+
 interface Preview {
   files: { name: string; size: number | null; created_at: string }[];
-  checkins: { id: string; sit_id: string; photo_url: string; in_checkins_folder: boolean }[];
-  chat_messages: number;
+  /** kind "checkin" */
+  checkins?: { id: string; sit_id: string; photo_url: string; in_checkins_folder: boolean }[];
+  chat_messages?: number;
+  /** kind "chat" */
+  messages?: { id: string; conversation_id: string; created_at: string }[];
 }
+
+const COPY: Record<Kind, { title: string; folder: string }> = {
+  checkin: { title: "Old check-in photos in the public bucket", folder: "checkins" },
+  chat: { title: "Old chat photos in the public bucket", folder: "chat-photos" },
+};
 
 const invoke = async (body: Record<string, unknown>) => {
   const { data, error } = await supabase.functions.invoke("cleanup-checkin-photos", { body });
@@ -25,21 +35,22 @@ const invoke = async (body: Record<string, unknown>) => {
 };
 
 /**
- * One-off: review, then delete, the old check-in photos that were stored in
- * the public listing-images bucket. Only paths with a "checkins" folder are
- * deleted; listing photos are never touched.
+ * One-off: review, then delete, old private photos that were stored in the
+ * public listing-images bucket. Only paths in that kind's folder are deleted;
+ * listing photos are never touched.
  */
-const AdminCheckinPhotoCleanup = () => {
+const PhotoCleanupPage = ({ kind }: { kind: Kind }) => {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [loading, setLoading] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const copy = COPY[kind];
 
   const loadPreview = async () => {
     setLoading(true);
     setResult(null);
     try {
-      setPreview((await invoke({ confirm: false })) as unknown as Preview);
+      setPreview((await invoke({ kind, confirm: false })) as unknown as Preview);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Preview failed");
     } finally {
@@ -51,7 +62,7 @@ const AdminCheckinPhotoCleanup = () => {
     if (!preview) return;
     setLoading(true);
     try {
-      const done = await invoke({ confirm: true, expected_files: preview.files.length });
+      const done = await invoke({ kind, confirm: true, expected_files: preview.files.length });
       setResult(done);
       setPreview(null);
       setConfirmText("");
@@ -63,7 +74,10 @@ const AdminCheckinPhotoCleanup = () => {
     }
   };
 
-  const outside = preview?.checkins.filter((c) => !c.in_checkins_folder) ?? [];
+  const checkins = preview?.checkins ?? [];
+  const outside = checkins.filter((c) => !c.in_checkins_folder);
+  const messageCount = kind === "chat" ? preview?.messages?.length ?? 0 : preview?.chat_messages ?? 0;
+  const nothingToDo = !!preview && preview.files.length === 0 && checkins.length === 0 && messageCount === 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -72,9 +86,9 @@ const AdminCheckinPhotoCleanup = () => {
         <AdminNav />
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Old check-in photos in the public bucket</CardTitle>
+            <CardTitle>{copy.title}</CardTitle>
             <CardDescription>
-              Step 1: preview. Nothing changes until you confirm in step 2. Only files in a "checkins" folder of
+              Step 1: preview. Nothing changes until you confirm in step 2. Only files in a "{copy.folder}" folder of
               listing-images are deleted. Listing photos are never touched.
             </CardDescription>
           </CardHeader>
@@ -114,8 +128,14 @@ const AdminCheckinPhotoCleanup = () => {
 
                 <div className="space-y-1 text-sm">
                   <h3 className="font-semibold">References to clear</h3>
-                  <p>Check-ins with a public photo_url: {preview.checkins.length}</p>
-                  <p>Chat check-in cards with a public photo: {preview.chat_messages}</p>
+                  {kind === "checkin" ? (
+                    <>
+                      <p>Check-ins with a public photo_url: {checkins.length}</p>
+                      <p>Chat check-in cards with a public photo: {messageCount}</p>
+                    </>
+                  ) : (
+                    <p>Photo messages that become "[Photo removed]" (caption kept): {messageCount}</p>
+                  )}
                   {outside.length > 0 && (
                     <div className="mt-2 rounded-xl border border-amber-500/40 bg-amber-500/5 p-3">
                       <p className="font-medium">
@@ -138,11 +158,7 @@ const AdminCheckinPhotoCleanup = () => {
                   </p>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="DELETE" className="sm:max-w-40" />
-                    <Button
-                      variant="destructive"
-                      disabled={loading || confirmText !== "DELETE" || (preview.files.length === 0 && preview.checkins.length === 0 && preview.chat_messages === 0)}
-                      onClick={runCleanup}
-                    >
+                    <Button variant="destructive" disabled={loading || confirmText !== "DELETE" || nothingToDo} onClick={runCleanup}>
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete {preview.files.length} files and clear references
                     </Button>
@@ -156,5 +172,8 @@ const AdminCheckinPhotoCleanup = () => {
     </div>
   );
 };
+
+const AdminCheckinPhotoCleanup = () => <PhotoCleanupPage kind="checkin" />;
+export const AdminChatPhotoCleanup = () => <PhotoCleanupPage kind="chat" />;
 
 export default AdminCheckinPhotoCleanup;
