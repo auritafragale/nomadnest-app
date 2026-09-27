@@ -76,10 +76,16 @@ export const useConversations = () => {
             ? conv.sitter_user_id 
             : conv.owner_user_id;
 
-          // Get other user's profile (safe public view — no contact details)
-          const { data: profile } = await publicProfiles("id, first_name, last_name, avatar_url")
-            .eq("id", otherUserId)
-            .maybeSingle() as { data: PublicProfile | null };
+          // Get other user's profile (safe public view — no contact details).
+          // A member who closed their account is NULL here: the chat stays,
+          // read-only, with them shown as "Former member".
+          const { data: profile } = otherUserId
+            ? ((await publicProfiles("id, first_name, last_name, avatar_url")
+                .eq("id", otherUserId)
+                .maybeSingle()) as { data: PublicProfile | null })
+            : {
+                data: { id: "", first_name: "Former member", last_name: null, avatar_url: null } as unknown as PublicProfile,
+              };
 
           // Get last message
           const { data: messages } = await supabase

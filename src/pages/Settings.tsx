@@ -788,7 +788,8 @@ const Settings = () => {
                     <h4 className="font-medium">Delete Account</h4>
                     <p className="text-sm text-muted-foreground">
                       Permanently delete your account and your data. Any membership is cancelled
-                      straight away. This can't be undone.
+                      straight away. Sits and chats you shared stay for the other member, without your
+                      name. This can't be undone.
                     </p>
                   </div>
                   <AlertDialog>
@@ -807,15 +808,24 @@ const Settings = () => {
                           </p>
                           <ul className="list-disc list-inside text-sm space-y-1">
                             <li>Your profiles, photos and ID documents</li>
-                            <li>Your listings, applications and sits, with their daily updates</li>
-                            <li>Your messages and conversations, including shared photos</li>
-                            <li>Your favourites and notifications</li>
+                            <li>Your listings, applications and favourites</li>
+                            <li>The photos you added to daily updates and chats</li>
+                            <li>Your notifications and settings</li>
                           </ul>
                           <p className="text-sm">
-                            Any membership is cancelled straight away. Sits you shared with other members are removed
-                            for them too. Reviews you wrote stay visible as &quot;Former member&quot;, without your name or
-                            photo. Reports you made stay with our safety team without your name, and safety reports about
-                            your account are kept for 24 months, then deleted.
+                            Sits, daily updates and chats you shared with other members stay for them, with you shown as
+                            &quot;Former member&quot; and no name, photo or profile. Any sit that is still upcoming or in
+                            progress is cancelled, and the other member is told. Reviews you wrote stay visible as
+                            &quot;Former member&quot;.
+                          </p>
+                          <p className="text-sm">
+                            Reports you made stay with our safety team without your name. Safety records about your
+                            account, including reviews about you (no longer shown to members), are kept for 24 months,
+                            then deleted.
+                          </p>
+                          <p className="text-sm">
+                            Your membership is cancelled straight away, with no further payments. Our payment provider
+                            keeps past invoices, as the law requires.
                           </p>
                           <p className="text-sm">Want a copy first? Use &quot;Download my data&quot; above.</p>
                           <p className="font-medium">

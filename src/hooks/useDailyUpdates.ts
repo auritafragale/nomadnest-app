@@ -17,8 +17,11 @@ export interface SitUpdateContext {
   role: "sitter" | "owner";
   listing_id: string;
   listing_title: string;
-  owner_user_id: string;
-  sitter_user_id: string;
+  /** NULL once that member has closed their account. */
+  owner_user_id: string | null;
+  sitter_user_id: string | null;
+  /** The other member closed their account (shown as "Former member"). */
+  other_member_left?: boolean;
   timezone: string;
   today: string;
   start_date: string;

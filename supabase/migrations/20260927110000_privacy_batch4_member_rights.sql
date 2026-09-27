@@ -3,39 +3,47 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 --
 -- Deletion rules (agreed):
---   • Reviews the member WROTE are kept, anonymised as "Former member"
---     (reviewer_user_id = NULL; no name, photo or profile link).
---   • Reports and community flags they FILED are kept, reporter removed
---     (admins only, as before).
---   • Safety records ABOUT them (community flags, community strikes,
---     cancellation strikes, reports about them or their listings) are kept for
---     24 months after deletion, then deleted by the daily retention job.
---   • Everything else is deleted: rows here and in the delete-account edge
---     function, storage files by bucket and folder, the Stripe customer (which
---     cancels the membership) and the Onfido applicant.
+--   • The deleting member's own data is deleted: profiles, listings (with
+--     pets, dates, guides), applications, favourites, notifications, their
+--     own files (photos, ID documents, their daily update and chat photos).
+--   • Shared records stay for the OTHER member, with the deleted member shown
+--     as "Former member" (no name, photo or profile link): sits (with a
+--     snapshot of title, place and dates), daily updates (text and chips),
+--     Welcome Guide question history, conversations and messages.
+--   • Reviews the member WROTE stay public as "Former member". Reviews ABOUT
+--     them are hidden from members and kept admin-only for 24 months.
+--   • Reports and community flags they FILED stay, reporter removed.
+--   • Safety records ABOUT them (reports about them or their listings,
+--     community flags and strikes, cancellation strikes, reviews about them)
+--     are kept 24 months after deletion, then deleted by the daily job.
+--   • Billing: active Stripe subscriptions are cancelled; the Stripe customer
+--     and invoices are kept for legal accounting retention (we store no
+--     Stripe customer id ourselves; lookups are by email).
 --
--- 1. Foreign keys: deleting an account cascades through sits, which used to
---    delete every review and flag on those sits (including the OTHER person's
---    reviews and the safety flags about the deleted member). These now SET
---    NULL instead: reviews.reviewer_user_id, reviews.sit_id, reports.
---    reporter_user_id, community_flags.sit_id and community_flags.review_id.
--- 2. deleted_accounts: a small ledger (user id, dates, what was done) so the
---    retention job knows when to purge safety records. Admins can read it.
+-- 1. Foreign keys: member references on shared records SET NULL instead of
+--    cascading (sits, conversations, messages, reviews, reports, community
+--    flags, Welcome Guide questions). conversations.pair_thread_id becomes
+--    SET NULL (it was RESTRICT, which would block deleting a member whose
+--    chats are kept). Unique chat indexes only apply while both members exist.
+-- 2. deleted_accounts ledger (admins can read it).
 -- 3. Service-role helpers used by delete-account: account_storage_objects()
---    (every file to delete, collected BEFORE rows go) and
---    prepare_account_deletion() (anonymise, record, delete rows without FKs).
--- 4. export_account_data(): the member's data as JSON (used by export-my-data).
--- 5. Retention: ID documents are deleted 30 days after an admin decision;
---    safety records 24 months after account deletion. The privacy-retention
---    edge function runs daily (pg_cron -> pg_net, secret from Vault).
--- 6. admin_decide_id_verification(): one admin-checked RPC for approving or
---    rejecting a manual ID check (members can't update profiles.id_verified,
---    so the old two-step client update failed on the second step).
+--    (the member's own files, collected BEFORE rows go) and
+--    prepare_account_deletion().
+-- 4. export_account_data() / export_account_files() for "Download my data".
+-- 5. Retention: ID documents 30 days after a decision; safety records 24
+--    months after deletion (daily privacy-retention edge function).
+-- 6. admin_decide_id_verification().
+-- 7. Reviews about a former member: hidden from members, visible to admins.
+-- 8. get_sit_update_context: works for sits whose listing, dates or other
+--    member are gone ("Former member", snapshot title and dates).
+-- 9. merge_orphaned_listing_conversation: never merges chats of a member who
+--    left (it matched pairs by LEAST/GREATEST, which ignores NULL).
+-- 10. Nobody can send new messages into a chat with a member who left.
 --
 -- SECRETS: none here; the cron call reads internal_trigger_secret from Vault.
 
 
--- ─── 1. Foreign keys that must not cascade on account deletion ─────────────
+-- ─── 1. Foreign keys on shared records: SET NULL ───────────────────────────
 
 DO $$
 DECLARE
@@ -44,11 +52,21 @@ DECLARE
 BEGIN
   FOR t IN
     SELECT * FROM (VALUES
+      ('sits', 'owner_user_id'),
+      ('sits', 'sitter_user_id'),
+      ('sits', 'listing_id'),
+      ('sits', 'sit_dates_id'),
+      ('conversations', 'owner_user_id'),
+      ('conversations', 'sitter_user_id'),
+      ('conversations', 'pair_thread_id'),
+      ('messages', 'sender_user_id'),
       ('reviews', 'reviewer_user_id'),
+      ('reviews', 'reviewee_user_id'),
       ('reviews', 'sit_id'),
       ('reports', 'reporter_user_id'),
       ('community_flags', 'sit_id'),
-      ('community_flags', 'review_id')
+      ('community_flags', 'review_id'),
+      ('guide_questions', 'listing_id')
     ) AS v(tbl, col)
   LOOP
     FOR c IN
@@ -67,14 +85,40 @@ BEGIN
       EXECUTE format('ALTER TABLE public.%I ADD CONSTRAINT %I FOREIGN KEY (%I) REFERENCES %s(%I) ON DELETE SET NULL',
                      t.tbl, c.conname, t.col, c.ref_table, c.ref_col);
     END LOOP;
-    -- Nullable either way (no FK found = nothing to re-point).
     EXECUTE format('ALTER TABLE public.%I ALTER COLUMN %I DROP NOT NULL', t.tbl, t.col);
   END LOOP;
 END;
 $$;
 
--- Flags a deleted member filed keep their subject, lose their reporter.
+-- Columns without a foreign key that become NULL for a former member.
 ALTER TABLE public.community_flags ALTER COLUMN reporter_user_id DROP NOT NULL;
+ALTER TABLE public.guide_questions ALTER COLUMN sitter_user_id DROP NOT NULL;
+ALTER TABLE public.sit_checkins ALTER COLUMN author_user_id DROP NOT NULL;
+
+-- A sit keeps what the other member needs once the listing or dates are gone.
+ALTER TABLE public.sits
+  ADD COLUMN IF NOT EXISTS snapshot_title text,
+  ADD COLUMN IF NOT EXISTS snapshot_city text,
+  ADD COLUMN IF NOT EXISTS snapshot_country text,
+  ADD COLUMN IF NOT EXISTS snapshot_start_date date,
+  ADD COLUMN IF NOT EXISTS snapshot_end_date date;
+GRANT SELECT (snapshot_title, snapshot_city, snapshot_country, snapshot_start_date, snapshot_end_date)
+ON public.sits TO authenticated;
+
+-- Reviews about a member who left: who they were about (for retention).
+ALTER TABLE public.reviews ADD COLUMN IF NOT EXISTS former_reviewee_user_id uuid;
+
+-- Chat uniqueness only while both members exist (LEAST/GREATEST ignore NULL,
+-- so kept chats of former members would otherwise collide).
+DROP INDEX IF EXISTS public.conversations_unique_listing_pair;
+CREATE UNIQUE INDEX conversations_unique_listing_pair
+  ON public.conversations (listing_id, LEAST(owner_user_id, sitter_user_id), GREATEST(owner_user_id, sitter_user_id))
+  WHERE listing_id IS NOT NULL AND owner_user_id IS NOT NULL AND sitter_user_id IS NOT NULL;
+
+DROP INDEX IF EXISTS public.conversations_unique_direct_pair;
+CREATE UNIQUE INDEX conversations_unique_direct_pair
+  ON public.conversations (LEAST(owner_user_id, sitter_user_id), GREATEST(owner_user_id, sitter_user_id))
+  WHERE listing_id IS NULL AND owner_user_id IS NOT NULL AND sitter_user_id IS NOT NULL;
 
 
 -- ─── 2. Deleted accounts ledger ────────────────────────────────────────────
@@ -88,7 +132,9 @@ CREATE TABLE IF NOT EXISTS public.deleted_accounts (
   -- Their listings at deletion time (reports about those listings are safety
   -- records about them too).
   listing_ids uuid[] NOT NULL DEFAULT '{}',
-  stripe_customers_deleted integer,
+  stripe_subscriptions_cancelled integer,
+  -- Stripe customer and invoices are kept by Stripe for legal accounting.
+  billing_records_retained boolean NOT NULL DEFAULT true,
   onfido_applicant_deleted boolean,
   storage_files_deleted integer,
   notes text
@@ -105,7 +151,9 @@ ON public.deleted_accounts FOR SELECT TO authenticated
 USING (public.is_admin_user(auth.uid()));
 
 
--- ─── 3a. Files to delete (collected before any row is removed) ─────────────
+-- ─── 3a. The member's own files (collected before any row changes) ─────────
+-- Only files they uploaded; the other member's photos in shared sits and
+-- chats stay.
 
 CREATE OR REPLACE FUNCTION public.account_storage_objects(p_user_id uuid)
 RETURNS TABLE (bucket_id text, name text)
@@ -114,15 +162,16 @@ STABLE
 SECURITY DEFINER
 SET search_path TO 'public'
 AS $function$
-  WITH my_sits AS (
-    SELECT id::text AS id FROM public.sits WHERE owner_user_id = p_user_id OR sitter_user_id = p_user_id
-  ), my_conversations AS (
-    SELECT id FROM public.conversations WHERE owner_user_id = p_user_id OR sitter_user_id = p_user_id
-  ), kept_evidence AS (
+  WITH kept_evidence AS (
     -- Evidence behind flags in reviews they wrote (those reviews are kept).
     SELECT e.photo_url AS name FROM public.review_flag_evidence e
     JOIN public.reviews r ON r.id = e.review_id
     WHERE r.reviewer_user_id = p_user_id AND e.photo_url IS NOT NULL
+  ), my_update_photos AS (
+    SELECT unnest(c.photo_paths) AS name FROM public.sit_checkins c WHERE c.author_user_id = p_user_id
+  ), my_chat_photos AS (
+    SELECT m.attachment_path AS name FROM public.messages m
+    WHERE m.sender_user_id = p_user_id AND m.attachment_path IS NOT NULL
   )
   SELECT o.bucket_id, o.name FROM storage.objects o
   WHERE
@@ -132,12 +181,9 @@ AS $function$
       AND split_part(o.name, '/', 1) = p_user_id::text
       AND o.name NOT IN (SELECT name FROM kept_evidence))
     OR (o.bucket_id = 'sit-update-photos'
-      AND split_part(o.name, '/', 1) IN (SELECT id FROM my_sits))
+      AND (o.owner_id = p_user_id::text OR o.name IN (SELECT name FROM my_update_photos)))
     OR (o.bucket_id = 'chat-photos'
-      AND (split_part(o.name, '/', 1) IN (SELECT id::text FROM my_conversations)
-           OR o.name IN (SELECT m.attachment_path FROM public.messages m
-                         WHERE m.conversation_id IN (SELECT id FROM my_conversations)
-                           AND m.attachment_path IS NOT NULL)));
+      AND (o.owner_id = p_user_id::text OR o.name IN (SELECT name FROM my_chat_photos)));
   -- Not deleted: report-evidence (kept with the reports they filed).
 $function$;
 
@@ -145,8 +191,12 @@ REVOKE ALL ON FUNCTION public.account_storage_objects(uuid) FROM PUBLIC, anon, a
 GRANT EXECUTE ON FUNCTION public.account_storage_objects(uuid) TO service_role;
 
 
--- ─── 3b. Anonymise, record, and delete rows that don't cascade ─────────────
--- Idempotent: safe to run again if a deletion is retried.
+-- ─── 3b. Prepare the deletion (idempotent) ─────────────────────────────────
+-- Anonymise what's kept, snapshot shared sits, delete the member's rows in
+-- tables without a cascading key, and cancel their active sits (last, as the
+-- member, so any late-cancellation strike is theirs, never the other
+-- member's). The auth user is deleted afterwards by the edge function; the
+-- SET NULL keys then detach the member from everything that's kept.
 
 CREATE OR REPLACE FUNCTION public.prepare_account_deletion(p_user_id uuid)
 RETURNS jsonb
@@ -155,12 +205,13 @@ SECURITY DEFINER
 SET search_path TO 'public'
 AS $function$
 DECLARE
-  v_reviews integer;
-  v_reports integer;
-  v_flags integer;
+  v_result jsonb := '{}'::jsonb;
   v_deleted jsonb := '{}'::jsonb;
   v_n integer;
   t record;
+  s record;
+  v_caption text;
+  v_failed integer := 0;
 BEGIN
   INSERT INTO public.deleted_accounts (user_id, listing_ids)
   VALUES (p_user_id, COALESCE((SELECT array_agg(id) FROM public.listings WHERE owner_user_id = p_user_id), '{}'))
@@ -170,16 +221,58 @@ BEGIN
     FROM unnest(public.deleted_accounts.listing_ids || EXCLUDED.listing_ids) x
   );
 
-  -- Kept, anonymised.
+  -- Shared sits: snapshot what the other member sees, before the listing
+  -- and its dates are deleted.
+  UPDATE public.sits si
+  SET snapshot_title = COALESCE(si.snapshot_title, l.title),
+      snapshot_city = COALESCE(si.snapshot_city, l.city),
+      snapshot_country = COALESCE(si.snapshot_country, l.country),
+      snapshot_start_date = COALESCE(si.snapshot_start_date, sd.start_date),
+      snapshot_end_date = COALESCE(si.snapshot_end_date, sd.end_date)
+  FROM public.listings l, public.sit_dates sd
+  WHERE (si.owner_user_id = p_user_id OR si.sitter_user_id = p_user_id)
+    AND l.id = si.listing_id AND sd.id = si.sit_dates_id;
+  GET DIAGNOSTICS v_n = ROW_COUNT;
+  v_result := v_result || jsonb_build_object('sits_snapshotted', v_n);
+
+  -- Reviews: the ones they wrote stay public as "Former member"; the ones
+  -- about them become admin-only (RLS hides reviewee_user_id IS NULL).
+  UPDATE public.reviews SET former_reviewee_user_id = p_user_id WHERE reviewee_user_id = p_user_id;
   UPDATE public.reviews SET reviewer_user_id = NULL WHERE reviewer_user_id = p_user_id;
-  GET DIAGNOSTICS v_reviews = ROW_COUNT;
+  GET DIAGNOSTICS v_n = ROW_COUNT;
+  v_result := v_result || jsonb_build_object('reviews_written_anonymised', v_n);
+
+  -- Reports and flags they filed stay, without them.
   UPDATE public.reports SET reporter_user_id = NULL WHERE reporter_user_id = p_user_id;
-  GET DIAGNOSTICS v_reports = ROW_COUNT;
   UPDATE public.community_flags SET reporter_user_id = NULL
   WHERE reporter_user_id = p_user_id AND subject_user_id IS DISTINCT FROM p_user_id;
-  GET DIAGNOSTICS v_flags = ROW_COUNT;
 
-  -- Deleted: the member's rows in tables without a cascading key to them.
+  -- Daily updates they wrote: text and chips stay; their photos are deleted
+  -- (files by the edge function), so the paths go.
+  UPDATE public.sit_checkins SET author_user_id = NULL, photo_paths = '{}'
+  WHERE author_user_id = p_user_id;
+  GET DIAGNOSTICS v_n = ROW_COUNT;
+  v_result := v_result || jsonb_build_object('daily_updates_kept', v_n);
+
+  -- Photo messages they sent: the photo is deleted, the caption stays.
+  FOR t IN
+    SELECT id, body FROM public.messages
+    WHERE sender_user_id = p_user_id AND left(body, 9) = '[[image]]'
+  LOOP
+    BEGIN
+      v_caption := NULLIF(TRIM((substr(t.body, 10)::jsonb)->>'caption'), '');
+    EXCEPTION WHEN OTHERS THEN
+      v_caption := NULL;
+    END;
+    UPDATE public.messages
+    SET body = CASE WHEN v_caption IS NULL THEN '[Photo removed]' ELSE '[Photo removed] ' || v_caption END
+    WHERE id = t.id;
+  END LOOP;
+
+  -- Welcome Guide questions they asked stay in the owner's history.
+  UPDATE public.guide_questions SET sitter_user_id = NULL WHERE sitter_user_id = p_user_id;
+
+  -- Deleted: the member's own rows in tables without a cascading key.
   FOR t IN
     SELECT * FROM (VALUES
       ('favorites', 'user_id'),
@@ -189,19 +282,15 @@ BEGIN
       ('perk_clicks', 'user_id'),
       ('review_reminders', 'user_id'),
       ('ai_usage', 'user_id'),
-      ('guide_questions', 'sitter_user_id'),
       ('sitter_invites', 'owner_user_id'),
       ('sitter_invites', 'sitter_user_id'),
       ('welcome_guide_access', 'owner_user_id'),
       ('welcome_guide_photos', 'owner_user_id'),
-      ('sit_checkins', 'author_user_id'),
       ('arrival_vault_photos', 'sitter_user_id'),
       ('manual_id_verifications', 'user_id'),
       ('city_chat_message_reactions', 'user_id'),
       ('city_chat_thread_subscriptions', 'user_id'),
-      ('city_chat_messages', 'sender_user_id'),
-      ('conversation_pair_threads', 'user_a_id'),
-      ('conversation_pair_threads', 'user_b_id')
+      ('city_chat_messages', 'sender_user_id')
     ) AS v(tbl, col)
   LOOP
     IF EXISTS (
@@ -215,13 +304,38 @@ BEGIN
       END IF;
     END IF;
   END LOOP;
+  v_result := v_result || jsonb_build_object('deleted', v_deleted);
 
-  RETURN jsonb_build_object(
-    'reviews_anonymised', v_reviews,
-    'reports_anonymised', v_reports,
-    'flags_anonymised', v_flags,
-    'deleted', v_deleted
-  );
+  -- Active sits: cancelled, and the other member is told why. Run as the
+  -- departing member (this transaction only) so handle_sit_cancellation_trust
+  -- records any late-cancellation strike against them, not the other member.
+  PERFORM set_config('request.jwt.claim.sub', p_user_id::text, true);
+  v_n := 0;
+  FOR s IN
+    SELECT id, owner_user_id, sitter_user_id, COALESCE(snapshot_title, 'your sit') AS title
+    FROM public.sits
+    WHERE (owner_user_id = p_user_id OR sitter_user_id = p_user_id)
+      AND status IN ('confirmed', 'in_progress')
+  LOOP
+    BEGIN
+      UPDATE public.sits SET status = 'cancelled' WHERE id = s.id;
+    EXCEPTION WHEN OTHERS THEN
+      -- Never block the deletion: the sit stays as it is, detached from them.
+      RAISE WARNING 'Could not cancel sit % during account deletion: %', s.id, SQLERRM;
+      v_failed := v_failed + 1;
+      CONTINUE;
+    END;
+    INSERT INTO public.notifications (user_id, type, title, message, data)
+    SELECT other_id, 'sit_cancelled', 'Sit cancelled',
+           'Your sit at ' || s.title || ' was cancelled because the other member closed their NomadNest account.',
+           jsonb_build_object('url', '/sits/' || s.id::text, 'sit_id', s.id::text)
+    FROM (SELECT CASE WHEN s.owner_user_id = p_user_id THEN s.sitter_user_id ELSE s.owner_user_id END AS other_id) o
+    WHERE other_id IS NOT NULL;
+    v_n := v_n + 1;
+  END LOOP;
+  v_result := v_result || jsonb_build_object('active_sits_cancelled', v_n, 'active_sits_not_cancelled', v_failed);
+
+  RETURN v_result;
 END;
 $function$;
 
@@ -374,6 +488,8 @@ BEGIN
     DELETE FROM public.community_flags WHERE subject_user_id = d.user_id;
     DELETE FROM public.community_strikes WHERE subject_user_id = d.user_id;
     DELETE FROM public.cancellation_strikes WHERE user_id = d.user_id;
+    -- Reviews about them (admin-only since the deletion).
+    DELETE FROM public.reviews WHERE former_reviewee_user_id = d.user_id AND reviewee_user_id IS NULL;
 
     UPDATE public.deleted_accounts SET safety_purged_at = now() WHERE user_id = d.user_id;
     v_accounts := v_accounts + 1;
@@ -458,3 +574,208 @@ $function$;
 
 REVOKE ALL ON FUNCTION public.admin_decide_id_verification(uuid, text, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_decide_id_verification(uuid, text, text) TO authenticated;
+
+
+-- ─── 7. Reviews about a former member: admins only ─────────────────────────
+
+DROP POLICY IF EXISTS "Anyone can view reviews" ON public.reviews;
+DROP POLICY IF EXISTS "Anyone can view reviews of current members" ON public.reviews;
+CREATE POLICY "Anyone can view reviews of current members"
+ON public.reviews FOR SELECT TO anon, authenticated
+USING (reviewee_user_id IS NOT NULL);
+
+DROP POLICY IF EXISTS "Admins can view all reviews" ON public.reviews;
+CREATE POLICY "Admins can view all reviews"
+ON public.reviews FOR SELECT TO authenticated
+USING (public.is_admin_user(auth.uid()));
+
+
+-- ─── 8. Sit updates page for sits with a former member ─────────────────────
+
+CREATE OR REPLACE FUNCTION public.get_sit_update_context(p_sit_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  s record;
+  v_tz text;
+  v_today date;
+  v_start date;
+  v_end date;
+  v_other_left boolean;
+BEGIN
+  SELECT si.id, si.status, si.owner_user_id, si.sitter_user_id, si.listing_id,
+         COALESCE(sd.start_date, si.snapshot_start_date) AS start_date,
+         COALESCE(sd.end_date, si.snapshot_end_date) AS end_date,
+         COALESCE(l.title, si.snapshot_title) AS title
+  INTO s
+  FROM public.sits si
+  LEFT JOIN public.sit_dates sd ON sd.id = si.sit_dates_id
+  LEFT JOIN public.listings l ON l.id = si.listing_id
+  WHERE si.id = p_sit_id;
+
+  IF NOT FOUND OR v_uid IS NULL
+     OR NOT (v_uid = s.owner_user_id OR v_uid = s.sitter_user_id)
+     OR s.start_date IS NULL OR s.end_date IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  v_tz := COALESCE(CASE WHEN s.listing_id IS NOT NULL THEN public.listing_timezone(s.listing_id) END, 'UTC');
+  v_today := (now() AT TIME ZONE v_tz)::date;
+  v_start := s.start_date;
+  v_end := s.end_date;
+  v_other_left := s.owner_user_id IS NULL OR s.sitter_user_id IS NULL;
+
+  RETURN jsonb_build_object(
+    'sit_id', s.id,
+    'status', s.status,
+    'role', CASE WHEN v_uid = s.sitter_user_id THEN 'sitter' ELSE 'owner' END,
+    'listing_id', s.listing_id,
+    'listing_title', COALESCE(s.title, 'your sit'),
+    'owner_user_id', s.owner_user_id,
+    'sitter_user_id', s.sitter_user_id,
+    'other_member_left', v_other_left,
+    'timezone', v_tz,
+    'today', v_today,
+    'start_date', v_start,
+    'end_date', v_end,
+    'total_days', (v_end - v_start) + 1,
+    'day_number', CASE WHEN v_today BETWEEN v_start AND v_end THEN (v_today - v_start) + 1 END,
+    'can_post', v_uid = s.sitter_user_id AND s.status IN ('confirmed', 'in_progress') AND NOT v_other_left,
+    'owner', CASE WHEN s.owner_user_id IS NULL
+                  THEN jsonb_build_object('first_name', 'Former member', 'avatar_url', NULL)
+                  ELSE (SELECT jsonb_build_object('first_name', COALESCE(NULLIF(TRIM(p.first_name), ''), 'your Pet Parent'), 'avatar_url', p.avatar_url)
+                        FROM public.profiles p WHERE p.id = s.owner_user_id) END,
+    'sitter', CASE WHEN s.sitter_user_id IS NULL
+                   THEN jsonb_build_object('first_name', 'Former member', 'avatar_url', NULL)
+                   ELSE (SELECT jsonb_build_object('first_name', COALESCE(NULLIF(TRIM(p.first_name), ''), 'your Nomad'), 'avatar_url', p.avatar_url)
+                         FROM public.profiles p WHERE p.id = s.sitter_user_id) END,
+    'pets', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'name', pt.name,
+        'type', pt.type,
+        'photo', pt.photos[1],
+        'needs_medication', COALESCE(pt.requires_medication, false) OR COALESCE(pt.has_medication, false)
+      ) ORDER BY pt.created_at)
+      FROM public.pets pt WHERE s.listing_id IS NOT NULL AND pt.listing_id = s.listing_id
+    ), '[]'::jsonb)
+  );
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.get_sit_update_context(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_sit_update_context(uuid) TO authenticated;
+
+
+-- ─── 9. Never merge the chats of a member who left ─────────────────────────
+-- Same behaviour as the live function (when a listing is deleted, move its
+-- chat into the pair's general chat if there is one), plus a guard: with a
+-- member gone, LEAST/GREATEST would match unrelated chats of other former
+-- members, so nothing is merged.
+
+CREATE OR REPLACE FUNCTION public.merge_orphaned_listing_conversation()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_existing uuid;
+BEGIN
+  IF NOT (NEW.listing_id IS NULL AND OLD.listing_id IS NOT NULL) THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.owner_user_id IS NULL OR NEW.sitter_user_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT c.id INTO v_existing
+  FROM public.conversations c
+  WHERE c.listing_id IS NULL
+    AND c.id <> OLD.id
+    AND c.owner_user_id IS NOT NULL AND c.sitter_user_id IS NOT NULL
+    AND LEAST(c.owner_user_id, c.sitter_user_id) = LEAST(NEW.owner_user_id, NEW.sitter_user_id)
+    AND GREATEST(c.owner_user_id, c.sitter_user_id) = GREATEST(NEW.owner_user_id, NEW.sitter_user_id)
+  LIMIT 1;
+
+  IF v_existing IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  UPDATE public.messages SET conversation_id = v_existing WHERE conversation_id = OLD.id;
+  DELETE FROM public.conversations WHERE id = OLD.id;
+  RETURN NULL;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.merge_orphaned_listing_conversation() FROM PUBLIC, anon, authenticated;
+
+
+-- ─── 10. No new messages to a member who left ──────────────────────────────
+
+DROP POLICY IF EXISTS "No messages to a member who left" ON public.messages;
+CREATE POLICY "No messages to a member who left"
+ON public.messages AS RESTRICTIVE FOR INSERT TO authenticated
+WITH CHECK (EXISTS (
+  SELECT 1 FROM public.conversations c
+  WHERE c.id = conversation_id AND c.owner_user_id IS NOT NULL AND c.sitter_user_id IS NOT NULL
+));
+
+
+-- ─── 11. Hearts on a former member's update: no notification ────────────────
+-- Same as before, except it never notifies a sitter who has left.
+
+CREATE OR REPLACE FUNCTION public.toggle_checkin_heart(p_checkin_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  c record;
+  v_owner_first text;
+  v_hearted boolean;
+BEGIN
+  SELECT sc.id, sc.sit_id, sc.owner_heart_at, s.owner_user_id, s.sitter_user_id, COALESCE(l.title, 'your sit') AS title
+  INTO c
+  FROM public.sit_checkins sc
+  JOIN public.sits s ON s.id = sc.sit_id
+  LEFT JOIN public.listings l ON l.id = s.listing_id
+  WHERE sc.id = p_checkin_id
+  FOR UPDATE OF sc;
+
+  IF NOT FOUND OR c.owner_user_id IS DISTINCT FROM auth.uid() THEN
+    RAISE EXCEPTION 'Update not found.' USING ERRCODE = '42501';
+  END IF;
+
+  v_hearted := c.owner_heart_at IS NULL;
+  UPDATE public.sit_checkins
+  SET owner_heart_at = CASE WHEN v_hearted THEN now() ELSE NULL END
+  WHERE id = c.id;
+
+  -- Once per update, even if the heart is toggled again.
+  IF v_hearted AND c.sitter_user_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.notifications n
+    WHERE n.user_id = c.sitter_user_id
+      AND n.type = 'sit_update_loved'
+      AND n.data->>'checkin_id' = c.id::text
+  ) THEN
+    SELECT COALESCE(NULLIF(TRIM(first_name), ''), 'Your Pet Parent') INTO v_owner_first
+    FROM public.profiles WHERE id = c.owner_user_id;
+    INSERT INTO public.notifications (user_id, type, title, message, data)
+    VALUES (
+      c.sitter_user_id,
+      'sit_update_loved',
+      COALESCE(v_owner_first, 'Your Pet Parent') || ' loved today''s update',
+      c.title,
+      jsonb_build_object('url', '/sits/' || c.sit_id::text, 'sit_id', c.sit_id::text, 'checkin_id', c.id::text)
+    );
+  END IF;
+
+  RETURN jsonb_build_object('hearted', v_hearted, 'sit_id', c.sit_id);
+END;
+$function$;

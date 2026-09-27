@@ -73,6 +73,8 @@ export const MessageThread = ({
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const otherUser = conversation?.other_user;
+  // The other member closed their account: the chat stays, read-only.
+  const otherLeft = !!conversation && (!conversation.owner_user_id || !conversation.sitter_user_id);
   const userName = user?.user_metadata?.first_name || "User";
 
   const { isOtherTyping, typingUserName, sendTypingIndicator } = useTypingIndicator(
@@ -545,6 +547,11 @@ export const MessageThread = ({
       )}
 
       {/* Input */}
+      {otherLeft ? (
+        <p className="border-t border-border p-4 text-center text-sm text-muted-foreground">
+          This member has left NomadNest. You can still read your conversation.
+        </p>
+      ) : (
       <form onSubmit={handleSubmit} className="p-4 border-t border-border">
         {pendingPhoto && (
           <div className="flex items-center gap-2 mb-2">
@@ -613,6 +620,7 @@ export const MessageThread = ({
           </Button>
         </div>
       </form>
+      )}
     </div>
   );
 };

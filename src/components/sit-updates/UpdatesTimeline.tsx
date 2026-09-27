@@ -147,7 +147,7 @@ const UpdateItem = ({
         )}
       </div>
 
-      {isOwner && (
+      {isOwner && !context.other_member_left && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Button

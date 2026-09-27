@@ -5,20 +5,29 @@ import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 // Deletes the caller's account and data (UK/EU data protection; app stores).
 //
 // Order matters:
-//  1. Stripe: delete the customer(s) for this email, which cancels any
-//     membership immediately. If this fails we stop: nothing is deleted and
-//     the member is never left paying for a deleted account.
+//  1. Stripe: cancel every live subscription for this email immediately (no
+//     proration, no refund). The Stripe customer and invoices are KEPT for
+//     legal accounting retention (we store no Stripe id ourselves). If this
+//     fails we stop: nothing is deleted and the member is never left paying
+//     for a deleted account.
 //  2. Collect every storage file to delete (account_storage_objects), BEFORE
 //     rows go (chat and update photos are found through conversations/sits).
-//  3. prepare_account_deletion: reviews they wrote and reports/flags they
-//     filed are kept but anonymised; safety records about them are kept for
-//     24 months (deleted_accounts ledger, purged by privacy-retention);
-//     rows without a cascading key are deleted.
+//  3. prepare_account_deletion: shared sits, daily update text, Welcome
+//     Guide question history and chats stay for the other member ("Former
+//     member"); reviews they wrote stay anonymised; reports/flags they filed
+//     stay without them; safety records about them are kept 24 months
+//     (deleted_accounts ledger, purged by privacy-retention); their own rows
+//     without a cascading key are deleted; their active sits are cancelled.
 //  4. Delete the files, bucket by bucket.
 //  5. Onfido: delete the applicant (a failure is recorded, not fatal).
-//  6. Delete the auth user: profiles, listings, sits, conversations,
-//     messages, applications and the rest cascade.
+//  6. Delete the auth user: their profiles, listings (pets, dates, guides),
+//     applications and the rest cascade; shared records are detached
+//     (SET NULL) and kept.
 // Every step is safe to retry. Logs contain ids and counts only.
+//
+// { dry_run: true }: read-only preview for testing (no Stripe writes, no
+// database or storage changes): which subscriptions would be cancelled and
+// how many files would be deleted.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +36,8 @@ const corsHeaders = {
 };
 
 const ONFIDO_API_URL = "https://api.onfido.com/v3.6";
+// Subscriptions that still bill or can start billing.
+const LIVE_SUBSCRIPTION = new Set(["active", "trialing", "past_due", "unpaid", "incomplete"]);
 
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -57,17 +68,28 @@ serve(async (req) => {
       .eq("id", userId)
       .maybeSingle();
     const email = (profile?.email as string | null) ?? user.email ?? null;
+    const body = await req.json().catch(() => ({}));
+    const dryRun = body?.dry_run === true;
 
-    // 1) Stripe
-    let stripeDeleted = 0;
+    // 1) Stripe: cancel live subscriptions; keep the customer and invoices.
+    let stripeCancelled = 0;
+    const toCancel: { id: string; status: string }[] = [];
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (stripeKey && email) {
       try {
         const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
         const customers = await stripe.customers.list({ email, limit: 10 });
         for (const customer of customers.data) {
-          await stripe.customers.del(customer.id);
-          stripeDeleted++;
+          const subs = await stripe.subscriptions.list({ customer: customer.id, status: "all", limit: 100 });
+          for (const sub of subs.data) {
+            if (LIVE_SUBSCRIPTION.has(sub.status)) toCancel.push({ id: sub.id, status: sub.status });
+          }
+        }
+        if (!dryRun) {
+          for (const sub of toCancel) {
+            await stripe.subscriptions.cancel(sub.id, { invoice_now: false, prorate: false });
+            stripeCancelled++;
+          }
         }
       } catch (err) {
         log({ user: userId, step: "stripe", failed: err instanceof Error ? err.message : String(err) });
@@ -84,6 +106,18 @@ serve(async (req) => {
     const byBucket = new Map<string, string[]>();
     for (const o of (objects ?? []) as { bucket_id: string; name: string }[]) {
       byBucket.set(o.bucket_id, [...(byBucket.get(o.bucket_id) ?? []), o.name]);
+    }
+
+    if (dryRun) {
+      const filesByBucket = Object.fromEntries([...byBucket].map(([b, n]) => [b, n.length]));
+      log({ user: userId, dry_run: true, subscriptions: toCancel.length, files: filesByBucket });
+      return json({
+        dry_run: true,
+        stripe_configured: !!stripeKey,
+        subscriptions_to_cancel: toCancel,
+        files_to_delete: filesByBucket,
+        onfido_applicant: !!profile?.onfido_applicant_id,
+      });
     }
 
     // 3) Anonymise and delete rows that don't cascade
@@ -124,10 +158,14 @@ serve(async (req) => {
     await admin
       .from("deleted_accounts")
       .update({
-        stripe_customers_deleted: stripeDeleted,
+        stripe_subscriptions_cancelled: stripeCancelled,
+        billing_records_retained: true,
         onfido_applicant_deleted: onfidoDeleted,
         storage_files_deleted: filesDeleted,
-        notes: onfidoDeleted === false ? "Onfido applicant deletion failed: delete it in the Onfido dashboard." : null,
+        notes: [
+          "Stripe customer and invoices retained for legal accounting retention.",
+          onfidoDeleted === false ? "Onfido applicant deletion failed: delete it in the Onfido dashboard." : null,
+        ].filter(Boolean).join(" "),
       })
       .eq("user_id", userId);
 
@@ -135,7 +173,7 @@ serve(async (req) => {
     const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
     if (deleteError) throw new Error(`auth delete failed: ${deleteError.message}`);
 
-    log({ user: userId, ok: true, stripe: stripeDeleted, files: filesDeleted, onfido: onfidoDeleted, prepared });
+    log({ user: userId, ok: true, stripe_cancelled: stripeCancelled, files: filesDeleted, onfido: onfidoDeleted, prepared });
     return json({ success: true });
   } catch (err) {
     log({ user: userId, failed: err instanceof Error ? err.message : String(err) });

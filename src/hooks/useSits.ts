@@ -38,6 +38,13 @@ export interface Sit {
     last_name: string | null;
     avatar_url: string | null;
   } | null;
+  /**
+   * The other member closed their account. Their id is then NULL at runtime
+   * (owner_user_id or sitter_user_id), the listing and dates may be gone
+   * (shown from the sit's snapshot), and they appear as "Former member".
+   * No review, cancel or message actions for such a sit.
+   */
+  other_member_left: boolean;
 }
 
 export const useSits = () => {
@@ -61,9 +68,9 @@ export const useSits = () => {
       if (error) throw error;
 
       // Fetch profiles for owners and sitters
-      const ownerIds = [...new Set(data.map((s) => s.owner_user_id))];
-      const sitterIds = [...new Set(data.map((s) => s.sitter_user_id))];
-      const allUserIds = [...new Set([...ownerIds, ...sitterIds])];
+      const allUserIds = [
+        ...new Set(data.flatMap((s) => [s.owner_user_id, s.sitter_user_id]).filter((id): id is string => !!id)),
+      ];
 
       const { data: profiles } = await supabase
         .from("profiles")
@@ -72,10 +79,19 @@ export const useSits = () => {
 
       const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
 
+      const formerMember = { first_name: "Former member", last_name: null, avatar_url: null };
       return data.map((sit) => ({
         ...sit,
-        owner_profile: profileMap.get(sit.owner_user_id) || null,
-        sitter_profile: profileMap.get(sit.sitter_user_id) || null,
+        // The listing and dates are deleted with a Pet Parent who left: use the snapshot.
+        listing: sit.listing ?? (sit.snapshot_title
+          ? { title: sit.snapshot_title, city: sit.snapshot_city, country: sit.snapshot_country, photos: null }
+          : null),
+        sit_dates: sit.sit_dates ?? (sit.snapshot_start_date && sit.snapshot_end_date
+          ? { start_date: sit.snapshot_start_date, end_date: sit.snapshot_end_date }
+          : null),
+        owner_profile: sit.owner_user_id ? profileMap.get(sit.owner_user_id) || null : formerMember,
+        sitter_profile: sit.sitter_user_id ? profileMap.get(sit.sitter_user_id) || null : formerMember,
+        other_member_left: !sit.owner_user_id || !sit.sitter_user_id,
       })) as Sit[];
     },
     enabled: !!user,

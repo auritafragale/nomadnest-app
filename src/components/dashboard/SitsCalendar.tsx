@@ -340,7 +340,9 @@ export const SitCard = ({
       ? "completed"
       : sit.status;
 
-  const canCancelSit = (sit.status === "confirmed" || sit.status === "in_progress") && !isFinished;
+  // No actions with a member who closed their account ("Former member").
+  const otherLeft = sit.other_member_left;
+  const canCancelSit = (sit.status === "confirmed" || sit.status === "in_progress") && !isFinished && !otherLeft;
   const isEarlyCancelled = sit.status === "cancelled" && sit.cancelled_from_status === "in_progress";
   const isReviewable = sit.status === "completed" || isEarlyCancelled;
   // Reviews stay open for 14 days after the sit ended — its end date, or for a
@@ -354,7 +356,7 @@ export const SitCard = ({
   const reviewDaysLeft =
     daysSinceEnd === null ? null : Math.max(0, REVIEW_WINDOW_DAYS - daysSinceEnd);
   const reviewWindowOpen = reviewDaysLeft === null || reviewDaysLeft > 0;
-  const canReview = isReviewable && !hasReviewed && reviewWindowOpen;
+  const canReview = isReviewable && !hasReviewed && reviewWindowOpen && !otherLeft;
 
   // Check if user has already reviewed for this sit
   useEffect(() => {
@@ -454,7 +456,7 @@ export const SitCard = ({
       )}
 
       {/* Sit actions */}
-      {(canCancelSit || isCurrent || sit.status === "confirmed") && (
+      {!otherLeft && (canCancelSit || isCurrent || sit.status === "confirmed") && (
         <div className="mt-3 pt-2 border-t space-y-2">
           <div className="flex gap-2 flex-wrap">
           {(sit.status === "confirmed" || sit.status === "in_progress") && (
