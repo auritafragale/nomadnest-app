@@ -537,9 +537,9 @@ export type Database = {
           created_at: string
           id: string
           listing_id: string | null
-          owner_user_id: string
+          owner_user_id: string | null
           pair_thread_id: string | null
-          sitter_user_id: string
+          sitter_user_id: string | null
           updated_at: string
         }
         Insert: {
@@ -547,9 +547,9 @@ export type Database = {
           created_at?: string
           id?: string
           listing_id?: string | null
-          owner_user_id: string
+          owner_user_id?: string | null
           pair_thread_id?: string | null
-          sitter_user_id: string
+          sitter_user_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -557,9 +557,9 @@ export type Database = {
           created_at?: string
           id?: string
           listing_id?: string | null
-          owner_user_id?: string
+          owner_user_id?: string | null
           pair_thread_id?: string | null
-          sitter_user_id?: string
+          sitter_user_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -730,13 +730,13 @@ export type Database = {
           draft_answer: string | null
           id: string
           is_emergency: boolean
-          listing_id: string
+          listing_id: string | null
           owner_answer: string | null
           parent_question_id: string | null
           question: string
           removed_at: string | null
           sit_id: string
-          sitter_user_id: string
+          sitter_user_id: string | null
           updated_at: string
         }
         Insert: {
@@ -749,13 +749,13 @@ export type Database = {
           draft_answer?: string | null
           id?: string
           is_emergency?: boolean
-          listing_id: string
+          listing_id?: string | null
           owner_answer?: string | null
           parent_question_id?: string | null
           question: string
           removed_at?: string | null
           sit_id: string
-          sitter_user_id: string
+          sitter_user_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -768,13 +768,13 @@ export type Database = {
           draft_answer?: string | null
           id?: string
           is_emergency?: boolean
-          listing_id?: string
+          listing_id?: string | null
           owner_answer?: string | null
           parent_question_id?: string | null
           question?: string
           removed_at?: string | null
           sit_id?: string
-          sitter_user_id?: string
+          sitter_user_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1024,7 +1024,7 @@ export type Database = {
           guide_question_id: string | null
           id: string
           read_at: string | null
-          sender_user_id: string
+          sender_user_id: string | null
         }
         Insert: {
           attachment_path?: string | null
@@ -1034,7 +1034,7 @@ export type Database = {
           guide_question_id?: string | null
           id?: string
           read_at?: string | null
-          sender_user_id: string
+          sender_user_id?: string | null
         }
         Update: {
           attachment_path?: string | null
@@ -1044,7 +1044,7 @@ export type Database = {
           guide_question_id?: string | null
           id?: string
           read_at?: string | null
-          sender_user_id?: string
+          sender_user_id?: string | null
         }
         Relationships: [
           {
@@ -1629,6 +1629,7 @@ export type Database = {
           flag_sitter_cleanliness: boolean
           flag_unauthorized_guests: boolean | null
           flag_undisclosed_cameras: boolean
+          former_reviewee_user_id: string | null
           id: string
           rating: number
           rating_cleanliness: number | null
@@ -1640,7 +1641,7 @@ export type Database = {
           rating_pet_preparedness: number | null
           rating_reliability: number | null
           rating_respect_home: number | null
-          reviewee_user_id: string
+          reviewee_user_id: string | null
           reviewer_user_id: string | null
           sit_id: string | null
           text: string | null
@@ -1654,6 +1655,7 @@ export type Database = {
           flag_sitter_cleanliness?: boolean
           flag_unauthorized_guests?: boolean | null
           flag_undisclosed_cameras?: boolean
+          former_reviewee_user_id?: string | null
           id?: string
           rating: number
           rating_cleanliness?: number | null
@@ -1665,7 +1667,7 @@ export type Database = {
           rating_pet_preparedness?: number | null
           rating_reliability?: number | null
           rating_respect_home?: number | null
-          reviewee_user_id: string
+          reviewee_user_id?: string | null
           reviewer_user_id?: string | null
           sit_id?: string | null
           text?: string | null
@@ -1679,6 +1681,7 @@ export type Database = {
           flag_sitter_cleanliness?: boolean
           flag_unauthorized_guests?: boolean | null
           flag_undisclosed_cameras?: boolean
+          former_reviewee_user_id?: string | null
           id?: string
           rating?: number
           rating_cleanliness?: number | null
@@ -1690,7 +1693,7 @@ export type Database = {
           rating_pet_preparedness?: number | null
           rating_reliability?: number | null
           rating_respect_home?: number | null
-          reviewee_user_id?: string
+          reviewee_user_id?: string | null
           reviewer_user_id?: string | null
           sit_id?: string | null
           text?: string | null
@@ -1708,7 +1711,7 @@ export type Database = {
       sit_checkins: {
         Row: {
           ai_drafted: boolean
-          author_user_id: string
+          author_user_id: string | null
           chips: string[]
           created_at: string
           flag_note: string | null
@@ -1729,7 +1732,7 @@ export type Database = {
         }
         Insert: {
           ai_drafted?: boolean
-          author_user_id: string
+          author_user_id?: string | null
           chips?: string[]
           created_at?: string
           flag_note?: string | null
@@ -1750,7 +1753,7 @@ export type Database = {
         }
         Update: {
           ai_drafted?: boolean
-          author_user_id?: string
+          author_user_id?: string | null
           chips?: string[]
           created_at?: string
           flag_note?: string | null
@@ -1895,10 +1898,15 @@ export type Database = {
           confirmed_at: string | null
           created_at: string
           id: string
-          listing_id: string
-          owner_user_id: string
-          sit_dates_id: string
-          sitter_user_id: string
+          listing_id: string | null
+          owner_user_id: string | null
+          sit_dates_id: string | null
+          sitter_user_id: string | null
+          snapshot_city: string | null
+          snapshot_country: string | null
+          snapshot_end_date: string | null
+          snapshot_start_date: string | null
+          snapshot_title: string | null
           status: Database["public"]["Enums"]["sit_status"]
           updated_at: string
         }
@@ -1912,10 +1920,15 @@ export type Database = {
           confirmed_at?: string | null
           created_at?: string
           id?: string
-          listing_id: string
-          owner_user_id: string
-          sit_dates_id: string
-          sitter_user_id: string
+          listing_id?: string | null
+          owner_user_id?: string | null
+          sit_dates_id?: string | null
+          sitter_user_id?: string | null
+          snapshot_city?: string | null
+          snapshot_country?: string | null
+          snapshot_end_date?: string | null
+          snapshot_start_date?: string | null
+          snapshot_title?: string | null
           status?: Database["public"]["Enums"]["sit_status"]
           updated_at?: string
         }
@@ -1929,10 +1942,15 @@ export type Database = {
           confirmed_at?: string | null
           created_at?: string
           id?: string
-          listing_id?: string
-          owner_user_id?: string
-          sit_dates_id?: string
-          sitter_user_id?: string
+          listing_id?: string | null
+          owner_user_id?: string | null
+          sit_dates_id?: string | null
+          sitter_user_id?: string | null
+          snapshot_city?: string | null
+          snapshot_country?: string | null
+          snapshot_end_date?: string | null
+          snapshot_start_date?: string | null
+          snapshot_title?: string | null
           status?: Database["public"]["Enums"]["sit_status"]
           updated_at?: string
         }
