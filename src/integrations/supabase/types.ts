@@ -796,10 +796,10 @@ export type Database = {
       }
       listings: {
         Row: {
-          approx_latitude: number | null
-          approx_longitude: number | null
           address_private: string | null
           amenities: string[] | null
+          approx_latitude: number | null
+          approx_longitude: number | null
           area: string | null
           car_needed: boolean
           city: string | null
@@ -834,10 +834,10 @@ export type Database = {
           wifi_quality: string | null
         }
         Insert: {
-          approx_latitude?: number | null
-          approx_longitude?: number | null
           address_private?: string | null
           amenities?: string[] | null
+          approx_latitude?: number | null
+          approx_longitude?: number | null
           area?: string | null
           car_needed?: boolean
           city?: string | null
@@ -872,10 +872,10 @@ export type Database = {
           wifi_quality?: string | null
         }
         Update: {
-          approx_latitude?: number | null
-          approx_longitude?: number | null
           address_private?: string | null
           amenities?: string[] | null
+          approx_latitude?: number | null
+          approx_longitude?: number | null
           area?: string | null
           car_needed?: boolean
           city?: string | null
@@ -1291,7 +1291,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          founding_badge: boolean
           avatar_url: string | null
           bio: string | null
           city: string | null
@@ -1301,6 +1300,7 @@ export type Database = {
           email_verified: boolean
           first_name: string | null
           flagged_for_admin_review: boolean
+          founding_badge: boolean
           founding_member: boolean | null
           full_name: string | null
           id: string
@@ -1323,7 +1323,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          founding_badge?: boolean
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -1333,6 +1332,7 @@ export type Database = {
           email_verified?: boolean
           first_name?: string | null
           flagged_for_admin_review?: boolean
+          founding_badge?: boolean
           founding_member?: boolean | null
           full_name?: string | null
           id: string
@@ -1355,7 +1355,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          founding_badge?: boolean
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -1365,6 +1364,7 @@ export type Database = {
           email_verified?: boolean
           first_name?: string | null
           flagged_for_admin_review?: boolean
+          founding_badge?: boolean
           founding_member?: boolean | null
           full_name?: string | null
           id?: string
@@ -2321,7 +2321,7 @@ export type Database = {
           country?: string | null
           email_verified?: boolean | null
           first_name?: string | null
-          founding_member?: never
+          founding_member?: boolean | null
           full_name?: string | null
           id?: string | null
           id_verified?: boolean | null
@@ -2336,7 +2336,7 @@ export type Database = {
           country?: string | null
           email_verified?: boolean | null
           first_name?: string | null
-          founding_member?: never
+          founding_member?: boolean | null
           full_name?: string | null
           id?: string | null
           id_verified?: boolean | null
@@ -2577,7 +2577,10 @@ export type Database = {
         Returns: string[]
       }
       get_guide_completion: { Args: { p_listing_id: string }; Returns: Json }
-      get_listing_exact_location: { Args: { p_listing_id: string }; Returns: Json }
+      get_listing_exact_location: {
+        Args: { p_listing_id: string }
+        Returns: Json
+      }
       get_listing_private_address: {
         Args: { p_listing_id: string }
         Returns: string
@@ -2686,6 +2689,13 @@ export type Database = {
         Returns: undefined
       }
       notify_guide_unlocks: { Args: never; Returns: number }
+      random_point_near: {
+        Args: { p_lat: number; p_lng: number; p_radius_m?: number }
+        Returns: {
+          lat: number
+          lng: number
+        }[]
+      }
       redeem_founding_member_code: {
         Args: { p_code: string; p_user_id: string }
         Returns: string
