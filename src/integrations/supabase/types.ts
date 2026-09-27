@@ -978,6 +978,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          attachment_path: string | null
           body: string
           conversation_id: string
           created_at: string
@@ -987,6 +988,7 @@ export type Database = {
           sender_user_id: string
         }
         Insert: {
+          attachment_path?: string | null
           body: string
           conversation_id: string
           created_at?: string
@@ -996,6 +998,7 @@ export type Database = {
           sender_user_id: string
         }
         Update: {
+          attachment_path?: string | null
           body?: string
           conversation_id?: string
           created_at?: string
@@ -2256,45 +2259,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      welcome_guides_backup_20260926: {
-        Row: {
-          created_at: string | null
-          emergency_contacts: string | null
-          feeding_schedule: string | null
-          house_notes: string | null
-          id: string | null
-          listing_id: string | null
-          owner_user_id: string | null
-          updated_at: string | null
-          vet_info: string | null
-          wifi_info: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          emergency_contacts?: string | null
-          feeding_schedule?: string | null
-          house_notes?: string | null
-          id?: string | null
-          listing_id?: string | null
-          owner_user_id?: string | null
-          updated_at?: string | null
-          vet_info?: string | null
-          wifi_info?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          emergency_contacts?: string | null
-          feeding_schedule?: string | null
-          house_notes?: string | null
-          id?: string | null
-          listing_id?: string | null
-          owner_user_id?: string | null
-          updated_at?: string | null
-          vet_info?: string | null
-          wifi_info?: string | null
-        }
-        Relationships: []
       }
     }
     Views: {
