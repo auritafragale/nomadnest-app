@@ -1047,8 +1047,12 @@ export type Database = {
           created_at: string
           guide_question_id: string | null
           id: string
+          message_lang: string | null
           read_at: string | null
           sender_user_id: string | null
+          translated_at: string | null
+          translated_body: string | null
+          translated_lang: string | null
         }
         Insert: {
           attachment_path?: string | null
@@ -1057,8 +1061,12 @@ export type Database = {
           created_at?: string
           guide_question_id?: string | null
           id?: string
+          message_lang?: string | null
           read_at?: string | null
           sender_user_id?: string | null
+          translated_at?: string | null
+          translated_body?: string | null
+          translated_lang?: string | null
         }
         Update: {
           attachment_path?: string | null
@@ -1067,8 +1075,12 @@ export type Database = {
           created_at?: string
           guide_question_id?: string | null
           id?: string
+          message_lang?: string | null
           read_at?: string | null
           sender_user_id?: string | null
+          translated_at?: string | null
+          translated_body?: string | null
+          translated_lang?: string | null
         }
         Relationships: [
           {
@@ -2819,6 +2831,7 @@ export type Database = {
           unlock_at: string
         }[]
       }
+      sit_update_due: { Args: { p_sit_id: string }; Returns: Json }
       sit_update_photo_sit: { Args: { p_name: string }; Returns: string }
       sitter_guide_sit: {
         Args: { p_listing_id: string; p_user_id: string }
@@ -2832,6 +2845,16 @@ export type Database = {
       }
       toggle_checkin_heart: { Args: { p_checkin_id: string }; Returns: Json }
       unaccent_fallback: { Args: { p_text: string }; Returns: string }
+      update_reminders_due: {
+        Args: never
+        Returns: {
+          listing_title: string
+          owner_first_name: string
+          sit_id: string
+          sitter_user_id: string
+          style: string
+        }[]
+      }
       upsert_push_subscription: {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string }
         Returns: undefined
