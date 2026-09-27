@@ -139,7 +139,7 @@ const MATCH_TOOL = {
  * listing and that the group is still open.
  */
 const groupQuestion = async (
-  service: ReturnType<typeof createClient>,
+  service: SupabaseClient,
   apiKey: string,
   listingId: string,
   questionId: string,
@@ -260,7 +260,7 @@ const ACCESS_FIELD_NAMES: Record<string, string> = {
  * values or answers are read here. Best effort: empty on any error.
  */
 const lockedArrivalFor = async (
-  service: ReturnType<typeof createClient>,
+  service: SupabaseClient,
   listingId: string,
 ): Promise<LockedArrival> => {
   try {
