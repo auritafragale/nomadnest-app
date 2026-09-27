@@ -1621,7 +1621,6 @@ export type Database = {
       }
       reviews: {
         Row: {
-          former_reviewee_user_id: string | null
           created_at: string
           flag_abandonment: boolean
           flag_home_cleanliness: boolean
@@ -1647,7 +1646,6 @@ export type Database = {
           text: string | null
         }
         Insert: {
-          former_reviewee_user_id?: string | null
           created_at?: string
           flag_abandonment?: boolean
           flag_home_cleanliness?: boolean
@@ -1673,7 +1671,6 @@ export type Database = {
           text?: string | null
         }
         Update: {
-          former_reviewee_user_id?: string | null
           created_at?: string
           flag_abandonment?: boolean
           flag_home_cleanliness?: boolean
@@ -1889,11 +1886,6 @@ export type Database = {
       }
       sits: {
         Row: {
-          snapshot_city: string | null
-          snapshot_country: string | null
-          snapshot_end_date: string | null
-          snapshot_start_date: string | null
-          snapshot_title: string | null
           arrival_prompt_sent_at: string | null
           cancelled_at: string | null
           cancelled_from_status:
@@ -1911,11 +1903,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          snapshot_city?: string | null
-          snapshot_country?: string | null
-          snapshot_end_date?: string | null
-          snapshot_start_date?: string | null
-          snapshot_title?: string | null
           arrival_prompt_sent_at?: string | null
           cancelled_at?: string | null
           cancelled_from_status?:
@@ -1933,11 +1920,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          snapshot_city?: string | null
-          snapshot_country?: string | null
-          snapshot_end_date?: string | null
-          snapshot_start_date?: string | null
-          snapshot_title?: string | null
           arrival_prompt_sent_at?: string | null
           cancelled_at?: string | null
           cancelled_from_status?:
