@@ -581,7 +581,6 @@ export type Database = {
       }
       deleted_accounts: {
         Row: {
-          billing_records_retained: boolean
           deleted_at: string
           listing_ids: string[]
           notes: string | null
@@ -589,11 +588,10 @@ export type Database = {
           safety_purge_after: string
           safety_purged_at: string | null
           storage_files_deleted: number | null
-          stripe_subscriptions_cancelled: number | null
+          stripe_customers_deleted: number | null
           user_id: string
         }
         Insert: {
-          billing_records_retained?: boolean
           deleted_at?: string
           listing_ids?: string[]
           notes?: string | null
@@ -601,11 +599,10 @@ export type Database = {
           safety_purge_after?: string
           safety_purged_at?: string | null
           storage_files_deleted?: number | null
-          stripe_subscriptions_cancelled?: number | null
+          stripe_customers_deleted?: number | null
           user_id: string
         }
         Update: {
-          billing_records_retained?: boolean
           deleted_at?: string
           listing_ids?: string[]
           notes?: string | null
@@ -613,7 +610,7 @@ export type Database = {
           safety_purge_after?: string
           safety_purged_at?: string | null
           storage_files_deleted?: number | null
-          stripe_subscriptions_cancelled?: number | null
+          stripe_customers_deleted?: number | null
           user_id?: string
         }
         Relationships: []
