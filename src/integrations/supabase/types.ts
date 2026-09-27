@@ -1369,7 +1369,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          share_name_in_stories: boolean
           avatar_url: string | null
           bio: string | null
           city: string | null
@@ -1399,10 +1398,10 @@ export type Database = {
           preferred_language: string | null
           reliability_score: number
           reliability_strike_email_sent_at: string | null
+          share_name_in_stories: boolean
           updated_at: string
         }
         Insert: {
-          share_name_in_stories?: boolean
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -1432,10 +1431,10 @@ export type Database = {
           preferred_language?: string | null
           reliability_score?: number
           reliability_strike_email_sent_at?: string | null
+          share_name_in_stories?: boolean
           updated_at?: string
         }
         Update: {
-          share_name_in_stories?: boolean
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -1465,6 +1464,7 @@ export type Database = {
           preferred_language?: string | null
           reliability_score?: number
           reliability_strike_email_sent_at?: string | null
+          share_name_in_stories?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -1821,69 +1821,6 @@ export type Database = {
           },
         ]
       }
-      sit_stories: {
-        Row: {
-          attempts: number
-          created_at: string
-          id: string
-          owner_user_id: string | null
-          photo_paths: string[]
-          portfolio_decided_at: string | null
-          portfolio_photo_paths: string[]
-          portfolio_requested_at: string | null
-          portfolio_status: string
-          ready_at: string | null
-          rewrite_requested_at: string | null
-          rewrites_used: number
-          sit_id: string
-          sitter_user_id: string | null
-          status: string
-          story: string | null
-          title: string | null
-          updated_at: string
-        }
-        Insert: {
-          attempts?: number
-          created_at?: string
-          id?: string
-          owner_user_id?: string | null
-          photo_paths?: string[]
-          portfolio_decided_at?: string | null
-          portfolio_photo_paths?: string[]
-          portfolio_requested_at?: string | null
-          portfolio_status?: string
-          ready_at?: string | null
-          rewrite_requested_at?: string | null
-          rewrites_used?: number
-          sit_id: string
-          sitter_user_id?: string | null
-          status?: string
-          story?: string | null
-          title?: string | null
-          updated_at?: string
-        }
-        Update: {
-          attempts?: number
-          created_at?: string
-          id?: string
-          owner_user_id?: string | null
-          photo_paths?: string[]
-          portfolio_decided_at?: string | null
-          portfolio_photo_paths?: string[]
-          portfolio_requested_at?: string | null
-          portfolio_status?: string
-          ready_at?: string | null
-          rewrite_requested_at?: string | null
-          rewrites_used?: number
-          sit_id?: string
-          sitter_user_id?: string | null
-          status?: string
-          story?: string | null
-          title?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       sit_dates: {
         Row: {
           created_at: string
@@ -1984,6 +1921,77 @@ export type Database = {
             foreignKeyName: "sit_reschedule_requests_sit_id_fkey"
             columns: ["sit_id"]
             isOneToOne: false
+            referencedRelation: "sits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sit_stories: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          owner_user_id: string | null
+          photo_paths: string[]
+          portfolio_decided_at: string | null
+          portfolio_photo_paths: string[]
+          portfolio_requested_at: string | null
+          portfolio_status: string
+          ready_at: string | null
+          rewrite_requested_at: string | null
+          rewrites_used: number
+          sit_id: string
+          sitter_user_id: string | null
+          status: string
+          story: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          owner_user_id?: string | null
+          photo_paths?: string[]
+          portfolio_decided_at?: string | null
+          portfolio_photo_paths?: string[]
+          portfolio_requested_at?: string | null
+          portfolio_status?: string
+          ready_at?: string | null
+          rewrite_requested_at?: string | null
+          rewrites_used?: number
+          sit_id: string
+          sitter_user_id?: string | null
+          status?: string
+          story?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          owner_user_id?: string | null
+          photo_paths?: string[]
+          portfolio_decided_at?: string | null
+          portfolio_photo_paths?: string[]
+          portfolio_requested_at?: string | null
+          portfolio_status?: string
+          ready_at?: string | null
+          rewrite_requested_at?: string | null
+          rewrites_used?: number
+          sit_id?: string
+          sitter_user_id?: string | null
+          status?: string
+          story?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sit_stories_sit_id_fkey"
+            columns: ["sit_id"]
+            isOneToOne: true
             referencedRelation: "sits"
             referencedColumns: ["id"]
           },
@@ -2709,7 +2717,11 @@ export type Database = {
         }[]
       }
       decide_sit_story_portfolio: {
-        Args: { p_decision: string; p_photo_paths?: string[]; p_story_id: string }
+        Args: {
+          p_decision: string
+          p_photo_paths?: string[]
+          p_story_id: string
+        }
         Returns: string
       }
       decline_application: { Args: { p_application_id: string }; Returns: Json }
@@ -2733,7 +2745,10 @@ export type Database = {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: string[]
       }
-      get_conversation_active_sits: { Args: { p_conversation_ids: string[] }; Returns: Json }
+      get_conversation_active_sits: {
+        Args: { p_conversation_ids: string[] }
+        Returns: Json
+      }
       get_guide_completion: { Args: { p_listing_id: string }; Returns: Json }
       get_listing_exact_location: {
         Args: { p_listing_id: string }
@@ -2873,7 +2888,11 @@ export type Database = {
       request_is_end_user: { Args: never; Returns: boolean }
       request_listing_timezone_backfill: { Args: never; Returns: undefined }
       request_privacy_retention: { Args: never; Returns: undefined }
-      request_sit_story_rewrite: { Args: { p_story_id: string }; Returns: undefined }
+      request_sit_story_rewrite: {
+        Args: { p_story_id: string }
+        Returns: undefined
+      }
+      requeue_sit_stories: { Args: never; Returns: number }
       respond_to_sit_reschedule: {
         Args: { p_accept: boolean; p_request_id: string }
         Returns: Json
@@ -2894,7 +2913,10 @@ export type Database = {
         Args: { p_phone: string; p_target: string }
         Returns: undefined
       }
-      set_my_story_name_sharing: { Args: { p_allow: boolean }; Returns: boolean }
+      set_my_story_name_sharing: {
+        Args: { p_allow: boolean }
+        Returns: boolean
+      }
       set_sit_story_portfolio_request: {
         Args: { p_request: boolean; p_story_id: string }
         Returns: string
@@ -2910,6 +2932,10 @@ export type Database = {
           timezone: string
           unlock_at: string
         }[]
+      }
+      sit_story_allowed: {
+        Args: { p_owner: string; p_sitter: string }
+        Returns: boolean
       }
       sit_update_due: { Args: { p_sit_id: string }; Returns: Json }
       sit_update_photo_sit: { Args: { p_name: string }; Returns: string }
