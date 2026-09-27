@@ -507,6 +507,27 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_rate_limits: {
+        Row: {
+          created_at: string
+          email_hash: string
+          id: string
+          ip_hash: string
+        }
+        Insert: {
+          created_at?: string
+          email_hash: string
+          id?: string
+          ip_hash: string
+        }
+        Update: {
+          created_at?: string
+          email_hash?: string
+          id?: string
+          ip_hash?: string
+        }
+        Relationships: []
+      }
       conversation_pair_threads: {
         Row: {
           created_at: string
@@ -2759,6 +2780,10 @@ export type Database = {
       }
       release_job_lease: { Args: { p_job_name: string }; Returns: undefined }
       remove_guide_question: { Args: { p_question_id: string }; Returns: Json }
+      request_internal_function: {
+        Args: { p_body?: Json; p_function: string }
+        Returns: number
+      }
       request_is_end_user: { Args: never; Returns: boolean }
       request_listing_timezone_backfill: { Args: never; Returns: undefined }
       request_privacy_retention: { Args: never; Returns: undefined }
