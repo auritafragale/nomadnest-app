@@ -155,7 +155,7 @@ serve(async (req) => {
       }
     }
 
-    await admin
+    const { error: ledgerError } = await admin
       .from("deleted_accounts")
       .update({
         stripe_subscriptions_cancelled: stripeCancelled,
@@ -168,6 +168,9 @@ serve(async (req) => {
         ].filter(Boolean).join(" "),
       })
       .eq("user_id", userId);
+    // The ledger row exists (prepare_account_deletion); a failed update only
+    // loses these counts, so log it and carry on with the deletion.
+    if (ledgerError) log({ user: userId, step: "ledger", failed: ledgerError.message });
 
     // 6) The account itself (everything else cascades)
     const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
