@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { OwnerListingCard } from "@/components/dashboard/OwnerListingCard";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
+import { useListingAllowance, LISTING_LIMIT_NOTE } from "@/hooks/useListingAllowance";
 import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection";
 
 import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompletenessCard";
@@ -458,6 +459,7 @@ const OwnerDashboard = ({
   onReviewAutoOpened?: (sitId: string) => void;
 }) => {
   const { data: listings = [], isLoading: listingsLoading } = useOwnerListings();
+  const { atLimit } = useListingAllowance();
   const listingStats = { total: listings.length };
 
 
@@ -523,6 +525,7 @@ const OwnerDashboard = ({
                 {listings.map((listing) => (
                   <OwnerListingCard key={listing.id} listing={listing} />
                 ))}
+                {atLimit && <p className="text-xs text-muted-foreground">{LISTING_LIMIT_NOTE}</p>}
               </div>
             )}
           </CardContent>

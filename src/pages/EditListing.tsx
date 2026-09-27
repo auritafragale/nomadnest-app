@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight, Loader2, Save, Trash2 } from "lucide-react";
@@ -30,6 +30,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { ListingDeclaration, DECLARATION_REQUIRED_TOAST } from "@/components/listing/ListingDeclaration";
 
 const steps = [
   { number: 1, title: "Basics" },
@@ -77,6 +78,14 @@ const EditListing = () => {
   const [originalPetIds, setOriginalPetIds] = useState<string[]>([]);
   const [originalSitDateIds, setOriginalSitDateIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Publishing a draft needs the owner declaration (older published or
+  // paused listings don't).
+  const [declarationAccepted, setDeclarationAccepted] = useState(false);
+  const needsDeclaration = listing?.status === "draft";
+  // "Add new dates" on the dashboard card opens here with ?focus=dates.
+  const [searchParams] = useSearchParams();
+  const focusDates = searchParams.get("focus") === "dates";
+  const focusedDates = useRef(false);
 
   const totalSteps = 4;
 
@@ -89,6 +98,17 @@ const EditListing = () => {
       setOriginalSitDateIds(listing.sit_dates.map((d) => d.id));
     }
   }, [listing]);
+
+  // Once the form is ready: add an empty date range and scroll to the dates.
+  useEffect(() => {
+    if (!focusDates || !formData || focusedDates.current) return;
+    focusedDates.current = true;
+    setCurrentStep(1);
+    addSitDate();
+    setTimeout(() => {
+      document.getElementById("listing-dates")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  }, [focusDates, formData]);
 
   const updateFormData = (data: Partial<ListingFormData>) => {
     setFormData((prev) => (prev ? { ...prev, ...data } : null));
@@ -297,6 +317,11 @@ const EditListing = () => {
     if (!user || !formData || !id) return;
     if (!validateCurrentStep()) return;
 
+    if (status === "published" && needsDeclaration && !declarationAccepted) {
+      toast(DECLARATION_REQUIRED_TOAST);
+      return;
+    }
+
     // validateCurrentStep only checks the step currently on screen, but dates
     // live on step 1 — if the member reached this final step by jumping
     // straight there, an incomplete range would otherwise never get caught.
@@ -317,6 +342,7 @@ const EditListing = () => {
         status,
         originalPetIds,
         originalSitDateIds,
+        declarationAccepted: needsDeclaration && declarationAccepted,
       },
       {
         onSuccess: () => {
@@ -504,6 +530,10 @@ const EditListing = () => {
           <Card className="mb-6">
             <CardContent className="pt-6">{renderStep()}</CardContent>
           </Card>
+
+          {currentStep === totalSteps && needsDeclaration && (
+            <ListingDeclaration checked={declarationAccepted} onCheckedChange={setDeclarationAccepted} />
+          )}
 
           {/* Navigation */}
           <div className="flex items-center justify-between gap-2">

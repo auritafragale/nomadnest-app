@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
+import { useListingAllowance } from "@/hooks/useListingAllowance";
 
 interface DashboardHeaderProps {
   role: "sitter" | "owner";
@@ -27,6 +28,8 @@ const DashboardHeader = ({
   country,
 }: DashboardHeaderProps) => {
   const { subscribed, membershipType, foundingMember, loading } = useMembership();
+  // At the listing limit, the listing card's "Add new dates" is the way forward.
+  const { atLimit } = useListingAllowance();
 
   const planName = membershipType
     ? MEMBERSHIP_PLANS[membershipType as keyof typeof MEMBERSHIP_PLANS]?.name ?? "Membership"
@@ -79,12 +82,14 @@ const DashboardHeader = ({
 
       <div className="flex items-center gap-2 flex-wrap">
         {role === "owner" ? (
-          <Link to="/create-listing">
-            <Button size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Listing
-            </Button>
-          </Link>
+          !atLimit && (
+            <Link to="/create-listing">
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Listing
+              </Button>
+            </Link>
+          )
         ) : (
           <Link to="/saved">
             <Button size="sm" variant="outline">

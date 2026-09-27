@@ -25,7 +25,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { MapPin, Calendar, Edit, Eye, Users, MoreVertical, Pause, Play, Trash2, ChevronDown, RotateCcw, Loader2, BookOpen } from "lucide-react";
+import { MapPin, Calendar, Edit, Eye, Users, MoreVertical, Pause, Play, Trash2, ChevronDown, RotateCcw, Loader2, BookOpen, CalendarPlus } from "lucide-react";
 import { format } from "date-fns";
 import { OwnerListing } from "@/hooks/useOwnerListings";
 import { useUpdateListingStatus, useDeleteListing } from "@/hooks/useOwnerListingActions";
@@ -233,13 +233,20 @@ export const OwnerListingCard = ({ listing }: OwnerListingCardProps) => {
             </Collapsible>
           )}
 
-          {/* Actions: Edit and Welcome Guide (View listing is in the menu, and on the photo and title) */}
+          {/* Actions: Add new dates (main), Edit listing and Welcome Guide
+              (View listing is in the menu, and on the photo and title) */}
           <div className="mt-3">
             <div className="flex flex-wrap items-center gap-2">
+              <Link to={`/edit-listing/${listing.id}?focus=dates`}>
+                <Button size="sm" className="h-7 px-2 text-xs">
+                  <CalendarPlus className="w-3 h-3 mr-1" />
+                  Add new dates
+                </Button>
+              </Link>
               <Link to={`/edit-listing/${listing.id}`}>
                 <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
                   <Edit className="w-3 h-3 mr-1" />
-                  Edit
+                  Edit listing
                 </Button>
               </Link>
               <Link to={`/listing/${listing.id}/welcome-guide`}>

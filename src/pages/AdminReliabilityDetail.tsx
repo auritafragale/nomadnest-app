@@ -12,6 +12,7 @@ import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { ListingAllowanceCard } from "@/components/admin/ListingAllowanceCard";
 
 interface ProfileInfo {
   full_name: string | null;
@@ -221,6 +222,8 @@ const AdminReliabilityDetail = () => {
                 )}
               </CardContent>
             </Card>
+
+            {userId && <ListingAllowanceCard userId={userId} />}
 
             <Card>
               <CardHeader>

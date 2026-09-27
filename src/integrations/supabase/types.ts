@@ -857,6 +857,7 @@ export type Database = {
       listings: {
         Row: {
           address_private: string | null
+          owner_declaration_accepted_at: string | null
           amenities: string[] | null
           approx_latitude: number | null
           approx_longitude: number | null
@@ -895,6 +896,7 @@ export type Database = {
         }
         Insert: {
           address_private?: string | null
+          owner_declaration_accepted_at?: string | null
           amenities?: string[] | null
           approx_latitude?: number | null
           approx_longitude?: number | null
@@ -933,6 +935,7 @@ export type Database = {
         }
         Update: {
           address_private?: string | null
+          owner_declaration_accepted_at?: string | null
           amenities?: string[] | null
           approx_latitude?: number | null
           approx_longitude?: number | null
@@ -1389,6 +1392,7 @@ export type Database = {
           membership_expiry: string | null
           membership_status: string | null
           membership_type: string | null
+          max_listings: number
           onfido_applicant_id: string | null
           onfido_check_id: string | null
           phone_line_type: string | null
@@ -1422,6 +1426,7 @@ export type Database = {
           membership_expiry?: string | null
           membership_status?: string | null
           membership_type?: string | null
+          max_listings?: number
           onfido_applicant_id?: string | null
           onfido_check_id?: string | null
           phone_line_type?: string | null
@@ -1455,6 +1460,7 @@ export type Database = {
           membership_expiry?: string | null
           membership_status?: string | null
           membership_type?: string | null
+          max_listings?: number
           onfido_applicant_id?: string | null
           onfido_check_id?: string | null
           phone_line_type?: string | null
@@ -1668,6 +1674,7 @@ export type Database = {
           flag_sitter_cleanliness: boolean
           flag_unauthorized_guests: boolean | null
           flag_undisclosed_cameras: boolean
+          flag_not_homeowner: string | null
           former_reviewee_user_id: string | null
           id: string
           rating: number
@@ -1694,6 +1701,7 @@ export type Database = {
           flag_sitter_cleanliness?: boolean
           flag_unauthorized_guests?: boolean | null
           flag_undisclosed_cameras?: boolean
+          flag_not_homeowner?: string | null
           former_reviewee_user_id?: string | null
           id?: string
           rating: number
@@ -1720,6 +1728,7 @@ export type Database = {
           flag_sitter_cleanliness?: boolean
           flag_unauthorized_guests?: boolean | null
           flag_undisclosed_cameras?: boolean
+          flag_not_homeowner?: string | null
           former_reviewee_user_id?: string | null
           id?: string
           rating?: number
@@ -2513,6 +2522,7 @@ export type Database = {
         Args: { p_decision: string; p_notes?: string; p_submission_id: string }
         Returns: string
       }
+      admin_get_listing_allowance: { Args: { p_user_id: string }; Returns: Json }
       admin_get_member_contact: { Args: { p_user_id: string }; Returns: Json }
       admin_get_pending_counts: {
         Args: never
@@ -2572,6 +2582,10 @@ export type Database = {
           status: string
           user_id: string
         }[]
+      }
+      admin_set_max_listings: {
+        Args: { p_max_listings: number; p_user_id: string }
+        Returns: number
       }
       admin_list_members: {
         Args: never

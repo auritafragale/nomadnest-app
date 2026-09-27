@@ -376,6 +376,12 @@ const AdminHub = () => {
                         {m.id_verified && <Badge variant="outline">ID</Badge>}
                         {m.email_verified && <Badge variant="outline">Email</Badge>}
                         {m.phone_verified && <Badge variant="outline">Phone</Badge>}
+                        <Link
+                          to={`/admin/reliability/${m.id}`}
+                          className="ml-1 text-xs text-primary hover:underline"
+                        >
+                          Manage
+                        </Link>
                       </div>
                     </CardContent>
                   </Card>

@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { flagLabel, isAdminFlagWarning } from "@/lib/trustFlags";
 
 type ReviewStatus = "pending" | "reviewed" | "follow_up_needed";
 
@@ -185,6 +186,13 @@ const AdminTrust = () => {
                         {group.subject_type === "listing" ? "Home" : "Nomad"} · {group.rows.length} flagged categor
                         {group.rows.length === 1 ? "y" : "ies"}
                       </p>
+                      {group.rows
+                        .filter((r) => isAdminFlagWarning(r.category, r.flag_count))
+                        .map((r) => (
+                          <Badge key={r.id} variant="destructive" className="mt-1 mr-1">
+                            Admin warning: {flagLabel(r.category)} ({r.flag_count} sits)
+                          </Badge>
+                        ))}
                       <Link
                         to={
                           group.subject_type === "listing"

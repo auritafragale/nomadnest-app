@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, ArrowLeft, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
-import { flagLabel } from "@/lib/trustFlags";
+import { flagLabel, isAdminFlagWarning } from "@/lib/trustFlags";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -313,6 +313,9 @@ const AdminTrustDetail = () => {
                             {s.strike_two_email_sent_at && <Badge variant="muted">Heads-up sent</Badge>}
                             {s.show_strike_three_warning && (
                               <Badge variant="destructive">Notice showing</Badge>
+                            )}
+                            {isAdminFlagWarning(s.category, s.flag_count) && (
+                              <Badge variant="destructive">Admin warning</Badge>
                             )}
                             <Badge variant={STATUS_BADGE_VARIANT[s.review_status]}>
                               {STATUS_TABS.find((t) => t.value === s.review_status)?.label ?? s.review_status}

@@ -13,7 +13,7 @@ const faqs = [
   {
     question: "How do I create a listing for my home?",
     answer:
-      "Sign up as a Pet Parent, complete your profile, then click 'Create Listing' from your dashboard. You'll be guided through adding your pets, home details, and available dates.",
+      "Sign up as a Pet Parent, complete your profile, then click 'Create Listing' from your dashboard. You'll be guided through adding your pets, home details, and available dates. Your membership includes one home: when you need a sitter again, use 'Add new dates' on your listing.",
   },
   {
     question: "Is pet sitting really free?",

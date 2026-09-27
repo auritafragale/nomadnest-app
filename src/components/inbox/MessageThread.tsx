@@ -85,6 +85,13 @@ export const MessageThread = ({
   );
 
   const { data: activeSits = [] } = useConversationActiveSits(conversation?.conversation_ids ?? []);
+  // One sit for the pill: as the sitter, the sit due today (else the first
+  // live one); otherwise the owner's live sit.
+  const activeSit =
+    activeSits.find((s) => s.role === "sitter" && s.due_today) ??
+    activeSits.find((s) => s.role === "sitter") ??
+    activeSits.find((s) => s.role === "owner") ??
+    null;
 
   // Current user is the sitter in this conversation?
   const isCurrentUserSitter = !!conversation && !!user && conversation.sitter_user_id === user.id;
@@ -350,7 +357,7 @@ export const MessageThread = ({
                   <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
                     <ChatUpdateCard
                       update={checkin}
-                      sitId={null}
+                      sitId={activeSit?.sit_id ?? null}
                       isOwn={isOwn}
                       viewerIsOwner={isCurrentUserOwner}
                       time={formatMessageDate(message.created_at)}
@@ -550,44 +557,37 @@ export const MessageThread = ({
         </div>
       )}
 
-      {/* Daily updates: one line per live sit between the two of you, saying
-          whose update and which home (the Inbox merges a pair's chats). */}
-      {activeSits.length > 0 && (
-        <div className="space-y-1.5 border-b border-border bg-muted/30 px-3 py-2">
-          {activeSits.map((sit) => {
-            const mine = sit.role === "sitter";
-            const label = mine
-              ? sit.sent_today
-                ? `Your update for ${sit.listing_title}: sent today`
-                : `Send today's update for ${sit.listing_title}`
-              : sit.sent_today
-                ? `${sit.sitter_first_name}'s update for ${sit.listing_title}: sent today`
-                : sit.due_today
-                  ? `${sit.sitter_first_name}'s update for ${sit.listing_title}: not sent yet today`
-                  : null;
-            if (!label) return null;
-            return (
-              <div key={sit.sit_id} className="flex items-center gap-2">
-                <Link
-                  to={`/sits/${sit.sit_id}`}
-                  className={cn(
-                    "inline-flex min-w-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                    sit.sent_today
-                      ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                      : mine && sit.due_today
-                        ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-                        : "border-border bg-background text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {sit.sent_today ? <Check className="h-3.5 w-3.5 shrink-0" /> : <Camera className="h-3.5 w-3.5 shrink-0" />}
-                  <span className="truncate">{label}</span>
-                </Link>
-                <Link to={`/sits/${sit.sit_id}`} className="ml-auto whitespace-nowrap text-xs text-primary hover:underline">
-                  See updates
-                </Link>
-              </div>
-            );
-          })}
+      {/* Today's update: one pill for the most relevant live sit between the
+          two of you (the Inbox merges a pair's chats). */}
+      {activeSit && (
+        <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-2">
+          <Link
+            to={`/sits/${activeSit.sit_id}`}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              activeSit.sent_today
+                ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                : activeSit.role === "sitter" && activeSit.due_today
+                  ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "border-border bg-background text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {activeSit.sent_today ? <Check className="h-3.5 w-3.5" /> : <Camera className="h-3.5 w-3.5" />}
+            {activeSit.role === "sitter"
+              ? activeSit.sent_today
+                ? "Today's update sent"
+                : activeSit.due_today
+                  ? "Send today's update"
+                  : "No update due today"
+              : activeSit.sent_today
+                ? "Today's update: sent"
+                : activeSit.due_today
+                  ? "Today's update: not yet"
+                  : "No update due today"}
+          </Link>
+          <Link to={`/sits/${activeSit.sit_id}`} className="ml-auto whitespace-nowrap text-xs text-primary hover:underline">
+            See updates
+          </Link>
         </div>
       )}
 

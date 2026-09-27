@@ -161,12 +161,15 @@ export const useUpdateListing = () => {
       status,
       originalPetIds,
       originalSitDateIds,
+      declarationAccepted = false,
     }: {
       listingId: string;
       formData: ListingFormData;
       status: "draft" | "published" | "paused";
       originalPetIds: string[];
       originalSitDateIds: string[];
+      /** The owner ticked the declaration while publishing a draft. */
+      declarationAccepted?: boolean;
     }) => {
       if (!user) throw new Error("Not authenticated");
 
@@ -203,6 +206,8 @@ export const useUpdateListing = () => {
           car_needed: formData.car_needed,
           heavy_gardening: formData.heavy_gardening,
           wheelchair_accessible: formData.wheelchair_accessible,
+          // The database stamps its own time, once, and ignores later values.
+          ...(declarationAccepted ? { owner_declaration_accepted_at: new Date().toISOString() } : {}),
         })
         .eq("id", listingId);
 

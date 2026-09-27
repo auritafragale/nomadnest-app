@@ -66,6 +66,8 @@ const handler = async (req: Request): Promise<Response> => {
       .select("id, subject_type, subject_user_id, category, flag_count")
       .gte("flag_count", 2)
       .is("strike_two_email_sent_at", null)
+      // Admin-only category: the member is never emailed about it.
+      .neq("category", "not_homeowner")
       .limit(100);
 
     if (error) throw error;

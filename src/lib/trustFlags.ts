@@ -14,7 +14,10 @@ export type NomadFlagCategory =
   | "abandonment"
   | "unauthorized_guests";
 
-export type FlagCategory = HomeFlagCategory | NomadFlagCategory;
+/** Seen by admins only: never a member-facing notice or heads-up email. */
+export type AdminFlagCategory = "not_homeowner";
+
+export type FlagCategory = HomeFlagCategory | NomadFlagCategory | AdminFlagCategory;
 
 export const FLAG_LABELS: Record<FlagCategory, string> = {
   home_cleanliness: "Home Cleanliness",
@@ -24,7 +27,31 @@ export const FLAG_LABELS: Record<FlagCategory, string> = {
   pet_neglect: "Pet Care Protocol",
   abandonment: "Timeline Reliability",
   unauthorized_guests: "Unauthorized Guests",
+  not_homeowner: "Not the homeowner",
 };
+
+/**
+ * Asked of Nomads only. "No" raises an admin-only not_homeowner flag on the
+ * listing; admins see a warning once it comes from 2 or more different sits.
+ */
+export const HOMEOWNER_QUESTION = {
+  column: "flag_not_homeowner",
+  category: "not_homeowner",
+  question: "Was the person you dealt with the homeowner?",
+  options: [
+    { value: "yes", label: "Yes" },
+    { value: "no", label: "No" },
+    { value: "not_sure", label: "Not sure" },
+  ],
+} as const;
+
+export type HomeownerAnswer = (typeof HOMEOWNER_QUESTION.options)[number]["value"];
+
+export const NOT_HOMEOWNER_ADMIN_WARNING_AT = 2;
+
+/** True for an admin-only category that has reached its admin warning. */
+export const isAdminFlagWarning = (category: string, flagCount: number) =>
+  category === "not_homeowner" && flagCount >= NOT_HOMEOWNER_ADMIN_WARNING_AT;
 
 /** Review columns that raise a private flag when answered "No". */
 export const HOME_FLAG_QUESTIONS: {

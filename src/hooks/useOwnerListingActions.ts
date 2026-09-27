@@ -41,6 +41,7 @@ export const useDeleteListing = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-listings"] });
+      queryClient.invalidateQueries({ queryKey: ["listing-allowance"] });
       toast({
         title: "Listing deleted",
         description: "Your listing has been permanently removed.",

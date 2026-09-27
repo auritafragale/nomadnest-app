@@ -64,7 +64,7 @@ const BasicInfoStep = ({
           />
         </div>
 
-        <div className="space-y-2">
+        <div id="listing-dates" className="space-y-2 scroll-mt-24">
           <Label className="text-base font-semibold">
             When do you need a Nomad?
           </Label>

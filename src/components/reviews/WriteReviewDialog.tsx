@@ -18,7 +18,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Star, PenLine, Paperclip, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sendNotification } from "@/lib/notifications";
-import { HOME_FLAG_QUESTIONS, NOMAD_FLAG_QUESTIONS } from "@/lib/trustFlags";
+import { HOME_FLAG_QUESTIONS, NOMAD_FLAG_QUESTIONS, HOMEOWNER_QUESTION } from "@/lib/trustFlags";
 
 const EVIDENCE_BUCKET = "arrival-vault-photos";
 /** Flags a Nomad reviewer can back with a photo from their Arrival Vault — the Pet Parent side has no vault. */
@@ -53,10 +53,13 @@ interface StoredFlagEvidence {
   photo?: { dataUrl: string; name: string; type: string };
 }
 
+/** "not_sure" is only an answer to the homeowner question. */
+type FlagAnswer = "yes" | "no" | "not_sure";
+
 interface ReviewDraft {
   text: string;
   ratings: Record<CategoryKey, number>;
-  flagAnswers: Record<string, "yes" | "no" | undefined>;
+  flagAnswers: Record<string, FlagAnswer | undefined>;
   flagEvidence: Record<string, StoredFlagEvidence>;
 }
 
@@ -169,7 +172,7 @@ const WriteReviewDialog = ({
 
   // `reviewType === "sitter"` means a Pet Parent is reviewing a Nomad.
   const flagQuestions = reviewType === "sitter" ? NOMAD_FLAG_QUESTIONS : HOME_FLAG_QUESTIONS;
-  const [flagAnswers, setFlagAnswers] = useState<Record<string, "yes" | "no" | undefined>>({});
+  const [flagAnswers, setFlagAnswers] = useState<Record<string, FlagAnswer | undefined>>({});
   const [flagEvidence, setFlagEvidence] = useState<Record<string, FlagEvidenceDraft>>({});
 
   // Restore a saved draft once per sit each time this dialog opens, then
@@ -281,7 +284,7 @@ const WriteReviewDialog = ({
       cancelled = true;
     };
   }, [open, sitId, restoredForSitId, text, ratings, flagAnswers, flagEvidence]);
-  const isFlagRaised = (column: string, answer: "yes" | "no" | undefined) => {
+  const isFlagRaised = (column: string, answer: FlagAnswer | undefined) => {
     const q = flagQuestions.find((fq) => fq.column === column);
     if (!q || !answer) return false;
     return q.yesIsGood ? answer === "no" : answer === "yes";
@@ -350,6 +353,11 @@ const WriteReviewDialog = ({
         insertPayload[c.key] = ratings[c.key];
       }
       Object.assign(insertPayload, flagPayload());
+      // Nomads only: stored privately, raises an admin-only flag on "no".
+      const homeownerAnswer = flagAnswers[HOMEOWNER_QUESTION.column];
+      if (isNomadReviewer && homeownerAnswer) {
+        insertPayload[HOMEOWNER_QUESTION.column] = homeownerAnswer;
+      }
 
       const { data: insertedReview, error } = await supabase
         .from("reviews")
@@ -713,6 +721,28 @@ const WriteReviewDialog = ({
                 </div>
               );
             })}
+
+            {isNomadReviewer && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">{HOMEOWNER_QUESTION.question}</Label>
+                <div className="flex gap-2">
+                  {HOMEOWNER_QUESTION.options.map((option) => (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      size="sm"
+                      variant={flagAnswers[HOMEOWNER_QUESTION.column] === option.value ? "default" : "outline"}
+                      className="flex-1"
+                      onClick={() =>
+                        setFlagAnswers((prev) => ({ ...prev, [HOMEOWNER_QUESTION.column]: option.value }))
+                      }
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3">

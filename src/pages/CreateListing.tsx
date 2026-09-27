@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight, Loader2, Save, BookOpen, PartyPopper } from "lucide-react";
@@ -16,7 +17,9 @@ import { useListingForm } from "@/hooks/useListingForm";
 import { useMembership } from "@/hooks/useMembership";
 import MembershipGate from "@/components/membership/MembershipGate";
 import { useVerification } from "@/hooks/useVerification";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Home } from "lucide-react";
+import { useListingAllowance, LISTING_LIMIT_NOTE } from "@/hooks/useListingAllowance";
+import { ListingDeclaration, DECLARATION_REQUIRED_TOAST } from "@/components/listing/ListingDeclaration";
 
 const steps = [
   { number: 1, title: "Basics" },
@@ -34,6 +37,9 @@ const CreateListing = () => {
   const [publishedListingId, setPublishedListingId] = useState<string | null>(null);
   const { hasAccess, loading: membershipLoading } = useMembership();
   const { data: verificationData, isLoading: verificationLoading } = useVerification();
+  const queryClient = useQueryClient();
+  const { atLimit } = useListingAllowance();
+  const [declarationAccepted, setDeclarationAccepted] = useState(false);
 
   const {
     formData,
@@ -167,6 +173,11 @@ const CreateListing = () => {
 
     if (!validateCurrentStep()) return;
 
+    if (status === "published" && !declarationAccepted) {
+      toast(DECLARATION_REQUIRED_TOAST);
+      return;
+    }
+
     // validateCurrentStep only checks the step currently on screen, but dates
     // live on step 1 — if the member reached this final step by jumping
     // straight there, an incomplete range would otherwise never get caught.
@@ -209,6 +220,9 @@ const CreateListing = () => {
           description: formData.description,
           ideal_nomad_types: formData.ideal_nomad_types,
           status,
+          // The database replaces this with its own time; it only records
+          // that the declaration was ticked.
+          owner_declaration_accepted_at: declarationAccepted ? new Date().toISOString() : null,
           home_type: formData.home_type || null,
           location_type: formData.location_type || null,
           public_transport_accessible: formData.public_transport_accessible,
@@ -244,6 +258,8 @@ const CreateListing = () => {
         .single();
 
       if (listingError) throw listingError;
+      queryClient.invalidateQueries({ queryKey: ["listing-allowance"] });
+      queryClient.invalidateQueries({ queryKey: ["owner-listings"] });
 
       // Create pets
       const petsToInsert = formData.pets.map((pet) => ({
@@ -417,7 +433,24 @@ const CreateListing = () => {
               </CardContent>
             </Card>
           )}
-          {!verificationLoading && verificationData?.id_verified && (<>
+          {!verificationLoading && verificationData?.id_verified && atLimit && (
+            <Card className="border-2 border-dashed border-muted-foreground/30 mb-6">
+              <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+                <Home className="w-10 h-10 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">You already have a listing</h3>
+                <p className="text-muted-foreground mb-6 max-w-sm">{LISTING_LIMIT_NOTE}</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button asChild>
+                    <Link to="/dashboard">Add new dates to your listing</Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link to="/contact">Contact us</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {!verificationLoading && verificationData?.id_verified && !atLimit && (<>
           {/* Step Indicator */}
           <div className="mb-8">
             <StepIndicator
@@ -431,6 +464,10 @@ const CreateListing = () => {
           <Card className="mb-6">
             <CardContent className="pt-6">{renderStep()}</CardContent>
           </Card>
+
+          {currentStep === totalSteps && (
+            <ListingDeclaration checked={declarationAccepted} onCheckedChange={setDeclarationAccepted} />
+          )}
 
           {/* Navigation */}
           <div className="flex items-center justify-between gap-2">
