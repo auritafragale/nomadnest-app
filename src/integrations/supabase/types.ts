@@ -1041,10 +1041,6 @@ export type Database = {
       }
       messages: {
         Row: {
-          message_lang: string | null
-          translated_at: string | null
-          translated_body: string | null
-          translated_lang: string | null
           attachment_path: string | null
           body: string
           conversation_id: string
@@ -1055,10 +1051,6 @@ export type Database = {
           sender_user_id: string | null
         }
         Insert: {
-          message_lang?: string | null
-          translated_at?: string | null
-          translated_body?: string | null
-          translated_lang?: string | null
           attachment_path?: string | null
           body: string
           conversation_id: string
@@ -1069,10 +1061,6 @@ export type Database = {
           sender_user_id?: string | null
         }
         Update: {
-          message_lang?: string | null
-          translated_at?: string | null
-          translated_body?: string | null
-          translated_lang?: string | null
           attachment_path?: string | null
           body?: string
           conversation_id?: string
