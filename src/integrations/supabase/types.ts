@@ -371,7 +371,7 @@ export type Database = {
           created_at: string
           id: string
           note: string | null
-          reporter_user_id: string | null
+          reporter_user_id: string
           review_id: string | null
           sit_id: string | null
           subject_id: string
@@ -383,7 +383,7 @@ export type Database = {
           created_at?: string
           id?: string
           note?: string | null
-          reporter_user_id?: string | null
+          reporter_user_id: string
           review_id?: string | null
           sit_id?: string | null
           subject_id: string
@@ -913,31 +913,28 @@ export type Database = {
       }
       manual_id_verifications: {
         Row: {
-          documents_deleted_at: string | null
           created_at: string
           id: string
-          id_photo_path: string | null
+          id_photo_path: string
           notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
-          selfie_path: string | null
+          selfie_path: string
           status: string
           user_id: string
         }
         Insert: {
-          documents_deleted_at?: string | null
           created_at?: string
           id?: string
-          id_photo_path?: string | null
+          id_photo_path: string
           notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
-          selfie_path?: string | null
+          selfie_path: string
           status?: string
           user_id: string
         }
         Update: {
-          documents_deleted_at?: string | null
           created_at?: string
           id?: string
           id_photo_path?: string
@@ -1484,7 +1481,7 @@ export type Database = {
           evidence_paths: string[] | null
           id: string
           reason: string
-          reporter_user_id: string | null
+          reporter_user_id: string
           status: Database["public"]["Enums"]["report_status"]
           target_id: string
           target_type: Database["public"]["Enums"]["report_target_type"]
@@ -1496,7 +1493,7 @@ export type Database = {
           evidence_paths?: string[] | null
           id?: string
           reason: string
-          reporter_user_id?: string | null
+          reporter_user_id: string
           status?: Database["public"]["Enums"]["report_status"]
           target_id: string
           target_type: Database["public"]["Enums"]["report_target_type"]
@@ -1605,8 +1602,8 @@ export type Database = {
           rating_reliability: number | null
           rating_respect_home: number | null
           reviewee_user_id: string
-          reviewer_user_id: string | null
-          sit_id: string | null
+          reviewer_user_id: string
+          sit_id: string
           text: string | null
         }
         Insert: {
@@ -1630,8 +1627,8 @@ export type Database = {
           rating_reliability?: number | null
           rating_respect_home?: number | null
           reviewee_user_id: string
-          reviewer_user_id?: string | null
-          sit_id?: string | null
+          reviewer_user_id: string
+          sit_id: string
           text?: string | null
         }
         Update: {
@@ -2337,10 +2334,6 @@ export type Database = {
           published_listings: number
           total_members: number
         }[]
-      }
-      admin_decide_id_verification: {
-        Args: { p_decision: string; p_notes?: string; p_submission_id: string }
-        Returns: string
       }
       admin_get_member_contact: { Args: { p_user_id: string }; Returns: Json }
       admin_get_pending_counts: {
