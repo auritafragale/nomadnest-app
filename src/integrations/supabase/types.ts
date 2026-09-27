@@ -2655,6 +2655,7 @@ export type Database = {
         Returns: undefined
       }
       notify_guide_unlocks: { Args: never; Returns: number }
+      profile_is_discoverable: { Args: { p_user_id: string }; Returns: boolean }
       random_point_near: {
         Args: { p_lat: number; p_lng: number; p_radius_m?: number }
         Returns: {
