@@ -80,3 +80,9 @@ verify_jwt = false
 
 [functions.cleanup-checkin-photos]
 verify_jwt = false
+
+[functions.export-my-data]
+verify_jwt = false
+
+[functions.privacy-retention]
+verify_jwt = false

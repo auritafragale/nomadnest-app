@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { DownloadMyDataCard } from "@/components/settings/DownloadMyDataCard";
 import { UpdateLanguageCard } from "@/components/settings/UpdateLanguageCard";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -769,6 +770,9 @@ const Settings = () => {
               </CardContent>
             </Card>
 
+            {/* Download my data */}
+            <DownloadMyDataCard />
+
             {/* Danger Zone - Delete Account */}
             <Card className="border-destructive/50">
               <CardHeader>
@@ -783,8 +787,8 @@ const Settings = () => {
                   <div>
                     <h4 className="font-medium">Delete Account</h4>
                     <p className="text-sm text-muted-foreground">
-                      Permanently delete your account and all associated data. This action
-                      cannot be undone.
+                      Permanently delete your account and your data. Any membership is cancelled
+                      straight away. This can't be undone.
                     </p>
                   </div>
                   <AlertDialog>
@@ -799,14 +803,21 @@ const Settings = () => {
                         <AlertDialogTitle>Delete your account?</AlertDialogTitle>
                         <AlertDialogDescription className="space-y-4">
                           <p>
-                            This will permanently delete your account and all data including:
+                            This will permanently delete your account and your data, including:
                           </p>
                           <ul className="list-disc list-inside text-sm space-y-1">
-                            <li>All your listings and applications</li>
-                            <li>All your messages and conversations</li>
-                            <li>All your reviews and favorites</li>
-                            <li>Your sitter and owner profiles</li>
+                            <li>Your profiles, photos and ID documents</li>
+                            <li>Your listings, applications and sits, with their daily updates</li>
+                            <li>Your messages and conversations, including shared photos</li>
+                            <li>Your favourites and notifications</li>
                           </ul>
+                          <p className="text-sm">
+                            Any membership is cancelled straight away. Sits you shared with other members are removed
+                            for them too. Reviews you wrote stay visible as &quot;Former member&quot;, without your name or
+                            photo. Reports you made stay with our safety team without your name, and safety reports about
+                            your account are kept for 24 months, then deleted.
+                          </p>
+                          <p className="text-sm">Want a copy first? Use &quot;Download my data&quot; above.</p>
                           <p className="font-medium">
                             Type "DELETE" to confirm:
                           </p>

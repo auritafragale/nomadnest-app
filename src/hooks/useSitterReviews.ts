@@ -60,8 +60,10 @@ export const useSitterReviews = (sitterUserId: string | undefined) => {
       if (!reviews || reviews.length === 0) return [];
 
       // Fetch reviewer profiles and sit details
-      const reviewerIds = [...new Set(reviews.map((r) => r.reviewer_user_id))];
-      const sitIds = [...new Set(reviews.map((r) => r.sit_id))];
+      // A reviewer who deleted their account is NULL ("Former member"), and so
+      // is the sit if it was deleted with them.
+      const reviewerIds = [...new Set(reviews.map((r) => r.reviewer_user_id).filter((id): id is string => !!id))];
+      const sitIds = [...new Set(reviews.map((r) => r.sit_id).filter((id): id is string => !!id))];
 
       const [profilesResult, sitsResult] = await Promise.all([
         supabase
@@ -91,8 +93,9 @@ export const useSitterReviews = (sitterUserId: string | undefined) => {
       const profilesMap = new Map(profiles.map((p) => [p.id, p]));
 
       return reviews.map((review) => {
-        const reviewer = profilesMap.get(review.reviewer_user_id);
-        const sit = sitsMap.get(review.sit_id);
+        const formerMember = !review.reviewer_user_id;
+        const reviewer = review.reviewer_user_id ? profilesMap.get(review.reviewer_user_id) : undefined;
+        const sit = review.sit_id ? sitsMap.get(review.sit_id) : undefined;
         const listing = sit ? listingsMap.get(sit.listing_id) : null;
         const dates = sit ? sitDatesMap.get(sit.sit_dates_id) : null;
 
@@ -106,11 +109,13 @@ export const useSitterReviews = (sitterUserId: string | undefined) => {
           rating_cleanliness: review.rating_cleanliness,
           rating_reliability: review.rating_reliability,
           rating_respect_home: review.rating_respect_home,
-          reviewer: {
-            first_name: reviewer?.first_name || null,
-            last_name: reviewer?.last_name || null,
-            avatar_url: reviewer?.avatar_url || null,
-          },
+          reviewer: formerMember
+            ? { first_name: "Former member", last_name: null, avatar_url: null }
+            : {
+                first_name: reviewer?.first_name || null,
+                last_name: reviewer?.last_name || null,
+                avatar_url: reviewer?.avatar_url || null,
+              },
           sit: {
             listing: {
               id: listing?.id || "",

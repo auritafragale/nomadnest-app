@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AdminNav from "@/components/admin/AdminNav";
 import Navbar from "@/components/layout/Navbar";
@@ -29,8 +28,9 @@ const REJECTION_REASONS = [
 interface Submission {
   id: string;
   user_id: string;
-  id_photo_path: string;
-  selfie_path: string;
+  /** Null once the documents are deleted (30 days after a decision). */
+  id_photo_path: string | null;
+  selfie_path: string | null;
   status: "pending" | "approved" | "rejected";
   reviewed_by: string | null;
   reviewed_at: string | null;
@@ -49,7 +49,6 @@ const statusBadge = (status: string) => {
 };
 
 const AdminVerifications = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -93,7 +92,8 @@ const AdminVerifications = () => {
     setLoadingData(false);
   };
 
-  const getSignedUrl = async (path: string) => {
+  const getSignedUrl = async (path: string | null) => {
+    if (!path) return null;
     const { data } = await supabase.storage
       .from("id-verification-documents")
       .createSignedUrl(path, 300); // 5-minute URL
@@ -114,27 +114,16 @@ const AdminVerifications = () => {
           ? `${rejectionReason}${rejectionNotes ? `: ${rejectionNotes}` : ""}`
           : (notes[submissionId] ?? null);
 
-      const updatePayload: Record<string, unknown> = {
-        status: decision,
-        reviewed_by: user!.id,
-        reviewed_at: new Date().toISOString(),
-        notes: combinedNotes,
-      };
-
-      const { error: updateError } = await supabase
-        .from("manual_id_verifications")
-        .update(updatePayload)
-        .eq("id", submissionId);
-
-      if (updateError) throw updateError;
+      // One admin-checked RPC records the decision and, when approved, sets
+      // profiles.id_verified (members, admins included, can't update that column).
+      const { error: decideError } = await supabase.rpc("admin_decide_id_verification", {
+        p_submission_id: submissionId,
+        p_decision: decision,
+        p_notes: combinedNotes,
+      });
+      if (decideError) throw decideError;
 
       if (decision === "approved") {
-        // Flip profiles.id_verified
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({ id_verified: true })
-          .eq("id", userId);
-        if (profileError) throw profileError;
 
         // Email + in-app notification are both created by send-notification-email
 

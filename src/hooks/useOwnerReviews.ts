@@ -45,6 +45,7 @@ export const useOwnerReviews = (ownerUserId: string | undefined) => {
           text,
           created_at,
           sit_id,
+          reviewer_user_id,
           rating_communication,
           rating_home_accuracy,
           rating_pet_preparedness,
@@ -59,12 +60,24 @@ export const useOwnerReviews = (ownerUserId: string | undefined) => {
       // Fetch related data for each review
       const reviewsWithDetails: OwnerReview[] = await Promise.all(
         (data || []).map(async (review) => {
+          // A reviewer who deleted their account is NULL ("Former member"),
+          // and the sit may have been deleted with them.
+          if (!review.reviewer_user_id) {
+            return {
+              ...review,
+              reviewer: { id: null, first_name: "Former member", last_name: null, avatar_url: null },
+              sit: null,
+            };
+          }
+
           // Get reviewer profile
-          const { data: sitData } = await supabase
-            .from("sits")
-            .select("id, sitter_user_id, listing_id, sit_dates_id")
-            .eq("id", review.sit_id)
-            .maybeSingle();
+          const { data: sitData } = review.sit_id
+            ? await supabase
+                .from("sits")
+                .select("id, sitter_user_id, listing_id, sit_dates_id")
+                .eq("id", review.sit_id)
+                .maybeSingle()
+            : { data: null };
 
           let reviewer = null;
           let sit = null;

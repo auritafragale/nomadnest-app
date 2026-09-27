@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -19,12 +20,19 @@ export const useDeleteAccount = () => {
       // intentionally have no delete permission for regular users, so the
       // requests silently removed nothing.
       const { error: deleteAuthError } = await supabase.functions.invoke("delete-account");
-      if (deleteAuthError) throw deleteAuthError;
+      if (deleteAuthError) {
+        // Show the function's own message (e.g. "nothing was deleted, try again").
+        const detail =
+          deleteAuthError instanceof FunctionsHttpError
+            ? await deleteAuthError.context.json().catch(() => null)
+            : null;
+        throw new Error(detail?.error || "We couldn't delete your account just now. Please try again.");
+      }
     },
     onSuccess: async () => {
       toast({
         title: "Account deleted",
-        description: "Your account and all data have been removed.",
+        description: "Your account and your data have been deleted.",
       });
       await supabase.auth.signOut();
       window.location.href = "/";
