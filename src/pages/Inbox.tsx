@@ -11,6 +11,7 @@ import {
   useMessages,
   useSendMessage,
   useMarkAsRead,
+  threadConversationId,
 } from "@/hooks/useConversations";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import CityChatsSection from "@/components/city-chat/CityChatsSection";
@@ -127,9 +128,7 @@ const Inbox = () => {
     if (selectedConversation) {
       sendMessage.mutate(
         {
-          conversationId:
-            selectedConversation.listing_contexts.find((context) => context.listing_id === selectedConversation.listing_id)?.conversation_id
-            ?? selectedConversation.conversation_ids[0],
+          conversationId: threadConversationId(selectedConversation),
           body,
         },
         {

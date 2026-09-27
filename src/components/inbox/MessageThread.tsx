@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { buildImageMessageBody, CHAT_PHOTO_BUCKET, parseImageMessage } from "@/lib/chatImage";
 import { resizeImage } from "@/lib/imageResize";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
-import type { Message, Conversation } from "@/hooks/useConversations";
+import { threadConversationId, type Message, type Conversation } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
 import { useReport } from "@/components/reports/ReportContext";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
@@ -177,9 +177,11 @@ export const MessageThread = ({
     setPhotoUploading(true);
     try {
       // Private bucket, one folder per conversation: only the two members
-      // (and admins, for reports) can read it, through signed URLs.
+      // (and admins, for reports) can read it, through signed URLs. The folder
+      // is the real conversation the message goes to (conversation.id is only
+      // the Inbox grouping key, which the storage policy rejects).
       const blob = await resizeImage(file, 1600, 0.82);
-      const path = `${conversation.id}/${crypto.randomUUID()}.jpg`;
+      const path = `${threadConversationId(conversation)}/${crypto.randomUUID()}.jpg`;
       const { error } = await supabase.storage
         .from(CHAT_PHOTO_BUCKET)
         .upload(path, blob, { contentType: "image/jpeg", upsert: false });

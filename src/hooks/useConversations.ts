@@ -144,6 +144,16 @@ export const useConversations = () => {
   });
 };
 
+/**
+ * The real conversations.id new messages in this thread go to. A thread in the
+ * Inbox groups every conversation between the same two members, and its own
+ * `id` is only a grouping key (the pair thread id, or "owner:sitter"), never a
+ * conversations row, so it must not be used for writes or storage paths.
+ */
+export const threadConversationId = (conversation: Conversation): string =>
+  conversation.listing_contexts.find((context) => context.listing_id === conversation.listing_id)?.conversation_id ??
+  conversation.conversation_ids[0];
+
 export const useMessages = (conversationIds: string[]) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
