@@ -64,7 +64,8 @@ const AdminReliabilityDetail = () => {
     if (!userId) return;
     setLoading(true);
     const [profileRes, strikesRes, roleRes] = await Promise.all([
-      supabase.from("profiles").select("full_name, email, reliability_score").eq("id", userId).maybeSingle(),
+      // Email and score are private: admins read them through an admin-checked RPC.
+      supabase.rpc("admin_get_member_contact", { p_user_id: userId }),
       supabase
         .from("cancellation_strikes")
         .select("id, created_at, days_before_start, reason, sit_id, sits(listing_id, listings(title))")
@@ -81,7 +82,7 @@ const AdminReliabilityDetail = () => {
       });
     }
 
-    setProfile((profileRes.data as ProfileInfo) ?? null);
+    setProfile((profileRes.data as unknown as ProfileInfo) ?? null);
     setStrikes((strikesRes.data || []) as unknown as CancellationStrikeRow[]);
     setRole(roleRes.data?.role ?? null);
     setLoading(false);

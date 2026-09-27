@@ -8,6 +8,7 @@ import { ListingFormData, Pet, SitDate } from "./useListingForm";
 import {
   LISTING_COLUMNS,
   PET_PUBLIC_COLUMNS,
+  fetchListingExactLocation,
   fetchListingPrivateAddress,
   fetchOwnPetPrivateDetails,
 } from "@/lib/privateColumns";
@@ -98,9 +99,12 @@ export const useListingDetails = (listingId: string | undefined) => {
 
       // Private fields come through their RPCs. If they can't be loaded the
       // form must not open, or saving would blank them out.
-      const [addressPrivate, petPrivate] = await Promise.all([
+      const [addressPrivate, petPrivate, exactLocation] = await Promise.all([
         fetchListingPrivateAddress(listingId),
         fetchOwnPetPrivateDetails(listingId),
+        // Exact coordinates are owner-only (public pages get a fuzzed point),
+        // and saving must never overwrite them with the fuzzed one.
+        fetchListingExactLocation(listingId),
       ]);
 
       const { data: publicPets, error: petsError } = await supabase
@@ -135,6 +139,8 @@ export const useListingDetails = (listingId: string | undefined) => {
         ...listing,
         locked_sit_date_ids: Array.from(new Set((usedBySits || []).map((s) => s.sit_dates_id))),
         address_private: addressPrivate,
+        latitude: exactLocation.latitude,
+        longitude: exactLocation.longitude,
         pets,
         sit_dates: sitDates || [],
       } as ListingWithDetails;

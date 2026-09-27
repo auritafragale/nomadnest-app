@@ -8,6 +8,7 @@ import { buildDailyUpdateMessageBody } from "@/hooks/useSitCheckins";
 import { resolveListingConversation } from "@/lib/conversations";
 import { sendNotification } from "@/lib/notifications";
 import { resizeImage } from "@/lib/imageResize";
+import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { UPDATE_PHOTO_BUCKET, type UpdateChip } from "@/lib/dailyUpdate";
 
 export interface SitUpdateContext {
@@ -62,23 +63,7 @@ export const removeUpdatePhoto = async (path: string) => {
 };
 
 /** Signed URLs (1 hour) for private update photos, in one request. */
-export const useUpdatePhotoUrls = (paths: string[]) => {
-  const unique = [...new Set(paths)].sort();
-  return useQuery({
-    queryKey: ["sit-update-photo-urls", unique.join(",")],
-    queryFn: async (): Promise<Record<string, string>> => {
-      const { data, error } = await supabase.storage.from(UPDATE_PHOTO_BUCKET).createSignedUrls(unique, 3600);
-      if (error) throw error;
-      const map: Record<string, string> = {};
-      for (const item of data ?? []) {
-        if (item.path && item.signedUrl) map[item.path] = item.signedUrl;
-      }
-      return map;
-    },
-    enabled: unique.length > 0,
-    staleTime: 50 * 60 * 1000,
-  });
-};
+export const useUpdatePhotoUrls = (paths: string[]) => useSignedUrls(UPDATE_PHOTO_BUCKET, paths);
 
 // ─── AI ──────────────────────────────────────────────────────────────────────
 
@@ -273,8 +258,11 @@ export const useMyPreferredLanguage = () => {
   return useQuery({
     queryKey: ["preferred-language", user?.id],
     queryFn: async (): Promise<string | null> => {
-      const { data } = await supabase.from("profiles").select("preferred_language").eq("id", user!.id).maybeSingle();
-      return (data?.preferred_language as string | null) ?? null;
+      // Own private settings come through get_my_settings: members can't read
+      // profiles.preferred_language directly (not even their own row).
+      const { data, error } = await supabase.rpc("get_my_settings");
+      if (error) throw error;
+      return ((data as { preferred_language?: string | null } | null)?.preferred_language ?? null) as string | null;
     },
     enabled: !!user,
   });

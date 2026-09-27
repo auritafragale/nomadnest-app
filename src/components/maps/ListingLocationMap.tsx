@@ -1,16 +1,13 @@
-import { Map, AdvancedMarker } from "@vis.gl/react-google-maps";
+import { useEffect } from "react";
+import { Map, useMap } from "@vis.gl/react-google-maps";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
-import { MapPin } from "lucide-react";
 
-const ListingPin = () => (
-  <div className="flex flex-col items-center">
-    <div className="w-8 h-8 rounded-full border-2 border-primary-foreground bg-primary text-primary-foreground shadow-lg flex items-center justify-center">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-      </svg>
-    </div>
-  </div>
-);
+/**
+ * The listing's coordinates here are already approximate (a stored random
+ * point within ~500 m of the home). A soft circle a little larger than that
+ * shows the area without ever pointing at the house.
+ */
+const AREA_RADIUS_M = 600;
 
 interface ListingLocationMapProps {
   latitude: number;
@@ -18,14 +15,35 @@ interface ListingLocationMapProps {
   title: string;
 }
 
-const MapContent = ({ latitude, longitude, title }: ListingLocationMapProps) => {
+const AreaCircle = ({ latitude, longitude }: { latitude: number; longitude: number }) => {
+  const map = useMap();
+  useEffect(() => {
+    const gm = (window as unknown as { google?: typeof google }).google?.maps;
+    if (!map || !gm) return;
+    const circle = new gm.Circle({
+      map,
+      center: { lat: latitude, lng: longitude },
+      radius: AREA_RADIUS_M,
+      strokeColor: "#0f766e",
+      strokeOpacity: 0.35,
+      strokeWeight: 1,
+      fillColor: "#14b8a6",
+      fillOpacity: 0.18,
+      clickable: false,
+    });
+    return () => circle.setMap(null);
+  }, [map, latitude, longitude]);
+  return null;
+};
+
+const MapContent = ({ latitude, longitude }: ListingLocationMapProps) => {
   const { listingMapId } = useGoogleMapsConfig();
 
   return (
     <div className="w-full aspect-[4/3] min-h-[220px] sm:aspect-auto sm:h-[250px] rounded-lg overflow-hidden border border-border">
       <Map
         defaultCenter={{ lat: latitude, lng: longitude }}
-        defaultZoom={13}
+        defaultZoom={14}
         gestureHandling="cooperative"
         rotateControl={false}
         tilt={0}
@@ -36,9 +54,7 @@ const MapContent = ({ latitude, longitude, title }: ListingLocationMapProps) => 
         mapId={listingMapId || "listing-map"}
         className="w-full h-full"
       >
-        <AdvancedMarker position={{ lat: latitude, lng: longitude }} title={title}>
-          <ListingPin />
-        </AdvancedMarker>
+        <AreaCircle latitude={latitude} longitude={longitude} />
       </Map>
     </div>
   );
@@ -52,6 +68,7 @@ const ListingLocationMap = ({ latitude, longitude, title }: ListingLocationMapPr
   return (
     <GoogleMapsProvider height="250px">
       <MapContent latitude={latitude} longitude={longitude} title={title} />
+      <p className="mt-2 text-xs text-muted-foreground">Approximate area. The exact address is shared once a sit is confirmed.</p>
     </GoogleMapsProvider>
   );
 };

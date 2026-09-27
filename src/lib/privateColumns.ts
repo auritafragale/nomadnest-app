@@ -3,15 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Column lists for tables where some columns are private.
  *
- * `listings.address_private`, `pets.vet_info` and `pets.medication_instructions`
- * are not readable by `anon` / `authenticated` directly (column-level grants),
+ * `listings.address_private`, exact `listings.latitude/longitude` (public pages
+ * use `approx_latitude/approx_longitude`, a point within ~500 m), `pets.vet_info`
+ * and `pets.medication_instructions` are not readable by `anon` / `authenticated` directly (column-level grants),
  * so `select("*")` on these tables fails. Always select these explicit lists,
  * and fetch the private fields through their RPCs, which check who's asking.
  */
 
 // Kept as single string literals (not concatenated) so supabase-js can infer
 // the row types from them.
-export const LISTING_COLUMNS = "id, owner_user_id, status, title, description, city, country, area, latitude, longitude, location_type, timezone, photos, home_type, sleeping_arrangement, wifi_quality, amenities, house_rules, house_rules_other, requirements, requirements_other, home_care_tasks, home_care_tasks_other, communication_style, ideal_sitter_description, ideal_nomad_types, car_needed, heavy_gardening, remote_location, public_transport_accessible, wheelchair_accessible, created_at, updated_at";
+export const LISTING_COLUMNS = "id, owner_user_id, status, title, description, city, country, area, location_type, timezone, photos, home_type, sleeping_arrangement, wifi_quality, amenities, house_rules, house_rules_other, requirements, requirements_other, home_care_tasks, home_care_tasks_other, communication_style, ideal_sitter_description, ideal_nomad_types, car_needed, heavy_gardening, remote_location, public_transport_accessible, wheelchair_accessible, created_at, updated_at";
 
 export const PET_PUBLIC_COLUMNS = "id, listing_id, name, type, age, personality, photos, daily_routine, feeding_details, walks_exercise, has_medication, requires_medication, reactive_to_animals, separation_anxiety_tolerance, created_at, updated_at";
 
@@ -62,6 +63,16 @@ export const tryFetchOwnPetPrivateDetails = async (
   } catch {
     return new Map();
   }
+};
+
+/** Exact coordinates of a listing the caller owns (for their edit form). */
+export const fetchListingExactLocation = async (
+  listingId: string,
+): Promise<{ latitude: number | null; longitude: number | null }> => {
+  const { data, error } = await supabase.rpc("get_listing_exact_location", { p_listing_id: listingId });
+  if (error) throw error;
+  const row = (data ?? {}) as { latitude?: number | null; longitude?: number | null };
+  return { latitude: row.latitude ?? null, longitude: row.longitude ?? null };
 };
 
 /** The private address for a listing the caller owns (or is the accepted Nomad for). */

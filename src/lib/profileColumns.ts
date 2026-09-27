@@ -24,7 +24,6 @@ export const SITTER_PROFILE_COLUMNS = [
   "preferred_cities",
   "id_verified",
   "background_check",
-  "social_links",
   "gallery",
   "age_range",
   "created_at",

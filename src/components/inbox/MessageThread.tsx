@@ -16,7 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { buildImageMessageBody, parseImageMessage } from "@/lib/chatImage";
+import { buildImageMessageBody, CHAT_PHOTO_BUCKET, parseImageMessage } from "@/lib/chatImage";
+import { resizeImage } from "@/lib/imageResize";
+import { useSignedUrls } from "@/hooks/useSignedUrls";
 import type { Message, Conversation } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
 import { useReport } from "@/components/reports/ReportContext";
@@ -63,7 +65,8 @@ export const MessageThread = ({
   const { user } = useAuth();
   const { openReport } = useReport();
   const [newMessage, setNewMessage] = useState("");
-  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
+  // A photo uploaded to the private chat-photos bucket, waiting to be sent.
+  const [pendingPhoto, setPendingPhoto] = useState<{ path: string; preview: string } | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoLibraryRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -83,6 +86,13 @@ export const MessageThread = ({
   // Current user is the sitter in this conversation?
   const isCurrentUserSitter = !!conversation && !!user && conversation.sitter_user_id === user.id;
   const isCurrentUserOwner = !!conversation && !!user && conversation.owner_user_id === user.id;
+
+  // Private chat photos: signed URLs for every photo message in view.
+  const chatPhotoPaths = useMemo(
+    () => messages.map((m) => parseImageMessage(m.body)?.path).filter((p): p is string => !!p),
+    [messages],
+  );
+  const { data: chatPhotoUrls = {} } = useSignedUrls(CHAT_PHOTO_BUCKET, chatPhotoPaths);
 
   // Ask the Nest questions sent into this chat (messages.guide_question_id).
   const guideQuestionIds = useMemo(
@@ -163,18 +173,20 @@ export const MessageThread = ({
       return;
     }
 
+    if (!conversation) return;
     setPhotoUploading(true);
     try {
-      const nameExt = file.name.includes(".") ? file.name.split(".").pop() : null;
-      const typeExt = file.type.startsWith("image/") ? file.type.split("/")[1] : null;
-      const ext = (nameExt || typeExt || "jpg").toLowerCase().replace("jpeg", "jpg");
-      const path = `${user.id}/chat-photos/${Date.now()}-${Math.random().toString(36).slice(7)}.${ext}`;
-      const { error } = await supabase.storage.from("listing-images").upload(path, file);
+      // Private bucket, one folder per conversation: only the two members
+      // (and admins, for reports) can read it, through signed URLs.
+      const blob = await resizeImage(file, 1600, 0.82);
+      const path = `${conversation.id}/${crypto.randomUUID()}.jpg`;
+      const { error } = await supabase.storage
+        .from(CHAT_PHOTO_BUCKET)
+        .upload(path, blob, { contentType: "image/jpeg", upsert: false });
       if (error) throw error;
-      const { data } = supabase.storage.from("listing-images").getPublicUrl(path);
-      setPendingPhoto(data.publicUrl);
-    } catch (err: any) {
-      toast.error(err.message || "Photo upload failed");
+      setPendingPhoto({ path, preview: URL.createObjectURL(blob) });
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : "Photo upload failed");
     } finally {
       setPhotoUploading(false);
     }
@@ -186,7 +198,7 @@ export const MessageThread = ({
 
     onSend(
       pendingPhoto
-        ? buildImageMessageBody(pendingPhoto, newMessage)
+        ? buildImageMessageBody(pendingPhoto.path, newMessage)
         : newMessage.trim()
     );
     setNewMessage("");
@@ -368,6 +380,7 @@ export const MessageThread = ({
               }
 
               const imageMsg = parseImageMessage(message.body);
+              const imageSrc = imageMsg ? (imageMsg.path ? chatPhotoUrls[imageMsg.path] : imageMsg.url) : null;
               if (imageMsg) {
                 return (
                   <div key={message.id} className={cn("flex group", isOwn ? "justify-end" : "justify-start")}>
@@ -389,14 +402,20 @@ export const MessageThread = ({
                         isOwn ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
                       )}
                     >
-                      <a href={imageMsg.url} target="_blank" rel="noopener noreferrer">
+                      {imageSrc ? (
+                      <a href={imageSrc} target="_blank" rel="noopener noreferrer">
                         <img
-                          src={imageMsg.url}
+                          src={imageSrc}
                           alt={imageMsg.caption || "Shared photo"}
                           loading="lazy"
                           className="w-full max-h-72 object-cover cursor-pointer hover:opacity-90 transition-opacity"
                         />
                       </a>
+                      ) : (
+                        <div className="flex h-40 w-56 max-w-full items-center justify-center bg-black/10">
+                          <Loader2 className="h-5 w-5 animate-spin opacity-60" aria-label="Loading photo" />
+                        </div>
+                      )}
                       <div className="px-4 py-2">
                         {imageMsg.caption && (
                           <p className="text-sm whitespace-pre-wrap break-words">{imageMsg.caption}</p>
@@ -529,7 +548,7 @@ export const MessageThread = ({
           <div className="flex items-center gap-2 mb-2">
             <div className="relative">
               <img
-                src={pendingPhoto}
+                src={pendingPhoto.preview}
                 alt="Photo to send"
                 className="h-16 w-16 rounded-lg object-cover border border-border"
               />

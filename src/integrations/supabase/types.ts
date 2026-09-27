@@ -796,6 +796,8 @@ export type Database = {
       }
       listings: {
         Row: {
+          approx_latitude: number | null
+          approx_longitude: number | null
           address_private: string | null
           amenities: string[] | null
           area: string | null
@@ -832,6 +834,8 @@ export type Database = {
           wifi_quality: string | null
         }
         Insert: {
+          approx_latitude?: number | null
+          approx_longitude?: number | null
           address_private?: string | null
           amenities?: string[] | null
           area?: string | null
@@ -868,6 +872,8 @@ export type Database = {
           wifi_quality?: string | null
         }
         Update: {
+          approx_latitude?: number | null
+          approx_longitude?: number | null
           address_private?: string | null
           amenities?: string[] | null
           area?: string | null
@@ -1285,6 +1291,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          founding_badge: boolean
           avatar_url: string | null
           bio: string | null
           city: string | null
@@ -1316,6 +1323,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          founding_badge?: boolean
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -1347,6 +1355,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          founding_badge?: boolean
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -2360,6 +2369,7 @@ export type Database = {
           total_members: number
         }[]
       }
+      admin_get_member_contact: { Args: { p_user_id: string }; Returns: Json }
       admin_get_pending_counts: {
         Args: never
         Returns: {
@@ -2539,11 +2549,14 @@ export type Database = {
         Args: { p_room_id: string; p_user_id: string }
         Returns: boolean
       }
+      can_read_chat_photo: { Args: { p_name: string }; Returns: boolean }
       can_read_sit_update_photo: { Args: { p_name: string }; Returns: boolean }
+      can_upload_chat_photo: { Args: { p_name: string }; Returns: boolean }
       can_upload_sit_update_photo: {
         Args: { p_name: string }
         Returns: boolean
       }
+      chat_photo_conversation: { Args: { p_name: string }; Returns: string }
       city_chat_key: {
         Args: { p_city: string; p_country: string }
         Returns: string
@@ -2559,7 +2572,12 @@ export type Database = {
         }[]
       }
       decline_application: { Args: { p_application_id: string }; Returns: Json }
+      get_community_warnings: {
+        Args: { p_subject_id: string; p_subject_type: string }
+        Returns: string[]
+      }
       get_guide_completion: { Args: { p_listing_id: string }; Returns: Json }
+      get_listing_exact_location: { Args: { p_listing_id: string }; Returns: Json }
       get_listing_private_address: {
         Args: { p_listing_id: string }
         Returns: string
@@ -2595,6 +2613,7 @@ export type Database = {
           membership_type: string
         }[]
       }
+      get_my_settings: { Args: never; Returns: Json }
       get_my_verification: {
         Args: never
         Returns: {

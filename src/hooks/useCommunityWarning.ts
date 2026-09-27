@@ -15,15 +15,14 @@ export const useCommunityWarning = (
     queryKey: ["community-warning", subjectType, subjectId],
     queryFn: async () => {
       if (!subjectId) return [] as string[];
-      const { data, error } = await supabase
-        .from("community_strikes")
-        .select("category")
-        .eq("subject_type", subjectType)
-        .eq("subject_id", subjectId)
-        .eq("show_strike_three_warning", true);
+      // Only the warning categories for this one subject, never the strike rows.
+      const { data, error } = await supabase.rpc("get_community_warnings", {
+        p_subject_type: subjectType,
+        p_subject_id: subjectId,
+      });
 
       if (error) throw error;
-      return (data || []).map((row) => row.category as string);
+      return (data ?? []) as string[];
     },
     enabled: !!subjectId,
   });

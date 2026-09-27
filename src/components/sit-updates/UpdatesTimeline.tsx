@@ -126,7 +126,8 @@ const UpdateItem = ({
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>{time(update.created_at)}</span>
-        {update.ai_drafted && (
+        {/* Only the sitter sees that AI helped; owners just see the update. */}
+        {!isOwner && update.ai_drafted && (
           <span className="inline-flex items-center gap-1">
             <Sparkles className="h-3 w-3" aria-hidden="true" />
             Written with AI help

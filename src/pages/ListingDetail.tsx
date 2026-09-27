@@ -335,7 +335,7 @@ const ListingDetail = () => {
             "home_type, location_type, public_transport_accessible, sleeping_arrangement, amenities, wifi_quality, " +
             "house_rules, house_rules_other, home_care_tasks, home_care_tasks_other, " +
             "requirements, requirements_other, communication_style, " +
-            "ideal_sitter_description, photos, status, latitude, longitude, " +
+            "ideal_sitter_description, photos, status, latitude:approx_latitude, longitude:approx_longitude, " +
             "remote_location, car_needed, heavy_gardening, wheelchair_accessible, " +
             "created_at, updated_at"
           )

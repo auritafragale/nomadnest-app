@@ -7,15 +7,15 @@ import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 import MapCardSheet from "./MapCardSheet";
 import ListingMapCard from "./ListingMapCard";
 
-// Individual (non-clustered) pin. Same circular-badge treatment as
-// NomadGoogleMap.tsx's NomadPin, kept visually consistent between both
-// maps — only the icon differs. Cluster count badges (built as raw SVG for
-// the AdvancedMarkerElement content the clusterer's own renderer constructs)
-// are untouched.
+// Individual (non-clustered) listing: a soft circle, not a pin. Listing
+// coordinates are an approximate area (a stored random point within ~500 m),
+// so the marker shouldn't look like it points at a house. Cluster count
+// badges (raw SVG for the clusterer's own renderer) are unchanged.
 const ListingPin = () => (
-  <div className="flex flex-col items-center">
-    <div className="w-10 h-10 rounded-full border-2 border-white shadow-lg bg-primary flex items-center justify-center">
-      <PawPrint className="w-5 h-5 text-primary-foreground" />
+  <div className="relative flex h-14 w-14 items-center justify-center">
+    <div className="absolute inset-0 rounded-full bg-primary/25 ring-1 ring-primary/30" />
+    <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary/85 shadow-md">
+      <PawPrint className="h-4 w-4 text-primary-foreground" />
     </div>
   </div>
 );
