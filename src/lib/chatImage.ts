@@ -40,6 +40,6 @@ export const messagePreviewText = (body: string): string => {
     const img = parseImageMessage(body);
     return img?.caption ? `📷 ${img.caption}` : "📷 Photo";
   }
-  if (body.startsWith("[[checkin]]")) return "🐾 Care check-in";
+  if (body.startsWith("[[checkin]]")) return body.includes("\"daily_update\"") ? "🐾 Daily update" : "🐾 Care check-in";
   return body;
 };

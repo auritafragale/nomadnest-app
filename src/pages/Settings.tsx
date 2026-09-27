@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { UpdateLanguageCard } from "@/components/settings/UpdateLanguageCard";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -585,6 +586,9 @@ const Settings = () => {
                 </CollapsibleContent>
               </Card>
             </Collapsible>
+
+            {/* Language for sitters' daily updates */}
+            <UpdateLanguageCard />
 
             {/* Notification Preferences */}
             <Collapsible asChild>

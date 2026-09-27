@@ -219,17 +219,16 @@ export function buildNotificationEmail(
     case "sit_checkin":
       return {
         subject: `${data.checkinLabel}. ${data.listingTitle}`,
-        preview: `${data.sitterName} posted a ${data.checkinLabel} update`,
-        heading: `Daily check-in: ${data.checkinLabel}`,
+        preview: `${data.sitterName} shared an update from ${data.listingTitle}`,
+        heading: data.checkinLabel,
         body: `
-          <p><strong>${data.sitterName}</strong> checked in on your sit at <strong>${data.listingTitle}</strong>:</p>
-          <p style="font-size:18px;"><strong>${data.checkinLabel} ✓</strong></p>
+          <p><strong>${data.sitterName}</strong> shared an update from <strong>${data.listingTitle}</strong>.</p>
           ${data.note ? quote(data.note) : ""}
         `,
-        ctaLabel: "View the care log",
+        ctaLabel: "See today's update",
         ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
         pushTitle: `${data.checkinLabel}. ${data.listingTitle}`,
-        pushBody: data.note ? data.note : `Your Nomad posted a ${data.checkinLabel} update.`,
+        pushBody: data.note ? data.note : `${data.sitterName} shared an update.`,
         pushUrl: data.url || "/dashboard",
       };
     case "sit_started":

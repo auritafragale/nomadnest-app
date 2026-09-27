@@ -61,6 +61,7 @@ import AdminTrustDetail from "./pages/AdminTrustDetail";
 import AdminReliabilityDetail from "./pages/AdminReliabilityDetail";
 import AdminReports from "./pages/AdminReports";
 import AdminListings from "./pages/AdminListings";
+import AdminCheckinPhotoCleanup from "./pages/AdminCheckinPhotoCleanup";
 
 import Perks from "./pages/Perks";
 import CityChat from "./pages/CityChat";
@@ -173,6 +174,7 @@ const AppShell = () => {
         <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
         <Route path="/admin/listings" element={<AdminRoute><AdminListings /></AdminRoute>} />
         <Route path="/admin/emails" element={<AdminRoute><AdminEmails /></AdminRoute>} />
+        <Route path="/admin/checkin-photo-cleanup" element={<AdminRoute><AdminCheckinPhotoCleanup /></AdminRoute>} />
 
         <Route path="/city-chats" element={<ProtectedRoute><CityChats /></ProtectedRoute>} />
         <Route path="/city-chat/:roomId" element={<ProtectedRoute><CityChat /></ProtectedRoute>} />

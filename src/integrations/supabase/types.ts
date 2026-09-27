@@ -1310,6 +1310,7 @@ export type Database = {
           phone_number: string | null
           phone_verified: boolean
           phone_verified_at: string | null
+          preferred_language: string | null
           reliability_score: number
           reliability_strike_email_sent_at: string | null
           updated_at: string
@@ -1340,6 +1341,7 @@ export type Database = {
           phone_number?: string | null
           phone_verified?: boolean
           phone_verified_at?: string | null
+          preferred_language?: string | null
           reliability_score?: number
           reliability_strike_email_sent_at?: string | null
           updated_at?: string
@@ -1370,6 +1372,7 @@ export type Database = {
           phone_number?: string | null
           phone_verified?: boolean
           phone_verified_at?: string | null
+          preferred_language?: string | null
           reliability_score?: number
           reliability_strike_email_sent_at?: string | null
           updated_at?: string
@@ -1653,6 +1656,18 @@ export type Database = {
       }
       sit_checkins: {
         Row: {
+          ai_drafted: boolean
+          chips: string[]
+          flag_note: string | null
+          flagged: boolean
+          local_day: string | null
+          message_lang: string | null
+          owner_heart_at: string | null
+          photo_paths: string[]
+          translated_at: string | null
+          translated_flag_note: string | null
+          translated_lang: string | null
+          translated_message: string | null
           author_user_id: string
           created_at: string
           id: string
@@ -1662,6 +1677,18 @@ export type Database = {
           sit_id: string
         }
         Insert: {
+          ai_drafted?: boolean
+          chips?: string[]
+          flag_note?: string | null
+          flagged?: boolean
+          local_day?: string | null
+          message_lang?: string | null
+          owner_heart_at?: string | null
+          photo_paths?: string[]
+          translated_at?: string | null
+          translated_flag_note?: string | null
+          translated_lang?: string | null
+          translated_message?: string | null
           author_user_id: string
           created_at?: string
           id?: string
@@ -1671,6 +1698,18 @@ export type Database = {
           sit_id: string
         }
         Update: {
+          ai_drafted?: boolean
+          chips?: string[]
+          flag_note?: string | null
+          flagged?: boolean
+          local_day?: string | null
+          message_lang?: string | null
+          owner_heart_at?: string | null
+          photo_paths?: string[]
+          translated_at?: string | null
+          translated_flag_note?: string | null
+          translated_lang?: string | null
+          translated_message?: string | null
           author_user_id?: string
           created_at?: string
           id?: string
@@ -2305,6 +2344,8 @@ export type Database = {
         Args: { p_job_name: string; p_lease_seconds: number }
         Returns: boolean
       }
+      admin_checkin_photo_cleanup_preview: { Args: never; Returns: Json }
+      admin_clear_public_checkin_photo_refs: { Args: never; Returns: Json }
       admin_dashboard_stats: {
         Args: never
         Returns: {
@@ -2498,6 +2539,8 @@ export type Database = {
         Args: { p_room_id: string; p_user_id: string }
         Returns: boolean
       }
+      can_read_sit_update_photo: { Args: { p_name: string }; Returns: boolean }
+      can_upload_sit_update_photo: { Args: { p_name: string }; Returns: boolean }
       city_chat_key: {
         Args: { p_city: string; p_country: string }
         Returns: string
@@ -2571,6 +2614,7 @@ export type Database = {
           vet_info: string
         }[]
       }
+      get_sit_update_context: { Args: { p_sit_id: string }; Returns: Json }
       get_sitter_guide: { Args: { p_listing_id: string }; Returns: Json }
       get_unread_conversations_count: { Args: never; Returns: number }
       get_unread_messages_count: { Args: never; Returns: number }
@@ -2640,6 +2684,10 @@ export type Database = {
         Args: { p_draft: string; p_question_id: string }
         Returns: Json
       }
+      set_my_preferred_language: {
+        Args: { p_language: string; p_only_if_empty?: boolean }
+        Returns: string
+      }
       set_my_profile_phone: {
         Args: { p_phone: string; p_target: string }
         Returns: undefined
@@ -2656,6 +2704,7 @@ export type Database = {
           unlock_at: string
         }[]
       }
+      sit_update_photo_sit: { Args: { p_name: string }; Returns: string }
       sitter_guide_sit: {
         Args: { p_listing_id: string; p_user_id: string }
         Returns: {
@@ -2666,6 +2715,7 @@ export type Database = {
           unlock_at: string
         }[]
       }
+      toggle_checkin_heart: { Args: { p_checkin_id: string }; Returns: Json }
       unaccent_fallback: { Args: { p_text: string }; Returns: string }
       upsert_push_subscription: {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string }

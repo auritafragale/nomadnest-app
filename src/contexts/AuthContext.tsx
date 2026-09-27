@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { clearAllGuideCaches } from "@/lib/guideCache";
+import { browserLanguage } from "@/lib/dailyUpdate";
 import { useNavigate } from "react-router-dom";
 
 type AppRole = "sitter" | "owner" | "both" | null;
@@ -100,6 +101,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // First sign-in on this device: fill preferred_language from the browser if
+  // it's still empty (never overwrites a choice made in Settings).
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    const key = `nn_lang_autofill_${userId}`;
+    try {
+      if (localStorage.getItem(key)) return;
+    } catch {
+      /* storage unavailable: try anyway, the server keeps it idempotent */
+    }
+    const markDone = () => {
+      try {
+        localStorage.setItem(key, "1");
+      } catch {
+        /* ignore */
+      }
+    };
+    const language = browserLanguage();
+    if (!language) {
+      markDone();
+      return;
+    }
+    supabase
+      .rpc("set_my_preferred_language", { p_language: language, p_only_if_empty: true })
+      .then(({ error }) => {
+        if (!error) markDone();
+      });
+  }, [userId]);
 
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {

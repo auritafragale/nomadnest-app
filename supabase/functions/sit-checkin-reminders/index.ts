@@ -158,20 +158,8 @@ const handler = async (req: Request): Promise<Response> => {
         continue;
       }
 
-      // Build the chat conversation URL for the deep link.
-      const { data: convo } = await supabase
-        .from("conversations")
-        .select("id")
-        .eq("owner_user_id", (sit as any).owner_user_id)
-        .eq("sitter_user_id", sitterId)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const conversationId = convo?.id;
-      const url = conversationId
-        ? `/inbox?conversation=${conversationId}`
-        : `/sits/${sitId}`;
+      // Deep link to the sit's updates page, where today's update is sent.
+      const url = `/sits/${sitId}`;
 
       // Insert the in-app notification.
       const { error: notifError } = await supabase
@@ -179,8 +167,8 @@ const handler = async (req: Request): Promise<Response> => {
         .insert({
           user_id: sitterId,
           type: "sit_checkin_reminder",
-          title: "Time for today's check-in",
-          message: `Time for today's check-in for ${listingTitle} — tap to log Fed, Meds and Walk.`,
+          title: "Time for today's update",
+          message: `Share a photo and a few taps from ${listingTitle}.`,
           data: { url, sit_id: sitId },
         });
 

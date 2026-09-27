@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, isToday, isYesterday } from "date-fns";
-import { Send, ArrowLeft, Check, CheckCheck, Flag, Bone, Pill, Footprints, ImagePlus, Loader2, X } from "lucide-react";
+import { Send, ArrowLeft, Camera, Check, CheckCheck, Flag, Bone, Pill, Footprints, ImagePlus, Loader2, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,10 +21,9 @@ import type { Message, Conversation } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
 import { useReport } from "@/components/reports/ReportContext";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
-import { CheckinBar } from "@/components/inbox/CheckinBar";
+import { ChatUpdateCard } from "@/components/sit-updates/ChatUpdateCard";
 import { useActiveSitForConversation } from "@/hooks/useActiveSitForConversation";
-import { parseCheckinMessage, CHECKIN_LABELS, type CheckinKind } from "@/hooks/useSitCheckins";
-import { useQueryClient } from "@tanstack/react-query";
+import { parseCheckinMessage, type CheckinKind } from "@/hooks/useSitCheckins";
 import { useLinkedGuideQuestions, type LinkedGuideQuestion } from "@/hooks/useAskNest";
 import { AddToGuidePrompt, GuideQuestionCard } from "@/components/inbox/GuideQuestionChat";
 import { questionFromBody } from "@/lib/askNest";
@@ -63,7 +62,6 @@ export const MessageThread = ({
 }: MessageThreadProps) => {
   const { user } = useAuth();
   const { openReport } = useReport();
-  const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -80,7 +78,7 @@ export const MessageThread = ({
     userName
   );
 
-  const { data: activeSit, refetch: refetchActiveSit } = useActiveSitForConversation(conversation?.conversation_ids ?? []);
+  const { data: activeSit } = useActiveSitForConversation(conversation?.conversation_ids ?? []);
 
   // Current user is the sitter in this conversation?
   const isCurrentUserSitter = !!conversation && !!user && conversation.sitter_user_id === user.id;
@@ -320,8 +318,23 @@ export const MessageThread = ({
 
               const checkin = parseCheckinMessage(message.body);
 
+              if (checkin?.kind === "daily_update") {
+                return (
+                  <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+                    <ChatUpdateCard
+                      update={checkin}
+                      sitId={activeSit?.sitId ?? null}
+                      isOwn={isOwn}
+                      viewerIsOwner={isCurrentUserOwner}
+                      time={formatMessageDate(message.created_at)}
+                      senderName={otherUser?.first_name || "your Nomad"}
+                    />
+                  </div>
+                );
+              }
+
               if (checkin) {
-                const Icon = KIND_ICON[checkin.kind] || Bone;
+                const Icon = KIND_ICON[checkin.kind as CheckinKind] || Bone;
                 return (
                   <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
                     <div className="max-w-[80%] rounded-lg border border-primary/20 bg-primary/5 overflow-hidden">
@@ -481,52 +494,31 @@ export const MessageThread = ({
         </div>
       )}
 
-      {/* Care bar / Today's care strip */}
-      {activeSit && activeSit.sitterUserId === user?.id && (
-        <CheckinBar
-          sitId={activeSit.sitId}
-          ownerUserId={activeSit.ownerUserId}
-          listingId={activeSit.listingId}
-          requiresMeds={activeSit.requiresMeds}
-          todayKinds={activeSit.todayKinds}
-          onPosted={() => {
-            refetchActiveSit();
-            queryClient.invalidateQueries({ queryKey: ["messages"] });
-          }}
-        />
-      )}
-      {activeSit && activeSit.ownerUserId === user?.id && (
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30 overflow-x-auto">
-          <span className="text-xs text-muted-foreground whitespace-nowrap mr-1">
-            Today:
-          </span>
-          {(activeSit.requiresMeds
-            ? ["pets_fed", "walk_completed", "meds_given"]
-            : ["pets_fed", "walk_completed"]
-          ).map((k) => {
-            const done = activeSit.todayKinds.includes(k as CheckinKind);
-            const Icon = KIND_ICON[k as CheckinKind] || Bone;
-            return (
-              <span
-                key={k}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border",
-                  done
-                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
-                    : "bg-background text-muted-foreground border-border",
-                )}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {CHECKIN_LABELS[k as CheckinKind]}
-                {done && <Check className="w-3 h-3" />}
-              </span>
-            );
-          })}
+      {/* Today's update: one pill linking to the sit's updates page */}
+      {activeSit && (activeSit.sitterUserId === user?.id || activeSit.ownerUserId === user?.id) && (
+        <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-2">
           <Link
             to={`/sits/${activeSit.sitId}`}
-            className="text-xs text-primary whitespace-nowrap hover:underline ml-auto"
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              activeSit.todaySent
+                ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                : activeSit.sitterUserId === user?.id
+                  ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "border-border bg-background text-muted-foreground hover:text-foreground",
+            )}
           >
-            Care log
+            {activeSit.todaySent ? <Check className="h-3.5 w-3.5" /> : <Camera className="h-3.5 w-3.5" />}
+            {activeSit.sitterUserId === user?.id
+              ? activeSit.todaySent
+                ? "Today's update sent"
+                : "Send today's update"
+              : activeSit.todaySent
+                ? "Today's update: sent"
+                : "Today's update: not yet"}
+          </Link>
+          <Link to={`/sits/${activeSit.sitId}`} className="ml-auto whitespace-nowrap text-xs text-primary hover:underline">
+            See updates
           </Link>
         </div>
       )}

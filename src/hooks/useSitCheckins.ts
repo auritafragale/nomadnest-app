@@ -1,10 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
-import { resolveListingConversation } from "@/lib/conversations";
-import { sendNotification } from "@/lib/notifications";
 
+/** Old one-tap check-in kinds (still shown in timelines and chat). */
 export type CheckinKind = "pets_fed" | "meds_given" | "walk_completed";
 
 export const CHECKIN_LABELS: Record<CheckinKind, string> = {
@@ -13,48 +10,74 @@ export const CHECKIN_LABELS: Record<CheckinKind, string> = {
   walk_completed: "Walk Completed",
 };
 
+/** One row per update: today's updates (kind "daily_update") and older check-ins. */
 export interface SitCheckin {
   id: string;
   sit_id: string;
   author_user_id: string;
-  kind: CheckinKind;
+  kind: CheckinKind | "note" | "daily_update";
   note: string | null;
   photo_url: string | null;
   created_at: string;
+  chips: string[];
+  flagged: boolean;
+  flag_note: string | null;
+  photo_paths: string[];
+  local_day: string | null;
+  ai_drafted: boolean;
+  message_lang: string | null;
+  translated_message: string | null;
+  translated_flag_note: string | null;
+  translated_lang: string | null;
+  owner_heart_at: string | null;
 }
 
 /**
  * Machine-readable marker written into the mirrored conversation message so
- * the chat can render a care card instead of raw text. Kept compact and
- * parseable without string-sniffing prose.
+ * the chat can render a card instead of raw text.
  *
- * Format: `[[checkin]]{"kind":"pets_fed","label":"Pets Fed","note":"...","photo":"..."}`
+ * Today's update: `[[checkin]]{"kind":"daily_update","checkin_id":"…","chips":[…],"photos":["{sit_id}/…"],"flagged":false,"note":"…","flag_note":null}`
+ * Older check-ins: `[[checkin]]{"kind":"pets_fed","label":"Pets Fed","note":"…","photo":"…"}`
+ * Photos of today's updates are paths in the private sit-update-photos bucket.
  */
 const CHECKIN_MARKER = "[[checkin]]";
 
-export const buildCheckinMessageBody = (
-  kind: CheckinKind,
-  note?: string,
-  photoUrl?: string | null,
-): string => {
-  const payload = {
-    kind,
-    label: CHECKIN_LABELS[kind],
-    note: note?.trim() || null,
-    photo: photoUrl || null,
-  };
-  return `${CHECKIN_MARKER}${JSON.stringify(payload)}`;
-};
+export interface CheckinMessage {
+  kind: string;
+  label?: string;
+  note: string | null;
+  photo?: string | null;
+  checkin_id?: string;
+  chips?: string[];
+  photos?: string[];
+  flagged?: boolean;
+  flag_note?: string | null;
+}
 
-export const parseCheckinMessage = (
-  body: string,
-): { kind: CheckinKind; label: string; note: string | null; photo: string | null } | null => {
+export const buildDailyUpdateMessageBody = (update: {
+  checkinId: string;
+  chips: string[];
+  photoPaths: string[];
+  flagged: boolean;
+  note: string | null;
+  flagNote: string | null;
+}): string =>
+  `${CHECKIN_MARKER}${JSON.stringify({
+    kind: "daily_update",
+    label: "Today's update",
+    checkin_id: update.checkinId,
+    chips: update.chips,
+    photos: update.photoPaths,
+    flagged: update.flagged,
+    note: update.note,
+    flag_note: update.flagNote,
+  })}`;
+
+export const parseCheckinMessage = (body: string): CheckinMessage | null => {
   if (!body || !body.startsWith(CHECKIN_MARKER)) return null;
   try {
     const json = JSON.parse(body.slice(CHECKIN_MARKER.length));
-    if (json && typeof json.kind === "string") {
-      return json as { kind: CheckinKind; label: string; note: string | null; photo: string | null };
-    }
+    if (json && typeof json.kind === "string") return json as CheckinMessage;
   } catch {
     // Not a valid check-in message.
   }
@@ -70,97 +93,10 @@ export const useSitCheckins = (sitId: string | undefined) =>
         .from("sit_checkins")
         .select("*")
         .eq("sit_id", sitId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(300);
       if (error) throw error;
       return (data || []) as SitCheckin[];
     },
     enabled: !!sitId,
   });
-
-export const useAddSitCheckin = (sitId: string | undefined) => {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-
-  return useMutation({
-    mutationFn: async ({
-      kind,
-      note,
-      photoUrl,
-      ownerUserId,
-      listingId,
-    }: {
-      kind: CheckinKind;
-      note?: string;
-      photoUrl?: string | null;
-      ownerUserId: string;
-      listingId: string | null;
-    }) => {
-      if (!sitId || !user) throw new Error("Not authenticated");
-
-      const { error } = await supabase.from("sit_checkins").insert({
-        sit_id: sitId,
-        author_user_id: user.id,
-        kind,
-        note: note?.trim() || null,
-        photo_url: photoUrl || null,
-      });
-      if (error) throw error;
-
-      // Mirror the update into the one chat thread for this sit's home.
-      // This must succeed — a check-in the Pet Parent never sees is no
-      // check-in at all.
-      const body = buildCheckinMessageBody(kind, note, photoUrl);
-      const conversationId = await resolveListingConversation({
-        listingId,
-        ownerUserId,
-        sitterUserId: user.id,
-      });
-
-      if (!conversationId) {
-        throw new Error("Could not open the sit chat to post the update.");
-      }
-
-      const { error: mirrorError } = await supabase.from("messages").insert({
-        conversation_id: conversationId,
-        sender_user_id: user.id,
-        body,
-      });
-      if (mirrorError) throw mirrorError;
-
-      await supabase
-        .from("conversations")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", conversationId);
-
-      // The Pet Parent's in-app notification is created by a database
-      // trigger; here we add push + email (respecting their settings).
-      const [{ data: listing }, { data: sitterProfile }] = await Promise.all([
-        supabase.from("listings").select("title").eq("id", listingId).single(),
-        supabase.from("profiles").select("first_name, last_name").eq("id", user.id).single(),
-      ]);
-      sendNotification({
-        type: "sit_checkin",
-        recipientUserId: ownerUserId,
-        skipInAppNotification: true,
-        data: {
-          sitterName: [sitterProfile?.first_name, sitterProfile?.last_name].filter(Boolean).join(" ") || "Your Nomad",
-          listingTitle: listing?.title || "your sit",
-          checkinLabel: CHECKIN_LABELS[kind],
-          note: note?.trim() || "",
-          url: `/inbox?conversation=${conversationId}`,
-          sit_id: sitId,
-        },
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sit-checkins", sitId] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      queryClient.invalidateQueries({ queryKey: ["messages"] });
-      queryClient.invalidateQueries({ queryKey: ["active-sit-for-conversation"] });
-      toast.success("Check-in posted");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Could not post the check-in");
-    },
-  });
-};

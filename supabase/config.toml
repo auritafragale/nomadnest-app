@@ -74,3 +74,9 @@ verify_jwt = false
 
 [functions.ask-the-nest]
 verify_jwt = false
+
+[functions.daily-update-ai]
+verify_jwt = false
+
+[functions.cleanup-checkin-photos]
+verify_jwt = false

@@ -14,6 +14,8 @@ export interface ActiveSitInfo {
   requiresMeds: boolean;
   /** Today's check-in kinds (local date). */
   todayKinds: CheckinKind[];
+  /** Whether any update was sent today (local date). */
+  todaySent: boolean;
 }
 
 function isToday(iso: string): boolean {
@@ -115,9 +117,8 @@ export const useActiveSitForConversation = (conversationIds: string[]) => {
         .order("created_at", { ascending: false })
         .limit(50);
 
-      const todayKinds = ((checkins ?? []) as { kind: CheckinKind; created_at: string }[])
-        .filter((c) => isToday(c.created_at))
-        .map((c) => c.kind);
+      const todays = ((checkins ?? []) as { kind: CheckinKind; created_at: string }[]).filter((c) => isToday(c.created_at));
+      const todayKinds = todays.map((c) => c.kind);
 
       return {
         sitId: sit.id,
@@ -128,6 +129,7 @@ export const useActiveSitForConversation = (conversationIds: string[]) => {
         title: sit.listing?.title ?? "your sit",
         requiresMeds,
         todayKinds,
+        todaySent: todays.length > 0,
       };
     },
     enabled: conversationIds.length > 0 && !!user,
