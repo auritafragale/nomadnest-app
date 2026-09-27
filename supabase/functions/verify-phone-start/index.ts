@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { providerError, redact } from "../_shared/safe-log.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -104,7 +105,7 @@ serve(async (req) => {
         .eq("id", user.id);
     }
   } catch (err) {
-    console.error("Twilio Lookup error (non-fatal):", err);
+    console.error("Twilio Lookup error (non-fatal):", redact(err));
   }
 
   // ── Start Twilio Verify (with WhatsApp → SMS fallback) ──────────────────
@@ -137,7 +138,7 @@ serve(async (req) => {
 
   if (!verifyRes.ok) {
     const err = await verifyRes.json().catch(() => ({}));
-    console.error("Twilio Verify error:", verifyRes.status, JSON.stringify(err));
+    console.error("Twilio Verify error:", providerError(verifyRes.status, JSON.stringify(err)));
     return new Response(JSON.stringify({ error: err.message || "Failed to send verification code" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { redact } from "../_shared/safe-log.ts";
 
 // Daily privacy retention (pg_cron -> request_privacy_retention -> here, with
 // x-internal-secret from Vault). Internal callers only.
@@ -52,7 +53,7 @@ serve(async (req) => {
       const { data: removed, error } = await admin.storage.from("id-verification-documents").remove(paths.slice(i, i + 100));
       if (error) {
         idFilesFailed = true;
-        log({ step: "id_documents", failed: error.message });
+        log({ step: "id_documents", failed: redact(error.message) });
       } else {
         idFilesDeleted += removed?.length ?? 0;
       }
@@ -71,7 +72,7 @@ serve(async (req) => {
     let evidenceDeleted = 0;
     for (let i = 0; i < evidence.length; i += 100) {
       const { data: removed, error } = await admin.storage.from("report-evidence").remove(evidence.slice(i, i + 100));
-      if (error) log({ step: "report_evidence", failed: error.message });
+      if (error) log({ step: "report_evidence", failed: redact(error.message) });
       else evidenceDeleted += removed?.length ?? 0;
     }
 
@@ -84,7 +85,7 @@ serve(async (req) => {
     log({ ok: true, ...summary });
     return json({ ok: true, ...summary });
   } catch (err) {
-    log({ failed: err instanceof Error ? err.message : String(err) });
+    log({ failed: redact(err) });
     return json({ error: "Retention run failed." }, 500);
   }
 });

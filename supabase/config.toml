@@ -86,3 +86,15 @@ verify_jwt = false
 
 [functions.privacy-retention]
 verify_jwt = false
+
+[functions.trust-strike-emails]
+verify_jwt = false
+
+[functions.sit-checkin-reminders]
+verify_jwt = false
+
+[functions.reliability-strike-emails]
+verify_jwt = false
+
+[functions.send-arrival-vault-prompt]
+verify_jwt = false

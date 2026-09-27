@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
+import { redact } from "../_shared/safe-log.ts";
 
 serve(async (req) => {
   try {
@@ -85,7 +86,7 @@ serve(async (req) => {
 
     return new Response("ok", { status: 200 });
   } catch (error: any) {
-    console.error("Webhook error:", error);
+    console.error("Webhook error:", redact(error));
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

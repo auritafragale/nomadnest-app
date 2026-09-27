@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { providerError, redact } from "../_shared/safe-log.ts";
 
 // AI Application Co-Writer: drafts a personalised application from the
 // signed-in Nomad to a listing's Pet Parent. It only ever RETURNS text for
@@ -528,7 +529,7 @@ const handleDraft = async (req: Request, timings: Timings): Promise<Response> =>
 
         if (!aiResponse.ok) {
           const detail = await aiResponse.text().catch(() => "");
-          console.error("Anthropic API error", aiResponse.status, detail.slice(0, 1000));
+          console.error("Anthropic API error", providerError(aiResponse.status, detail));
           const busy = aiResponse.status === 429 || aiResponse.status === 529;
           return json(
             {
@@ -596,12 +597,12 @@ const handleDraft = async (req: Request, timings: Timings): Promise<Response> =>
     const { error: usageError } = await supabase
       .from("ai_usage")
       .insert({ user_id: user.id, feature: FEATURE });
-    if (usageError) console.error("Failed to record ai_usage", usageError.message);
+    if (usageError) console.error("Failed to record ai_usage", redact(usageError.message));
     timings.usage_insert_ms = Math.round(performance.now() - finishStart);
 
     return json({ draft, remaining: Math.max(0, DAILY_LIMIT - (used + 1)) });
   } catch (err) {
-    console.error("draft-application failed:", err);
+    console.error("draft-application failed:", redact(err));
     return json({ error: GENERIC_ERROR }, 500);
   }
 };

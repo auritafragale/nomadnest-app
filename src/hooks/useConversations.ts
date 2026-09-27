@@ -178,7 +178,6 @@ export const useMessages = (conversationIds: string[]) => {
           table: "messages",
         },
         async (payload) => {
-          console.log("New message received:", payload);
           const newMessage = payload.new as Message;
           if (!conversationIds.includes(newMessage.conversation_id)) return;
           // Add new message to cache
@@ -211,7 +210,6 @@ export const useMessages = (conversationIds: string[]) => {
           table: "messages",
         },
         (payload) => {
-          console.log("Message updated (read receipt):", payload);
           const updatedMessage = payload.new as Message;
           if (!conversationIds.includes(updatedMessage.conversation_id)) return;
           // Update message in cache with read_at

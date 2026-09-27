@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { redact } from "../_shared/safe-log.ts";
+import { rejectIfNotInternal } from "../_shared/internal.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +28,10 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Cron only: public.request_internal_function sends the Vault secret.
+  const rejected = rejectIfNotInternal(req, "review-reminders");
+  if (rejected) return rejected;
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -38,7 +44,7 @@ const handler = async (req: Request): Promise<Response> => {
   });
 
   if (leaseError) {
-    console.error("Failed to acquire job lease:", leaseError);
+    console.error("Failed to acquire job lease:", redact(leaseError));
     return new Response(JSON.stringify({ error: "lease_failed" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -79,7 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
         .eq("id", sit.id)
         .in("status", ["confirmed", "in_progress"]);
       if (error) {
-        console.error("Failed to auto-complete sit", sit.id, error);
+        console.error("Failed to auto-complete sit", sit.id, redact(error));
         summary.errors++;
       } else {
         summary.autoCompleted++;
@@ -136,7 +142,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (claimError) {
           // Duplicate = already reminded for this stage.
           if (!`${claimError.message}`.toLowerCase().includes("duplicate")) {
-            console.error("Failed to claim reminder", sit.id, party.userId, claimError);
+            console.error("Failed to claim reminder", sit.id, party.userId, redact(claimError));
             summary.errors++;
           }
           continue;
@@ -181,7 +187,7 @@ const handler = async (req: Request): Promise<Response> => {
           );
           if (notifyError) throw notifyError;
         } catch (err) {
-          console.error("Reminder email failed", sit.id, party.userId, err);
+          console.error("Reminder email failed", sit.id, party.userId, redact(err));
           summary.errors++;
           continue;
         }
@@ -206,7 +212,7 @@ const handler = async (req: Request): Promise<Response> => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    console.error("review-reminders failed:", err);
+    console.error("review-reminders failed:", redact(err));
     await supabase
       .from("background_job_state")
       .update({ locked_until: null, last_error: `${err?.message ?? err}` })

@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { redact } from "../_shared/safe-log.ts";
+import { rejectIfNotInternal } from "../_shared/internal.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +55,10 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Cron only: public.request_internal_function sends the Vault secret.
+  const rejected = rejectIfNotInternal(req, "sit-checkin-reminders");
+  if (rejected) return rejected;
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -65,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
   );
 
   if (leaseError) {
-    console.error("Failed to acquire job lease:", leaseError);
+    console.error("Failed to acquire job lease:", redact(leaseError));
     return new Response(JSON.stringify({ error: "lease_failed" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -173,7 +179,7 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
       if (notifError) {
-        console.error("Failed to insert reminder notification", sitId, notifError);
+        console.error("Failed to insert reminder notification", sitId, redact(notifError));
         summary.errors++;
         continue;
       }
@@ -192,7 +198,7 @@ const handler = async (req: Request): Promise<Response> => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    console.error("sit-checkin-reminders failed:", err);
+    console.error("sit-checkin-reminders failed:", redact(err));
     await supabase
       .from("background_job_state")
       .update({ locked_until: null, last_error: `${err?.message ?? err}` })

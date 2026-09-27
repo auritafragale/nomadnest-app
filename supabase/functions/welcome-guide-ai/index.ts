@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { providerError, redact } from "../_shared/safe-log.ts";
 
 // Welcome Guide AI helpers for the listing's OWNER (private owner content):
 //   action "explain_photo": a photo (+ optional note) -> one short instruction
@@ -125,7 +126,7 @@ serve(async (req) => {
     const { data: userData, error: authError } = await supabase.auth.getUser(jwt);
     const user = userData?.user;
     if (authError || !user) {
-      log({ rejected: "auth_get_user_failed", detail: authError?.message ?? "no user" });
+      log({ rejected: "auth_get_user_failed", detail: redact(authError?.message ?? "no user") });
       return json({ error: "Your session has expired. Please sign in again." }, 401);
     }
 
@@ -297,7 +298,7 @@ serve(async (req) => {
 
         if (!aiResponse.ok) {
           const detail = await aiResponse.text().catch(() => "");
-          console.error("Anthropic API error", aiResponse.status, detail.slice(0, 1000));
+          console.error("Anthropic API error", providerError(aiResponse.status, detail));
           const busy = aiResponse.status === 429 || aiResponse.status === 529;
           return json(
             { error: busy ? "The AI is busy right now. Please try again in a minute." : GENERIC_ERROR },
@@ -340,12 +341,12 @@ serve(async (req) => {
 
     // 6) Record usage only after success
     const { error: usageError } = await supabase.from("ai_usage").insert({ user_id: user.id, feature });
-    if (usageError) console.error("Failed to record ai_usage", usageError.message);
+    if (usageError) console.error("Failed to record ai_usage", redact(usageError.message));
 
     log({ ok: true, action, stop_reasons: stopReasons.join(",") });
     return json({ text: output, remaining: Math.max(0, DAILY_LIMIT - (used + 1)) });
   } catch (err) {
-    console.error("welcome-guide-ai failed:", err);
+    console.error("welcome-guide-ai failed:", redact(err));
     return json({ error: GENERIC_ERROR }, 500);
   }
 });

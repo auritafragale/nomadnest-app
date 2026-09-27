@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { redact } from "../_shared/safe-log.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -185,7 +186,7 @@ serve(async (req) => {
 
     if (!res.ok) {
       const err = await res.text();
-      console.error("Resend failed", err);
+      console.error("Resend failed", redact(err));
     }
 
     return new Response(JSON.stringify({ sent: recipients.length }), {
@@ -193,7 +194,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("notify-new-report failed", e);
+    console.error("notify-new-report failed", redact(e));
     return new Response(JSON.stringify({ error: "failed" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

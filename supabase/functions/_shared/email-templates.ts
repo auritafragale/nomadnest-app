@@ -22,6 +22,42 @@ export interface BuiltEmail {
   pushUrl?: string;
 }
 
+// ─── Escaping ────────────────────────────────────────────────────────────────
+// Every value that can come from a member (names, listing titles, notes,
+// reasons, contact form fields) is HTML-escaped before it goes into an email,
+// so nobody can put their own links or markup into mail sent from our domain.
+// Plain-text parts (subject, preview, push title/body) are decoded again.
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const decodeHtml = (value: string) =>
+  value
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+
+const escapeValues = <T extends Record<string, unknown>>(data: T): T =>
+  Object.fromEntries(
+    Object.entries(data ?? {}).map(([k, v]) => [k, typeof v === "string" ? escapeHtml(v) : v]),
+  ) as T;
+
+/** Subject, preview and push text are plain text: undo the escaping there. */
+const plainTextParts = (email: BuiltEmail): BuiltEmail => ({
+  ...email,
+  subject: decodeHtml(email.subject),
+  ...(email.preview !== undefined ? { preview: decodeHtml(email.preview) } : {}),
+  ...(email.pushTitle !== undefined ? { pushTitle: decodeHtml(email.pushTitle) } : {}),
+  ...(email.pushBody !== undefined ? { pushBody: decodeHtml(email.pushBody) } : {}),
+});
+
 const quote = (text: string) =>
   `<blockquote style="border-left:3px solid #E8735A;padding-left:12px;color:#555;margin:16px 0;">${text}</blockquote>`;
 
@@ -59,7 +95,11 @@ export type NotificationType =
   | "community_strike_heads_up_host"
   | "community_strike_heads_up_nomad";
 
-export function buildNotificationEmail(
+export function buildNotificationEmail(type: string, data: Record<string, string>): BuiltEmail {
+  return plainTextParts(buildNotificationEmailEscaped(type, escapeValues(data)));
+}
+
+function buildNotificationEmailEscaped(
   type: string,
   data: Record<string, string>
 ): BuiltEmail {
@@ -457,7 +497,11 @@ const welcomeStep = (icon: string, title: string, text: string) => `
   </table>`;
 
 export function buildWelcomeEmail(firstName: string): BuiltEmail {
-  const name = (firstName ?? "").trim() || "there";
+  return plainTextParts(buildWelcomeEmailEscaped(escapeHtml((firstName ?? "").trim())));
+}
+
+function buildWelcomeEmailEscaped(firstName: string): BuiltEmail {
+  const name = firstName || "there";
   return {
     subject: "Welcome to NomadNest! 🏡",
     preview: "Free pet sitting, free stays, here's how it works.",
@@ -515,7 +559,11 @@ export interface MembershipEmailDetails {
   name?: string | null;
 }
 
-export function buildMembershipEmail(
+export function buildMembershipEmail(kind: MembershipEmailKind, details: MembershipEmailDetails): BuiltEmail {
+  return plainTextParts(buildMembershipEmailEscaped(kind, escapeValues(details as unknown as Record<string, unknown>) as unknown as MembershipEmailDetails));
+}
+
+function buildMembershipEmailEscaped(
   kind: MembershipEmailKind,
   details: MembershipEmailDetails
 ): BuiltEmail {
@@ -613,46 +661,50 @@ export interface ContactEmailInput {
 export function buildContactNotificationEmail(
   input: ContactEmailInput
 ): BuiltEmail {
-  return {
-    subject: `[${input.categoryLabel}] ${input.subject}`,
+  // To support only. Every field is escaped.
+  const v = escapeValues(input as unknown as Record<string, unknown>) as unknown as ContactEmailInput;
+  return plainTextParts({
+    subject: `[${v.categoryLabel}] ${v.subject}`,
     heading: "New contact form submission",
     body: `
       <div style="background:#FAF7F2;padding:20px;border-radius:10px;margin:0 0 20px;">
-        <p style="margin:8px 0;"><strong>From:</strong> ${input.name} (${input.email})</p>
-        <p style="margin:8px 0;"><strong>Category:</strong> ${input.categoryLabel}</p>
-        <p style="margin:8px 0;"><strong>Subject:</strong> ${input.subject}</p>
+        <p style="margin:8px 0;"><strong>From:</strong> ${v.name} (${v.email})</p>
+        <p style="margin:8px 0;"><strong>Category:</strong> ${v.categoryLabel}</p>
+        <p style="margin:8px 0;"><strong>Subject:</strong> ${v.subject}</p>
       </div>
       <p style="margin:0 0 8px;"><strong>Message:</strong></p>
       <div style="background:#fff;padding:16px;border:1px solid #eee;border-radius:10px;">
-        <p style="white-space:pre-wrap;margin:0;">${input.message}</p>
+        <p style="white-space:pre-wrap;margin:0;">${v.message}</p>
       </div>
     `,
     footerReason:
       "You're receiving this because someone submitted the NomadNest contact form.",
-  };
+  });
 }
 
+/**
+ * To the sender. Contains NO text they typed (not their name, subject or
+ * message): the form can be filled in with anyone's address, so echoing it
+ * would let people send their own text from our domain. Only the category,
+ * from our fixed list, is shown.
+ */
 export function buildContactConfirmationEmail(
-  input: ContactEmailInput
+  input: Pick<ContactEmailInput, "categoryLabel">
 ): BuiltEmail {
   return {
-    subject: "We received your message!",
-    preview: "We'll get back to you within 24–48 hours",
-    heading: `Thank you for reaching out, ${input.name}!`,
+    subject: "We received your message",
+    preview: "We'll get back to you within 24 to 48 hours",
+    heading: "Thank you for getting in touch",
     body: `
-      <p>We've received your message and will get back to you within 24–48 hours.</p>
+      <p>We've received your message and will get back to you within 24 to 48 hours.</p>
       <div style="background:#FAF7F2;padding:20px;border-radius:10px;margin:20px 0;">
-        <p style="margin:8px 0;"><strong>Category:</strong> ${input.categoryLabel}</p>
-        <p style="margin:8px 0;"><strong>Subject:</strong> ${input.subject}</p>
+        <p style="margin:8px 0;"><strong>Topic:</strong> ${escapeHtml(input.categoryLabel)}</p>
       </div>
-      <p style="margin:0 0 8px;"><strong>Your message:</strong></p>
-      <div style="background:#fff;padding:16px;border:1px solid #eee;border-radius:10px;">
-        <p style="white-space:pre-wrap;margin:0;">${input.message}</p>
-      </div>
+      <p>If you didn't contact NomadNest, you can ignore this email.</p>
       <p style="margin-top:24px;">Best regards,<br />The NomadNest Team</p>
     `,
     footerReason:
-      "You're receiving this because you contacted NomadNest support.",
+      "You're receiving this because this address was used on the NomadNest contact form.",
   };
 }
 

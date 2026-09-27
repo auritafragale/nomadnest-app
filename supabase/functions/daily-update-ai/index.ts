@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { providerError, redact } from "../_shared/safe-log.ts";
 
 // AI Daily Updates for the confirmed sitter of an active sit:
 //   action "draft":     photos + chips + pets' names + the sitter's note
@@ -169,7 +170,7 @@ const callTool = async (
       });
       if (!aiResponse.ok) {
         const detail = await aiResponse.text().catch(() => "");
-        console.error("Anthropic API error", aiResponse.status, detail.slice(0, 1000));
+        console.error("Anthropic API error", providerError(aiResponse.status, detail));
         const busy = aiResponse.status === 429 || aiResponse.status === 529;
         return { error: json({ error: busy ? "The AI is busy right now. Please try again in a minute." : GENERIC_ERROR }, busy ? 503 : 502) };
       }
@@ -217,7 +218,7 @@ serve(async (req) => {
     const { data: userData, error: authError } = await supabase.auth.getUser(jwt);
     const user = userData?.user;
     if (authError || !user) {
-      log({ rejected: "auth_get_user_failed", detail: authError?.message ?? "no user" });
+      log({ rejected: "auth_get_user_failed", detail: redact(authError?.message ?? "no user") });
       return json({ error: "Your session has expired. Please sign in again." }, 401);
     }
 
@@ -346,7 +347,7 @@ serve(async (req) => {
       const text = replaceDashes(String(result.input.text)).replace(/\p{Extended_Pictographic}️?/gu, "").trim();
 
       const { error: usageError } = await supabase.from("ai_usage").insert({ user_id: user.id, feature });
-      if (usageError) console.error("Failed to record ai_usage", usageError.message);
+      if (usageError) console.error("Failed to record ai_usage", redact(usageError.message));
       log({ ok: true, action, photos: images.length });
       return json({ text, remaining: Math.max(0, limit - (used + 1)) });
     }
@@ -415,11 +416,11 @@ serve(async (req) => {
     if (updateError) throw new Error(`storing translation failed: ${updateError.message}`);
 
     const { error: usageError } = await supabase.from("ai_usage").insert({ user_id: user.id, feature });
-    if (usageError) console.error("Failed to record ai_usage", usageError.message);
+    if (usageError) console.error("Failed to record ai_usage", redact(usageError.message));
     log({ ok: true, action, same_language: same });
     return json({ translated: !same });
   } catch (err) {
-    console.error("daily-update-ai failed:", err);
+    console.error("daily-update-ai failed:", redact(err));
     return json({ error: GENERIC_ERROR }, 500);
   }
 });

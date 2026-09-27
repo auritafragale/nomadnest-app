@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { redact } from "../_shared/safe-log.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,7 +81,7 @@ serve(async (req) => {
 
     return json({ url });
   } catch (e) {
-    console.error("perk-redirect error", e);
+    console.error("perk-redirect error", redact(e));
     return json({ error: "Unexpected error" }, 500);
   }
 });

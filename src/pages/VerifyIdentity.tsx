@@ -200,7 +200,6 @@ const VerifyIdentity = () => {
       return;
     }
 
-    console.log("[Onfido] Initializing SDK with token:", sdkToken.slice(0, 20) + "...");
 
     try {
       const instance = window.Onfido.init({
@@ -208,7 +207,6 @@ const VerifyIdentity = () => {
         containerId: "onfido-mount",
         steps: ["welcome", "document", "face", "complete"],
         onComplete: async (data: unknown) => {
-          console.log("[Onfido] onComplete data:", data);
           instance.tearDown();
           onfidoRef.current = null;
 
@@ -223,7 +221,6 @@ const VerifyIdentity = () => {
           if (res.error) {
             console.error("[Onfido] submit error:", res.error);
           } else {
-            console.log("[Onfido] submit success:", res.data);
           }
 
           queryClient.invalidateQueries({ queryKey: ["verification"] });
@@ -358,7 +355,6 @@ const VerifyIdentity = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log("[Onfido] Edge function response:", res);
 
       if (res.error) {
         throw new Error(`Edge function error: ${res.error.message}`);
@@ -375,7 +371,6 @@ const VerifyIdentity = () => {
         throw new Error("No SDK token in response — check ONFIDO_API_TOKEN secret");
       }
 
-      console.log("[Onfido] Got sdk_token and applicant_id:", data.applicant_id);
       setSdkToken(data.sdk_token);
       setApplicantId(data.applicant_id || "");
 

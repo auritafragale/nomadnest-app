@@ -5,6 +5,7 @@ import {
   sendBrandedEmail,
 } from "../_shared/branded-email.ts";
 import { getPreviewTemplates } from "../_shared/email-templates.ts";
+import { redact } from "../_shared/safe-log.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,7 +88,7 @@ serve(async (req) => {
 
     return json({ error: "Method not allowed" }, 405);
   } catch (error: any) {
-    console.error("Error in preview-email-templates:", error);
+    console.error("Error in preview-email-templates:", redact(error));
     return json({ error: error.message }, 500);
   }
 });

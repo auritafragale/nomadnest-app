@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { providerError, redact } from "../_shared/safe-log.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,7 +66,7 @@ serve(async (req) => {
 
         if (!applicantRes.ok) {
           const err = await applicantRes.text();
-          console.error("[onfido-create-applicant] applicant error:", applicantRes.status, err);
+          console.error("[onfido-create-applicant] applicant error:", providerError(applicantRes.status, typeof err === "string" ? err : JSON.stringify(err)));
           throw new Error(`Onfido applicant creation failed (${applicantRes.status}): ${err}`);
         }
 
@@ -94,7 +95,7 @@ serve(async (req) => {
 
       if (!tokenRes.ok) {
         const err = await tokenRes.text();
-        console.error("[onfido-create-applicant] sdk_token error:", tokenRes.status, err);
+        console.error("[onfido-create-applicant] sdk_token error:", providerError(tokenRes.status, typeof err === "string" ? err : JSON.stringify(err)));
         throw new Error(`SDK token creation failed (${tokenRes.status}): ${err}`);
       }
 
@@ -133,7 +134,7 @@ serve(async (req) => {
 
       if (!checkRes.ok) {
         const err = await checkRes.text();
-        console.error("[onfido-create-applicant] check error:", checkRes.status, err);
+        console.error("[onfido-create-applicant] check error:", providerError(checkRes.status, typeof err === "string" ? err : JSON.stringify(err)));
         throw new Error(`Check creation failed (${checkRes.status}): ${err}`);
       }
 

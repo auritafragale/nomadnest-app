@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { redact } from "../_shared/safe-log.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -109,7 +110,7 @@ serve(async (req) => {
       const { data: userData } = await admin.auth.admin.getUserById(userId);
       const email = userData?.user?.email;
       if (!email) {
-        console.error("Could not find user email", profileErr);
+        console.error("Could not find user email", redact(profileErr));
         return new Response(JSON.stringify({ error: "User email not found" }), {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -129,7 +130,7 @@ serve(async (req) => {
       message: `Your ID verification was not approved: ${reason}. Please resubmit via Settings → Verify Identity.`,
       data: { reason, notes: notes ?? null },
     });
-    if (notifErr) console.error("Notification insert error:", notifErr);
+    if (notifErr) console.error("Notification insert error:", redact(notifErr));
 
     // Send email
     const emailRes = await sendEmail(
@@ -143,7 +144,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    console.error("notify-id-rejected error:", err);
+    console.error("notify-id-rejected error:", redact(err));
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

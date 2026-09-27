@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { renderBrandedEmail, sendBrandedEmail } from "../_shared/branded-email.ts";
 import { buildNotificationEmail } from "../_shared/email-templates.ts";
+import { redact } from "../_shared/safe-log.ts";
+import { rejectIfNotInternal } from "../_shared/internal.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +30,10 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Cron only: public.request_internal_function sends the Vault secret.
+  const rejected = rejectIfNotInternal(req, "trust-strike-emails");
+  if (rejected) return rejected;
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -39,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
   });
 
   if (leaseError) {
-    console.error("Failed to acquire job lease:", leaseError);
+    console.error("Failed to acquire job lease:", redact(leaseError));
     return new Response(JSON.stringify({ error: "lease_failed" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -93,12 +99,12 @@ const handler = async (req: Request): Promise<Response> => {
           .eq("id", strike.id);
         summary.sent++;
       } catch (e) {
-        console.error("Failed to send strike-two email", strike.id, e);
+        console.error("Failed to send strike-two email", strike.id, redact(e));
         summary.errors++;
       }
     }
   } catch (e) {
-    console.error("trust-strike-emails failed", e);
+    console.error("trust-strike-emails failed", redact(e));
     summary.errors++;
   } finally {
     await supabase.rpc("release_job_lease", { p_job_name: JOB_NAME });

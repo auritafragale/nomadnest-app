@@ -1,3 +1,4 @@
+import { maskEmail } from "./safe-log.ts";
 // Shared branded email layout for every NomadNest email.
 // Edit this file to change branding (colors, logo, footer) across ALL emails.
 
@@ -93,7 +94,7 @@ export async function sendBrandedEmail(
 ): Promise<unknown> {
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
   if (!RESEND_API_KEY) {
-    console.error("RESEND_API_KEY not configured, skipping email to", to);
+    console.error("RESEND_API_KEY not configured, skipping email to", maskEmail(to));
     return null;
   }
   const response = await fetch("https://api.resend.com/emails", {

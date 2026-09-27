@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import tzlookup from "npm:@photostructure/tz-lookup@11.7.0";
+import { redact } from "../_shared/safe-log.ts";
 
 // Sets listings.timezone from the home's coordinates, using an offline
 // lookup (@photostructure/tz-lookup, ~88 KB, no paid API).
@@ -84,7 +85,7 @@ serve(async (req) => {
       }
       const { error: updateError } = await supabase.from("listings").update({ timezone: tz }).eq("id", row.id);
       if (updateError) {
-        console.error("Failed to update time zone", row.id, updateError.message);
+        console.error("Failed to update time zone", row.id, redact(updateError.message));
         skipped++;
       } else {
         updated++;
@@ -94,7 +95,7 @@ serve(async (req) => {
     log({ ok: true, backfill: body?.backfill === true, updated, skipped });
     return json({ updated, skipped });
   } catch (err) {
-    console.error("listing-timezone failed:", err);
+    console.error("listing-timezone failed:", redact(err));
     return json({ error: "Could not update time zones" }, 500);
   }
 });

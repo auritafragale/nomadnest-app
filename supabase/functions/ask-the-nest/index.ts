@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.89.0";
 import { isEmergencyQuestion } from "../_shared/emergencyTerms.ts";
+import { providerError, redact } from "../_shared/safe-log.ts";
 
 // Ask the Nest: answers a confirmed sitter's question about the home, using
 // ONLY that home's Welcome Guide.
@@ -212,7 +213,7 @@ const groupQuestion = async (
     log({
       event: "group_failed",
       timed_out: controller.signal.aborted,
-      detail: err instanceof Error ? err.message : String(err),
+      detail: redact(err),
     });
   } finally {
     clearTimeout(timeout);
@@ -280,7 +281,7 @@ const lockedArrivalFor = async (
       saved_questions: ((qa ?? []) as { question: string }[]).map((q) => q.question),
     };
   } catch (err) {
-    console.error("Locked arrival lookup failed", err);
+    console.error("Locked arrival lookup failed", redact(err));
     return { filled_in: [], saved_questions: [] };
   }
 };
@@ -329,7 +330,7 @@ serve(async (req) => {
     const { data: userData, error: authError } = await service.auth.getUser(jwt);
     const user = userData?.user;
     if (authError || !user) {
-      log({ rejected: "auth_get_user_failed", detail: authError?.message ?? "no user" });
+      log({ rejected: "auth_get_user_failed", detail: redact(authError?.message ?? "no user") });
       return json({ error: "Your session has expired. Please sign in again." }, 401);
     }
 
@@ -373,7 +374,7 @@ serve(async (req) => {
         .insert({ sit_id: guide.sit_id, listing_id: listingId, sitter_user_id: user.id, question, ...fields })
         .select("id")
         .single();
-      if (error) console.error("Failed to store guide question", error.message);
+      if (error) console.error("Failed to store guide question", redact(error.message));
       return (data?.id as string | undefined) ?? null;
     };
 
@@ -444,7 +445,7 @@ serve(async (req) => {
 
         if (!aiResponse.ok) {
           const detail = await aiResponse.text().catch(() => "");
-          console.error("Anthropic API error", aiResponse.status, detail.slice(0, 1000));
+          console.error("Anthropic API error", providerError(aiResponse.status, detail));
           const busy = aiResponse.status === 429 || aiResponse.status === 529;
           return json({ error: busy ? "I'm busy right now. Please try again in a minute." : GENERIC_ERROR }, busy ? 503 : 502);
         }
@@ -469,7 +470,7 @@ serve(async (req) => {
               : [],
           };
         } else {
-          log({ event: "reply_rejected", attempt, stop_reason: stopReason, empty: !answer });
+          log({ event: "reply_rejected", attempt, stop_reason: stopReason, empty: answer.length === 0 });
         }
       }
     } catch (err) {
@@ -487,7 +488,7 @@ serve(async (req) => {
     // 8) Record the question and usage (after success only)
     const questionId = await storeQuestion({ answered_from_guide: reply.answered_from_guide, is_emergency: false });
     const { error: usageError } = await service.from("ai_usage").insert({ user_id: user.id, feature: FEATURE });
-    if (usageError) console.error("Failed to record ai_usage", usageError.message);
+    if (usageError) console.error("Failed to record ai_usage", redact(usageError.message));
 
     // 9) Owner-facing questions only: group repeats, without delaying the sitter.
     if (questionId && !reply.answered_from_guide) {
@@ -502,7 +503,7 @@ serve(async (req) => {
       remaining: Math.max(0, DAILY_LIMIT - (used + 1)),
     });
   } catch (err) {
-    console.error("ask-the-nest failed:", err);
+    console.error("ask-the-nest failed:", redact(err));
     return json({ error: GENERIC_ERROR }, 500);
   }
 });

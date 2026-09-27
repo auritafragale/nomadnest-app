@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { redact } from "../_shared/safe-log.ts";
 
 // Short-lived (5 minute) signed URLs for the photos a SITTER may see right now.
 // The allowed list comes from get_sitter_guide, called AS THE SITTER, so the
@@ -43,7 +44,7 @@ serve(async (req) => {
     );
     const { data: guide, error } = await asUser.rpc("get_sitter_guide", { p_listing_id: listingId });
     if (error) {
-      console.error(JSON.stringify({ fn: "welcome-guide-photo-urls", rejected: "rpc_failed", detail: error.message }));
+      console.error(JSON.stringify({ fn: "welcome-guide-photo-urls", rejected: "rpc_failed", detail: redact(error.message) }));
       return json({ error: "Could not load photos." }, 401);
     }
     const photos = ((guide as { photos?: { id: string; storage_path: string }[] } | null)?.photos) ?? [];
@@ -65,7 +66,7 @@ serve(async (req) => {
     );
     return json({ urls, expires_in: EXPIRES_IN_SECONDS });
   } catch (err) {
-    console.error("welcome-guide-photo-urls failed:", err);
+    console.error("welcome-guide-photo-urls failed:", redact(err));
     return json({ error: "Could not load photos." }, 500);
   }
 });

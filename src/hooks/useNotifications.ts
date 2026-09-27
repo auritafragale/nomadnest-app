@@ -33,7 +33,6 @@ export const useNotifications = () => {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log("New notification received:", payload);
           // Add new notification to cache
           queryClient.setQueryData<Notification[]>(
             ["notifications", user.id],

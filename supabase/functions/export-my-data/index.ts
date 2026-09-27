@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { redact } from "../_shared/safe-log.ts";
 
 // "Download my data" (UK/EU right of access and portability).
 // Returns the caller's data as JSON (export_account_data) plus signed links,
@@ -79,7 +80,7 @@ serve(async (req) => {
       files_note: "Download links for your files are valid for 7 days.",
     });
   } catch (err) {
-    log({ user: user.id, failed: err instanceof Error ? err.message : String(err) });
+    log({ user: user.id, failed: redact(err) });
     return json({ error: "We couldn't prepare your data just now. Please try again in a moment." }, 500);
   }
 });

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { renderBrandedEmail, sendBrandedEmail } from "../_shared/branded-email.ts";
 import { buildInstallAppEmail, buildWelcomeEmail } from "../_shared/email-templates.ts";
+import { redact } from "../_shared/safe-log.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -85,7 +86,7 @@ serve(async (req) => {
       );
       await sendBrandedEmail(profile.email, installEmail.subject, installHtml);
     } catch (installErr) {
-      console.error("send-welcome-email: install-app email failed:", installErr);
+      console.error("send-welcome-email: install-app email failed:", redact(installErr));
     }
 
     return new Response(JSON.stringify({ success: true }), {
@@ -93,7 +94,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    console.error("send-welcome-email error:", err);
+    console.error("send-welcome-email error:", redact(err));
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

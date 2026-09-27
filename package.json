@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predev": "bunx tsx scripts/generate-sitemap.ts",
-    "prebuild": "bunx tsx scripts/generate-sitemap.ts"
+    "prebuild": "bunx tsx scripts/generate-sitemap.ts",
+    "check:logs": "node scripts/check-edge-logs.mjs"
   },
   "dependencies": {
     "@googlemaps/markerclusterer": "^2.6.2",

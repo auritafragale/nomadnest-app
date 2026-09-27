@@ -38,6 +38,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError } from "@supabase/supabase-js";
+import { TurnstileWidget } from "@/components/security/TurnstileWidget";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
@@ -54,6 +56,9 @@ const Contact = () => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  // Cloudflare Turnstile: single-use token; remount the widget after a try.
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileKey, setTurnstileKey] = useState(0);
 
   const form = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
@@ -70,25 +75,25 @@ const Contact = () => {
     setIsSubmitting(true);
     
     try {
-      const { data: response, error } = await supabase.functions.invoke('send-contact-email', {
-        body: data,
+      const { error } = await supabase.functions.invoke("send-contact-email", {
+        body: { ...data, turnstileToken },
       });
 
       if (error) {
-        console.error("Error sending contact email:", error);
-        toast.error("Failed to send message. Please try again.");
-        setIsSubmitting(false);
+        const detail = error instanceof FunctionsHttpError ? await error.context.json().catch(() => null) : null;
+        toast.error(detail?.error || "Failed to send message. Please try again.");
         return;
       }
 
-      console.log("Contact form submitted successfully:", response);
       setIsSubmitted(true);
       toast.success("Message sent! We'll get back to you soon.");
-    } catch (error) {
-      console.error("Error sending contact email:", error);
+    } catch {
       toast.error("Failed to send message. Please try again.");
     } finally {
       setIsSubmitting(false);
+      // The token is single-use either way.
+      setTurnstileToken(null);
+      setTurnstileKey((k) => k + 1);
     }
   };
 
@@ -279,7 +284,9 @@ const Contact = () => {
                           )}
                         />
 
-                        <Button type="submit" className="w-full" disabled={isSubmitting}>
+                        <TurnstileWidget key={turnstileKey} onToken={setTurnstileToken} />
+
+                        <Button type="submit" className="w-full" disabled={isSubmitting || !turnstileToken}>
                           {isSubmitting ? (
                             <>
                               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

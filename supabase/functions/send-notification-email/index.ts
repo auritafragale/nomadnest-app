@@ -5,6 +5,7 @@ import {
   sendBrandedEmail,
 } from "../_shared/branded-email.ts";
 import { buildNotificationEmail } from "../_shared/email-templates.ts";
+import { redact } from "../_shared/safe-log.ts";
 
 // Creates the in-app notification row (unless skipInAppNotification) and sends
 // the email. The push is sent by the AFTER INSERT trigger on notifications.
@@ -533,7 +534,7 @@ const handler = async (req: Request): Promise<Response> => {
         data: { ...data, url: plainContent.pushUrl },
       });
       if (notifError) {
-        console.error("Could not create in-app notification:", notifError);
+        console.error("Could not create in-app notification:", redact(notifError));
       }
     }
 
@@ -552,11 +553,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await sendBrandedEmail(profile.email, emailContent.subject, fullHtml);
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Email sent successfully:", redact(emailResponse));
 
     return json(emailResponse as Record<string, unknown>);
   } catch (error) {
-    console.error("Error in send-notification-email function:", error);
+    console.error("Error in send-notification-email function:", redact(error));
     return json({ error: error instanceof Error ? error.message : "Unknown error" }, 500);
   }
 };

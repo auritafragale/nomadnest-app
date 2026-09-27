@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { redact } from "../_shared/safe-log.ts";
 
 // Deletes the caller's account and data (UK/EU data protection; app stores).
 //
@@ -92,7 +93,7 @@ serve(async (req) => {
           }
         }
       } catch (err) {
-        log({ user: userId, step: "stripe", failed: err instanceof Error ? err.message : String(err) });
+        log({ user: userId, step: "stripe", failed: redact(err) });
         return json(
           { error: "We couldn't cancel your membership just now, so nothing was deleted. Please try again in a few minutes." },
           502,
@@ -130,7 +131,7 @@ serve(async (req) => {
       for (let i = 0; i < names.length; i += 100) {
         const { data: removed, error: removeError } = await admin.storage.from(bucket).remove(names.slice(i, i + 100));
         if (removeError) {
-          log({ user: userId, step: "storage", bucket, failed: removeError.message });
+          log({ user: userId, step: "storage", bucket, failed: redact(removeError.message) });
         } else {
           filesDeleted += removed?.length ?? 0;
         }
@@ -151,7 +152,7 @@ serve(async (req) => {
         if (!onfidoDeleted) log({ user: userId, step: "onfido", status: res.status });
       } catch (err) {
         onfidoDeleted = false;
-        log({ user: userId, step: "onfido", failed: err instanceof Error ? err.message : String(err) });
+        log({ user: userId, step: "onfido", failed: redact(err) });
       }
     }
 
@@ -170,7 +171,7 @@ serve(async (req) => {
       .eq("user_id", userId);
     // The ledger row exists (prepare_account_deletion); a failed update only
     // loses these counts, so log it and carry on with the deletion.
-    if (ledgerError) log({ user: userId, step: "ledger", failed: ledgerError.message });
+    if (ledgerError) log({ user: userId, step: "ledger", failed: redact(ledgerError.message) });
 
     // 6) The account itself (everything else cascades)
     const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
@@ -179,7 +180,7 @@ serve(async (req) => {
     log({ user: userId, ok: true, stripe_cancelled: stripeCancelled, files: filesDeleted, onfido: onfidoDeleted, prepared });
     return json({ success: true });
   } catch (err) {
-    log({ user: userId, failed: err instanceof Error ? err.message : String(err) });
+    log({ user: userId, failed: redact(err) });
     return json({ error: "We couldn't finish deleting your account. Please try again, or contact support." }, 500);
   }
 });

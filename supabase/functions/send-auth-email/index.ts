@@ -4,6 +4,7 @@ import {
   sendBrandedEmail,
 } from "../_shared/branded-email.ts"
 import { buildAuthEmail } from "../_shared/email-templates.ts"
+import { maskEmail, redact } from "../_shared/safe-log.ts";
 
 const hookSecret = Deno.env.get('SEND_EMAIL_HOOK_SECRET') as string
 
@@ -38,7 +39,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Processing ${email_action_type} email for ${user.email}`)
+    console.log(`Processing ${email_action_type} email for ${maskEmail(user.email)}`)
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const verifyUrl = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}`
@@ -51,11 +52,11 @@ Deno.serve(async (req) => {
 
     await sendBrandedEmail(user.email, email.subject, html)
 
-    console.log(`Successfully sent ${email_action_type} email to ${user.email}`)
+    console.log(`Successfully sent ${email_action_type} email to ${maskEmail(user.email)}`)
 
   } catch (err: unknown) {
     const error = err as { code?: number; message?: string }
-    console.error('Error in send-auth-email function:', error)
+    console.error('Error in send-auth-email function:', redact(error))
     return new Response(
       JSON.stringify({
         error: {

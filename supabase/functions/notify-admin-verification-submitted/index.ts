@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { renderBrandedEmail, sendBrandedEmail, APP_URL } from "../_shared/branded-email.ts";
+import { maskEmail, redact } from "../_shared/safe-log.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -97,7 +98,7 @@ serve(async (req) => {
       try {
         await sendBrandedEmail(to, "New ID verification awaiting review", html);
       } catch (err) {
-        console.error("Failed to email admin", to, err);
+        console.error("Failed to email admin", maskEmail(to), redact(err));
       }
     }
 
@@ -106,7 +107,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    console.error("notify-admin-verification-submitted error:", err);
+    console.error("notify-admin-verification-submitted error:", redact(err));
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -9,6 +9,7 @@ import {
   buildMembershipEmail,
   type MembershipEmailKind,
 } from "../_shared/email-templates.ts";
+import { maskEmail, redact } from "../_shared/safe-log.ts";
 
 const MEMBERSHIP_TIERS: Record<string, string> = {
   "prod_UJcVggxhZfowro": "sitter",
@@ -25,9 +26,9 @@ const PLAN_NAMES: Record<string, string> = {
 const sendEmail = async (to: string, subject: string, html: string) => {
   try {
     await sendBrandedEmail(to, subject, html);
-    console.log(`Membership email sent to ${to}: ${subject}`);
+    console.log(`Membership email sent to ${maskEmail(to)}`);
   } catch (err) {
-    console.error(String(err));
+    console.error(String(redact(err)));
   }
 };
 
@@ -54,7 +55,7 @@ const insertNotification = async (
     message,
     data: { url: "/membership" },
   });
-  if (error) console.error("Could not create in-app notification:", error);
+  if (error) console.error("Could not create in-app notification:", redact(error));
 };
 
 const membershipEmailEnabled = async (supabase: any, userId: string) => {
@@ -214,7 +215,7 @@ serve(async (req) => {
         break;
     }
   } catch (err) {
-    console.error("Webhook handler error:", err);
+    console.error("Webhook handler error:", redact(err));
     return new Response(`Handler error: ${(err as Error).message}`, { status: 500 });
   }
 

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { redact } from "../_shared/safe-log.ts";
 
 // One-off, admin-only cleanup of old private photos that were stored in the
 // PUBLIC listing-images bucket.
@@ -92,7 +93,7 @@ serve(async (req) => {
     console.log(JSON.stringify({ fn: "cleanup-checkin-photos", ok: true, kind, admin: user.id, deleted, cleared }));
     return json({ mode: "done", kind, files_deleted: deleted, ...(cleared as Record<string, unknown>) });
   } catch (err) {
-    console.error("cleanup-checkin-photos failed:", err);
+    console.error("cleanup-checkin-photos failed:", redact(err));
     return json({ error: err instanceof Error ? err.message : "Cleanup failed." }, 500);
   }
 });

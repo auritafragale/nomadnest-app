@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "https://esm.sh/web-push@3.6.7";
+import { redact } from "../_shared/safe-log.ts";
 
 // Two ways in, and neither lets a member push to someone else:
 //
@@ -104,7 +105,7 @@ const sendToUser = async (supabase: any, userId: string, payload: PushPayload) =
         return true;
       } catch (error) {
         const err = error as { statusCode?: number; message?: string };
-        console.error("Push failed for endpoint:", sub.endpoint.substring(0, 50), err.statusCode, err.message);
+        console.error("Push failed for endpoint:", sub.endpoint.substring(0, 50), err.statusCode, redact(err.message));
         // Subscription no longer valid on that device: remove it.
         if (err.statusCode === 404 || err.statusCode === 410) {
           await supabase.from("push_subscriptions").delete().eq("id", sub.id);
@@ -185,7 +186,7 @@ serve(async (req) => {
     });
     return json({ success: true, ...result });
   } catch (error) {
-    console.error("Error in send-push-notification:", error instanceof Error ? error.message : error);
+    console.error("Error in send-push-notification:", redact(error));
     return json({ error: "Could not send push notification" }, 500);
   }
 });
