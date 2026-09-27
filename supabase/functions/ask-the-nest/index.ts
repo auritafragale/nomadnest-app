@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.89.0";
 import { isEmergencyQuestion } from "../_shared/emergencyTerms.ts";
 
 // Ask the Nest: answers a confirmed sitter's question about the home, using
