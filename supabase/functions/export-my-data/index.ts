@@ -54,6 +54,12 @@ serve(async (req) => {
     const { data: exportData, error: exportError } = await admin.rpc("export_account_data", { p_user_id: user.id });
     if (exportError) throw new Error(`export failed: ${exportError.message}`);
 
+    // Sit Stories of sits they were part of (owner or sitter).
+    const { data: stories } = await admin
+      .from("sit_stories")
+      .select("id, sit_id, status, title, story, photo_paths, portfolio_status, portfolio_photo_paths, created_at, ready_at")
+      .or(`owner_user_id.eq.${user.id},sitter_user_id.eq.${user.id}`);
+
     const { data: files, error: filesError } = await admin.rpc("export_account_files", { p_user_id: user.id });
     if (filesError) throw new Error(`files failed: ${filesError.message}`);
 
@@ -76,6 +82,7 @@ serve(async (req) => {
 
     return json({
       ...(exportData as Record<string, unknown>),
+      sit_stories: stories ?? [],
       files: links,
       files_note: "Download links for your files are valid for 7 days.",
     });

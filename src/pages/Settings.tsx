@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { StoryNameSharingCard } from "@/components/settings/StoryNameSharingCard";
 import { DownloadMyDataCard } from "@/components/settings/DownloadMyDataCard";
 import { UpdateLanguageCard } from "@/components/settings/UpdateLanguageCard";
 import { useNavigate } from "react-router-dom";
@@ -590,6 +591,9 @@ const Settings = () => {
 
             {/* Language for sitters' daily updates */}
             <UpdateLanguageCard />
+
+            {/* Sit Stories: name on share cards (sitters) */}
+            {(role === "sitter" || role === "both") && <StoryNameSharingCard />}
 
             {/* Notification Preferences */}
             <Collapsible asChild>

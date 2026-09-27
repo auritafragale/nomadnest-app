@@ -233,7 +233,7 @@ export const useSendDailyUpdate = (context: SitUpdateContext | null | undefined)
       queryClient.invalidateQueries({ queryKey: ["sit-checkins", context?.sit_id] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       queryClient.invalidateQueries({ queryKey: ["messages"] });
-      queryClient.invalidateQueries({ queryKey: ["active-sit-for-conversation"] });
+      queryClient.invalidateQueries({ queryKey: ["conversation-active-sits"] });
     },
   });
 };

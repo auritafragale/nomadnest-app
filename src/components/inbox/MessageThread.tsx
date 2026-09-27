@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import { useReport } from "@/components/reports/ReportContext";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { ChatUpdateCard } from "@/components/sit-updates/ChatUpdateCard";
-import { useActiveSitForConversation } from "@/hooks/useActiveSitForConversation";
+import { useConversationActiveSits } from "@/hooks/useSitStories";
 import { parseCheckinMessage, type CheckinKind } from "@/hooks/useSitCheckins";
 import { useLinkedGuideQuestions, type LinkedGuideQuestion } from "@/hooks/useAskNest";
 import { AddToGuidePrompt, GuideQuestionCard } from "@/components/inbox/GuideQuestionChat";
@@ -84,7 +84,7 @@ export const MessageThread = ({
     userName
   );
 
-  const { data: activeSit } = useActiveSitForConversation(conversation?.conversation_ids ?? []);
+  const { data: activeSits = [] } = useConversationActiveSits(conversation?.conversation_ids ?? []);
 
   // Current user is the sitter in this conversation?
   const isCurrentUserSitter = !!conversation && !!user && conversation.sitter_user_id === user.id;
@@ -350,7 +350,7 @@ export const MessageThread = ({
                   <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
                     <ChatUpdateCard
                       update={checkin}
-                      sitId={activeSit?.sitId ?? null}
+                      sitId={null}
                       isOwn={isOwn}
                       viewerIsOwner={isCurrentUserOwner}
                       time={formatMessageDate(message.created_at)}
@@ -550,32 +550,44 @@ export const MessageThread = ({
         </div>
       )}
 
-      {/* Today's update: one pill linking to the sit's updates page */}
-      {activeSit && (activeSit.sitterUserId === user?.id || activeSit.ownerUserId === user?.id) && (
-        <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-2">
-          <Link
-            to={`/sits/${activeSit.sitId}`}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-              activeSit.todaySent
-                ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                : activeSit.sitterUserId === user?.id
-                  ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "border-border bg-background text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {activeSit.todaySent ? <Check className="h-3.5 w-3.5" /> : <Camera className="h-3.5 w-3.5" />}
-            {activeSit.sitterUserId === user?.id
-              ? activeSit.todaySent
-                ? "Today's update sent"
-                : "Send today's update"
-              : activeSit.todaySent
-                ? "Today's update: sent"
-                : "Today's update: not yet"}
-          </Link>
-          <Link to={`/sits/${activeSit.sitId}`} className="ml-auto whitespace-nowrap text-xs text-primary hover:underline">
-            See updates
-          </Link>
+      {/* Daily updates: one line per live sit between the two of you, saying
+          whose update and which home (the Inbox merges a pair's chats). */}
+      {activeSits.length > 0 && (
+        <div className="space-y-1.5 border-b border-border bg-muted/30 px-3 py-2">
+          {activeSits.map((sit) => {
+            const mine = sit.role === "sitter";
+            const label = mine
+              ? sit.sent_today
+                ? `Your update for ${sit.listing_title}: sent today`
+                : `Send today's update for ${sit.listing_title}`
+              : sit.sent_today
+                ? `${sit.sitter_first_name}'s update for ${sit.listing_title}: sent today`
+                : sit.due_today
+                  ? `${sit.sitter_first_name}'s update for ${sit.listing_title}: not sent yet today`
+                  : null;
+            if (!label) return null;
+            return (
+              <div key={sit.sit_id} className="flex items-center gap-2">
+                <Link
+                  to={`/sits/${sit.sit_id}`}
+                  className={cn(
+                    "inline-flex min-w-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                    sit.sent_today
+                      ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                      : mine && sit.due_today
+                        ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "border-border bg-background text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {sit.sent_today ? <Check className="h-3.5 w-3.5 shrink-0" /> : <Camera className="h-3.5 w-3.5 shrink-0" />}
+                  <span className="truncate">{label}</span>
+                </Link>
+                <Link to={`/sits/${sit.sit_id}`} className="ml-auto whitespace-nowrap text-xs text-primary hover:underline">
+                  See updates
+                </Link>
+              </div>
+            );
+          })}
         </div>
       )}
 

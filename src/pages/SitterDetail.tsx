@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { SitterPortfolio } from "@/components/sitter/SitterPortfolio";
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -755,6 +756,9 @@ const SitterDetail = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Sit Stories approved by Pet Parents */}
+            {userId && <SitterPortfolio sitterId={userId} />}
 
             {/* Why I Sit */}
             {sitter.why_i_sit && (

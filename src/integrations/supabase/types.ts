@@ -1369,6 +1369,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          share_name_in_stories: boolean
           avatar_url: string | null
           bio: string | null
           city: string | null
@@ -1401,6 +1402,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          share_name_in_stories?: boolean
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -1433,6 +1435,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          share_name_in_stories?: boolean
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -1817,6 +1820,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sit_stories: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          owner_user_id: string | null
+          photo_paths: string[]
+          portfolio_decided_at: string | null
+          portfolio_photo_paths: string[]
+          portfolio_requested_at: string | null
+          portfolio_status: string
+          ready_at: string | null
+          rewrite_requested_at: string | null
+          rewrites_used: number
+          sit_id: string
+          sitter_user_id: string | null
+          status: string
+          story: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          owner_user_id?: string | null
+          photo_paths?: string[]
+          portfolio_decided_at?: string | null
+          portfolio_photo_paths?: string[]
+          portfolio_requested_at?: string | null
+          portfolio_status?: string
+          ready_at?: string | null
+          rewrite_requested_at?: string | null
+          rewrites_used?: number
+          sit_id: string
+          sitter_user_id?: string | null
+          status?: string
+          story?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          owner_user_id?: string | null
+          photo_paths?: string[]
+          portfolio_decided_at?: string | null
+          portfolio_photo_paths?: string[]
+          portfolio_requested_at?: string | null
+          portfolio_status?: string
+          ready_at?: string | null
+          rewrite_requested_at?: string | null
+          rewrites_used?: number
+          sit_id?: string
+          sitter_user_id?: string | null
+          status?: string
+          story?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       sit_dates: {
         Row: {
@@ -2599,6 +2665,7 @@ export type Database = {
           total_clicks: number
         }[]
       }
+      admin_queue_sit_story: { Args: { p_sit_id: string }; Returns: string }
       admin_set_report_status: {
         Args: {
           p_report_id: string
@@ -2641,6 +2708,10 @@ export type Database = {
           reply_count: number
         }[]
       }
+      decide_sit_story_portfolio: {
+        Args: { p_decision: string; p_photo_paths?: string[]; p_story_id: string }
+        Returns: string
+      }
       decline_application: { Args: { p_application_id: string }; Returns: Json }
       expired_id_documents: {
         Args: never
@@ -2662,6 +2733,7 @@ export type Database = {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: string[]
       }
+      get_conversation_active_sits: { Args: { p_conversation_ids: string[] }; Returns: Json }
       get_guide_completion: { Args: { p_listing_id: string }; Returns: Json }
       get_listing_exact_location: {
         Args: { p_listing_id: string }
@@ -2725,8 +2797,10 @@ export type Database = {
           vet_info: string
         }[]
       }
+      get_sit_story: { Args: { p_story_id: string }; Returns: Json }
       get_sit_update_context: { Args: { p_sit_id: string }; Returns: Json }
       get_sitter_guide: { Args: { p_listing_id: string }; Returns: Json }
+      get_sitter_portfolio: { Args: { p_sitter_id: string }; Returns: Json }
       get_unread_conversations_count: { Args: never; Returns: number }
       get_unread_messages_count: { Args: never; Returns: number }
       get_user_role: {
@@ -2799,6 +2873,7 @@ export type Database = {
       request_is_end_user: { Args: never; Returns: boolean }
       request_listing_timezone_backfill: { Args: never; Returns: undefined }
       request_privacy_retention: { Args: never; Returns: undefined }
+      request_sit_story_rewrite: { Args: { p_story_id: string }; Returns: undefined }
       respond_to_sit_reschedule: {
         Args: { p_accept: boolean; p_request_id: string }
         Returns: Json
@@ -2818,6 +2893,11 @@ export type Database = {
       set_my_profile_phone: {
         Args: { p_phone: string; p_target: string }
         Returns: undefined
+      }
+      set_my_story_name_sharing: { Args: { p_allow: boolean }; Returns: boolean }
+      set_sit_story_portfolio_request: {
+        Args: { p_request: boolean; p_story_id: string }
+        Returns: string
       }
       shortlist_application: {
         Args: { p_application_id: string }

@@ -101,3 +101,6 @@ verify_jwt = false
 
 [functions.chat-translate]
 verify_jwt = false
+
+[functions.sit-story]
+verify_jwt = false

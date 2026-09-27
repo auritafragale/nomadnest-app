@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, BookOpen, CalendarClock, CheckCircle2, PawPrint } from "lucide-react";
+import { ArrowLeft, BookHeart, BookOpen, CalendarClock, CheckCircle2, PawPrint } from "lucide-react";
+import { useStoryForSit } from "@/hooks/useSitStories";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { daysBetween, formatDay, updatePreferenceText } from "@/lib/dailyUpdate";
@@ -40,6 +41,7 @@ export const SitProgressHeader = ({ context, sentToday }: { context: SitUpdateCo
   const progress = inSit ? Math.min(100, Math.round((context.day_number! / context.total_days) * 100)) : beforeSit ? 0 : 100;
   const names = petNames(context.pets);
   const other = isSitter ? context.owner.first_name : context.sitter.first_name;
+  const { data: story } = useStoryForSit(context.status === "completed" ? context.sit_id : undefined);
   // Only nudge on days an update is expected (the owner's update frequency).
   const dueToday = context.schedule ? context.schedule.due_today : !sentToday;
 
@@ -114,6 +116,15 @@ export const SitProgressHeader = ({ context, sentToday }: { context: SitUpdateCo
             <CalendarClock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             {updatePreferenceText(other, context.schedule)}
           </p>
+        )}
+
+        {story?.status === "ready" && (
+          <Button asChild size="sm" className="mt-4 mr-2 rounded-full">
+            <Link to={`/stories/${story.id}`}>
+              <BookHeart className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              Read your Sit Story
+            </Link>
+          </Button>
         )}
 
         {context.listing_id && (
