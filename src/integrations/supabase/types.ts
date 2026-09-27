@@ -1657,66 +1657,66 @@ export type Database = {
       sit_checkins: {
         Row: {
           ai_drafted: boolean
+          author_user_id: string
           chips: string[]
+          created_at: string
           flag_note: string | null
           flagged: boolean
+          id: string
+          kind: string
           local_day: string | null
           message_lang: string | null
+          note: string | null
           owner_heart_at: string | null
           photo_paths: string[]
+          photo_url: string | null
+          sit_id: string
           translated_at: string | null
           translated_flag_note: string | null
           translated_lang: string | null
           translated_message: string | null
-          author_user_id: string
-          created_at: string
-          id: string
-          kind: string
-          note: string | null
-          photo_url: string | null
-          sit_id: string
         }
         Insert: {
           ai_drafted?: boolean
+          author_user_id: string
           chips?: string[]
+          created_at?: string
           flag_note?: string | null
           flagged?: boolean
+          id?: string
+          kind: string
           local_day?: string | null
           message_lang?: string | null
+          note?: string | null
           owner_heart_at?: string | null
           photo_paths?: string[]
+          photo_url?: string | null
+          sit_id: string
           translated_at?: string | null
           translated_flag_note?: string | null
           translated_lang?: string | null
           translated_message?: string | null
-          author_user_id: string
-          created_at?: string
-          id?: string
-          kind: string
-          note?: string | null
-          photo_url?: string | null
-          sit_id: string
         }
         Update: {
           ai_drafted?: boolean
+          author_user_id?: string
           chips?: string[]
+          created_at?: string
           flag_note?: string | null
           flagged?: boolean
+          id?: string
+          kind?: string
           local_day?: string | null
           message_lang?: string | null
+          note?: string | null
           owner_heart_at?: string | null
           photo_paths?: string[]
+          photo_url?: string | null
+          sit_id?: string
           translated_at?: string | null
           translated_flag_note?: string | null
           translated_lang?: string | null
           translated_message?: string | null
-          author_user_id?: string
-          created_at?: string
-          id?: string
-          kind?: string
-          note?: string | null
-          photo_url?: string | null
-          sit_id?: string
         }
         Relationships: [
           {
@@ -2344,8 +2344,6 @@ export type Database = {
         Args: { p_job_name: string; p_lease_seconds: number }
         Returns: boolean
       }
-      admin_checkin_photo_cleanup_preview: { Args: never; Returns: Json }
-      admin_clear_public_checkin_photo_refs: { Args: never; Returns: Json }
       admin_dashboard_stats: {
         Args: never
         Returns: {
@@ -2540,7 +2538,10 @@ export type Database = {
         Returns: boolean
       }
       can_read_sit_update_photo: { Args: { p_name: string }; Returns: boolean }
-      can_upload_sit_update_photo: { Args: { p_name: string }; Returns: boolean }
+      can_upload_sit_update_photo: {
+        Args: { p_name: string }
+        Returns: boolean
+      }
       city_chat_key: {
         Args: { p_city: string; p_country: string }
         Returns: string

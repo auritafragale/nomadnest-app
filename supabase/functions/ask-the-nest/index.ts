@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.89.0";
 import { isEmergencyQuestion } from "../_shared/emergencyTerms.ts";
 
 // Ask the Nest: answers a confirmed sitter's question about the home, using
@@ -139,7 +139,7 @@ const MATCH_TOOL = {
  * listing and that the group is still open.
  */
 const groupQuestion = async (
-  service: ReturnType<typeof createClient>,
+  service: SupabaseClient,
   apiKey: string,
   listingId: string,
   questionId: string,
@@ -260,7 +260,7 @@ const ACCESS_FIELD_NAMES: Record<string, string> = {
  * values or answers are read here. Best effort: empty on any error.
  */
 const lockedArrivalFor = async (
-  service: ReturnType<typeof createClient>,
+  service: SupabaseClient,
   listingId: string,
 ): Promise<LockedArrival> => {
   try {
