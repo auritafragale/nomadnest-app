@@ -201,12 +201,10 @@ FOR EACH ROW EXECUTE FUNCTION public.guard_sit_checkin_write();
 
 -- ─── 4. Private photo bucket ───────────────────────────────────────────────
 
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('sit-update-photos', 'sit-update-photos', false, 5242880, ARRAY['image/jpeg', 'image/png', 'image/webp'])
-ON CONFLICT (id) DO UPDATE
-SET public = false,
-    file_size_limit = EXCLUDED.file_size_limit,
-    allowed_mime_types = EXCLUDED.allowed_mime_types;
+-- The bucket itself is created through the Storage API, not here: Lovable's
+-- migration tool rejects writes to storage.buckets (applied copy:
+-- 20260927020106_7f07001d-...). Settings: id 'sit-update-photos', private,
+-- 5 MB file limit, allowed types image/jpeg, image/png, image/webp.
 
 -- The sit id is the first folder of the object name.
 CREATE OR REPLACE FUNCTION public.sit_update_photo_sit(p_name text)
