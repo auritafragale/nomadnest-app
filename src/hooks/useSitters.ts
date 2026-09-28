@@ -9,6 +9,7 @@ import {
 } from "@/lib/categoryRatings";
 import { weightedAverage } from "@/lib/ratingWeights";
 import { REVIEW_RATE_BOOST_THRESHOLD } from "@/hooks/useReviewRates";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface SitterWithProfile {
   id: string;
@@ -57,6 +58,9 @@ interface UseSittersOptions {
 }
 
 export const useSitters = (options: UseSittersOptions = {}) => {
+  // Nomad profiles are for members only; signed out, nothing is queried and
+  // Browse Nomads shows the sign-in message.
+  const { user, loading: authLoading } = useAuth();
   const query = useQuery({
     queryKey: [
       "sitters",
@@ -192,11 +196,12 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         return filteredData;
       }
     },
+    enabled: !!user,
   });
 
   return {
     sitters: query.data ?? [],
-    loading: query.isLoading,
+    loading: authLoading || (!!user && query.isLoading),
     error: query.error ? (query.error as Error).message : null,
   };
 };

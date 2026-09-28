@@ -28,8 +28,6 @@ allowed(name, reason) AS (VALUES
   ('pets', 'Pets shown on published listings (private care columns revoked)'),
   ('sit_dates', 'Open dates on published listings'),
   ('reviews', 'Ratings on listing cards (private flag columns revoked)'),
-  ('sitter_profiles', 'Nomad profile content for visible Nomads (phone and verification internals revoked)'),
-  ('owner_profiles', 'Pet Parent profile content for active Pet Parents (phone revoked)'),
   ('perks', 'Public perks page (active perks only)')
 )
 
@@ -92,5 +90,42 @@ SELECT format('anon can read %s', a.name), COALESCE(al.reason, 'not expected'),
        CASE WHEN al.name IS NULL THEN 'readable, not on the allowed list' ELSE 'allowed' END,
        al.name IS NOT NULL
 FROM anon_readable a LEFT JOIN allowed al ON al.name = a.name
+
+UNION ALL
+SELECT format('%s: no signed-out access', t), 'no anon policy, no anon column',
+       COALESCE((SELECT string_agg(policyname, ', ') FROM pg_policies
+                 WHERE schemaname = 'public' AND tablename = t AND ('anon' = ANY (roles) OR 'public' = ANY (roles))
+                   AND cmd IN ('SELECT', 'ALL')), 'no anon policy')
+         || ', anon column read ' || has_any_column_privilege('anon', format('public.%I', t), 'SELECT')::text,
+       NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = t
+                   AND ('anon' = ANY (roles) OR 'public' = ANY (roles)) AND cmd IN ('SELECT', 'ALL'))
+         AND NOT has_any_column_privilege('anon', format('public.%I', t), 'SELECT')
+FROM (VALUES ('sitter_profiles'), ('owner_profiles')) AS v(t)
+
+UNION ALL
+SELECT 'sitter_profiles: members see visible Nomads only', 'is_active AND is_visible, own row, or shared with me',
+       COALESCE((SELECT qual FROM pg_policies WHERE schemaname = 'public' AND tablename = 'sitter_profiles'
+                 AND policyname = 'Authenticated users can view sitter profiles'), 'missing'),
+       COALESCE((SELECT position('is_visible' IN qual) > 0 AND position('nomad_profile_shared_with_me' IN qual) > 0
+                 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'sitter_profiles'
+                 AND policyname = 'Authenticated users can view sitter profiles'), false)
+
+UNION ALL
+SELECT 'sitter_profiles: only one member SELECT policy', '1',
+       count(*)::text, count(*) = 1
+FROM pg_policies
+WHERE schemaname = 'public' AND tablename = 'sitter_profiles' AND cmd IN ('SELECT', 'ALL')
+  AND 'authenticated' = ANY (roles)
+
+UNION ALL
+SELECT 'sitter_profiles: coordinates rounded (trigger + check)', 'trigger enabled, check present, 0 precise rows',
+       COALESCE((SELECT tgenabled::text FROM pg_trigger WHERE tgrelid = 'public.sitter_profiles'::regclass AND tgname = 'round_sitter_location'), 'no trigger')
+         || ', ' || CASE WHEN EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'sitter_profiles_location_rounded') THEN 'check' ELSE 'no check' END
+         || ', ' || (SELECT count(*) FROM public.sitter_profiles
+                     WHERE latitude::numeric <> round(latitude::numeric, 2) OR longitude::numeric <> round(longitude::numeric, 2))::text || ' precise',
+       EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid = 'public.sitter_profiles'::regclass AND tgname = 'round_sitter_location' AND tgenabled <> 'D')
+         AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'sitter_profiles_location_rounded')
+         AND NOT EXISTS (SELECT 1 FROM public.sitter_profiles
+                         WHERE latitude::numeric <> round(latitude::numeric, 2) OR longitude::numeric <> round(longitude::numeric, 2))
 
 ORDER BY ok, item;

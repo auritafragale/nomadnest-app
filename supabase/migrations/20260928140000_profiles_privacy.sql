@@ -202,3 +202,86 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.notify_city_chat_thread_subscribers() FROM PUBLIC, anon, authenticated;
+
+
+-- ─── 5. Nomad and Pet Parent profiles: members only ────────────────────────
+-- Signed-out visitors can't read sitter_profiles or owner_profiles at all
+-- (they held coordinates, age range, dates, cities, gallery and bio).
+
+DROP POLICY IF EXISTS "Anyone can view visible nomad profiles" ON public.sitter_profiles;
+DROP POLICY IF EXISTS "Anyone can view active pet parent profiles" ON public.owner_profiles;
+REVOKE SELECT ON public.sitter_profiles FROM anon;
+REVOKE SELECT ON public.owner_profiles FROM anon;
+
+-- A hidden or paused Nomad stays visible to a Pet Parent they're already
+-- dealing with (an application, invite or sit with that Pet Parent), so the
+-- Pet Parent can still review them. Everyone else sees only visible Nomads.
+CREATE OR REPLACE FUNCTION public.nomad_profile_shared_with_me(p_sitter_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+  SELECT auth.uid() IS NOT NULL AND (
+    EXISTS (SELECT 1 FROM public.applications a JOIN public.listings l ON l.id = a.listing_id
+            WHERE a.sitter_user_id = p_sitter_id AND l.owner_user_id = auth.uid())
+    OR EXISTS (SELECT 1 FROM public.sitter_invites i
+               WHERE i.sitter_user_id = p_sitter_id AND i.owner_user_id = auth.uid())
+    OR EXISTS (SELECT 1 FROM public.sits s
+               WHERE s.sitter_user_id = p_sitter_id AND s.owner_user_id = auth.uid())
+  );
+$function$;
+
+REVOKE ALL ON FUNCTION public.nomad_profile_shared_with_me(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.nomad_profile_shared_with_me(uuid) TO authenticated;
+
+DROP POLICY IF EXISTS "Authenticated users can view sitter profiles" ON public.sitter_profiles;
+CREATE POLICY "Authenticated users can view sitter profiles"
+ON public.sitter_profiles FOR SELECT TO authenticated
+USING (
+  (is_active IS TRUE AND is_visible IS TRUE)
+  OR auth.uid() = user_id
+  OR public.nomad_profile_shared_with_me(user_id)
+);
+
+-- owner_profiles has no separate visibility flag: active (not paused) or own.
+DROP POLICY IF EXISTS "Authenticated users can view owner profiles" ON public.owner_profiles;
+CREATE POLICY "Authenticated users can view owner profiles"
+ON public.owner_profiles FOR SELECT TO authenticated
+USING (is_active IS TRUE OR auth.uid() = user_id);
+
+
+-- ─── 6. Nomad coordinates: always about 1 km (2 decimals) ──────────────────
+-- The rounding trigger (from privacy batch 1) is re-asserted, and a CHECK
+-- makes a precise value impossible to store even if the trigger were removed.
+
+CREATE OR REPLACE FUNCTION public.round_sitter_location()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path TO 'public'
+AS $function$
+BEGIN
+  NEW.latitude := round(NEW.latitude::numeric, 2);
+  NEW.longitude := round(NEW.longitude::numeric, 2);
+  RETURN NEW;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.round_sitter_location() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS round_sitter_location ON public.sitter_profiles;
+CREATE TRIGGER round_sitter_location
+BEFORE INSERT OR UPDATE OF latitude, longitude ON public.sitter_profiles
+FOR EACH ROW EXECUTE FUNCTION public.round_sitter_location();
+
+UPDATE public.sitter_profiles
+SET latitude = round(latitude::numeric, 2), longitude = round(longitude::numeric, 2)
+WHERE (latitude IS NOT NULL AND latitude::numeric <> round(latitude::numeric, 2))
+   OR (longitude IS NOT NULL AND longitude::numeric <> round(longitude::numeric, 2));
+
+ALTER TABLE public.sitter_profiles DROP CONSTRAINT IF EXISTS sitter_profiles_location_rounded;
+ALTER TABLE public.sitter_profiles ADD CONSTRAINT sitter_profiles_location_rounded CHECK (
+  (latitude IS NULL OR latitude::numeric = round(latitude::numeric, 2))
+  AND (longitude IS NULL OR longitude::numeric = round(longitude::numeric, 2))
+);
