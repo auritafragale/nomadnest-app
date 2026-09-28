@@ -2006,6 +2006,73 @@ export type Database = {
           },
         ]
       }
+      sit_story_share_hits: {
+        Row: {
+          hits: number
+          link_id: string
+          minute: string
+        }
+        Insert: {
+          hits?: number
+          link_id: string
+          minute: string
+        }
+        Update: {
+          hits?: number
+          link_id?: string
+          minute?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sit_story_share_hits_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "sit_story_share_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sit_story_share_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          disabled_at: string | null
+          enabled: boolean
+          id: string
+          story_id: string
+          token: string
+          view_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          disabled_at?: string | null
+          enabled?: boolean
+          id?: string
+          story_id: string
+          token: string
+          view_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          disabled_at?: string | null
+          enabled?: boolean
+          id?: string
+          story_id?: string
+          token?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sit_story_share_links_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "sit_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sits: {
         Row: {
           arrival_prompt_sent_at: string | null
@@ -2504,6 +2571,10 @@ export type Database = {
     }
     Functions: {
       accept_application: { Args: { p_application_id: string }; Returns: Json }
+      accept_invite: {
+        Args: { p_invite_id: string; p_message?: string }
+        Returns: string
+      }
       account_storage_objects: {
         Args: { p_user_id: string }
         Returns: {
@@ -2701,6 +2772,10 @@ export type Database = {
           total_clicks: number
         }[]
       }
+      admin_queue_photo_alt_text: {
+        Args: { p_story_id: string }
+        Returns: undefined
+      }
       admin_queue_sit_story: { Args: { p_sit_id: string }; Returns: string }
       admin_set_max_listings: {
         Args: { p_max_listings: number; p_user_id: string }
@@ -2752,6 +2827,10 @@ export type Database = {
           reply_count: number
         }[]
       }
+      create_sit_story_share_link: {
+        Args: { p_story_id: string }
+        Returns: string
+      }
       decide_sit_story_portfolio: {
         Args: {
           p_decision: string
@@ -2761,6 +2840,14 @@ export type Database = {
         Returns: string
       }
       decline_application: { Args: { p_application_id: string }; Returns: Json }
+      disable_my_sit_story_share_link: {
+        Args: { p_story_id: string }
+        Returns: undefined
+      }
+      disable_sit_story_share_links: {
+        Args: { p_story_id: string }
+        Returns: undefined
+      }
       expired_id_documents: {
         Args: never
         Returns: {
@@ -2827,16 +2914,6 @@ export type Database = {
         }[]
       }
       get_my_profile: { Args: never; Returns: Json }
-      admin_queue_photo_alt_text: { Args: { p_story_id: string }; Returns: undefined }
-      withdraw_sit_story_portfolio: { Args: { p_story_id: string }; Returns: string }
-      create_sit_story_share_link: { Args: { p_story_id: string }; Returns: string }
-      disable_my_sit_story_share_link: { Args: { p_story_id: string }; Returns: undefined }
-      get_sitter_free_dates: { Args: { p_sitter_id: string }; Returns: Json }
-      set_my_availability: { Args: { p_ranges: Json }; Returns: Json }
-      accept_invite: {
-        Args: { p_invite_id: string; p_message?: string }
-        Returns: string
-      }
       get_my_settings: { Args: never; Returns: Json }
       get_my_sit_stories: { Args: never; Returns: Json }
       get_my_verification: {
@@ -2863,8 +2940,10 @@ export type Database = {
       }
       get_portfolio_story: { Args: { p_story_id: string }; Returns: Json }
       get_public_member_cards: { Args: { p_user_ids: string[] }; Returns: Json }
+      get_shared_sit_story: { Args: { p_token: string }; Returns: Json }
       get_sit_story: { Args: { p_story_id: string }; Returns: Json }
       get_sit_update_context: { Args: { p_sit_id: string }; Returns: Json }
+      get_sitter_free_dates: { Args: { p_sitter_id: string }; Returns: Json }
       get_sitter_guide: { Args: { p_listing_id: string }; Returns: Json }
       get_sitter_portfolio: { Args: { p_sitter_id: string }; Returns: Json }
       get_unread_conversations_count: { Args: never; Returns: number }
@@ -2885,6 +2964,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      hit_shared_sit_story: { Args: { p_token: string }; Returns: boolean }
       is_active_member: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       is_owner_active: { Args: { _owner_user_id: string }; Returns: boolean }
@@ -2964,6 +3044,7 @@ export type Database = {
         Args: { p_draft: string; p_question_id: string }
         Returns: Json
       }
+      set_my_availability: { Args: { p_ranges: Json }; Returns: Json }
       set_my_preferred_language: {
         Args: { p_language: string; p_only_if_empty?: boolean }
         Returns: string
@@ -3023,6 +3104,10 @@ export type Database = {
       upsert_push_subscription: {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string }
         Returns: undefined
+      }
+      withdraw_sit_story_portfolio: {
+        Args: { p_story_id: string }
+        Returns: string
       }
     }
     Enums: {
