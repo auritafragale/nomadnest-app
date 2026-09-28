@@ -2084,6 +2084,30 @@ export type Database = {
           },
         ]
       }
+      sitter_availability: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          sitter_user_id: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          sitter_user_id: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          sitter_user_id?: string
+          start_date?: string
+        }
+        Relationships: []
+      }
       sitter_invites: {
         Row: {
           created_at: string
@@ -2797,6 +2821,12 @@ export type Database = {
         }[]
       }
       get_my_profile: { Args: never; Returns: Json }
+      get_sitter_free_dates: { Args: { p_sitter_id: string }; Returns: Json }
+      set_my_availability: { Args: { p_ranges: Json }; Returns: Json }
+      accept_invite: {
+        Args: { p_invite_id: string; p_message?: string }
+        Returns: string
+      }
       get_my_settings: { Args: never; Returns: Json }
       get_my_sit_stories: { Args: never; Returns: Json }
       get_my_verification: {

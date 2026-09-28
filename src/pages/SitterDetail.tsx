@@ -1,7 +1,11 @@
 import { Helmet } from "react-helmet-async";
 import { SitterPortfolio } from "@/components/sitter/SitterPortfolio";
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
+import { HiddenProfileNotice, NeverShownNote, PreviewBar, PreviewTip } from "@/components/profile/ProfilePreview";
+import { useSitterFreeDates } from "@/hooks/useMyAvailability";
+import { useSitterPortfolio } from "@/hooks/useSitStories";
+import { shortRange } from "@/components/nn/ui";
 import { BackButton } from "@/components/layout/BackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveListingConversation } from "@/lib/conversations";
@@ -151,6 +155,25 @@ const SitterDetail = () => {
   const [warningOpen, setWarningOpen] = useState(false);
   const isPetParentViewer =
     !!user && user.id !== userId && (role === "owner" || role === "both");
+
+  // Preview (your own profile, opened with the eye button): the same data
+  // other members get, plus owner-only tips while "Show tips" is on.
+  const [searchParams] = useSearchParams();
+  const preview = searchParams.get("preview") === "1" && !!user && user.id === userId;
+  const [showTips, setShowTips] = useState(true);
+  const [ownVisibility, setOwnVisibility] = useState<{ is_visible: boolean; is_active: boolean } | null>(null);
+  const { data: freeDates } = useSitterFreeDates(user ? userId : undefined);
+  const { data: portfolio = [] } = useSitterPortfolio(user ? userId : undefined);
+  useEffect(() => {
+    if (!preview || !userId) return;
+    supabase
+      .from("sitter_profiles")
+      .select("is_visible, is_active")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data }) => setOwnVisibility(data ? { is_visible: !!data.is_visible, is_active: !!data.is_active } : null));
+  }, [preview, userId]);
+  const hiddenFromMembers = preview && !!ownVisibility && !(ownVisibility.is_visible && ownVisibility.is_active);
 
   // Pet Parents see the cautionary notice as soon as they open a flagged
   // nomad's profile — once per visit.
@@ -411,6 +434,23 @@ const SitterDetail = () => {
     );
   }
 
+  if (preview && (!profile || hiddenFromMembers)) {
+    return (
+      <div className="min-h-screen flex flex-col bg-white">
+        <Navbar />
+        <main className="flex-1 pt-16">
+          <PreviewBar showTips={showTips} onToggleTips={() => setShowTips((v) => !v)} accent="coral" />
+          <div className="mx-auto max-w-xl px-5 py-6">
+            <HiddenProfileNotice
+              text="Other members can't find or open your Nomad profile right now. Turn your visibility back on to be seen and invited."
+              action={{ label: "Change visibility", to: "/browse-sitters" }}
+            />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (!sitter || !profile) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -461,10 +501,11 @@ const SitterDetail = () => {
       </Helmet>
       <Navbar />
       <main className="flex-1 pt-16">
+        {preview && <PreviewBar showTips={showTips} onToggleTips={() => setShowTips((v) => !v)} accent="coral" />}
         <div className="container mx-auto px-4 pt-6 pb-8">
           <div className="max-w-4xl mx-auto">
             {/* Back button */}
-            <BackButton fallback={user?.id === userId ? "/dashboard" : "/browse-sitters"} className="mb-6" />
+            {!preview && <BackButton fallback={user?.id === userId ? "/dashboard" : "/browse-sitters"} className="mb-6" />}
 
             {/* Header Section */}
             <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">
@@ -651,6 +692,15 @@ const SitterDetail = () => {
                       Message
                     </Button>
                   )}
+                  {preview && (
+                    <div className="flex flex-col gap-1">
+                      <Button disabled>
+                        <Send className="w-4 h-4 mr-2" />
+                        Invite {profile.first_name || "me"} to a sit
+                      </Button>
+                      <span className="text-xs text-muted-foreground">Pet Parents see this button. It's switched off in preview.</span>
+                    </div>
+                  )}
                   {user && user.id !== userId && (role === "owner" || role === "both") && (
                     <Button
                       onClick={() => setShowInviteDialog(true)}
@@ -713,8 +763,37 @@ const SitterDetail = () => {
                   </div>
                 )}
 
-                {/* Availability */}
-                {(sitter.available_from || sitter.available_to) && (
+                {/* Free to sit: upcoming free ranges only, never where they're sitting */}
+                {freeDates && freeDates.length > 0 && (
+                  <div className="p-4 rounded-lg bg-muted/50">
+                    <p className="flex items-center gap-2 text-sm font-medium mb-2">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      Free to sit
+                    </p>
+                    <ul className="flex flex-wrap gap-2">
+                      {freeDates.map((r) => (
+                        <li key={r.start} className="rounded-full bg-[#E3F1EE] px-3 py-1 text-sm font-semibold text-[#1E6B5F]">
+                          {shortRange(r.start, r.end)} · {r.days} {r.days === 1 ? "day" : "days"}
+                        </li>
+                      ))}
+                    </ul>
+                    {preview && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Only your free dates show. Where you're sitting right now is never shown.
+                      </p>
+                    )}
+                  </div>
+                )}
+                {preview && showTips && freeDates && freeDates.length === 0 && (
+                  <PreviewTip
+                    title="No free dates yet"
+                    text="Pet Parents plan ahead. Add the dates you're free and you'll show up for their sits."
+                    action={{ label: "Set your dates", to: "/availability" }}
+                  />
+                )}
+
+                {/* Availability (before free dates are available) */}
+                {freeDates === null && (sitter.available_from || sitter.available_to) && (
                   <div className="p-4 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="w-4 h-4 text-primary" />
@@ -732,6 +811,28 @@ const SitterDetail = () => {
                 )}
               </div>
             </div>
+
+            {preview && showTips && !sitter.bio && (
+              <PreviewTip
+                title="About me is empty"
+                text="Pet Parents skip this section right now. A few lines about the pets you've cared for makes you far more likely to be invited."
+                action={{ label: "Add a bio", to: "/edit-sitter-profile" }}
+              />
+            )}
+            {preview && showTips && (sitter.gallery ?? []).length < 2 && (
+              <PreviewTip
+                title="Add a couple of photos"
+                text="Photos of you with pets help Pet Parents picture you in their home."
+                action={{ label: "Add photos", to: "/edit-sitter-profile" }}
+              />
+            )}
+            {preview && showTips && portfolio.length === 0 && (
+              <PreviewTip
+                title="Sit Stories show here"
+                text="After a sit, ask the Pet Parent to approve your story. Approved stories appear here for future hosts."
+                action={{ label: "Your Sit Stories", to: "/my-sit-stories" }}
+              />
+            )}
 
             {/* About Section */}
             {sitter.bio && (
@@ -911,6 +1012,12 @@ const SitterDetail = () => {
 
             {/* Reviews Section */}
             <SitterReviewsSummaryCard sitterUserId={userId!} />
+
+            {preview && (
+              <NeverShownNote>
+                your last name, email, phone number, date of birth, ID documents or exact location.
+              </NeverShownNote>
+            )}
           </div>
         </div>
       </main>

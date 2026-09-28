@@ -1,52 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  ArrowRight,
-  BookHeart,
-  BookOpen,
-  Bell,
-  CalendarPlus,
-  FileText,
-  Home,
-  Mail,
-  MessageSquare,
-  PawPrint,
-  Plus,
-  Star,
-  User,
-  Users,
-  X,
-} from "lucide-react";
+import { BookHeart, BookOpen, Bell, CalendarPlus, Home, MessageSquare, Plus, Star, User, Users, X } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchMyProfile } from "@/lib/myProfile";
 import Navbar from "@/components/layout/Navbar";
-import { useSitterApplications } from "@/hooks/useSitterApplications";
-import { SitterApplicationCard } from "@/components/applications/SitterApplicationCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OwnerListingCard } from "@/components/dashboard/OwnerListingCard";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
 import { useListingAllowance } from "@/hooks/useListingAllowance";
-import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
+import DashboardHeader, { ModeSwitch } from "@/components/dashboard/DashboardHeader";
 import { UpcomingPastSits } from "@/components/dashboard/UpcomingPastSits";
 import { NowCard } from "@/components/dashboard/NowCard";
 import { TodoList, type TodoItem } from "@/components/dashboard/TodoList";
 import { SitStoriesSection } from "@/components/dashboard/SitStoriesSection";
+import { NomadDashboard } from "@/components/nomad/NomadDashboard";
+import { RoleTheme } from "@/components/nn/ui";
 import { useDashboardSummary, type DashboardSummary } from "@/hooks/useDashboardSummary";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useGuideCompletion } from "@/hooks/useWelcomeGuide";
 import { useMySitStories } from "@/hooks/useSitStories";
+import { ownerCompletion, sitterCompletion } from "@/lib/profileCompletion";
 
 interface Profile {
   first_name: string | null;
-  last_name: string | null;
   avatar_url: string | null;
   country: string | null;
   city: string | null;
@@ -56,6 +36,7 @@ interface SitterProfile {
   headline: string | null;
   bio: string | null;
   pet_types: string[] | null;
+  gallery: string[] | null;
 }
 
 interface OwnerProfile {
@@ -115,8 +96,21 @@ const Dashboard = () => {
     }
   }, [searchParams, setSearchParams]);
 
+  // Older links: invitations and applications now have their own pages.
+  useEffect(() => {
+    if (searchParams.get("section") === "invites") {
+      navigate("/invitations", { replace: true });
+      return;
+    }
+    const appTab = searchParams.get("appTab");
+    if (appTab) {
+      const tab = appTab === "accepted" || appTab === "pending" || appTab === "past" ? appTab : "all";
+      navigate(`/my-applications?tab=${tab}`, { replace: true });
+    }
+  }, [searchParams, navigate]);
+
   // Deep link from a review reminder: land a combined member in the correct
-  // mode first, then let the matching SitCard auto-open its review dialog.
+  // mode first, then open that sit's review.
   useEffect(() => {
     if (loading) return;
     const mode = searchParams.get("mode");
@@ -136,13 +130,13 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchProfiles = async () => {
       if (!user) return;
-      const { data: profileData } = await fetchMyProfile();
+      const { data: profileData } = await fetchMyProfile().catch(() => ({ data: null }));
       if (profileData) setProfile(profileData);
 
       if (role === "sitter" || role === "both") {
         const { data: sitterData } = await supabase
           .from("sitter_profiles")
-          .select("headline, bio, pet_types")
+          .select("headline, bio, pet_types, gallery")
           .eq("user_id", user.id)
           .maybeSingle();
         if (sitterData) setSitterProfile(sitterData);
@@ -163,7 +157,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
       </div>
     );
@@ -172,12 +166,9 @@ const Dashboard = () => {
   const displayName = profile?.first_name || user?.email?.split("@")[0] || "there";
   const viewRole: "sitter" | "owner" =
     role === "both" ? (activeRole === "owner" ? "owner" : "sitter") : role === "owner" ? "owner" : "sitter";
-  const profilePercent =
-    viewRole === "sitter"
-      ? calculateSitterProfileCompletion(profile, sitterProfile)
-      : calculateOwnerProfileCompletion(profile, ownerProfile);
+  const completion = viewRole === "sitter" ? sitterCompletion(profile, sitterProfile) : ownerCompletion(profile, ownerProfile);
 
-  // A review reminder opened from the to-do list: open it on its sit card.
+  // A review opened from the Pet Parent to-do list: open it on its sit card.
   const openReview = (sitId: string) => {
     setOpenReviewSitId(sitId);
     window.setTimeout(() => {
@@ -186,7 +177,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <RoleTheme role={viewRole} className="min-h-screen">
       <Navbar />
 
       {/* Push notification opt-in banner */}
@@ -199,12 +190,12 @@ const Dashboard = () => {
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button size="sm" variant="secondary" className="h-7 text-xs" disabled={pushLoading} onClick={subscribe}>
+            <Button size="sm" variant="secondary" className="h-9 text-xs" disabled={pushLoading} onClick={subscribe}>
               Enable
             </Button>
             <button
               onClick={dismissPushBanner}
-              className="text-primary-foreground/70 hover:text-primary-foreground"
+              className="flex h-11 w-11 items-center justify-center text-primary-foreground/70 hover:text-primary-foreground"
               aria-label="Dismiss"
             >
               <X className="w-4 h-4" />
@@ -214,7 +205,7 @@ const Dashboard = () => {
       )}
 
       <main className={`pb-24 md:pb-12 ${showPushBanner ? "pt-32" : "pt-20 md:pt-24"}`}>
-        <div className="container mx-auto max-w-6xl px-4">
+        <div className="mx-auto flex max-w-xl flex-col gap-[18px] px-5">
           <DashboardHeader
             role={viewRole}
             userId={user?.id || ""}
@@ -222,23 +213,22 @@ const Dashboard = () => {
             avatarUrl={profile?.avatar_url}
             city={profile?.city}
             country={profile?.country}
-            profilePercent={profilePercent}
-            canSwitchRole={role === "both"}
-            onSwitchRole={setActiveRole}
+            completion={completion}
           />
 
+          {role === "both" && <ModeSwitch role={viewRole} onChange={setActiveRole} />}
+
           {viewRole === "sitter" ? (
-            <SitterDashboard
+            <NomadDashboard
               summary={summary}
-              profilePercent={profilePercent}
-              openReview={openReviewSitId}
-              onReviewAutoOpened={handleReviewAutoOpened}
-              onOpenReview={openReview}
+              completion={completion}
+              openReviewSitId={openReviewSitId}
+              onReviewHandled={handleReviewAutoOpened}
             />
           ) : (
             <OwnerDashboard
               summary={summary}
-              profilePercent={profilePercent}
+              profilePercent={completion.percent}
               openReview={openReviewSitId}
               onReviewAutoOpened={handleReviewAutoOpened}
               onOpenReview={openReview}
@@ -246,7 +236,7 @@ const Dashboard = () => {
           )}
         </div>
       </main>
-    </div>
+    </RoleTheme>
   );
 };
 
@@ -287,147 +277,6 @@ const commonTodos = (
     });
   }
   return items;
-};
-
-const SitterDashboard = ({ summary, profilePercent, openReview, onReviewAutoOpened, onOpenReview }: RoleDashboardProps) => {
-  const { data: applications = [], isLoading: applicationsLoading } = useSitterApplications();
-  const { unreadCount } = useUnreadMessages();
-  const [dashParams] = useSearchParams();
-  const initialAppTab = dashParams.get("appTab");
-  const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "past" | "cancelled">(
-    initialAppTab === "cancelled" || initialAppTab === "accepted" || initialAppTab === "pending" || initialAppTab === "past"
-      ? initialAppTab
-      : "all",
-  );
-
-  // Deep links (e.g. from an "Application Accepted" notification) land on the list.
-  useEffect(() => {
-    if (!initialAppTab) return;
-    const t = setTimeout(() => {
-      document.getElementById("my-applications")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 300);
-    return () => clearTimeout(t);
-  }, [initialAppTab]);
-
-  // Deep link from an invite notification: land on the Invites section.
-  const section = dashParams.get("section");
-  useEffect(() => {
-    if (section !== "invites") return;
-    const t = setTimeout(() => {
-      document.getElementById("sitter-invites")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 300);
-    return () => clearTimeout(t);
-  }, [section]);
-
-  const todayISO = new Date().toISOString().slice(0, 10);
-  // One cancelled row per date range (the most recent attempt), display only.
-  const seenCancelledDates = new Set<string>();
-  const visibleApplications = applications
-    .filter((a) => {
-      if (appTab === "cancelled") {
-        if (a.status !== "cancelled") return false;
-        if (seenCancelledDates.has(a.sit_dates_id)) return false;
-        seenCancelledDates.add(a.sit_dates_id);
-        return true;
-      }
-      const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
-      if (appTab === "accepted") return a.status === "accepted" && !ended;
-      if (appTab === "past") return a.status === "accepted" && ended;
-      if (appTab === "pending") return a.status === "applied" || a.status === "shortlisted";
-      if (appTab === "all") return a.status !== "cancelled";
-      return true;
-    })
-    .sort((a, b) => (a.sit_dates?.start_date ?? "").localeCompare(b.sit_dates?.start_date ?? ""));
-  const pendingCount = applications.filter((a) => a.status === "applied").length;
-
-  const current = summary?.current_sits.find((s) => s.role === "sitter") ?? null;
-  const next = summary?.next_sits.find((s) => s.role === "sitter") ?? null;
-
-  const todos = useMemo<TodoItem[]>(() => {
-    const items: TodoItem[] = [];
-    for (const sit of (summary?.current_sits ?? []).filter((s) => s.role === "sitter" && s.due_today && !s.sent_today)) {
-      items.push({ key: `update-${sit.sit_id}`, icon: PawPrint, label: `Send today's update to ${sit.other_first_name}`, to: `/sits/${sit.sit_id}` });
-    }
-    if ((summary?.pending_invites ?? 0) > 0) {
-      items.push({
-        key: "invites",
-        icon: Mail,
-        label: `Reply to ${plural(summary!.pending_invites, "invite")}`,
-        onClick: () => document.getElementById("sitter-invites")?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      });
-    }
-    return [...items, ...commonTodos("sitter", summary, unreadCount, profilePercent, onOpenReview)];
-  }, [summary, unreadCount, profilePercent, onOpenReview]);
-
-  return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
-      <div className="space-y-5 lg:col-span-3">
-        <NowCard role="sitter" current={current} next={next} />
-        <TodoList items={todos} />
-
-        <section id="my-applications" className="scroll-mt-24 rounded-3xl border bg-card p-4 shadow-sm">
-          <div className="flex items-center gap-2 px-1">
-            <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
-            <h2 className="font-display text-lg font-bold">My applications</h2>
-            {pendingCount > 0 && (
-              <Badge variant="secondary" className="ml-auto">
-                {pendingCount} pending
-              </Badge>
-            )}
-          </div>
-          <Tabs value={appTab} onValueChange={(v) => setAppTab(v as typeof appTab)} className="my-3">
-            <TabsList className="w-full justify-start flex-nowrap overflow-x-auto overflow-y-hidden">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="accepted">Accepted</TabsTrigger>
-              <TabsTrigger value="pending">Pending</TabsTrigger>
-              <TabsTrigger value="past">Past</TabsTrigger>
-              <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          {applicationsLoading ? (
-            <div className="space-y-3">
-              {[1, 2].map((i) => (
-                <Skeleton key={i} className="h-24 w-full rounded-2xl" />
-              ))}
-            </div>
-          ) : visibleApplications.length === 0 ? (
-            <div className="py-6 text-center text-muted-foreground">
-              <p className="font-medium">No applications here yet</p>
-              <Button asChild className="mt-3 rounded-full">
-                <Link to="/browse-sits">
-                  Browse sits
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {visibleApplications.slice(0, 5).map((application) => (
-                <SitterApplicationCard key={application.id} application={application} />
-              ))}
-              {visibleApplications.length > 5 && (
-                <p className="pt-1 text-center text-sm text-muted-foreground">
-                  And {plural(visibleApplications.length - 5, "more application")}
-                </p>
-              )}
-            </div>
-          )}
-        </section>
-
-        <div id="sitter-invites" className="scroll-mt-24">
-          <SitterInvitesSection />
-        </div>
-      </div>
-
-      <div className="space-y-5 lg:col-span-2">
-        <div id="your-sits" className="scroll-mt-24">
-          <UpcomingPastSits viewAs="sitter" openReview={openReview} onAutoOpened={onReviewAutoOpened} />
-        </div>
-        <SitStoriesSection role="sitter" />
-        <SitterAvailabilityCalendar />
-      </div>
-    </div>
-  );
 };
 
 /** Welcome Guide to-do for the member's most recent listing. */
@@ -479,8 +328,8 @@ const OwnerDashboard = ({ summary, profilePercent, openReview, onReviewAutoOpene
   }, [totalApplicants, stories, guideTodo, listings, current, next, summary, unreadCount, profilePercent, onOpenReview]);
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
-      <div className="space-y-5 lg:col-span-3">
+    <div className="flex flex-col gap-[18px]">
+      <div className="space-y-5">
         <NowCard role="owner" current={current} next={next} />
         <TodoList items={todos} />
 
@@ -521,7 +370,7 @@ const OwnerDashboard = ({ summary, profilePercent, openReview, onReviewAutoOpene
         </section>
       </div>
 
-      <div className="space-y-5 lg:col-span-2">
+      <div className="space-y-5">
         <div id="your-sits" className="scroll-mt-24">
           <UpcomingPastSits viewAs="owner" openReview={openReview} onAutoOpened={onReviewAutoOpened} />
         </div>
@@ -530,35 +379,5 @@ const OwnerDashboard = ({ summary, profilePercent, openReview, onReviewAutoOpene
     </div>
   );
 };
-
-function calculateSitterProfileCompletion(profile: Profile | null, sitterProfile: SitterProfile | null): number {
-  let completed = 0;
-  const total = 8;
-
-  if (profile?.first_name) completed++;
-  if (profile?.last_name) completed++;
-  if (profile?.avatar_url) completed++;
-  if (profile?.city) completed++;
-  if (profile?.country) completed++;
-  if (sitterProfile?.headline) completed++;
-  if (sitterProfile?.bio) completed++;
-  if (sitterProfile?.pet_types && sitterProfile.pet_types.length > 0) completed++;
-
-  return Math.round((completed / total) * 100);
-}
-
-function calculateOwnerProfileCompletion(profile: Profile | null, ownerProfile: OwnerProfile | null): number {
-  let completed = 0;
-  const total = 6;
-
-  if (profile?.first_name) completed++;
-  if (profile?.last_name) completed++;
-  if (profile?.avatar_url) completed++;
-  if (profile?.city) completed++;
-  if (profile?.country) completed++;
-  if (ownerProfile?.bio) completed++;
-
-  return Math.round((completed / total) * 100);
-}
 
 export default Dashboard;

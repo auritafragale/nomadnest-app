@@ -197,3 +197,43 @@ export const useCreateInvite = () => {
     },
   });
 };
+
+/**
+ * The invited Nomad accepts: accept_invite creates their application to that
+ * Pet Parent (under the normal application rules) and marks the invitation
+ * applied; the Pet Parent then gets the usual new-application notification.
+ * Until the accept_invite migration is live, it reports `needsListing` so the
+ * page can fall back to applying from the listing.
+ */
+export const useAcceptInvite = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (invite: SitterInvite): Promise<{ needsListing: boolean }> => {
+      const { data, error } = await supabase.rpc("accept_invite", { p_invite_id: invite.id });
+      if (error) {
+        if (error.code === "PGRST202" || /accept_invite/.test(error.message)) return { needsListing: true };
+        throw new Error(error.message);
+      }
+      const applicationId = data as unknown as string;
+      const { data: me } = await supabase.from("profiles").select("first_name").eq("id", user!.id).maybeSingle();
+      sendNotification({
+        type: "new_application",
+        recipientUserId: invite.owner_user_id,
+        data: {
+          listingTitle: invite.listing?.title ?? "your listing",
+          sitterName: me?.first_name || "A Nomad",
+          startDate: invite.sit_dates ? format(parseISO(invite.sit_dates.start_date), "MMM d, yyyy") : "",
+          endDate: invite.sit_dates ? format(parseISO(invite.sit_dates.end_date), "MMM d, yyyy") : "",
+          application_id: applicationId,
+        },
+      });
+      return { needsListing: false };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sitter-invites", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["sitter-invites-pending-count", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["sitter-applications", user?.id] });
+    },
+  });
+};

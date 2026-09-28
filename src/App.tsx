@@ -44,6 +44,10 @@ import SitterReviewsCarousel from "./pages/SitterReviewsCarousel";
 import Inbox from "./pages/Inbox";
 import Applications from "./pages/Applications";
 import SavedListings from "./pages/SavedListings";
+import MyApplications from "./pages/MyApplications";
+import Invitations from "./pages/Invitations";
+import MyAvailability from "./pages/MyAvailability";
+import MySitStories from "./pages/MySitStories";
 import Settings from "./pages/Settings";
 import VerifyIdentity from "./pages/VerifyIdentity";
 import Terms from "./pages/Terms";
@@ -157,6 +161,10 @@ const AppShell = () => {
         <Route path="/inbox" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
         <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
         <Route path="/saved" element={<ProtectedRoute><SavedListings /></ProtectedRoute>} />
+        <Route path="/my-applications" element={<ProtectedRoute><MyApplications /></ProtectedRoute>} />
+        <Route path="/invitations" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
+        <Route path="/availability" element={<ProtectedRoute><MyAvailability /></ProtectedRoute>} />
+        <Route path="/my-sit-stories" element={<ProtectedRoute><MySitStories /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/verify-identity" element={<ProtectedRoute><VerifyIdentity /></ProtectedRoute>} />
         <Route path="/membership" element={<Membership />} />
