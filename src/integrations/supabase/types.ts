@@ -1947,6 +1947,8 @@ export type Database = {
           portfolio_requested_at: string | null
           portfolio_status: string
           ready_at: string | null
+          rewrite_requested_at: string | null
+          rewrites_used: number
           sit_id: string
           sitter_user_id: string | null
           status: string
@@ -1965,6 +1967,8 @@ export type Database = {
           portfolio_requested_at?: string | null
           portfolio_status?: string
           ready_at?: string | null
+          rewrite_requested_at?: string | null
+          rewrites_used?: number
           sit_id: string
           sitter_user_id?: string | null
           status?: string
@@ -1983,6 +1987,8 @@ export type Database = {
           portfolio_requested_at?: string | null
           portfolio_status?: string
           ready_at?: string | null
+          rewrite_requested_at?: string | null
+          rewrites_used?: number
           sit_id?: string
           sitter_user_id?: string | null
           status?: string
@@ -2806,7 +2812,6 @@ export type Database = {
         }[]
       }
       get_my_settings: { Args: never; Returns: Json }
-      get_portfolio_story: { Args: { p_story_id: string }; Returns: Json }
       get_my_sit_stories: { Args: never; Returns: Json }
       get_my_verification: {
         Args: never
@@ -2903,10 +2908,6 @@ export type Database = {
       }
       release_job_lease: { Args: { p_job_name: string }; Returns: undefined }
       remove_guide_question: { Args: { p_question_id: string }; Returns: Json }
-      remove_sit_story_portfolio_photo: {
-        Args: { p_path: string; p_story_id: string }
-        Returns: string[]
-      }
       request_internal_function: {
         Args: { p_body?: Json; p_function: string }
         Returns: number
@@ -2914,6 +2915,10 @@ export type Database = {
       request_is_end_user: { Args: never; Returns: boolean }
       request_listing_timezone_backfill: { Args: never; Returns: undefined }
       request_privacy_retention: { Args: never; Returns: undefined }
+      request_sit_story_rewrite: {
+        Args: { p_story_id: string }
+        Returns: undefined
+      }
       requeue_sit_stories: { Args: never; Returns: number }
       respond_to_sit_reschedule: {
         Args: { p_accept: boolean; p_request_id: string }
