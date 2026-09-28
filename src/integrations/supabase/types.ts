@@ -2441,11 +2441,8 @@ export type Database = {
           email_verified: boolean | null
           first_name: string | null
           founding_member: boolean | null
-          full_name: string | null
           id: string | null
           id_verified: boolean | null
-          last_name: string | null
-          location: string | null
           phone_verified: boolean | null
         }
         Insert: {
@@ -2456,11 +2453,8 @@ export type Database = {
           email_verified?: boolean | null
           first_name?: string | null
           founding_member?: boolean | null
-          full_name?: string | null
           id?: string | null
           id_verified?: boolean | null
-          last_name?: string | null
-          location?: string | null
           phone_verified?: boolean | null
         }
         Update: {
@@ -2471,11 +2465,8 @@ export type Database = {
           email_verified?: boolean | null
           first_name?: string | null
           founding_member?: boolean | null
-          full_name?: string | null
           id?: string | null
           id_verified?: boolean | null
-          last_name?: string | null
-          location?: string | null
           phone_verified?: boolean | null
         }
         Relationships: []
@@ -2805,6 +2796,7 @@ export type Database = {
           membership_type: string
         }[]
       }
+      get_my_profile: { Args: never; Returns: Json }
       get_my_settings: { Args: never; Returns: Json }
       get_my_sit_stories: { Args: never; Returns: Json }
       get_my_verification: {
@@ -2830,6 +2822,7 @@ export type Database = {
         }[]
       }
       get_portfolio_story: { Args: { p_story_id: string }; Returns: Json }
+      get_public_member_cards: { Args: { p_user_ids: string[] }; Returns: Json }
       get_sit_story: { Args: { p_story_id: string }; Returns: Json }
       get_sit_update_context: { Args: { p_sit_id: string }; Returns: Json }
       get_sitter_guide: { Args: { p_listing_id: string }; Returns: Json }
@@ -2881,6 +2874,10 @@ export type Database = {
           sits_attended: number
           user_id: string
         }[]
+      }
+      nomad_profile_shared_with_me: {
+        Args: { p_sitter_id: string }
+        Returns: boolean
       }
       notify_application_status: {
         Args: { p_application_id: string; p_sit_id?: string; p_status: string }
