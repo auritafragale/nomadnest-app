@@ -1941,7 +1941,6 @@ export type Database = {
           created_at: string
           id: string
           owner_user_id: string | null
-          photo_alt: Json | null
           photo_paths: string[]
           portfolio_decided_at: string | null
           portfolio_photo_paths: string[]
@@ -1952,7 +1951,6 @@ export type Database = {
           sitter_user_id: string | null
           status: string
           story: string | null
-          story_days: Json | null
           title: string | null
           updated_at: string
         }
@@ -1961,7 +1959,6 @@ export type Database = {
           created_at?: string
           id?: string
           owner_user_id?: string | null
-          photo_alt?: Json | null
           photo_paths?: string[]
           portfolio_decided_at?: string | null
           portfolio_photo_paths?: string[]
@@ -1972,7 +1969,6 @@ export type Database = {
           sitter_user_id?: string | null
           status?: string
           story?: string | null
-          story_days?: Json | null
           title?: string | null
           updated_at?: string
         }
@@ -1981,7 +1977,6 @@ export type Database = {
           created_at?: string
           id?: string
           owner_user_id?: string | null
-          photo_alt?: Json | null
           photo_paths?: string[]
           portfolio_decided_at?: string | null
           portfolio_photo_paths?: string[]
@@ -1992,7 +1987,6 @@ export type Database = {
           sitter_user_id?: string | null
           status?: string
           story?: string | null
-          story_days?: Json | null
           title?: string | null
           updated_at?: string
         }
@@ -2089,30 +2083,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      sitter_availability: {
-        Row: {
-          created_at: string
-          end_date: string
-          id: string
-          sitter_user_id: string
-          start_date: string
-        }
-        Insert: {
-          created_at?: string
-          end_date: string
-          id?: string
-          sitter_user_id: string
-          start_date: string
-        }
-        Update: {
-          created_at?: string
-          end_date?: string
-          id?: string
-          sitter_user_id?: string
-          start_date?: string
-        }
-        Relationships: []
       }
       sitter_invites: {
         Row: {
@@ -2827,16 +2797,6 @@ export type Database = {
         }[]
       }
       get_my_profile: { Args: never; Returns: Json }
-      admin_queue_photo_alt_text: { Args: { p_story_id: string }; Returns: undefined }
-      withdraw_sit_story_portfolio: { Args: { p_story_id: string }; Returns: string }
-      create_sit_story_share_link: { Args: { p_story_id: string }; Returns: string }
-      disable_my_sit_story_share_link: { Args: { p_story_id: string }; Returns: undefined }
-      get_sitter_free_dates: { Args: { p_sitter_id: string }; Returns: Json }
-      set_my_availability: { Args: { p_ranges: Json }; Returns: Json }
-      accept_invite: {
-        Args: { p_invite_id: string; p_message?: string }
-        Returns: string
-      }
       get_my_settings: { Args: never; Returns: Json }
       get_my_sit_stories: { Args: never; Returns: Json }
       get_my_verification: {
@@ -3037,7 +2997,7 @@ export type Database = {
       conversation_type: "listing" | "direct" | "city_chat"
       listing_status: "draft" | "published" | "paused"
       report_status: "pending" | "reviewed" | "resolved" | "dismissed"
-      report_target_type: "user" | "listing" | "message" | "sit_story"
+      report_target_type: "user" | "listing" | "message"
       sit_date_status: "open" | "closed" | "booked"
       sit_status: "confirmed" | "in_progress" | "completed" | "cancelled"
     }
@@ -3179,7 +3139,7 @@ export const Constants = {
       conversation_type: ["listing", "direct", "city_chat"],
       listing_status: ["draft", "published", "paused"],
       report_status: ["pending", "reviewed", "resolved", "dismissed"],
-      report_target_type: ["user", "listing", "message", "sit_story"],
+      report_target_type: ["user", "listing", "message"],
       sit_date_status: ["open", "closed", "booked"],
       sit_status: ["confirmed", "in_progress", "completed", "cancelled"],
     },
