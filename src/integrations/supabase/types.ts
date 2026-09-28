@@ -879,6 +879,7 @@ export type Database = {
           latitude: number | null
           location_type: string | null
           longitude: number | null
+          owner_declaration_accepted_at: string | null
           owner_user_id: string
           photos: string[] | null
           public_transport_accessible: boolean | null
@@ -917,6 +918,7 @@ export type Database = {
           latitude?: number | null
           location_type?: string | null
           longitude?: number | null
+          owner_declaration_accepted_at?: string | null
           owner_user_id: string
           photos?: string[] | null
           public_transport_accessible?: boolean | null
@@ -955,6 +957,7 @@ export type Database = {
           latitude?: number | null
           location_type?: string | null
           longitude?: number | null
+          owner_declaration_accepted_at?: string | null
           owner_user_id?: string
           photos?: string[] | null
           public_transport_accessible?: boolean | null
@@ -1386,6 +1389,7 @@ export type Database = {
           is_admin: boolean
           last_name: string | null
           location: string | null
+          max_listings: number
           membership_expiry: string | null
           membership_status: string | null
           membership_type: string | null
@@ -1419,6 +1423,7 @@ export type Database = {
           is_admin?: boolean
           last_name?: string | null
           location?: string | null
+          max_listings?: number
           membership_expiry?: string | null
           membership_status?: string | null
           membership_type?: string | null
@@ -1452,6 +1457,7 @@ export type Database = {
           is_admin?: boolean
           last_name?: string | null
           location?: string | null
+          max_listings?: number
           membership_expiry?: string | null
           membership_status?: string | null
           membership_type?: string | null
@@ -1663,6 +1669,7 @@ export type Database = {
           created_at: string
           flag_abandonment: boolean
           flag_home_cleanliness: boolean
+          flag_not_homeowner: string | null
           flag_pet_aggression: boolean
           flag_pet_neglect: boolean
           flag_sitter_cleanliness: boolean
@@ -1689,6 +1696,7 @@ export type Database = {
           created_at?: string
           flag_abandonment?: boolean
           flag_home_cleanliness?: boolean
+          flag_not_homeowner?: string | null
           flag_pet_aggression?: boolean
           flag_pet_neglect?: boolean
           flag_sitter_cleanliness?: boolean
@@ -1715,6 +1723,7 @@ export type Database = {
           created_at?: string
           flag_abandonment?: boolean
           flag_home_cleanliness?: boolean
+          flag_not_homeowner?: string | null
           flag_pet_aggression?: boolean
           flag_pet_neglect?: boolean
           flag_sitter_cleanliness?: boolean
@@ -2513,6 +2522,10 @@ export type Database = {
         Args: { p_decision: string; p_notes?: string; p_submission_id: string }
         Returns: string
       }
+      admin_get_listing_allowance: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       admin_get_member_contact: { Args: { p_user_id: string }; Returns: Json }
       admin_get_pending_counts: {
         Args: never
@@ -2674,6 +2687,10 @@ export type Database = {
         }[]
       }
       admin_queue_sit_story: { Args: { p_sit_id: string }; Returns: string }
+      admin_set_max_listings: {
+        Args: { p_max_listings: number; p_user_id: string }
+        Returns: number
+      }
       admin_set_report_status: {
         Args: {
           p_report_id: string
