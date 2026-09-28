@@ -1941,6 +1941,7 @@ export type Database = {
           created_at: string
           id: string
           owner_user_id: string | null
+          photo_alt: Json | null
           photo_paths: string[]
           portfolio_decided_at: string | null
           portfolio_photo_paths: string[]
@@ -1960,6 +1961,7 @@ export type Database = {
           created_at?: string
           id?: string
           owner_user_id?: string | null
+          photo_alt?: Json | null
           photo_paths?: string[]
           portfolio_decided_at?: string | null
           portfolio_photo_paths?: string[]
@@ -1979,6 +1981,7 @@ export type Database = {
           created_at?: string
           id?: string
           owner_user_id?: string | null
+          photo_alt?: Json | null
           photo_paths?: string[]
           portfolio_decided_at?: string | null
           portfolio_photo_paths?: string[]
@@ -2768,6 +2771,10 @@ export type Database = {
           perk_id: string
           total_clicks: number
         }[]
+      }
+      admin_queue_photo_alt_text: {
+        Args: { p_story_id: string }
+        Returns: undefined
       }
       admin_queue_sit_story: { Args: { p_sit_id: string }; Returns: string }
       admin_set_max_listings: {
