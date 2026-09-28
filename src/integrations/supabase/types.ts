@@ -2084,6 +2084,30 @@ export type Database = {
           },
         ]
       }
+      sitter_availability: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          sitter_user_id: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          sitter_user_id: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          sitter_user_id?: string
+          start_date?: string
+        }
+        Relationships: []
+      }
       sitter_invites: {
         Row: {
           created_at: string
@@ -2474,6 +2498,10 @@ export type Database = {
     }
     Functions: {
       accept_application: { Args: { p_application_id: string }; Returns: Json }
+      accept_invite: {
+        Args: { p_invite_id: string; p_message?: string }
+        Returns: string
+      }
       account_storage_objects: {
         Args: { p_user_id: string }
         Returns: {
@@ -2825,6 +2853,7 @@ export type Database = {
       get_public_member_cards: { Args: { p_user_ids: string[] }; Returns: Json }
       get_sit_story: { Args: { p_story_id: string }; Returns: Json }
       get_sit_update_context: { Args: { p_sit_id: string }; Returns: Json }
+      get_sitter_free_dates: { Args: { p_sitter_id: string }; Returns: Json }
       get_sitter_guide: { Args: { p_listing_id: string }; Returns: Json }
       get_sitter_portfolio: { Args: { p_sitter_id: string }; Returns: Json }
       get_unread_conversations_count: { Args: never; Returns: number }
@@ -2924,6 +2953,7 @@ export type Database = {
         Args: { p_draft: string; p_question_id: string }
         Returns: Json
       }
+      set_my_availability: { Args: { p_ranges: Json }; Returns: Json }
       set_my_preferred_language: {
         Args: { p_language: string; p_only_if_empty?: boolean }
         Returns: string
