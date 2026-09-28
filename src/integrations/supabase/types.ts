@@ -2805,9 +2805,7 @@ export type Database = {
           membership_type: string
         }[]
       }
-      get_my_profile: { Args: never; Returns: Json }
       get_my_settings: { Args: never; Returns: Json }
-      get_public_member_cards: { Args: { p_user_ids: string[] }; Returns: Json }
       get_my_sit_stories: { Args: never; Returns: Json }
       get_my_verification: {
         Args: never
