@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
+import { HiddenProfileNotice, NeverShownNote, PreviewBar, PreviewTip } from "@/components/profile/ProfilePreview";
 import { BackButton } from "@/components/layout/BackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { publicProfiles } from "@/lib/publicProfile";
@@ -39,6 +40,7 @@ interface OwnerProfile {
   id: string;
   user_id: string;
   bio: string | null;
+  is_active?: boolean | null;
 }
 
 interface Profile {
@@ -76,6 +78,12 @@ const OwnerDetail = () => {
   
   const startConversation = useStartConversation();
   const ratingData = useOwnerAverageRating(userId);
+
+  // Preview (your own profile, from the eye button): exactly what Nomads get,
+  // plus owner-only tips while "Show tips" is on.
+  const [searchParams] = useSearchParams();
+  const preview = searchParams.get("preview") === "1" && !!user && user.id === userId;
+  const [showTips, setShowTips] = useState(true);
 
   useEffect(() => {
     const fetchOwnerData = async () => {
@@ -215,6 +223,23 @@ const OwnerDetail = () => {
     );
   }
 
+  if (preview && (!profile || ownerProfile?.is_active === false)) {
+    return (
+      <div className="min-h-screen flex flex-col bg-white">
+        <Navbar />
+        <main className="flex-1 pt-16">
+          <PreviewBar showTips={showTips} onToggleTips={() => setShowTips((v) => !v)} accent="teal" />
+          <div className="mx-auto max-w-xl px-5 py-6">
+            <HiddenProfileNotice
+              text="Your Pet Parent profile is paused, so Nomads can't open it right now. Turn it back on in Settings to be seen."
+              action={{ label: "Open Settings", to: "/settings" }}
+            />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (!profile) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -239,10 +264,11 @@ const OwnerDetail = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1 pt-16">
+        {preview && <PreviewBar showTips={showTips} onToggleTips={() => setShowTips((v) => !v)} accent="teal" />}
         <div className="container mx-auto px-4 pt-6 pb-8">
           <div className="max-w-4xl mx-auto">
             {/* Back button */}
-            <BackButton fallback={user?.id === userId ? "/dashboard" : "/browse-sits"} className="mb-6" />
+            {!preview && <BackButton fallback={user?.id === userId ? "/dashboard" : "/browse-sits"} className="mb-6" />}
 
             {/* Header Section */}
             <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-8">
@@ -318,6 +344,15 @@ const OwnerDetail = () => {
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2 mb-6">
+                  {preview && (
+                    <div className="flex flex-col gap-1">
+                      <Button variant="outline" disabled>
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Message {profile.first_name || "me"}
+                      </Button>
+                      <span className="text-xs text-muted-foreground">Nomads see this button. It's switched off in preview.</span>
+                    </div>
+                  )}
                   {user && user.id !== userId && (role === "sitter" || role === "both") && (
                     <Button
                       variant="outline"
@@ -362,6 +397,28 @@ const OwnerDetail = () => {
                 )}
               </div>
             </div>
+
+            {preview && showTips && !ownerProfile?.bio && (
+              <PreviewTip
+                title="Your About is empty"
+                text="A few lines about your pets and your home help Nomads feel at ease before they apply."
+                action={{ label: "Add a bio", to: "/edit-owner-profile" }}
+              />
+            )}
+            {preview && showTips && !profile.avatar_url && (
+              <PreviewTip
+                title="Add a profile photo"
+                text="Nomads like to see who they'll be sitting for."
+                action={{ label: "Add a photo", to: "/edit-owner-profile" }}
+              />
+            )}
+            {preview && showTips && !listings.some((l) => l.sit_dates.some((d) => d.status === "open")) && (
+              <PreviewTip
+                title="Nomads can't apply yet"
+                text="Your home has no open dates, so it isn't showing in Browse. Add dates and Nomads can start applying."
+                action={{ label: "Add dates", to: "/dashboard" }}
+              />
+            )}
 
             {/* Listings */}
             {listings.length > 0 && (
@@ -428,6 +485,13 @@ const OwnerDetail = () => {
 
             {/* Reviews Section */}
             {userId && <OwnerReviewsSummaryCard ownerUserId={userId} />}
+
+            {preview && (
+              <NeverShownNote>
+                your last name, email, phone number or street address. A Nomad only gets the address and your Welcome Guide
+                after you confirm them for a sit.
+              </NeverShownNote>
+            )}
           </div>
         </div>
       </main>

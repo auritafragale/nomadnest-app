@@ -45,6 +45,15 @@ export interface SitStory {
   /** The sitter's first name if they allow it on share cards, else null. */
   sitter_share_name: string | null;
   can_review: boolean;
+  /** The story day by day (new stories); older ones have only `story`. */
+  story_days?: { date: string; text: string }[] | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  updates_sent?: number | null;
+  updates_expected?: number | null;
+  sitter_avatar_url?: string | null;
+  /** Pet Parent only: the story's share link, if switched on. */
+  share_link?: { token: string; views: number } | null;
   portfolio_status: "none" | "requested" | "approved" | "declined" | "revoked";
   portfolio_photo_paths: string[];
 }
@@ -109,7 +118,33 @@ export const useSitStoryActions = (storyId: string | undefined) => {
     onSuccess: refresh,
   });
 
-  return { requestPortfolio, decidePortfolio, removePortfolioPhoto };
+  // Pet Parent: take an approved story off the Nomad's profile (final).
+  const withdrawPortfolio = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("withdraw_sit_story_portfolio", { p_story_id: storyId! });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: refresh,
+  });
+
+  // Pet Parent: the story's share link (created on first use) and switching it off.
+  const createShareLink = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("create_sit_story_share_link", { p_story_id: storyId! });
+      if (error) throw new Error(error.message);
+      return data as unknown as string;
+    },
+    onSuccess: refresh,
+  });
+  const disableShareLink = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("disable_my_sit_story_share_link", { p_story_id: storyId! });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: refresh,
+  });
+
+  return { requestPortfolio, decidePortfolio, removePortfolioPhoto, withdrawPortfolio, createShareLink, disableShareLink };
 };
 
 // ─── Sitter profile: approved stories ───────────────────────────────────────

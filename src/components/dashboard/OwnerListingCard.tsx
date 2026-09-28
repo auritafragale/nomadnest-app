@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,28 +19,26 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-  MapPin,
+  BookOpen,
   Calendar,
+  CalendarPlus,
+  ChevronDown,
   Edit,
   Eye,
-  Users,
+  Home,
+  Loader2,
   MoreVertical,
   Pause,
   Play,
-  Trash2,
-  ChevronDown,
   RotateCcw,
-  Loader2,
-  BookOpen,
-  CalendarPlus,
-  Home,
+  Trash2,
+  Users,
 } from "lucide-react";
-import { format } from "date-fns";
 import { OwnerListing } from "@/hooks/useOwnerListings";
 import { useUpdateListingStatus, useDeleteListing } from "@/hooks/useOwnerListingActions";
 import { useReopenSitDate } from "@/hooks/useReopenSitDate";
 import { useGuideCompletion } from "@/hooks/useWelcomeGuide";
-import { ProgressRing } from "./ProgressRing";
+import { SectionCard, shortRange } from "@/components/nn/ui";
 import { cn } from "@/lib/utils";
 
 interface OwnerListingCardProps {
@@ -51,234 +47,215 @@ interface OwnerListingCardProps {
   newApplicants?: number;
 }
 
-const statusStyles = {
-  draft: "bg-muted text-muted-foreground",
-  published: "bg-primary/10 text-primary",
-  paused: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+const STATUS: Record<string, { label: string; dot: string; text: string }> = {
+  published: { label: "Published", dot: "bg-[#237A6D]", text: "text-[#1E6B5F]" },
+  paused: { label: "Paused", dot: "bg-[#E8B53E]", text: "text-[#8A6A12]" },
+  draft: { label: "Draft", dot: "bg-[#9097A1]", text: "text-[#4B5058]" },
 };
 
 /**
- * "Your home": one primary action (Add new dates); everything else in the ⋮
- * menu, with the Welcome Guide progress and new applicants at a glance.
+ * "Your home" (design: PetParent.dc.html): photo with status and ⋮ menu,
+ * Welcome Guide / Applicants / Open dates tiles, and Add new dates.
  */
 export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCardProps) => {
   const { data: guideCompletion } = useGuideCompletion(listing.id);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showDatesOpen, setShowDatesOpen] = useState(false);
+  const [showClosed, setShowClosed] = useState(false);
   const updateStatus = useUpdateListingStatus();
   const deleteListing = useDeleteListing();
   const reopenSitDate = useReopenSitDate();
 
   const todayIso = new Date().toISOString().slice(0, 10);
-  const upcomingOpenDates = listing.sit_dates.filter((d) => d.status === "open" && d.end_date >= todayIso);
-  const nextDate = upcomingOpenDates[0];
-  const extraOpenDatesCount = upcomingOpenDates.length - 1;
-  const datesExpired = !nextDate && listing.status === "published";
+  const openDates = listing.sit_dates.filter((d) => d.status === "open" && d.end_date >= todayIso);
   const closedDates = listing.sit_dates.filter(
     (d) => (d.status === "closed" || d.status === "booked") && d.end_date >= todayIso,
   );
-  const petNames = listing.pets.map((p) => p.name || p.type).join(", ");
+  const notInBrowse = listing.status === "published" && openDates.length === 0;
+  const petNames = listing.pets.map((p) => p.name || p.type).filter(Boolean).join(", ");
   const guidePercent = guideCompletion?.percent ?? 0;
+  const status = STATUS[listing.status] ?? STATUS.draft;
 
-  const handleDelete = () => {
-    deleteListing.mutate(listing.id);
-    setShowDeleteDialog(false);
-  };
+  const tile = "flex min-h-[44px] flex-col gap-1.5 rounded-2xl px-2.5 py-3";
 
   return (
     <>
-      <div className="overflow-hidden rounded-3xl border bg-card shadow-sm">
-        <div className="flex gap-3 p-4">
-          <Link
-            to={`/listing/${listing.id}`}
-            className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-muted sm:h-24 sm:w-24"
-            aria-label={`View ${listing.title}`}
-          >
-            {listing.photos?.[0] ? (
-              <img src={listing.photos[0]} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center">
-                <Home className="h-7 w-7 text-muted-foreground" aria-hidden="true" />
-              </span>
-            )}
-          </Link>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h3 className="truncate font-display text-base font-bold">
-                  <Link to={`/listing/${listing.id}`} className="hover:text-primary">
-                    {listing.title}
-                  </Link>
-                </h3>
-                {listing.city && (
-                  <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
-                    <span className="truncate">
-                      {listing.city}
-                      {listing.country ? `, ${listing.country}` : ""}
-                    </span>
-                  </p>
-                )}
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <Badge className={cn("px-2 text-[11px] capitalize", statusStyles[listing.status])}>{listing.status}</Badge>
-                <DropdownMenu modal={false}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="More actions for this listing">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link to={`/listing/${listing.id}`}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View listing
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to={`/edit-listing/${listing.id}`}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit listing
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to={`/listing/${listing.id}/welcome-guide`}>
-                        <BookOpen className="mr-2 h-4 w-4" />
-                        Welcome Guide
-                      </Link>
-                    </DropdownMenuItem>
-                    {listing.status === "published" && (
-                      <DropdownMenuItem onSelect={() => updateStatus.mutate({ listingId: listing.id, status: "paused" })}>
-                        <Pause className="mr-2 h-4 w-4" />
-                        Pause listing
-                      </DropdownMenuItem>
-                    )}
-                    {listing.status === "paused" && (
-                      <DropdownMenuItem onSelect={() => updateStatus.mutate({ listingId: listing.id, status: "published" })}>
-                        <Play className="mr-2 h-4 w-4" />
-                        Unpause listing
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={() => setShowDeleteDialog(true)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete listing
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-
-            <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-              {petNames && <p className="truncate">🐾 {petNames}</p>}
-              {nextDate && (
-                <p className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" aria-hidden="true" />
-                  {format(new Date(nextDate.start_date), "MMM d")} – {format(new Date(nextDate.end_date), "MMM d, yyyy")}
-                  {extraOpenDatesCount > 0 && (
-                    <Badge variant="muted" className="ml-1 h-4 px-1.5 py-0 text-[10px] leading-none">
-                      +{extraOpenDatesCount} more
-                    </Badge>
-                  )}
-                </p>
-              )}
-              {datesExpired && (
-                <p className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
-                  <Calendar className="h-3 w-3" aria-hidden="true" />
-                  No upcoming dates: add new dates to appear in Browse
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* At a glance: Welcome Guide progress and new applicants */}
-        <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
-          <Link
-            to={`/listing/${listing.id}/welcome-guide`}
-            className="flex items-center gap-2 rounded-full border bg-background py-1 pl-1 pr-3 text-xs font-medium hover:border-primary/40"
-          >
-            <ProgressRing percent={guidePercent} size={28} stroke={3} label={`Welcome Guide ${guidePercent}% complete`}>
-              <BookOpen className="h-3 w-3 text-primary" aria-hidden="true" />
-            </ProgressRing>
-            Guide {guidePercent}%
-          </Link>
-          {newApplicants > 0 && (
-            <Link
-              to="/applications"
-              className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/15"
-            >
-              <Users className="h-3.5 w-3.5" aria-hidden="true" />
-              {newApplicants} new applicant{newApplicants === 1 ? "" : "s"}
-            </Link>
+      <SectionCard label="Your home" className="overflow-hidden">
+        <div className="relative h-[190px] bg-[#BFA98F]">
+          {listing.photos?.[0] ? (
+            <img src={listing.photos[0]} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="flex h-full items-center justify-center">
+              <Home className="h-8 w-8 text-white/80" aria-hidden="true" />
+            </span>
           )}
+          <span className={cn("absolute left-3 top-3 inline-flex h-7 items-center gap-1.5 rounded-full bg-white px-3 text-xs font-bold", status.text)}>
+            <span className={cn("h-[7px] w-[7px] rounded-full", status.dot)} />
+            {status.label}
+          </span>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="Listing options"
+                className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full bg-white"
+              >
+                <MoreVertical className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link to={`/listing/${listing.id}`}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  View listing
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to={`/edit-listing/${listing.id}`}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit listing
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to={`/listing/${listing.id}/welcome-guide`}>
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Welcome Guide
+                </Link>
+              </DropdownMenuItem>
+              {listing.status === "published" && (
+                <DropdownMenuItem onSelect={() => updateStatus.mutate({ listingId: listing.id, status: "paused" })}>
+                  <Pause className="mr-2 h-4 w-4" />
+                  Pause listing
+                </DropdownMenuItem>
+              )}
+              {listing.status === "paused" && (
+                <DropdownMenuItem onSelect={() => updateStatus.mutate({ listingId: listing.id, status: "published" })}>
+                  <Play className="mr-2 h-4 w-4" />
+                  Unpause listing
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => setShowDeleteDialog(true)} className="text-destructive focus:text-destructive">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete listing
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {closedDates.length > 0 && (
-          <Collapsible open={showDatesOpen} onOpenChange={setShowDatesOpen} className="px-4">
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="w-full text-muted-foreground">
-                <ChevronDown className={cn("mr-1 h-3 w-3 transition-transform", showDatesOpen && "rotate-180")} />
-                {closedDates.length} closed date{closedDates.length !== 1 ? "s" : ""}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-2 pb-2">
-              {closedDates.map((date) => (
-                <div key={date.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-muted/50 p-2 text-sm">
-                  <Calendar className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
-                  <span>
-                    {format(new Date(date.start_date), "MMM d")} – {format(new Date(date.end_date), "MMM d, yyyy")}
-                  </span>
-                  <Badge variant="outline" className="text-xs">
-                    {date.status}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="ml-auto h-7 px-2 text-xs"
-                    onClick={() => reopenSitDate.mutate(date.id)}
-                    disabled={reopenSitDate.isPending}
-                  >
-                    {reopenSitDate.isPending ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <RotateCcw className="mr-1 h-3 w-3" />
-                    )}
-                    Reopen
-                  </Button>
-                </div>
-              ))}
-            </CollapsibleContent>
-          </Collapsible>
-        )}
+        <div className="flex flex-col gap-3.5 p-[18px]">
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#656B74]">Your home</span>
+            <h2 className="font-display text-[27px] font-normal leading-[1.1]">
+              <Link to={`/listing/${listing.id}`}>{listing.title}</Link>
+            </h2>
+            <span className="text-sm text-[#656B74]">
+              {[[listing.city, listing.country].filter(Boolean).join(", "), petNames].filter(Boolean).join(" · ")}
+            </span>
+          </div>
 
-        <div className="px-4 pb-4">
-          <Button asChild className="w-full rounded-full">
-            <Link to={`/edit-listing/${listing.id}?focus=dates`}>
-              <CalendarPlus className="mr-2 h-4 w-4" />
-              Add new dates
+          <div className="grid grid-cols-3 gap-2">
+            <Link to={`/listing/${listing.id}/welcome-guide`} className={cn(tile, "bg-[#F3F8F6]")}>
+              <span
+                className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#E1EEEA] text-[#1E6B5F]"
+                aria-hidden="true"
+              >
+                <BookOpen className="h-4 w-4" />
+              </span>
+              <span className="text-[15px] font-bold">{guidePercent}%</span>
+              <span className="text-xs text-[#3F444B]">Welcome Guide</span>
             </Link>
-          </Button>
+            <Link to="/applications" className={cn(tile, "bg-[#F2F8F6]")}>
+              <span className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#E1EEEA] text-[#3F444B]" aria-hidden="true">
+                <Users className="h-4 w-4" />
+              </span>
+              <span className="text-[15px] font-bold">{newApplicants} new</span>
+              <span className="text-xs text-[#3F444B]">Applicants</span>
+            </Link>
+            <Link
+              to={`/edit-listing/${listing.id}?focus=dates`}
+              className={cn(tile, openDates.length === 0 ? "bg-[#FDEEEA]" : "bg-[#F2F8F6]")}
+            >
+              <span
+                className={cn(
+                  "flex h-[30px] w-[30px] items-center justify-center rounded-full",
+                  openDates.length === 0 ? "bg-[#F9DCD3] text-[#A2412C]" : "bg-[#E1EEEA] text-[#3F444B]",
+                )}
+                aria-hidden="true"
+              >
+                <Calendar className="h-4 w-4" />
+              </span>
+              <span className="text-[15px] font-bold">
+                {openDates.length === 0 ? "None" : shortRange(openDates[0].start_date, openDates[0].end_date)}
+              </span>
+              <span className={cn("text-xs", openDates.length === 0 ? "text-[#A2412C]" : "text-[#3F444B]")}>
+                {openDates.length > 1 ? `Open dates · +${openDates.length - 1}` : "Open dates"}
+              </span>
+            </Link>
+          </div>
+
+          {notInBrowse && (
+            <p className="text-sm leading-snug text-[#A2412C]">Your home isn't showing in Browse. Add dates so Nomads can find it.</p>
+          )}
+
+          {closedDates.length > 0 && (
+            <Collapsible open={showClosed} onOpenChange={setShowClosed}>
+              <CollapsibleTrigger asChild>
+                <button type="button" className="flex min-h-[44px] w-full items-center justify-center gap-1 text-sm font-semibold text-[#656B74]">
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", showClosed && "rotate-180")} aria-hidden="true" />
+                  {closedDates.length} closed date{closedDates.length !== 1 ? "s" : ""}
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="flex flex-col gap-2 pt-1">
+                {closedDates.map((date) => (
+                  <div key={date.id} className="flex items-center gap-2 rounded-xl bg-[#F3F8F6] p-2 pl-3 text-sm">
+                    <span className="flex-1">
+                      {shortRange(date.start_date, date.end_date)} · {date.status}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => reopenSitDate.mutate(date.id)}
+                      disabled={reopenSitDate.isPending}
+                      className="flex min-h-[44px] items-center gap-1 rounded-full px-3 font-semibold text-[#1E6B5F]"
+                    >
+                      {reopenSitDate.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      Reopen
+                    </button>
+                  </div>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          <Link
+            to={`/edit-listing/${listing.id}?focus=dates`}
+            className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-[#237A6D] text-[15px] font-bold text-white hover:bg-[#1B5F55]"
+          >
+            <CalendarPlus className="h-[18px] w-[18px]" aria-hidden="true" />
+            Add new dates
+          </Link>
         </div>
-      </div>
+      </SectionCard>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete listing?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete "{listing.title}" and all associated data including
-              pets, sit dates, and applications. This action cannot be undone.
+              This will permanently delete "{listing.title}" and all associated data including pets, sit dates, and
+              applications. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={() => {
+                deleteListing.mutate(listing.id);
+                setShowDeleteDialog(false);
+              }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete

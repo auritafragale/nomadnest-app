@@ -96,6 +96,10 @@ const RouteSeo = () => {
   const meta = ROUTE_META[path] ?? FALLBACK;
   const url = `${SITE_URL}${path === "/" ? "/" : path}`;
 
+  // Shared Sit Stories set their own noindex head and must not carry a
+  // canonical or social URL with their private token.
+  if (path.startsWith("/s/")) return null;
+
   return (
     <Helmet>
       <title>{meta.title}</title>

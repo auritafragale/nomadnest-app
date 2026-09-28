@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.sit-story]
 verify_jwt = false
+
+[functions.shared-story]
+verify_jwt = false

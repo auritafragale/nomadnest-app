@@ -53,7 +53,8 @@ RULES
 4. Title: short and warm, in the style "Luca's week with Clare" (the pets' names and the sitter's first name; for several pets, name them or use "The gang's"). Use "week", "weekend", "days" or "fortnight" to fit the number of days.
 5. Story: 120 to 200 words, in the third person, warm and simple, like a little story of the sit told in order. No lists, no headings, no emojis, no hashtags. Never use em dashes or en dashes.
 6. Photos: choose the 4 to 6 photos that best tell the story (clear, varied, showing the pets and the home life), by their numbers. If fewer than 4 are given, choose all of them.
-7. Reply by calling the story tool.`;
+7. Days: also tell the same story day by day. One entry per date that has an update in <updates>, using that exact date (YYYY-MM-DD), in order. Each entry is 1 to 3 short sentences, 20 to 60 words, following rules 1 to 3 and 5 (no lists, no dashes).
+8. Reply by calling the story tool.`;
 
 const TOOL = {
   name: "story",
@@ -64,8 +65,20 @@ const TOOL = {
       title: { type: "string", description: "Short title, e.g. \"Luca's week with Clare\"." },
       story: { type: "string", description: "120 to 200 words." },
       photo_numbers: { type: "array", items: { type: "integer" }, description: "Numbers of the 4 to 6 chosen photos." },
+      days: {
+        type: "array",
+        description: "The story day by day: one entry per date that has an update, in order.",
+        items: {
+          type: "object",
+          properties: {
+            date: { type: "string", description: "The update's date, YYYY-MM-DD, exactly as in <updates>." },
+            text: { type: "string", description: "20 to 60 words about that day." },
+          },
+          required: ["date", "text"],
+        },
+      },
     },
-    required: ["title", "story", "photo_numbers"],
+    required: ["title", "story", "photo_numbers", "days"],
   },
 };
 
@@ -187,7 +200,7 @@ serve(async (req) => {
         headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
         body: JSON.stringify({
           model: MODEL,
-          max_tokens: 1500,
+          max_tokens: 2500,
           thinking: { type: "disabled" },
           system: SYSTEM,
           tools: [TOOL],
@@ -221,9 +234,22 @@ serve(async (req) => {
       .map((n) => usable[n - 1]);
     const photos = chosen.length >= Math.min(4, usable.length) ? chosen : usable.slice(0, Math.min(6, usable.length));
 
+    // Story by day: only dates that have an update, each short and clean.
+    // If anything doesn't fit, the story is still saved, just without days.
+    const updateDays = new Set(rows.map((u) => u.local_day ?? u.created_at.slice(0, 10)));
+    const rawDays = Array.isArray(input.days) ? (input.days as { date?: unknown; text?: unknown }[]) : [];
+    const storyDays = rawDays
+      .map((d) => ({
+        date: typeof d?.date === "string" ? d.date.trim() : "",
+        text: typeof d?.text === "string" ? replaceDashes(d.text).trim() : "",
+      }))
+      .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d.date) && updateDays.has(d.date) && d.text && d.text.length <= 600 && !hasTags(d.text));
+    const uniqueDays = [...new Map(storyDays.map((d) => [d.date, d])).values()].sort((a, b) => a.date.localeCompare(b.date));
+    const daysOk = uniqueDays.length > 0 && uniqueDays.length === rawDays.length;
+
     const { error: saveError } = await admin
       .from("sit_stories")
-      .update({ status: "ready", title, story, photo_paths: photos, ready_at: new Date().toISOString() })
+      .update({ status: "ready", title, story, photo_paths: photos, story_days: daysOk ? uniqueDays : null, ready_at: new Date().toISOString() })
       .eq("id", storyId);
     if (saveError) throw new Error(`save failed: ${saveError.message}`);
 
@@ -247,7 +273,7 @@ serve(async (req) => {
       },
     ]);
 
-    log({ story: storyId, ok: true, words, photos: photos.length, pool: usable.length });
+    log({ story: storyId, ok: true, words, photos: photos.length, pool: usable.length, days: daysOk ? uniqueDays.length : 0 });
     return json({ ok: true });
   } catch (err) {
     log({ story: storyId, failed: redact(err) });

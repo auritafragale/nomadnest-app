@@ -51,12 +51,19 @@ const REPORT_REASONS: Record<ReportTargetType, { value: string; label: string }[
     { value: "threats", label: "Threats or violence" },
     { value: "other", label: "Other" },
   ],
+  sit_story: [
+    { value: "not_what_happened", label: "Says things that didn't happen" },
+    { value: "private_details", label: "Shows private details" },
+    { value: "inappropriate_content", label: "Inappropriate content" },
+    { value: "other", label: "Other" },
+  ],
 };
 
 const TARGET_LABELS: Record<ReportTargetType, string> = {
   user: "user",
   listing: "listing",
   message: "message",
+  sit_story: "Sit Story",
 };
 
 const ACCEPTED = "image/*,application/pdf";
@@ -96,8 +103,12 @@ const ReportDialog = ({
     setFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  // A Sit Story is written by the AI and already on record, so it's its own
+  // evidence; every other report needs at least one proof file.
+  const proofRequired = targetType !== "sit_story";
+
   const handleSubmit = () => {
-    if (!reason || files.length === 0) return;
+    if (!reason || (proofRequired && files.length === 0)) return;
 
     submitReport.mutate(
       {
@@ -172,7 +183,13 @@ const ReportDialog = ({
 
           <div className="space-y-2">
             <Label>
-              Proof (required) <span className="text-destructive">*</span>
+              {proofRequired ? (
+                <>
+                  Proof (required) <span className="text-destructive">*</span>
+                </>
+              ) : (
+                "Proof (optional)"
+              )}
             </Label>
             <p className="text-xs text-muted-foreground">
               Attach at least one screenshot or document. Images and PDFs up to 15 MB each.
@@ -219,7 +236,7 @@ const ReportDialog = ({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!reason || files.length === 0 || submitReport.isPending}
+            disabled={!reason || (proofRequired && files.length === 0) || submitReport.isPending}
           >
             {submitReport.isPending ? (
               <>

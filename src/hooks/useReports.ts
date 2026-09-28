@@ -41,7 +41,7 @@ export const useSubmitReport = () => {
   return useMutation({
     mutationFn: async ({ targetType, targetId, reason, details, evidenceFiles }: ReportData) => {
       if (!user) throw new Error("Must be logged in to submit a report");
-      if (!evidenceFiles || evidenceFiles.length === 0) {
+      if ((!evidenceFiles || evidenceFiles.length === 0) && targetType !== "sit_story") {
         throw new Error("Please attach at least one proof file (image or PDF)");
       }
 
@@ -63,7 +63,7 @@ export const useSubmitReport = () => {
       // Upload proof into the member's own folder, then store paths on the report
       let evidencePaths: string[] = [];
       try {
-        evidencePaths = await uploadEvidence(user.id, inserted.id, evidenceFiles);
+        evidencePaths = evidenceFiles && evidenceFiles.length > 0 ? await uploadEvidence(user.id, inserted.id, evidenceFiles) : [];
       } catch (e) {
         // Report was saved but evidence failed — still notify founders so it's visible
         console.error("Evidence upload failed", e);
@@ -94,7 +94,7 @@ export const useSubmitReport = () => {
 
       return {
         reportId: inserted.id,
-        evidenceUploadFailed: evidencePaths.length < evidenceFiles.length,
+        evidenceUploadFailed: evidencePaths.length < (evidenceFiles?.length ?? 0),
       };
     },
     onSuccess: (result) => {

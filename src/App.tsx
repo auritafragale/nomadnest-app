@@ -48,6 +48,7 @@ import MyApplications from "./pages/MyApplications";
 import Invitations from "./pages/Invitations";
 import MyAvailability from "./pages/MyAvailability";
 import MySitStories from "./pages/MySitStories";
+import SharedStory from "./pages/SharedStory";
 import Settings from "./pages/Settings";
 import VerifyIdentity from "./pages/VerifyIdentity";
 import Terms from "./pages/Terms";
@@ -112,11 +113,12 @@ const AppShell = () => {
   // screen only. On any deep link (shared listing, profile, password reset,
   // city chat) they must never cover the page the visitor asked for.
   const isHome = location.pathname === "/";
+  const isSharedStory = location.pathname.startsWith("/s/");
   const showSplash = !splashDone && isHome;
   const introFinished = (splashDone || !isHome) && (onboardingDone || !isHome);
 
   const showBottomNav =
-    user !== null && !NO_BOTTOM_NAV_PATHS.includes(location.pathname);
+    user !== null && !NO_BOTTOM_NAV_PATHS.includes(location.pathname) && !isSharedStory;
 
   return (
     <>
@@ -124,7 +126,7 @@ const AppShell = () => {
       {!showSplash && !onboardingDone && isHome && (
         <OnboardingCarousel onDone={handleOnboardingDone} />
       )}
-      {introFinished && <GuidedWalkthrough />}
+      {introFinished && !isSharedStory && <GuidedWalkthrough />}
 
 
 
@@ -165,6 +167,7 @@ const AppShell = () => {
         <Route path="/invitations" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
         <Route path="/availability" element={<ProtectedRoute><MyAvailability /></ProtectedRoute>} />
         <Route path="/my-sit-stories" element={<ProtectedRoute><MySitStories /></ProtectedRoute>} />
+        <Route path="/s/:token" element={<SharedStory />} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/verify-identity" element={<ProtectedRoute><VerifyIdentity /></ProtectedRoute>} />
         <Route path="/membership" element={<Membership />} />
