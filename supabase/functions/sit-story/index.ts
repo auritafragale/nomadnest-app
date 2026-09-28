@@ -7,7 +7,7 @@ import { providerError, redact } from "../_shared/safe-log.ts";
 // Writes a Sit Story for one completed sit: a warm 120 to 200 word recap from
 // the daily updates' text and chips, and the best 4 to 6 of its update photos.
 // Called only by the database (queue_sit_story, requeue_sit_stories,
-// admin_queue_sit_story, request_sit_story_rewrite) with the Vault secret.
+// admin_queue_sit_story) with the Vault secret.
 //
 // Reads only this sit: its updates (text and chips; flag notes are left out),
 // the pets' names, both members' first names, the city, and up to 20 of its
@@ -81,7 +81,6 @@ serve(async (req) => {
   );
 
   let storyId = "";
-  let isRewrite = false;
   try {
     const body = await req.json().catch(() => ({}));
     storyId = typeof body?.story_id === "string" ? body.story_id : "";
@@ -89,14 +88,13 @@ serve(async (req) => {
 
     const { data: st } = await admin
       .from("sit_stories")
-      .select("id, sit_id, owner_user_id, sitter_user_id, status, attempts, rewrite_requested_at, title")
+      .select("id, sit_id, owner_user_id, sitter_user_id, status, attempts")
       .eq("id", storyId)
       .maybeSingle();
-    if (!st || st.status === "generating" || (st.status === "ready" && !st.rewrite_requested_at)) {
+    if (!st || st.status === "generating" || st.status === "ready") {
       return json({ skipped: "not_queued" });
     }
     if (!st.owner_user_id || !st.sitter_user_id) return json({ skipped: "former_member" });
-    isRewrite = !!st.rewrite_requested_at && !!st.title;
 
     await admin.from("sit_stories").update({ status: "generating", attempts: (st.attempts ?? 0) + 1 }).eq("id", storyId);
 
@@ -225,45 +223,36 @@ serve(async (req) => {
 
     const { error: saveError } = await admin
       .from("sit_stories")
-      .update({ status: "ready", title, story, photo_paths: photos, ready_at: new Date().toISOString(), rewrite_requested_at: null })
+      .update({ status: "ready", title, story, photo_paths: photos, ready_at: new Date().toISOString() })
       .eq("id", storyId);
     if (saveError) throw new Error(`save failed: ${saveError.message}`);
 
     await admin.from("ai_usage").insert({ user_id: st.owner_user_id, feature: FEATURE });
 
-    if (!isRewrite) {
-      await admin.from("notifications").insert([
-        {
-          user_id: st.owner_user_id,
-          type: "sit_story_ready",
-          title: `${title} is ready`,
-          message: `Your Sit Story from ${city || "your sit"} is ready to read and share.`,
-          data: { url: `/stories/${storyId}`, story_id: storyId },
-        },
-        {
-          // Quiet: in-app only (the push trigger skips this type).
-          user_id: st.sitter_user_id,
-          type: "sit_story_ready_sitter",
-          title: `Your Sit Story with ${ownerName} is ready`,
-          message: "Have a read, and ask to show it on your profile.",
-          data: { url: `/stories/${storyId}`, story_id: storyId },
-        },
-      ]);
-    }
+    // Both get a normal notification (in-app and push).
+    await admin.from("notifications").insert([
+      {
+        user_id: st.owner_user_id,
+        type: "sit_story_ready",
+        title: `${title} is ready`,
+        message: `Your Sit Story from ${city || "your sit"} is ready to read and share.`,
+        data: { url: `/stories/${storyId}`, story_id: storyId },
+      },
+      {
+        user_id: st.sitter_user_id,
+        type: "sit_story_ready_sitter",
+        title: `Your Sit Story with ${ownerName} is ready`,
+        message: "Have a read, and ask to show it on your profile.",
+        data: { url: `/stories/${storyId}`, story_id: storyId },
+      },
+    ]);
 
-    log({ story: storyId, ok: true, rewrite: isRewrite, words, photos: photos.length, pool: usable.length });
+    log({ story: storyId, ok: true, words, photos: photos.length, pool: usable.length });
     return json({ ok: true });
   } catch (err) {
     log({ story: storyId, failed: redact(err) });
     if (storyId) {
-      if (isRewrite) {
-        // Keep the current story and give the rewrite back.
-        await admin.from("sit_stories")
-          .update({ status: "ready", rewrites_used: 0, rewrite_requested_at: null })
-          .eq("id", storyId);
-      } else {
-        await admin.from("sit_stories").update({ status: "failed" }).eq("id", storyId);
-      }
+      await admin.from("sit_stories").update({ status: "failed" }).eq("id", storyId);
     }
     return json({ ok: false }, 500);
   }

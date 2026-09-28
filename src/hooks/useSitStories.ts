@@ -45,8 +45,6 @@ export interface SitStory {
   /** The sitter's first name if they allow it on share cards, else null. */
   sitter_share_name: string | null;
   can_review: boolean;
-  can_rewrite: boolean;
-  rewriting: boolean;
   portfolio_status: "none" | "requested" | "approved" | "declined" | "revoked";
   portfolio_photo_paths: string[];
 }
@@ -63,7 +61,7 @@ export const useSitStory = (storyId: string | undefined) =>
     // While a story is being (re)written, check back every few seconds.
     refetchInterval: (query) => {
       const d = query.state.data as SitStory | null | undefined;
-      return d && (d.rewriting || d.status === "queued" || d.status === "generating") ? 5_000 : false;
+      return d && (d.status === "queued" || d.status === "generating") ? 5_000 : false;
     },
   });
 
@@ -82,14 +80,6 @@ export const useSitStoryActions = (storyId: string | undefined) => {
   const queryClient = useQueryClient();
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["sit-story", storyId] });
 
-  const rewrite = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc("request_sit_story_rewrite", { p_story_id: storyId! });
-      if (error) throw new Error(error.message);
-    },
-    onSuccess: refresh,
-  });
-
   const requestPortfolio = useMutation({
     mutationFn: async (request: boolean) => {
       const { error } = await supabase.rpc("set_sit_story_portfolio_request", { p_story_id: storyId!, p_request: request });
@@ -99,7 +89,7 @@ export const useSitStoryActions = (storyId: string | undefined) => {
   });
 
   const decidePortfolio = useMutation({
-    mutationFn: async ({ decision, photoPaths = [] }: { decision: "approve" | "decline" | "revoke"; photoPaths?: string[] }) => {
+    mutationFn: async ({ decision, photoPaths = [] }: { decision: "approve" | "decline"; photoPaths?: string[] }) => {
       const { error } = await supabase.rpc("decide_sit_story_portfolio", {
         p_story_id: storyId!,
         p_decision: decision,
@@ -110,7 +100,16 @@ export const useSitStoryActions = (storyId: string | undefined) => {
     onSuccess: refresh,
   });
 
-  return { rewrite, requestPortfolio, decidePortfolio };
+  // Owner, after approval: remove one photo from the Nomad's profile.
+  const removePortfolioPhoto = useMutation({
+    mutationFn: async (path: string) => {
+      const { error } = await supabase.rpc("remove_sit_story_portfolio_photo", { p_story_id: storyId!, p_path: path });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: refresh,
+  });
+
+  return { requestPortfolio, decidePortfolio, removePortfolioPhoto };
 };
 
 // ─── Sitter profile: approved stories ───────────────────────────────────────
@@ -123,6 +122,28 @@ export interface PortfolioStory {
   photo_paths: string[];
   ready_at: string;
 }
+
+/** An approved story as shown on the Nomad's profile (any signed-in member). */
+export interface PortfolioStoryFull {
+  id: string;
+  title: string;
+  story: string;
+  city: string | null;
+  photo_paths: string[];
+  sitter_user_id: string;
+  ready_at: string;
+}
+
+export const usePortfolioStory = (storyId: string | null) =>
+  useQuery({
+    queryKey: ["portfolio-story", storyId],
+    queryFn: async (): Promise<PortfolioStoryFull | null> => {
+      const { data, error } = await supabase.rpc("get_portfolio_story", { p_story_id: storyId! });
+      if (error) throw error;
+      return (data ?? null) as unknown as PortfolioStoryFull | null;
+    },
+    enabled: !!storyId,
+  });
 
 export const useSitterPortfolio = (sitterId: string | undefined) => {
   const { user } = useAuth();

@@ -1,7 +1,9 @@
+import logoUrl from "@/assets/Black_Logo.png";
+
 /**
  * Sit Story share card, drawn on the device (no upload, no public link):
- * 1080x1350 (feed) or 1080x1920 (story), with the title, 1 to 4 photos the
- * owner picked, a short excerpt and subtle NomadNest branding.
+ * 1080x1350 (feed) or 1080x1920 (story), with the title, 1, 2 or 4 photos the
+ * owner picked, a short excerpt and the NomadNest logo.
  */
 
 export type ShareCardSize = "feed" | "story";
@@ -55,14 +57,51 @@ const drawCover = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: numb
   ctx.restore();
 };
 
-/** Photo boxes for 1 to 4 photos inside the photo area. */
-const layout = (n: number, x: number, y: number, w: number, h: number) => {
+/** The photo counts a card can show; 3 never fits without awkward crops. */
+export const SHARE_CARD_PHOTO_COUNTS = [1, 2, 4] as const;
+export const isValidShareCardPhotoCount = (n: number) => (SHARE_CARD_PHOTO_COUNTS as readonly number[]).includes(n);
+
+/**
+ * Photo boxes inside the photo area: 1 fills it; 2 sit side by side on the
+ * wide feed area and stack on the tall story area; 4 make a 2x2 grid.
+ */
+const layout = (n: number, size: ShareCardSize, x: number, y: number, w: number, h: number) => {
   const half = (w - GAP) / 2;
   const halfH = (h - GAP) / 2;
-  if (n <= 1) return [[x, y, w, h]];
-  if (n === 2) return [[x, y, half, h], [x + half + GAP, y, half, h]];
-  if (n === 3) return [[x, y, w, halfH], [x, y + halfH + GAP, half, halfH], [x + half + GAP, y + halfH + GAP, half, halfH]];
+  if (n === 1) return [[x, y, w, h]];
+  if (n === 2) {
+    return size === "feed"
+      ? [[x, y, half, h], [x + half + GAP, y, half, h]]
+      : [[x, y, w, halfH], [x, y + halfH + GAP, w, halfH]];
+  }
   return [[x, y, half, halfH], [x + half + GAP, y, half, halfH], [x, y + halfH + GAP, half, halfH], [x + half + GAP, y + halfH + GAP, half, halfH]];
+};
+
+/**
+ * The real NomadNest logo (icon above the name), bottom-right of the photo
+ * area on a soft cream backing so it reads on any photo. Same position and
+ * proportion on both card sizes.
+ */
+const LOGO_WIDTH = 170;
+const drawLogo = async (ctx: CanvasRenderingContext2D, photoBottom: number) => {
+  const logo = await loadImage(logoUrl);
+  const w = LOGO_WIDTH;
+  const h = Math.round((logo.naturalHeight / logo.naturalWidth) * w);
+  const pad = 18;
+  const boxW = w + pad * 2;
+  const boxH = h + pad * 2;
+  const bx = W - PAD - 20 - boxW;
+  const by = photoBottom - 20 - boxH;
+  ctx.save();
+  ctx.shadowColor = "rgba(31, 42, 46, 0.18)";
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = "rgba(250, 247, 242, 0.92)";
+  roundedRect(ctx, bx, by, boxW, boxH, 24);
+  ctx.fill();
+  ctx.restore();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(logo, bx + pad, by + pad, w, h);
 };
 
 /** Wraps text into lines that fit; the last line gets "…" if it overflows. */
@@ -109,9 +148,10 @@ export const renderShareCard = async (opts: {
   ctx.fillStyle = COLORS.bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Photos
-  const photos = await Promise.all(opts.photoUrls.slice(0, 4).map(loadImage));
-  const boxes = layout(photos.length, PAD, PAD, W - PAD * 2, PHOTO_AREA[opts.size]);
+  // Photos: 1, 2 or 4.
+  if (!isValidShareCardPhotoCount(opts.photoUrls.length)) throw new Error("Choose 1, 2 or 4 photos.");
+  const photos = await Promise.all(opts.photoUrls.map(loadImage));
+  const boxes = layout(photos.length, opts.size, PAD, PAD, W - PAD * 2, PHOTO_AREA[opts.size]);
   photos.forEach((img, i) => {
     const [x, y, w, h] = boxes[i];
     drawCover(ctx, img, x, y, w, h);
@@ -146,18 +186,8 @@ export const renderShareCard = async (opts: {
   ctx.font = "500 34px system-ui, -apple-system, 'Segoe UI', sans-serif";
   ctx.fillText(opts.sitterName ? `Cared for by ${opts.sitterName}` : "Cared for by our NomadNest sitter", PAD, y);
 
-  // Branding, bottom right: icon + wordmark, subtle.
-  try {
-    const icon = await loadImage("/icon-192.png");
-    ctx.globalAlpha = 0.9;
-    ctx.drawImage(icon, W - PAD - 260, H - PAD - 56, 56, 56);
-    ctx.globalAlpha = 1;
-  } catch {
-    // Wordmark only.
-  }
-  ctx.fillStyle = COLORS.ink;
-  ctx.font = "700 36px system-ui, -apple-system, 'Segoe UI', sans-serif";
-  ctx.fillText("NomadNest", W - PAD - 190, H - PAD - 16);
+  // Branding: the real logo, over the photo area's bottom-right corner.
+  await drawLogo(ctx, PAD + PHOTO_AREA[opts.size]);
 
   return new Promise((resolve, reject) =>
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("The image couldn't be created."))), "image/jpeg", 0.92),

@@ -1,27 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, BookHeart, Check, Download, Loader2, RefreshCw, Share2, Star, UserRound } from "lucide-react";
+import { useParams } from "react-router-dom";
+import { BookHeart, Check, Download, Loader2, Share2, Star, UserRound, X } from "lucide-react";
+import { BackButton } from "@/components/layout/BackButton";
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import WriteReviewDialog from "@/components/reviews/WriteReviewDialog";
 import { cn } from "@/lib/utils";
 import { useSitStory, useSitStoryActions, type SitStory as SitStoryData } from "@/hooks/useSitStories";
 import { useUpdatePhotoUrls } from "@/hooks/useDailyUpdates";
-import { defaultExcerpt, renderShareCard, shareOrDownload, type ShareCardSize } from "@/lib/shareCard";
+import { defaultExcerpt, isValidShareCardPhotoCount, renderShareCard, shareOrDownload, type ShareCardSize } from "@/lib/shareCard";
 
 /** Photo tiles that can be toggled on/off (share card, portfolio). */
 const PhotoPicker = ({
@@ -69,14 +60,15 @@ const PhotoPicker = ({
 );
 
 const ShareCardMaker = ({ story, urls }: { story: SitStoryData; urls: Record<string, string> }) => {
-  const [photos, setPhotos] = useState<string[]>(() => story.photo_paths.slice(0, 2));
+  const [photos, setPhotos] = useState<string[]>(() => story.photo_paths.slice(0, story.photo_paths.length >= 2 ? 2 : 1));
+  const photoCountOk = isValidShareCardPhotoCount(photos.length);
   const [excerpt, setExcerpt] = useState(() => defaultExcerpt(story.story ?? ""));
   const [size, setSize] = useState<ShareCardSize>("feed");
   const [busy, setBusy] = useState(false);
 
   const make = async () => {
-    if (photos.length === 0) {
-      toast.info("Choose at least one photo.");
+    if (!photoCountOk) {
+      toast.info("Choose 1, 2 or 4 photos.");
       return;
     }
     setBusy(true);
@@ -110,8 +102,11 @@ const ShareCardMaker = ({ story, urls }: { story: SitStoryData; urls: Record<str
         </p>
       </div>
       <div className="space-y-2">
-        <p className="text-sm font-medium">Photos (up to 4)</p>
+        <p className="text-sm font-medium">Photos: choose 1, 2 or 4</p>
         <PhotoPicker paths={story.photo_paths} urls={urls} selected={photos} max={4} onChange={setPhotos} />
+        {photos.length === 3 && (
+          <p className="text-xs text-muted-foreground">Choose 1, 2 or 4 photos so the card lays out neatly.</p>
+        )}
       </div>
       <div className="space-y-1.5">
         <label htmlFor="share-excerpt" className="text-sm font-medium">Words on the card</label>
@@ -138,7 +133,7 @@ const ShareCardMaker = ({ story, urls }: { story: SitStoryData; urls: Record<str
             </button>
           ))}
         </div>
-        <Button className="ml-auto rounded-full" onClick={make} disabled={busy}>
+        <Button className="ml-auto rounded-full" onClick={make} disabled={busy || !photoCountOk}>
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
           {busy ? "Making your image…" : "Create share image"}
         </Button>
@@ -151,7 +146,7 @@ const ShareCardMaker = ({ story, urls }: { story: SitStoryData; urls: Record<str
 };
 
 const PortfolioPanel = ({ story, urls }: { story: SitStoryData; urls: Record<string, string> }) => {
-  const { requestPortfolio, decidePortfolio } = useSitStoryActions(story.id);
+  const { requestPortfolio, decidePortfolio, removePortfolioPhoto } = useSitStoryActions(story.id);
   const [picked, setPicked] = useState<string[]>(story.portfolio_photo_paths ?? []);
   const isOwner = story.role === "owner";
   const status = story.portfolio_status;
@@ -168,31 +163,63 @@ const PortfolioPanel = ({ story, urls }: { story: SitStoryData; urls: Record<str
       </h2>
 
       {isOwner ? (
-        status === "requested" || status === "approved" ? (
+        status === "requested" ? (
           <>
             <p className="text-sm text-muted-foreground">
-              {status === "requested"
-                ? `${story.sitter_first_name} would like to show this story on their profile. Choose up to 2 photos to show with it, or none.`
-                : "This story is on their profile with the photos below. You can change the photos or remove it at any time."}
+              {story.sitter_first_name} would like to show this story on their profile. Choose up to 2 photos to show
+              with it, or none. Once approved, the story stays on their profile; you can remove its photos at any time.
             </p>
             <PhotoPicker paths={story.photo_paths} urls={urls} selected={picked} max={2} onChange={setPicked} />
             <div className="flex flex-wrap gap-2">
               <Button
                 className="rounded-full"
                 disabled={decidePortfolio.isPending}
-                onClick={() => run(decidePortfolio.mutateAsync({ decision: "approve", photoPaths: picked }), status === "requested" ? "Approved" : "Saved")}
+                onClick={() => run(decidePortfolio.mutateAsync({ decision: "approve", photoPaths: picked }), "Approved")}
               >
-                {status === "requested" ? "Approve" : "Save photos"}
+                Approve
               </Button>
               <Button
                 variant="ghost"
                 className="rounded-full"
                 disabled={decidePortfolio.isPending}
-                onClick={() => run(decidePortfolio.mutateAsync({ decision: status === "requested" ? "decline" : "revoke" }), status === "requested" ? "Declined" : "Removed from their profile")}
+                onClick={() => run(decidePortfolio.mutateAsync({ decision: "decline" }), "Declined")}
               >
-                {status === "requested" ? "Decline" : "Remove from their profile"}
+                Decline
               </Button>
             </div>
+          </>
+        ) : status === "approved" ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              This story is on {story.sitter_first_name}'s profile. You can remove any of its photos from their profile at
+              any time; the story itself stays.
+            </p>
+            {(story.portfolio_photo_paths ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">No photos are shown with it.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {story.portfolio_photo_paths.map((p) => (
+                  <div key={p} className="relative">
+                    {urls[p] ? (
+                      <img src={urls[p]} alt="" className="aspect-square w-full rounded-2xl object-cover" />
+                    ) : (
+                      <div className="aspect-square w-full rounded-2xl bg-muted" />
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="absolute bottom-2 left-1/2 h-8 -translate-x-1/2 rounded-full px-3 text-xs shadow"
+                      disabled={removePortfolioPhoto.isPending}
+                      onClick={() => run(removePortfolioPhoto.mutateAsync(p), "Photo removed from their profile")}
+                    >
+                      <X className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         ) : (
           <p className="text-sm text-muted-foreground">
@@ -233,9 +260,7 @@ const PortfolioPanel = ({ story, urls }: { story: SitStoryData; urls: Record<str
 const SitStory = () => {
   const { id } = useParams<{ id: string }>();
   const { data: story, isLoading, refetch } = useSitStory(id);
-  const { rewrite } = useSitStoryActions(id);
   const { data: urls = {} } = useUpdatePhotoUrls(story?.photo_paths ?? []);
-  const [confirmRewrite, setConfirmRewrite] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const paragraphs = useMemo(() => (story?.story ?? "").split(/\n{2,}/).filter(Boolean), [story?.story]);
 
@@ -247,10 +272,7 @@ const SitStory = () => {
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
       <main className="container max-w-2xl flex-1 px-4 pb-12 pt-20">
-        <Link to="/dashboard" className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Dashboard
-        </Link>
+        <BackButton fallback="/dashboard" className="mb-4" />
 
         {isLoading ? (
           <div className="space-y-4">
@@ -281,12 +303,6 @@ const SitStory = () => {
               <p className="text-sm text-muted-foreground">
                 {story.owner_first_name} and {story.sitter_first_name}
               </p>
-              {story.rewriting && (
-                <p className="flex items-center gap-2 rounded-2xl bg-background/80 px-3 py-2 text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  Writing it again…
-                </p>
-              )}
               <div className="space-y-4 text-[17px] leading-relaxed">
                 {paragraphs.map((p, i) => (
                   <p key={i}>{p}</p>
@@ -299,12 +315,6 @@ const SitStory = () => {
                   ))}
                 </div>
               )}
-              {story.can_rewrite && (
-                <Button variant="ghost" size="sm" className="gap-1.5 rounded-full" onClick={() => setConfirmRewrite(true)}>
-                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
-                  Write it again
-                </Button>
-              )}
             </article>
 
             {story.role === "owner" && story.status === "ready" && story.photo_paths.length > 0 && (
@@ -316,9 +326,13 @@ const SitStory = () => {
             {story.can_review && story.sitter_user_id && (
               <section className="rounded-3xl border bg-card p-5 text-center shadow-sm">
                 <p className="mb-3 text-sm text-muted-foreground">How did {story.sitter_first_name} do? Your review helps other Pet Parents.</p>
-                <Button size="lg" className="rounded-full" onClick={() => setReviewOpen(true)}>
-                  <Star className="mr-2 h-5 w-5" aria-hidden="true" />
-                  Leave a review for {story.sitter_first_name}
+                <Button
+                  size="lg"
+                  className="h-auto w-full whitespace-normal rounded-full py-3 sm:w-auto"
+                  onClick={() => setReviewOpen(true)}
+                >
+                  <Star className="mr-2 h-5 w-5 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 break-words">Leave a review for {story.sitter_first_name}</span>
                 </Button>
                 <WriteReviewDialog
                   sitId={story.sit_id}
@@ -336,30 +350,6 @@ const SitStory = () => {
       </main>
       <Footer />
 
-      <AlertDialog open={confirmRewrite} onOpenChange={setConfirmRewrite}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Write it again?</AlertDialogTitle>
-            <AlertDialogDescription>
-              We'll write a new title and story from the same updates and photos. You can do this once, and the current
-              story stays until the new one is ready.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() =>
-                rewrite.mutate(undefined, {
-                  onSuccess: () => toast.success("Writing it again"),
-                  onError: (err) => toast.error(err.message || "That didn't work. Please try again."),
-                })
-              }
-            >
-              Write it again
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

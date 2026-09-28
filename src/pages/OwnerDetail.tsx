@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { BackButton } from "@/components/layout/BackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { publicProfiles } from "@/lib/publicProfile";
 import { useAuth } from "@/contexts/AuthContext";
@@ -241,12 +242,7 @@ const OwnerDetail = () => {
         <div className="container mx-auto px-4 pt-6 pb-8">
           <div className="max-w-4xl mx-auto">
             {/* Back button */}
-            <Button variant="ghost" asChild className="mb-6">
-              <Link to="/browse-sits">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Listings
-              </Link>
-            </Button>
+            <BackButton fallback={user?.id === userId ? "/dashboard" : "/browse-sits"} className="mb-6" />
 
             {/* Header Section */}
             <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-8">

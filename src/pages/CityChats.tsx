@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { BackButton } from "@/components/layout/BackButton";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CityChatsSection from "@/components/city-chat/CityChatsSection";
@@ -16,10 +17,7 @@ const CityChats = () => {
       <main className="flex-1 pt-20">
         <div className="bg-surface border-b border-border">
           <div className="container py-8">
-            <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-1 -ml-2">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
+            <BackButton fallback="/inbox" className="mb-1" />
             <div className="flex items-center gap-1.5">
               <MessageCircle className="w-7 h-7 md:w-8 md:h-8 text-primary" />
               <h1 className="text-3xl md:text-4xl font-display">City Chats</h1>

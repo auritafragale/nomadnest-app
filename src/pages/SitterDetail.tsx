@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { SitterPortfolio } from "@/components/sitter/SitterPortfolio";
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { BackButton } from "@/components/layout/BackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveListingConversation } from "@/lib/conversations";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
@@ -463,12 +464,7 @@ const SitterDetail = () => {
         <div className="container mx-auto px-4 pt-6 pb-8">
           <div className="max-w-4xl mx-auto">
             {/* Back button */}
-            <Button variant="ghost" asChild className="mb-6">
-              <Link to="/browse-sitters">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Sitters
-              </Link>
-            </Button>
+            <BackButton fallback={user?.id === userId ? "/dashboard" : "/browse-sitters"} className="mb-6" />
 
             {/* Header Section */}
             <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">

@@ -17,7 +17,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Star, PenLine, Paperclip, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { sendNotification } from "@/lib/notifications";
 import { HOME_FLAG_QUESTIONS, NOMAD_FLAG_QUESTIONS, HOMEOWNER_QUESTION } from "@/lib/trustFlags";
 
 const EVIDENCE_BUCKET = "arrival-vault-photos";
@@ -401,29 +400,8 @@ const WriteReviewDialog = ({
         }
       }
 
-      // Get reviewer name for notification
-      const { data: reviewerProfile } = await supabase
-        .from("profiles")
-        .select("first_name, last_name")
-        .eq("id", user.id)
-        .single();
-
-      // Send notification to reviewee
-      // reviewType "sitter" means a Pet Parent is reviewing a Nomad, so the
-      // reviewee is the Nomad; "owner" means the reverse.
-      const revieweeReviewsUrl =
-        reviewType === "sitter" ? `/sitter/${revieweeUserId}/reviews` : `/owner/${revieweeUserId}/reviews`;
-      sendNotification({
-        type: "review",
-        recipientUserId: revieweeUserId,
-        data: {
-          reviewerName: [reviewerProfile?.first_name, reviewerProfile?.last_name].filter(Boolean).join(" ") || "Someone",
-          rating: overallRating.toString(),
-          text: text.trim() || "",
-          url: revieweeReviewsUrl,
-          sit_id: sitId,
-        },
-      });
+      // The reviewee is notified by the database (notify_review_received):
+      // in-app, push and email, even if this tab closes now.
 
       toast({
         title: "Review submitted!",

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { BackButton } from "@/components/layout/BackButton";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -64,10 +65,7 @@ const OwnerReviewsCarousel = () => {
       <Navbar />
       <main className="flex-1 pt-16">
         <div className="container mx-auto px-4 pt-6 pb-12 max-w-2xl">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 -ml-2">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
+          <BackButton fallback={`/owner/${userId}`} className="mb-4" />
 
           <h1 className="text-xl md:text-2xl font-bold mb-4">Reviews from Nomads</h1>
 

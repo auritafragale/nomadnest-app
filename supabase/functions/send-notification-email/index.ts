@@ -334,29 +334,8 @@ const MEMBER_RULES: Record<string, (ctx: Ctx) => Promise<Verdict>> = {
   sit_reschedule_accepted: (ctx) => rescheduleResponse(ctx, "accepted"),
   sit_reschedule_declined: (ctx) => rescheduleResponse(ctx, "declined"),
 
-  // Reviewer → reviewee: a review the caller just left for this sit.
-  review: async ({ sb, uid, recipient, data }) => {
-    if (!isUuid(data.sit_id)) return refuse("missing sit_id");
-    const { data: review } = await sb
-      .from("reviews")
-      .select("rating, text, created_at")
-      .eq("sit_id", data.sit_id)
-      .eq("reviewer_user_id", uid)
-      .eq("reviewee_user_id", recipient)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (!review) return refuse("no review by caller about recipient on this sit");
-    if (minutesAgo(review.created_at) > 15) return refuse("review older than 15 minutes");
-    return {
-      ok: true,
-      data: {
-        reviewerName: await callerName(sb, uid, "Someone"),
-        rating: String(review.rating),
-        text: trimText(review.text, 500),
-      },
-    };
-  },
+  // Reviews are notified by the database (notify_review_received) only, so a
+  // member can never send one (or a second copy) from the app.
 };
 
 async function rescheduleResponse({ sb, uid, recipient, data }: Ctx, status: "accepted" | "declined"): Promise<Verdict> {

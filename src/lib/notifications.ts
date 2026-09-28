@@ -6,7 +6,6 @@ interface NotificationData {
     | "application_status"
     | "new_message"
     | "invite"
-    | "review"
     | "sit_cancelled"
     | "sit_checkin"
     | "sit_reschedule_proposed"

@@ -83,6 +83,8 @@ export const removeUpdatePhoto = async (path: string) => {
 
 /** Signed URLs (1 hour) for private update photos, in one request. */
 export const useUpdatePhotoUrls = (paths: string[]) => useSignedUrls(UPDATE_PHOTO_BUCKET, paths);
+/** Photos on a Nomad's profile: 5-minute links, so a removed photo stops loading soon. */
+export const usePortfolioPhotoUrls = (paths: string[]) => useSignedUrls(UPDATE_PHOTO_BUCKET, paths, 300);
 
 // ─── AI ──────────────────────────────────────────────────────────────────────
 
