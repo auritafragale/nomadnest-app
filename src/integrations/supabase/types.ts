@@ -2707,6 +2707,10 @@ export type Database = {
         }
         Returns: Json
       }
+      attach_report_evidence: {
+        Args: { p_paths: string[]; p_report_id: string }
+        Returns: string[]
+      }
       can_access_city_chat: {
         Args: { p_room_id: string; p_user_id: string }
         Returns: boolean
@@ -2786,6 +2790,7 @@ export type Database = {
           sitter_phone: string
         }[]
       }
+      get_my_dashboard_summary: { Args: never; Returns: Json }
       get_my_guide_windows: {
         Args: never
         Returns: {
@@ -2807,6 +2812,7 @@ export type Database = {
         }[]
       }
       get_my_settings: { Args: never; Returns: Json }
+      get_my_sit_stories: { Args: never; Returns: Json }
       get_my_verification: {
         Args: never
         Returns: {
@@ -2838,6 +2844,10 @@ export type Database = {
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      guide_photo_object_ok: {
+        Args: { p_listing_id: string; p_path: string }
+        Returns: boolean
       }
       guide_question_link_ok: {
         Args: {
