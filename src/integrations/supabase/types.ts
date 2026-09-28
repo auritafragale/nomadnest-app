@@ -1951,6 +1951,7 @@ export type Database = {
           sitter_user_id: string | null
           status: string
           story: string | null
+          story_days: Json | null
           title: string | null
           updated_at: string
         }
@@ -1969,6 +1970,7 @@ export type Database = {
           sitter_user_id?: string | null
           status?: string
           story?: string | null
+          story_days?: Json | null
           title?: string | null
           updated_at?: string
         }
@@ -1987,6 +1989,7 @@ export type Database = {
           sitter_user_id?: string | null
           status?: string
           story?: string | null
+          story_days?: Json | null
           title?: string | null
           updated_at?: string
         }
@@ -1996,6 +1999,73 @@ export type Database = {
             columns: ["sit_id"]
             isOneToOne: true
             referencedRelation: "sits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sit_story_share_hits: {
+        Row: {
+          hits: number
+          link_id: string
+          minute: string
+        }
+        Insert: {
+          hits?: number
+          link_id: string
+          minute: string
+        }
+        Update: {
+          hits?: number
+          link_id?: string
+          minute?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sit_story_share_hits_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "sit_story_share_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sit_story_share_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          disabled_at: string | null
+          enabled: boolean
+          id: string
+          story_id: string
+          token: string
+          view_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          disabled_at?: string | null
+          enabled?: boolean
+          id?: string
+          story_id: string
+          token: string
+          view_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          disabled_at?: string | null
+          enabled?: boolean
+          id?: string
+          story_id?: string
+          token?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sit_story_share_links_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "sit_stories"
             referencedColumns: ["id"]
           },
         ]
@@ -2750,6 +2820,10 @@ export type Database = {
           reply_count: number
         }[]
       }
+      create_sit_story_share_link: {
+        Args: { p_story_id: string }
+        Returns: string
+      }
       decide_sit_story_portfolio: {
         Args: {
           p_decision: string
@@ -2759,6 +2833,14 @@ export type Database = {
         Returns: string
       }
       decline_application: { Args: { p_application_id: string }; Returns: Json }
+      disable_my_sit_story_share_link: {
+        Args: { p_story_id: string }
+        Returns: undefined
+      }
+      disable_sit_story_share_links: {
+        Args: { p_story_id: string }
+        Returns: undefined
+      }
       expired_id_documents: {
         Args: never
         Returns: {
@@ -2851,6 +2933,7 @@ export type Database = {
       }
       get_portfolio_story: { Args: { p_story_id: string }; Returns: Json }
       get_public_member_cards: { Args: { p_user_ids: string[] }; Returns: Json }
+      get_shared_sit_story: { Args: { p_token: string }; Returns: Json }
       get_sit_story: { Args: { p_story_id: string }; Returns: Json }
       get_sit_update_context: { Args: { p_sit_id: string }; Returns: Json }
       get_sitter_free_dates: { Args: { p_sitter_id: string }; Returns: Json }
@@ -2874,6 +2957,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      hit_shared_sit_story: { Args: { p_token: string }; Returns: boolean }
       is_active_member: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       is_owner_active: { Args: { _owner_user_id: string }; Returns: boolean }
@@ -3014,6 +3098,10 @@ export type Database = {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string }
         Returns: undefined
       }
+      withdraw_sit_story_portfolio: {
+        Args: { p_story_id: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "sitter" | "owner" | "both"
@@ -3027,7 +3115,7 @@ export type Database = {
       conversation_type: "listing" | "direct" | "city_chat"
       listing_status: "draft" | "published" | "paused"
       report_status: "pending" | "reviewed" | "resolved" | "dismissed"
-      report_target_type: "user" | "listing" | "message"
+      report_target_type: "user" | "listing" | "message" | "sit_story"
       sit_date_status: "open" | "closed" | "booked"
       sit_status: "confirmed" | "in_progress" | "completed" | "cancelled"
     }
@@ -3169,7 +3257,7 @@ export const Constants = {
       conversation_type: ["listing", "direct", "city_chat"],
       listing_status: ["draft", "published", "paused"],
       report_status: ["pending", "reviewed", "resolved", "dismissed"],
-      report_target_type: ["user", "listing", "message"],
+      report_target_type: ["user", "listing", "message", "sit_story"],
       sit_date_status: ["open", "closed", "booked"],
       sit_status: ["confirmed", "in_progress", "completed", "cancelled"],
     },
