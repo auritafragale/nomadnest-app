@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, BookHeart, BookOpen, CalendarClock, CheckCircle2, PawPrint } from "lucide-react";
+import { BookHeart, BookOpen, CalendarClock, CheckCircle2, PawPrint } from "lucide-react";
+import { BackButton } from "@/components/layout/BackButton";
 import { useStoryForSit } from "@/hooks/useSitStories";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -56,10 +57,7 @@ export const SitProgressHeader = ({ context, sentToday }: { context: SitUpdateCo
 
   return (
     <header className="space-y-4">
-      <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Dashboard
-      </Link>
+      <BackButton fallback="/dashboard" />
 
       <div className="overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm">
         <div className="flex items-start justify-between gap-3">

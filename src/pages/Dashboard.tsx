@@ -30,7 +30,7 @@ import { SitterApplicationCard } from "@/components/applications/SitterApplicati
 import { Skeleton } from "@/components/ui/skeleton";
 import { OwnerListingCard } from "@/components/dashboard/OwnerListingCard";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
-import { useListingAllowance, LISTING_LIMIT_NOTE } from "@/hooks/useListingAllowance";
+import { useListingAllowance } from "@/hooks/useListingAllowance";
 import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
@@ -511,17 +511,13 @@ const OwnerDashboard = ({ summary, profilePercent, openReview, onReviewAutoOpene
               {listings.map((listing) => (
                 <OwnerListingCard key={listing.id} listing={listing} newApplicants={applicantsByListing.get(listing.id) ?? 0} />
               ))}
-              {atLimit ? (
-                <p className="px-1 text-xs text-muted-foreground">{LISTING_LIMIT_NOTE}</p>
-              ) : (
-                maxListings > 1 && (
-                  <Button asChild variant="outline" size="sm" className="rounded-full">
-                    <Link to="/create-listing">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add another home
-                    </Link>
-                  </Button>
-                )
+              {!atLimit && maxListings > 1 && (
+                <Button asChild variant="outline" size="sm" className="rounded-full">
+                  <Link to="/create-listing">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add another home
+                  </Link>
+                </Button>
               )}
             </>
           )}

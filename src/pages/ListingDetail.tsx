@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
+import { BackButton } from "@/components/layout/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, badgeVariants } from "@/components/ui/badge";
@@ -591,14 +592,7 @@ const ListingDetail = () => {
       <main className="pt-16 pb-8 md:pb-12">
         <div className="container mx-auto px-4 max-w-5xl">
           {/* Back Button */}
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="mb-4 md:mb-6"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
+          <BackButton fallback="/browse-sits" className="mb-4 md:mb-6" />
 
           {/* Photo Gallery */}
           {allPhotos.length > 0 ? (
