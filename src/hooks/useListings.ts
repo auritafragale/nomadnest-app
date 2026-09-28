@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
+import { fetchPublicMemberCards } from "@/lib/publicMemberCards";
+import { useAuth } from "@/contexts/AuthContext";
 import { matchesAllTokens } from "@/lib/utils";
 import {
   aggregateCategoryRatings,
@@ -62,13 +64,15 @@ export interface ListingWithDetails {
   }[];
   owner_rating?: { average: number; count: number };
   owner_category_ratings?: CategoryAverage[];
-  owner_profile?: { first_name: string | null; last_name: string | null; avatar_url: string | null; id_verified?: boolean | null };
+  owner_profile?: { first_name: string | null; last_name?: string | null; avatar_url: string | null; id_verified?: boolean | null };
   wifi_quality?: string | null;
 }
 
 export const useListings = (filters: ListingFilters = {}) => {
+  const { user } = useAuth();
+  const signedIn = !!user;
   return useQuery({
-    queryKey: ["listings", filters],
+    queryKey: ["listings", filters, signedIn],
     queryFn: async (): Promise<ListingWithDetails[]> => {
       let query = supabase
         .from("listings")
@@ -174,17 +178,19 @@ export const useListings = (filters: ListingFilters = {}) => {
         }
       }
 
-      // Fetch owner profiles in bulk
+      // Fetch owner profiles in bulk: members through public_profiles;
+      // signed-out visitors get first name and photo only.
       if (ownerIds.length > 0) {
-        const { data: profileData } = await publicProfiles("id, first_name, last_name, avatar_url, id_verified")
-          .in("id", ownerIds) as { data: PublicProfile[] | null };
+        const { data: profileData } = signedIn
+          ? ((await publicProfiles("id, first_name, avatar_url, id_verified").in("id", ownerIds)) as { data: PublicProfile[] | null })
+          : { data: (await fetchPublicMemberCards(ownerIds)) as unknown as PublicProfile[] };
 
         if (profileData && profileData.length > 0) {
           const profileMap = new Map(profileData.map((p) => [p.id, p]));
           results = results.map((listing) => {
             const prof = profileMap.get(listing.owner_user_id);
             return prof
-              ? { ...listing, owner_profile: { first_name: prof.first_name, last_name: prof.last_name, avatar_url: prof.avatar_url, id_verified: (prof as any).id_verified } }
+              ? { ...listing, owner_profile: { first_name: prof.first_name, avatar_url: prof.avatar_url, id_verified: (prof as any).id_verified ?? null } }
               : listing;
           });
         }

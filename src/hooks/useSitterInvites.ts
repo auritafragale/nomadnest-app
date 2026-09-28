@@ -27,7 +27,7 @@ export interface SitterInvite {
   };
   owner_profile?: {
     first_name: string | null;
-    last_name: string | null;
+    last_name?: string | null;
     avatar_url: string | null;
   };
 }
@@ -56,7 +56,7 @@ export const useSitterInvites = () => {
       const ownerIds = [...new Set(data.map((i) => i.owner_user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, avatar_url")
+        .select("id, first_name, avatar_url")
         .in("id", ownerIds);
 
       const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
@@ -139,12 +139,12 @@ export const useCreateInvite = () => {
       // Get owner profile for notification
       const { data: ownerProfile } = await supabase
         .from("profiles")
-        .select("first_name, last_name")
+        .select("first_name")
         .eq("id", invite.owner_user_id)
         .single();
 
       const ownerName =
-        [ownerProfile?.first_name, ownerProfile?.last_name].filter(Boolean).join(" ") ||
+        (ownerProfile?.first_name || "") ||
         "A pet owner";
       const listingTitleSafe = listingTitle || "my home";
 

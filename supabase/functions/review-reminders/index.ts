@@ -150,13 +150,13 @@ const handler = async (req: Request): Promise<Response> => {
 
         const { data: otherProfile } = await supabase
           .from("profiles")
-          .select("first_name, last_name")
+          .select("first_name")
           .eq("id", party.revieweeId)
           .maybeSingle();
 
+        // First name only between members.
         const otherName =
-          [otherProfile?.first_name, otherProfile?.last_name].filter(Boolean).join(" ") ||
-          (party.role === "owner" ? "your Nomad" : "your Pet Parent");
+          otherProfile?.first_name?.trim() || (party.role === "owner" ? "your Nomad" : "your Pet Parent");
 
         const daysLeft = REVIEW_WINDOW_DAYS - days;
 

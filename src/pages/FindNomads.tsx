@@ -64,7 +64,7 @@ const FindNomads = () => {
 
       const userIds = data.map((d) => d.user_id);
       const { data: profiles } = await publicProfiles(
-        "id, first_name, last_name, avatar_url, city, country, founding_member",
+        "id, first_name, avatar_url, city, country, founding_member",
       ).in("id", userIds) as { data: PublicProfile[] | null };
 
       const profileMap = new Map((profiles || []).map((p) => [p.id, p]));

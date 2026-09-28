@@ -9,6 +9,7 @@ import { Home, ArrowRight, MapPin, Loader2 } from "lucide-react";
 import { AvatarUpload } from "@/components/onboarding/AvatarUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyProfile } from "@/lib/myProfile";
 import { useToast } from "@/hooks/use-toast";
 import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 
@@ -35,11 +36,7 @@ const CompleteProfile = () => {
     }
 
     const fetchProfile = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, bio, location, city, country, avatar_url")
-        .eq("id", user.id)
-        .maybeSingle();
+      const { data } = await fetchMyProfile();
 
       if (data) {
         const name = `${data.first_name || ""} ${data.last_name || ""}`.trim();

@@ -115,8 +115,8 @@ const AdminReliabilityDetail = () => {
     const rows = (data || []) as unknown as ReliabilityNote[];
     const adminIds = [...new Set(rows.map((n) => n.admin_user_id))];
     if (adminIds.length > 0) {
-      const { data: admins } = await supabase.from("profiles").select("id, full_name").in("id", adminIds);
-      const nameById = new Map((admins || []).map((a) => [a.id, a.full_name]));
+      const { data: admins } = await supabase.from("profiles").select("id, first_name").in("id", adminIds);
+      const nameById = new Map((admins || []).map((a) => [a.id, a.first_name]));
       for (const note of rows) {
         note.admin_name = nameById.get(note.admin_user_id) ?? null;
       }

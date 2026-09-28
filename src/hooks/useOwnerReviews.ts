@@ -14,7 +14,7 @@ interface OwnerReview {
   reviewer: {
     id: string;
     first_name: string | null;
-    last_name: string | null;
+    last_name?: string | null;
     avatar_url: string | null;
   } | null;
   sit: {
@@ -86,7 +86,7 @@ export const useOwnerReviews = (ownerUserId: string | undefined) => {
             const [reviewerResult, listingResult, datesResult] = await Promise.all([
               supabase
                 .from("profiles")
-                .select("id, first_name, last_name, avatar_url")
+                .select("id, first_name, avatar_url")
                 .eq("id", sitData.sitter_user_id)
                 .maybeSingle(),
               supabase

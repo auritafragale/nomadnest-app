@@ -25,7 +25,7 @@ interface Room {
 interface SenderProfile {
   id: string;
   first_name: string | null;
-  last_name: string | null;
+  last_name?: string | null;
   avatar_url: string | null;
 }
 
@@ -91,7 +91,7 @@ const CityChat = () => {
     if (missing.length > 0) {
       const { data } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, avatar_url")
+        .select("id, first_name, avatar_url")
         .in("id", missing);
       (data || []).forEach((p) => profileCache.current.set(p.id, p));
     }

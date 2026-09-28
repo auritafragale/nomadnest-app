@@ -28,7 +28,7 @@ export interface SitterApplication {
   owner: {
     id: string;
     first_name: string | null;
-    last_name: string | null;
+    last_name?: string | null;
     avatar_url: string | null;
   } | null;
 }
@@ -72,7 +72,7 @@ export const useSitterApplications = (statusFilter?: ApplicationStatus | "all") 
           if (listing?.owner_user_id) {
             const { data: ownerData } = await supabase
               .from("profiles")
-              .select("id, first_name, last_name, avatar_url")
+              .select("id, first_name, avatar_url")
               .eq("id", listing.owner_user_id)
               .single();
             owner = ownerData;
@@ -129,7 +129,7 @@ export const useWithdrawApplication = () => {
       if (user && listing?.owner_user_id) {
         const { data: sitterProfile } = await supabase
           .from("profiles")
-          .select("first_name, last_name")
+          .select("first_name")
           .eq("id", user.id)
           .maybeSingle();
 
@@ -137,7 +137,7 @@ export const useWithdrawApplication = () => {
           type: "application_withdrawn",
           recipientUserId: listing.owner_user_id,
           data: {
-            sitterName: [sitterProfile?.first_name, sitterProfile?.last_name].filter(Boolean).join(" ") || "A Nomad",
+            sitterName: (sitterProfile?.first_name || "") || "A Nomad",
             listingTitle: listing.title || "your listing",
             application_id: applicationId,
             url: "/dashboard?mode=owner",

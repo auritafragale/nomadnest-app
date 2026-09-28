@@ -30,12 +30,12 @@ export interface Sit {
   } | null;
   owner_profile: {
     first_name: string | null;
-    last_name: string | null;
+    last_name?: string | null;
     avatar_url: string | null;
   } | null;
   sitter_profile: {
     first_name: string | null;
-    last_name: string | null;
+    last_name?: string | null;
     avatar_url: string | null;
   } | null;
   /**
@@ -74,7 +74,7 @@ export const useSits = () => {
 
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, avatar_url")
+        .select("id, first_name, avatar_url")
         .in("id", allUserIds);
 
       const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
@@ -171,7 +171,7 @@ export const useUpdateSitStatus = () => {
           // in-app row via the notifications trigger.
           const { data: me } = await supabase
             .from("profiles")
-            .select("first_name, last_name")
+            .select("first_name")
             .eq("id", user.id)
             .maybeSingle();
           const dates = sit.sit_dates as { start_date?: string; end_date?: string } | null;
@@ -181,7 +181,7 @@ export const useUpdateSitStatus = () => {
             data: {
               sit_id: sitId,
               listingTitle: (sit.listing as { title?: string } | null)?.title || "a sit",
-              cancelledByName: [me?.first_name, me?.last_name].filter(Boolean).join(" ") || "The other party",
+              cancelledByName: (me?.first_name || "") || "The other party",
               reason: reason?.trim() || "",
               startDate: dates?.start_date || "",
               endDate: dates?.end_date || "",

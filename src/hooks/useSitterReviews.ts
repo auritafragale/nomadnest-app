@@ -14,7 +14,7 @@ export interface SitterReview {
   rating_respect_home: number | null;
   reviewer: {
     first_name: string | null;
-    last_name: string | null;
+    last_name?: string | null;
     avatar_url: string | null;
   };
   sit: {
@@ -68,7 +68,7 @@ export const useSitterReviews = (sitterUserId: string | undefined) => {
       const [profilesResult, sitsResult] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, first_name, last_name, avatar_url")
+          .select("id, first_name, avatar_url")
           .in("id", reviewerIds),
         supabase
           .from("sits")
@@ -113,7 +113,7 @@ export const useSitterReviews = (sitterUserId: string | undefined) => {
             ? { first_name: "Former member", last_name: null, avatar_url: null }
             : {
                 first_name: reviewer?.first_name || null,
-                last_name: reviewer?.last_name || null,
+                last_name: null,
                 avatar_url: reviewer?.avatar_url || null,
               },
           sit: {

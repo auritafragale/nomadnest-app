@@ -11,13 +11,13 @@ import { supabase } from "@/integrations/supabase/client";
 export interface PublicProfile {
   id: string;
   first_name: string | null;
-  last_name: string | null;
+  last_name?: string | null;
   avatar_url: string | null;
   city: string | null;
   country: string | null;
   bio: string | null;
-  location: string | null;
-  full_name: string | null;
+  location?: string | null;
+  full_name?: string | null;
   id_verified: boolean | null;
   email_verified: boolean | null;
   phone_verified: boolean | null;
@@ -25,7 +25,7 @@ export interface PublicProfile {
 }
 
 export const PUBLIC_PROFILE_COLUMNS =
-  "id, first_name, last_name, avatar_url, city, country, id_verified, email_verified, phone_verified, founding_member";
+  "id, first_name, avatar_url, city, country, id_verified, email_verified, phone_verified, founding_member";
 
 // The view isn't in the generated Database types yet, so the result is
 // untyped (PostgrestBuilder<unknown>). Cast with `as unknown as PublicProfile[]`.

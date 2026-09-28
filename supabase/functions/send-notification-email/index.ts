@@ -81,8 +81,9 @@ const fmtDate = (iso: string | null | undefined) =>
       })
     : "";
 
-const fullName = (p: { first_name?: string | null; last_name?: string | null } | null, fallback: string) =>
-  [p?.first_name, p?.last_name].filter(Boolean).join(" ").trim() || fallback;
+// Between members: first name only.
+const firstName = (p: { first_name?: string | null } | null, fallback: string) =>
+  p?.first_name?.trim() || fallback;
 
 const trimText = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
@@ -99,8 +100,8 @@ type Verdict = { ok: true; data: Record<string, string> } | { ok: false; reason:
 const refuse = (reason: string): Verdict => ({ ok: false, reason });
 
 const callerName = async (sb: SupabaseClient, uid: string, fallback: string) => {
-  const { data } = await sb.from("profiles").select("first_name, last_name").eq("id", uid).maybeSingle();
-  return fullName(data, fallback);
+  const { data } = await sb.from("profiles").select("first_name").eq("id", uid).maybeSingle();
+  return firstName(data, fallback);
 };
 
 /** Sit with its listing title and dates. */

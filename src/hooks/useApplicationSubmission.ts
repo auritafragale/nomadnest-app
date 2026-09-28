@@ -133,7 +133,7 @@ export const useApplicationSubmission = () => {
 
       const { data: sitterProfile } = await supabase
         .from("profiles")
-        .select("first_name, last_name")
+        .select("first_name")
         .eq("id", user.id)
         .single();
 
@@ -149,9 +149,7 @@ export const useApplicationSubmission = () => {
             data: {
               listingTitle,
               sitterName:
-                [sitterProfile?.first_name, sitterProfile?.last_name]
-                  .filter(Boolean)
-                  .join(" ") || "A nomad",
+                (sitterProfile?.first_name || "") || "A nomad",
               startDate: format(parseISO(d.start_date), "MMM d, yyyy"),
               endDate: format(parseISO(d.end_date), "MMM d, yyyy"),
               application_id: applicationId,

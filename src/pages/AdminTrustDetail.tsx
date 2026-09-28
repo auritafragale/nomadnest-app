@@ -175,8 +175,8 @@ const AdminTrustDetail = () => {
     const notes = (data || []) as unknown as StrikeNote[];
     const adminIds = [...new Set(notes.map((n) => n.admin_user_id))];
     if (adminIds.length > 0) {
-      const { data: admins } = await supabase.from("profiles").select("id, full_name").in("id", adminIds);
-      const nameById = new Map((admins || []).map((a) => [a.id, a.full_name]));
+      const { data: admins } = await supabase.from("profiles").select("id, first_name").in("id", adminIds);
+      const nameById = new Map((admins || []).map((a) => [a.id, a.first_name]));
       for (const note of notes) {
         note.admin_name = nameById.get(note.admin_user_id) ?? null;
       }

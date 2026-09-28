@@ -24,6 +24,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyProfile } from "@/lib/myProfile";
 import Navbar from "@/components/layout/Navbar";
 import { useSitterApplications } from "@/hooks/useSitterApplications";
 import { SitterApplicationCard } from "@/components/applications/SitterApplicationCard";
@@ -135,11 +136,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchProfiles = async () => {
       if (!user) return;
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, avatar_url, country, city")
-        .eq("id", user.id)
-        .maybeSingle();
+      const { data: profileData } = await fetchMyProfile();
       if (profileData) setProfile(profileData);
 
       if (role === "sitter" || role === "both") {

@@ -111,7 +111,7 @@ interface SitterProfile {
 
 interface Profile {
   first_name: string | null;
-  last_name: string | null;
+  last_name?: string | null;
   avatar_url: string | null;
   city: string | null;
   country: string | null;
@@ -175,7 +175,7 @@ const SitterDetail = () => {
             .select(SITTER_PROFILE_COLUMNS as "*")
             .eq("user_id", userId)
             .maybeSingle(),
-          publicProfiles("first_name, last_name, avatar_url, city, country, founding_member, email_verified, phone_verified")
+          publicProfiles("first_name, avatar_url, city, country, founding_member, email_verified, phone_verified")
             .eq("id", userId)
             .maybeSingle(),
         ]);
@@ -265,16 +265,16 @@ const SitterDetail = () => {
 
       // Owner display name for notification
       const ownerName =
-        [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+        (profile?.first_name || "") ||
         "A pet parent";
       // Actually we need the OWNER (current user)'s name — fetch it
       const { data: ownerProfile } = await supabase
         .from("profiles")
-        .select("first_name, last_name")
+        .select("first_name")
         .eq("id", user.id)
         .maybeSingle();
       const ownerDisplayName =
-        [ownerProfile?.first_name, ownerProfile?.last_name].filter(Boolean).join(" ") ||
+        (ownerProfile?.first_name || "") ||
         "A pet parent";
 
       // The sitter's notification is created by a database trigger on

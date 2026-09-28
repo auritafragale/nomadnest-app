@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export interface ThreadSender {
   id: string;
   first_name: string | null;
-  last_name: string | null;
+  last_name?: string | null;
   avatar_url: string | null;
 }
 
@@ -23,7 +23,7 @@ const hydrate = async (rows: ThreadReply[]): Promise<ThreadReply[]> => {
   if (ids.length === 0) return rows;
   const { data } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, avatar_url")
+    .select("id, first_name, avatar_url")
     .in("id", ids);
   const map = new Map((data || []).map((p) => [p.id, p as ThreadSender]));
   return rows.map((r) => ({ ...r, sender: map.get(r.sender_user_id) || null }));

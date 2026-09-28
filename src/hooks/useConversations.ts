@@ -20,7 +20,7 @@ export interface Conversation {
   other_user: {
     id: string;
     first_name: string | null;
-    last_name: string | null;
+    last_name?: string | null;
     avatar_url: string | null;
   } | null;
   listing?: {
@@ -84,7 +84,7 @@ export const useConversations = () => {
           // A member who closed their account is NULL here: the chat stays,
           // read-only, with them shown as "Former member".
           const { data: profile } = otherUserId
-            ? ((await publicProfiles("id, first_name, last_name, avatar_url")
+            ? ((await publicProfiles("id, first_name, avatar_url")
                 .eq("id", otherUserId)
                 .maybeSingle()) as { data: PublicProfile | null })
             : {
@@ -305,7 +305,7 @@ export const useSendMessage = () => {
 
       const { data: senderProfile } = await supabase
         .from("profiles")
-        .select("first_name, last_name")
+        .select("first_name")
         .eq("id", user.id)
         .single();
 
@@ -319,7 +319,7 @@ export const useSendMessage = () => {
           type: "new_message",
           recipientUserId: recipientId,
           data: {
-            senderName: [senderProfile?.first_name, senderProfile?.last_name].filter(Boolean).join(" ") || "Someone",
+            senderName: (senderProfile?.first_name || "") || "Someone",
             messagePreview: messagePreviewText(body).substring(0, 150),
             conversationId,
             conversation_id: conversationId,

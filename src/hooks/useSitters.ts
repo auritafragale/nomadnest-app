@@ -37,7 +37,7 @@ export interface SitterWithProfile {
   longitude: number | null;
   profile: {
     first_name: string | null;
-    last_name: string | null;
+    last_name?: string | null;
     avatar_url: string | null;
     city: string | null;
     country: string | null;
@@ -85,7 +85,7 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         const userIds = sitterData.map((s) => s.user_id);
 
         const [profilesResult, ratingsResult, reviewRatesResult] = await Promise.all([
-          publicProfiles("id, first_name, last_name, avatar_url, city, country, founding_member")
+          publicProfiles("id, first_name, avatar_url, city, country, founding_member")
             .in("id", userIds) as unknown as Promise<{ data: PublicProfile[] | null; error: { message: string } | null }>,
           supabase
             .from("reviews")

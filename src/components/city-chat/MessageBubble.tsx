@@ -10,7 +10,7 @@ import type { MessageReactionSummary } from "@/hooks/useMessageReactions";
 export interface BubbleSender {
   id: string;
   first_name: string | null;
-  last_name: string | null;
+  last_name?: string | null;
   avatar_url: string | null;
 }
 

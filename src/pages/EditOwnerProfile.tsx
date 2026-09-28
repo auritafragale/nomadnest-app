@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyProfile } from "@/lib/myProfile";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import ImageUpload from "@/components/listing/ImageUpload";
@@ -80,11 +81,7 @@ const EditOwnerProfile = () => {
 
     try {
       // Fetch main profile
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, avatar_url, city, country")
-        .eq("id", user.id)
-        .maybeSingle();
+      const { data: profileData } = await fetchMyProfile();
 
       if (profileData) {
         setProfile({

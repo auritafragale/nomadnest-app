@@ -108,7 +108,7 @@ export const useProposeSitReschedule = () => {
 
       const { data: me } = await supabase
         .from("profiles")
-        .select("first_name, last_name")
+        .select("first_name")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -120,7 +120,7 @@ export const useProposeSitReschedule = () => {
         recipientUserId: sitterUserId,
         data: {
           listingTitle,
-          ownerName: [me?.first_name, me?.last_name].filter(Boolean).join(" ") || "Your Pet Parent",
+          ownerName: (me?.first_name || "") || "Your Pet Parent",
           proposedStartDate: format(parseISO(proposedStartDate), "d MMM yyyy"),
           proposedEndDate: format(parseISO(proposedEndDate), "d MMM yyyy"),
           // No dedicated reschedule page exists — the response UI lives
@@ -173,7 +173,7 @@ export const useRespondToSitReschedule = () => {
       const { data: me } = user
         ? await supabase
             .from("profiles")
-            .select("first_name, last_name")
+            .select("first_name")
             .eq("id", user.id)
             .maybeSingle()
         : { data: null };
@@ -183,7 +183,7 @@ export const useRespondToSitReschedule = () => {
         recipientUserId: ownerUserId,
         data: {
           listingTitle,
-          sitterName: [me?.first_name, me?.last_name].filter(Boolean).join(" ") || "Your Nomad",
+          sitterName: (me?.first_name || "") || "Your Nomad",
           // Same reasoning as the proposal notification above — no dedicated
           // page, so land in the owner's dashboard mode at minimum.
           url: "/dashboard?mode=owner",

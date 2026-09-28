@@ -41,7 +41,7 @@ export interface Application {
   sitter_user: {
     id: string;
     first_name: string | null;
-    last_name: string | null;
+    last_name?: string | null;
     avatar_url: string | null;
     city: string | null;
     country: string | null;
@@ -110,7 +110,7 @@ export const useOwnerApplications = (statusFilter?: ApplicationStatus | "all") =
             .eq("user_id", app.sitter_user_id)
             .maybeSingle();
 
-          const { data: sitterUser } = await publicProfiles("id, first_name, last_name, avatar_url, city, country")
+          const { data: sitterUser } = await publicProfiles("id, first_name, avatar_url, city, country")
             .eq("id", app.sitter_user_id)
             .maybeSingle() as { data: PublicProfile | null };
 

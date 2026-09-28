@@ -39,6 +39,7 @@ import {
 import { ShareDialog } from "@/components/share/ShareDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { publicProfiles } from "@/lib/publicProfile";
+import { fetchPublicMemberCards } from "@/lib/publicMemberCards";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
@@ -361,9 +362,12 @@ const ListingDetail = () => {
           // private, and loaded below for the owner via their RPC.
           supabase.from("pets").select(PET_PUBLIC_COLUMNS).eq("listing_id", id),
           supabase.from("sit_dates").select("*").eq("listing_id", id),
-          publicProfiles("first_name, last_name, avatar_url, city, country, founding_member, full_name, id_verified")
-            .eq("id", listingRow.owner_user_id)
-            .maybeSingle(),
+          // Signed-out visitors get the host's first name and photo only.
+          user
+            ? publicProfiles("first_name, avatar_url, city, country, founding_member, id_verified")
+                .eq("id", listingRow.owner_user_id)
+                .maybeSingle()
+            : fetchPublicMemberCards([listingRow.owner_user_id]).then((cards) => ({ data: cards[0] ?? null })),
         ]);
 
         setListing({
@@ -387,7 +391,7 @@ const ListingDetail = () => {
     };
 
     fetchListing();
-  }, [id, navigate, toast]);
+  }, [id, navigate, toast, user]);
 
   const allPhotos = listing
     ? [

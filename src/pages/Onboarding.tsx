@@ -11,6 +11,7 @@ import {
 import { AvatarUpload } from "@/components/onboarding/AvatarUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyProfile } from "@/lib/myProfile";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
@@ -63,11 +64,7 @@ const Onboarding = () => {
     const fetchProfile = async () => {
       if (!user) return;
       
-      const { data } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, country, city")
-        .eq("id", user.id)
-        .maybeSingle();
+      const { data } = await fetchMyProfile();
       
       if (data) {
         setFirstName(data.first_name || "");
