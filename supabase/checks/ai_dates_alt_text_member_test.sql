@@ -25,6 +25,9 @@ BEGIN
   END IF;
   SELECT id INTO v_stranger FROM public.profiles
   WHERE is_admin IS NOT TRUE AND id NOT IN (v_owner, v_sitter) ORDER BY created_at LIMIT 1;
+  IF v_stranger IS NULL THEN
+    RAISE EXCEPTION 'FAIL: needs a third, non-admin member';
+  END IF;
 
   -- Fixture: two photos with alt text, only one approved for the profile.
   UPDATE public.sit_stories
@@ -62,13 +65,8 @@ BEGIN
   END IF;
   RESET ROLE;
 
-  -- Share links: approved photos' alt text only.
-  v_json := public.get_shared_sit_story((
-    SELECT token FROM (
-      SELECT replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '') AS token
-    ) t
-  ));
-  -- (an unknown token returns nothing)
+  -- An unknown share token returns nothing.
+  v_json := public.get_shared_sit_story(repeat('0', 64));
   IF v_json IS NOT NULL THEN
     RAISE EXCEPTION 'FAIL: an unknown share token returned a story';
   END IF;
