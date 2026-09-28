@@ -207,7 +207,7 @@ const SitStory = () => {
               {story.photo_paths.some((p) => urls[p]) && (
                 <div className="grid grid-cols-2 gap-2">
                   {story.photo_paths.filter((p) => urls[p]).map((p) => (
-                    <img key={p} src={urls[p]} alt="" loading="lazy" className="aspect-square w-full rounded-2xl object-cover" />
+                    <img key={p} src={urls[p]} alt={story.photo_alt?.[p] ?? ""} loading="lazy" className="aspect-square w-full rounded-2xl object-cover" />
                   ))}
                 </div>
               )}

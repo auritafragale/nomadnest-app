@@ -147,7 +147,9 @@ export const ParentStoryView = ({
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
 
-  const cover = story.photo_paths.map((p) => urls[p]).find(Boolean);
+  const coverPath = story.photo_paths.find((p) => urls[p]);
+  const cover = coverPath ? urls[coverPath] : undefined;
+  const altOf = (p: string) => story.photo_alt?.[p] ?? "";
   const nights =
     story.start_date && story.end_date
       ? Math.round((new Date(`${story.end_date}T12:00:00`).getTime() - new Date(`${story.start_date}T12:00:00`).getTime()) / 86_400_000) + 1
@@ -209,7 +211,7 @@ export const ParentStoryView = ({
       </div>
 
       <div className="relative -mx-5 h-[240px] bg-[#D6B98F] sm:mx-0 sm:rounded-[24px] sm:overflow-hidden">
-        {cover && <img src={cover} alt="" className="h-full w-full object-cover" />}
+        {cover && <img src={cover} alt={coverPath ? altOf(coverPath) : ""} className="h-full w-full object-cover" />}
         <span className="absolute bottom-3.5 left-4 inline-flex h-7 items-center gap-1.5 rounded-full bg-white px-3 text-xs font-bold text-[#1E6B5F]">
           Sit Story
         </span>
@@ -342,7 +344,7 @@ export const ParentStoryView = ({
             const shown = shownPhotos.includes(p);
             return (
               <div key={p} className="relative h-[130px] overflow-hidden rounded-2xl bg-[#DCCDBB]">
-                {urls[p] && <img src={urls[p]} alt="" className="h-full w-full object-cover" />}
+                {urls[p] && <img src={urls[p]} alt={altOf(p)} className="h-full w-full object-cover" />}
                 {status === "approved" && (
                   <span
                     className={cn(

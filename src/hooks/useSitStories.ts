@@ -37,6 +37,8 @@ export interface SitStory {
   title: string | null;
   story: string | null;
   photo_paths: string[];
+  /** Alt text per photo path (written by the photo-alt-text AI when enabled). */
+  photo_alt?: Record<string, string> | null;
   city: string | null;
   owner_user_id: string | null;
   sitter_user_id: string | null;
@@ -165,6 +167,7 @@ export interface PortfolioStoryFull {
   story: string;
   city: string | null;
   photo_paths: string[];
+  photo_alt?: Record<string, string> | null;
   sitter_user_id: string;
   ready_at: string;
 }

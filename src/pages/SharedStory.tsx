@@ -12,7 +12,7 @@ interface SharedStoryData {
   month: string | null;
   owner_first_name: string;
   sitter_name: string | null;
-  photos: string[];
+  photos: { url: string; alt: string }[];
 }
 
 /**
@@ -73,7 +73,7 @@ const SharedStory = () => {
         {state === "ready" && data && (
           <article className="flex flex-col gap-5">
             {data.photos[0] && (
-              <img src={data.photos[0]} alt="" className="h-[260px] w-full rounded-[24px] object-cover" />
+              <img src={data.photos[0].url} alt={data.photos[0].alt} className="h-[260px] w-full rounded-[24px] object-cover" />
             )}
             <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#1E6B5F]">
               A NomadNest Sit Story{data.city ? ` · ${data.city}` : ""}
@@ -100,8 +100,8 @@ const SharedStory = () => {
             </div>
             {data.photos.length > 1 && (
               <div className="grid grid-cols-2 gap-2">
-                {data.photos.slice(1).map((u) => (
-                  <img key={u} src={u} alt="" className="aspect-square w-full rounded-2xl object-cover" />
+                {data.photos.slice(1).map((p) => (
+                  <img key={p.url} src={p.url} alt={p.alt} className="aspect-square w-full rounded-2xl object-cover" />
                 ))}
               </div>
             )}

@@ -94,12 +94,15 @@ serve(async (req) => {
       owner_first_name: string;
       sitter_name: string | null;
       photo_paths: string[];
+      photo_alt?: Record<string, string> | null;
     };
     const paths = (s.photo_paths ?? []).filter((p) => typeof p === "string" && PHOTO_RE.test(p));
-    let photos: string[] = [];
+    let photos: { url: string; alt: string }[] = [];
     if (paths.length > 0) {
       const { data: signed } = await admin.storage.from(BUCKET).createSignedUrls(paths, EXPIRES_IN_SECONDS);
-      photos = (signed ?? []).map((x) => x.signedUrl).filter((u): u is string => !!u);
+      photos = (signed ?? [])
+        .filter((x) => !!x.signedUrl && !!x.path)
+        .map((x) => ({ url: x.signedUrl as string, alt: (s.photo_alt ?? {})[x.path as string] ?? "" }));
     }
 
     log({ ok: true, photos: photos.length });

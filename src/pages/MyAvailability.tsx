@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader, RoleTheme, SectionCard, SerifTitle, nnButton, shortRange } from "@/components/nn/ui";
-import { useMyAvailability, useSaveAvailability, type DateRange } from "@/hooks/useMyAvailability";
+import {
+  useAvailabilityAiAvailable,
+  useMyAvailability,
+  useSaveAvailability,
+  useSuggestDates,
+  type DateRange,
+  type DateSuggestion,
+} from "@/hooks/useMyAvailability";
 import { useSits } from "@/hooks/useSits";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -52,6 +59,9 @@ const MyAvailability = () => {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [month, setMonth] = useState(0);
+  const aiAvailable = useAvailabilityAiAvailable();
+  const suggest = useSuggestDates();
+  const [suggestions, setSuggestions] = useState<DateSuggestion[] | null>(null);
 
   useEffect(() => {
     if (data && ranges === null) setRanges(data.ranges);
@@ -195,6 +205,60 @@ const MyAvailability = () => {
                 {hint}
               </p>
             </SectionCard>
+
+            {aiAvailable && (
+              <SectionCard label="Suggest my dates" className="flex flex-col gap-2 p-[18px]">
+                <button
+                  type="button"
+                  onClick={() =>
+                    suggest.mutate(undefined, {
+                      onSuccess: (list) => setSuggestions(list),
+                      onError: (err) => toast.error(err.message),
+                    })
+                  }
+                  disabled={suggest.isPending}
+                  className={nnButton("secondary", "w-full")}
+                >
+                  {suggest.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Sparkles className="h-4 w-4" aria-hidden="true" />}
+                  Suggest my dates
+                </button>
+                <p className="text-xs text-[#656B74]">
+                  Uses your saved dates, your booked sits' dates, your home city and open sits' dates and cities. Nothing is
+                  added until you tap Add.
+                </p>
+                {suggestions && suggestions.length === 0 && (
+                  <p className="text-sm text-[#656B74]">No suggestions right now. Check back as new sits open.</p>
+                )}
+                {suggestions?.map((s) => {
+                  const added = list.some((r) => r.start <= s.start && r.end >= s.end);
+                  return (
+                    <div key={s.start} className="flex items-center gap-3 border-t border-[var(--nn-line)] py-2">
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="text-[15px] font-semibold">{rangeText(s)}</span>
+                        <span className="text-[13px] text-[#656B74]">{s.why}</span>
+                      </span>
+                      <button
+                        type="button"
+                        disabled={added}
+                        onClick={() => {
+                          setRanges(merge([...list, { start: s.start, end: s.end }]));
+                          setSaved(false);
+                        }}
+                        aria-label={`Add ${rangeText(s)}`}
+                        className={nnButton(added ? "ghost" : "secondary", "px-4")}
+                      >
+                        {added ? "Added" : (
+                          <>
+                            <Plus className="h-4 w-4" aria-hidden="true" />
+                            Add
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </SectionCard>
+            )}
 
             <SectionCard label="Your dates" className="flex flex-col gap-1 p-[18px]">
               <SerifTitle className="mb-1">Your dates</SerifTitle>

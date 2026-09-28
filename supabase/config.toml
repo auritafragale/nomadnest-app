@@ -107,3 +107,9 @@ verify_jwt = false
 
 [functions.shared-story]
 verify_jwt = false
+
+[functions.photo-alt-text]
+verify_jwt = false
+
+[functions.suggest-availability]
+verify_jwt = false

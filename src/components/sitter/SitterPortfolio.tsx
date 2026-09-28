@@ -87,7 +87,7 @@ const StoryDialog = ({ storyId, onClose }: { storyId: string | null; onClose: ()
             {photos.length > 0 && (
               <div className={`grid gap-2 ${photos.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
                 {photos.map((p) => (
-                  <img key={p} src={urls[p]} alt="" className="aspect-square w-full rounded-2xl object-cover" />
+                  <img key={p} src={urls[p]} alt={story.photo_alt?.[p] ?? ""} className="aspect-square w-full rounded-2xl object-cover" />
                 ))}
               </div>
             )}

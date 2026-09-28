@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 export interface DateRange {
   start: string;
@@ -59,4 +60,36 @@ export const useSitterFreeDates = (sitterId: string | undefined) =>
       return (data ?? []) as unknown as (DateRange & { days: number })[];
     },
     enabled: !!sitterId,
+  });
+
+/** "Suggest my dates" is behind app_settings.availability_ai_enabled; admins can use it while it's off. */
+export const useAvailabilityAiAvailable = () => {
+  const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
+  const { data: flagEnabled = false } = useQuery({
+    queryKey: ["app-setting", "availability_ai_enabled"],
+    queryFn: async () => {
+      const { data } = await supabase.from("app_settings").select("value").eq("key", "availability_ai_enabled").maybeSingle();
+      return data?.value === true;
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+  return !!user && (flagEnabled || isAdmin === true);
+};
+
+export interface DateSuggestion extends DateRange {
+  why: string;
+}
+
+export const useSuggestDates = () =>
+  useMutation({
+    mutationFn: async (): Promise<DateSuggestion[]> => {
+      const { data, error } = await supabase.functions.invoke("suggest-availability", { body: {} });
+      if (error) {
+        const body = await (error as { context?: Response }).context?.json?.().catch(() => null);
+        throw new Error(body?.error || "Suggestions aren't available right now.");
+      }
+      return ((data as { suggestions?: DateSuggestion[] })?.suggestions ?? []) as DateSuggestion[];
+    },
   });
