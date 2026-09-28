@@ -69,24 +69,24 @@ export const useSubmitReport = () => {
         console.error("Evidence upload failed", e);
       }
 
+      // Members can't update reports: a checked function records the files
+      // (own folder, own report, only while it's pending).
       if (evidencePaths.length > 0) {
-        await supabase
-          .from("reports")
-          .update({ evidence_paths: evidencePaths })
-          .eq("id", inserted.id);
+        const { error: attachError } = await supabase.rpc("attach_report_evidence", {
+          p_report_id: inserted.id,
+          p_paths: evidencePaths,
+        });
+        if (attachError) {
+          console.error("Could not record the proof files", attachError.code);
+          evidencePaths = [];
+        }
       }
 
       // Give the founders an email heads-up so reports are never missed
       try {
         await supabase.functions.invoke("notify-new-report", {
-          body: {
-            targetType,
-            targetId,
-            reason,
-            details: details || null,
-            evidencePaths,
-            reportId: inserted.id,
-          },
+          // The function reads everything else from the saved report.
+          body: { reportId: inserted.id },
         });
       } catch (e) {
         console.error("Could not alert the admin team about this report", e);

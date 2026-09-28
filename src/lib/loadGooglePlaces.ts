@@ -24,6 +24,13 @@ export const loadGooglePlaces = (apiKey: string): Promise<void> => {
   if ((window as any).google?.maps?.places) return Promise.resolve();
   if (loadPromise) return loadPromise;
 
+  // Google calls this when it refuses the key (API not enabled for the key,
+  // or this website isn't in its referrer list). Nothing else reports it.
+  if (!(window as any).gm_authFailure) {
+    (window as any).gm_authFailure = () =>
+      console.warn("[places] Google Maps refused the key. Check the key's API restrictions (Maps JavaScript API, Places API (New), Geocoding API) and website referrers.");
+  }
+
   loadPromise = (async () => {
     const existingScript = document.querySelector<HTMLScriptElement>(
       'script[src*="maps.googleapis.com/maps/api/js"]',

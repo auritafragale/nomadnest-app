@@ -9,14 +9,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/** Only the report id is taken from the request; everything else is read
+ * from the database, and only for the caller's own, recent report. */
 interface Payload {
-  targetType: string;
-  targetId: string;
-  reason: string;
-  details?: string;
-  evidencePaths?: string[];
   reportId?: string;
 }
+
+interface ReportRow {
+  id: string;
+  reporter_user_id: string | null;
+  target_type: string;
+  target_id: string;
+  reason: string;
+  details: string | null;
+  evidence_paths: string[] | null;
+  created_at: string;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// The app calls this right after submitting; older reports are not re-sent.
+const MAX_REPORT_AGE_MS = 60 * 60 * 1000;
 
 /** Escape untrusted report text before interpolating into HTML. */
 const AMP = String.fromCharCode(38) + "amp;"; // &
@@ -33,22 +45,21 @@ const esc = (s: string | null | undefined): string =>
     .replace(/'/g, APOS);
 
 const buildHtml = (
-  p: Payload,
+  p: { targetType: string; reason: string; details: string | null },
   reporter: string,
   reportedName: string,
   reportedEmail: string,
   reportedProfileUrl: string,
-  evidenceUrls: string[],
+  evidenceCount: number,
 ) => {
   const reportedLine = reportedName
     ? `<p><strong>Reported member:</strong> <a href="${esc(reportedProfileUrl)}" style="color:#E8735A;">${esc(reportedName)}</a>${reportedEmail ? ` (${esc(reportedEmail)})` : ""}</p>`
     : `<p><strong>What was reported:</strong> ${esc(p.targetType)}</p>`;
 
+  // No file links in email: admins view proof in the admin panel.
   const evidenceLine =
-    evidenceUrls.length > 0
-      ? `<p><strong>Proof attached:</strong><br/>${evidenceUrls
-          .map((u) => `<a href="${esc(u)}" style="color:#E8735A;">View file</a>`)
-          .join("<br/>")}</p>`
+    evidenceCount > 0
+      ? `<p><strong>Proof attached:</strong> ${evidenceCount} file${evidenceCount === 1 ? "" : "s"}. View ${evidenceCount === 1 ? "it" : "them"} in Admin → Reports.</p>`
       : "";
 
   return `
@@ -90,7 +101,38 @@ serve(async (req) => {
       });
     }
 
-    const payload = (await req.json()) as Payload;
+    const body = (await req.json().catch(() => ({}))) as Payload;
+    if (typeof body.reportId !== "string" || !UUID_RE.test(body.reportId)) {
+      return new Response(JSON.stringify({ error: "Invalid report." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: report } = await supabase
+      .from("reports")
+      .select("id, reporter_user_id, target_type, target_id, reason, details, evidence_paths, created_at")
+      .eq("id", body.reportId)
+      .maybeSingle();
+    const row = report as ReportRow | null;
+    if (
+      !row ||
+      row.reporter_user_id !== caller.user.id ||
+      Date.now() - new Date(row.created_at).getTime() > MAX_REPORT_AGE_MS
+    ) {
+      console.error(JSON.stringify({ fn: "notify-new-report", rejected: "not_own_recent_report", user: caller.user.id }));
+      return new Response(JSON.stringify({ error: "Report not found." }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const payload = {
+      targetType: row.target_type,
+      targetId: row.target_id,
+      reason: row.reason,
+      details: row.details,
+    };
+    const evidenceCount = (row.evidence_paths ?? []).length;
 
     const { data: reporterProfile } = await supabase
       .from("profiles")
@@ -148,14 +190,6 @@ serve(async (req) => {
       }
     }
 
-    // Create signed URLs for any evidence files (5-minute expiry)
-    const evidenceUrls: string[] = [];
-    for (const path of payload.evidencePaths ?? []) {
-      const { data } = await supabase.storage
-        .from("report-evidence")
-        .createSignedUrl(path, 300);
-      if (data?.signedUrl) evidenceUrls.push(data.signedUrl);
-    }
 
     const { data: admins } = await supabase
       .from("profiles")
@@ -180,7 +214,7 @@ serve(async (req) => {
         from: "NomadNest <noreply@nomadnest.global>",
         to: recipients,
         subject: `New safety report: ${payload.reason}`,
-        html: buildHtml(payload, reporter, reportedName, reportedEmail, reportedProfileUrl, evidenceUrls),
+        html: buildHtml(payload, reporter, reportedName, reportedEmail, reportedProfileUrl, evidenceCount),
       }),
     });
 

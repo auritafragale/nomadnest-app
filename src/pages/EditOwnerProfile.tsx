@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import ImageUpload from "@/components/listing/ImageUpload";
+import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 import { OWNER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 
 interface Profile {
@@ -292,30 +293,32 @@ const EditOwnerProfile = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="city">City</Label>
-                    <Input
+                    <PlacesAutocompleteField
                       id="city"
                       value={profile.city}
-                      onChange={(e) =>
+                      types={["(cities)"]}
+                      placeholder="Start typing your city…"
+                      onChange={(value) => setProfile((prev) => ({ ...prev, city: value }))}
+                      onSelect={(place) =>
                         setProfile((prev) => ({
                           ...prev,
-                          city: e.target.value,
+                          city: place.city || place.description,
+                          country: place.country || prev.country,
                         }))
                       }
-                      placeholder="Your city"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="country">Country</Label>
-                    <Input
+                    <PlacesAutocompleteField
                       id="country"
                       value={profile.country}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          country: e.target.value,
-                        }))
+                      types={["country"]}
+                      placeholder="Start typing your country…"
+                      onChange={(value) => setProfile((prev) => ({ ...prev, country: value }))}
+                      onSelect={(place) =>
+                        setProfile((prev) => ({ ...prev, country: place.country || place.description }))
                       }
-                      placeholder="Your country"
                     />
                   </div>
                 </div>

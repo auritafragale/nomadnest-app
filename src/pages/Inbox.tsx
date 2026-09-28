@@ -3,7 +3,6 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import Navbar from "@/components/layout/Navbar";
-import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import { ConversationList } from "@/components/inbox/ConversationList";
 import { MessageThread } from "@/components/inbox/MessageThread";
 import {
@@ -18,6 +17,8 @@ import CityChatsSection from "@/components/city-chat/CityChatsSection";
 import { MessageCircle, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useVisualViewport } from "@/hooks/useVisualViewport";
 
 
 const Inbox = () => {
@@ -53,6 +54,19 @@ const Inbox = () => {
   const markAsRead = useMarkAsRead();
   const { unreadCount } = useUnreadMessages();
   const lastMarkedConversationRef = useRef<string | null>(null);
+  const isMobile = useIsMobile();
+  const mobileThreadOpen = isMobile && activeTab === "messages" && !!selectedId;
+  const viewport = useVisualViewport(mobileThreadOpen);
+
+  // The full-screen thread owns the screen: no page scrolling behind it.
+  useEffect(() => {
+    if (!mobileThreadOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [mobileThreadOpen]);
 
   const clearNotificationTray = () => {
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -145,81 +159,99 @@ const Inbox = () => {
   };
 
 
+  const tabs = canUseCityChats && (
+    <div className="flex bg-muted rounded-full p-1 gap-1 w-full">
+      {([
+        { id: "messages", label: "Messages", icon: MessageCircle },
+        { id: "city-chats", label: "City Chats", icon: MapPin },
+      ] as const).map(({ id, label, icon: Icon }) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => setActiveTab(id)}
+          aria-pressed={activeTab === id}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-1.5 rounded-full text-sm font-medium transition-colors",
+            activeTab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+          )}
+        >
+          <Icon className="w-4 h-4" />
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
+  const thread = (
+    <MessageThread
+      conversation={selectedConversation}
+      messages={messages}
+      isLoading={messagesLoading}
+      onSend={handleSend}
+      isSending={sendMessage.isPending}
+      onBack={() => handleSelect(null)}
+      otherUserRole={getOtherUserRole()}
+    />
+  );
+
+  // Mobile, conversation open: the thread takes the whole visible screen
+  // (above the top and bottom bars), sized to the visual viewport so the
+  // message box sits just above the keyboard.
+  if (mobileThreadOpen) {
+    return (
+      <div
+        className="fixed inset-x-0 top-0 z-[60] flex flex-col bg-background"
+        style={
+          viewport
+            ? { height: viewport.height, transform: `translateY(${viewport.offsetTop}px)` }
+            : { height: "100dvh" }
+        }
+      >
+        {thread}
+      </div>
+    );
+  }
+
   return (
     <div className="h-[100svh] bg-background flex flex-col overflow-hidden">
       <Navbar />
 
-      <main className="flex-1 min-h-0 pt-20 pb-16 md:pb-0">
-        <div className="container max-w-6xl mx-auto px-4 pt-4 pb-2 md:py-6 h-full flex flex-col">
-          <div className="shrink-0">
-            <Breadcrumbs />
-            <h1 className="text-2xl font-bold text-foreground mb-3">Chats</h1>
-
-            {canUseCityChats && (
-              <div className="flex bg-muted rounded-full p-1 gap-1 w-full max-w-md mb-3">
-                {([
-                  { id: "messages", label: "Messages", icon: MessageCircle },
-                  { id: "city-chats", label: "City Chats", icon: MapPin },
-                ] as const).map(({ id, label, icon: Icon }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setActiveTab(id)}
-                    aria-pressed={activeTab === id}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-1.5 rounded-full text-sm font-medium transition-colors",
-                      activeTab === id
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
+      <main className="flex-1 min-h-0 pt-16 pb-16 md:pb-0">
+        <div className="mx-auto h-full max-w-7xl md:px-4 md:py-4">
           {activeTab === "city-chats" ? (
-            <div className="flex-1 min-h-0 overflow-y-auto pb-6">
+            <div className="h-full overflow-y-auto px-4 pt-4 pb-6 md:px-0">
+              <div className="mb-4 max-w-md space-y-3">
+                <h1 className="text-2xl font-bold text-foreground">Messages</h1>
+                {tabs}
+              </div>
               <CityChatsSection className="mt-0 space-y-8" />
             </div>
           ) : (
-          <div className="flex flex-1 min-h-0 border border-border rounded-lg overflow-hidden bg-card">
-            {/* Conversation List */}
-            <div
-              className={cn(
-                "w-full md:w-80 lg:w-96 border-r border-border flex-shrink-0",
-                selectedId ? "hidden md:block" : "block"
-              )}
-            >
-              <ConversationList
-                conversations={conversations}
-                selectedId={selectedId}
-                onSelect={handleSelect}
-                isLoading={conversationsLoading}
-              />
-            </div>
+            <div className="flex h-full min-h-0 overflow-hidden bg-card md:rounded-2xl md:border md:border-border">
+              {/* Inbox list */}
+              <div
+                className={cn(
+                  "flex w-full flex-col border-border md:w-80 md:border-r lg:w-96 flex-shrink-0",
+                  selectedId ? "hidden md:flex" : "flex"
+                )}
+              >
+                <div className="shrink-0 space-y-3 px-4 pt-4 pb-3">
+                  <h1 className="text-2xl font-bold text-foreground">Messages</h1>
+                  {tabs}
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  <ConversationList
+                    conversations={conversations}
+                    selectedId={selectedId}
+                    onSelect={handleSelect}
+                    isLoading={conversationsLoading}
+                  />
+                </div>
+              </div>
 
-            {/* Message Thread */}
-            <div
-              className={cn(
-                "flex-1 min-w-0",
-                selectedId ? "block" : "hidden md:block"
-              )}
-            >
-              <MessageThread
-                conversation={selectedConversation}
-                messages={messages}
-                isLoading={messagesLoading}
-                onSend={handleSend}
-                isSending={sendMessage.isPending}
-                onBack={() => handleSelect(null)}
-                otherUserRole={getOtherUserRole()}
-              />
+              {/* Conversation (desktop) */}
+              <div className="hidden min-w-0 flex-1 md:block">{thread}</div>
             </div>
-          </div>
           )}
         </div>
       </main>

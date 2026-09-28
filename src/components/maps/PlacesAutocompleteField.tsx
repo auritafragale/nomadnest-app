@@ -4,16 +4,17 @@ import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { loadGooglePlaces } from "@/lib/loadGooglePlaces";
+import {
+  fetchPlaceDetails,
+  fetchPlacePredictions,
+  modeFromTypes,
+  newPlacesSessionToken,
+  reportPlacesProblem,
+  type PlacePrediction,
+  type PlaceSelection,
+} from "@/lib/placesAutocomplete";
 
-
-export interface PlaceSelection {
-  description: string;
-  city: string;
-  country: string;
-  formattedAddress: string;
-  latitude?: number;
-  longitude?: number;
-}
+export type { PlaceSelection };
 
 interface PlacesAutocompleteFieldProps {
   id?: string;
@@ -21,6 +22,7 @@ interface PlacesAutocompleteFieldProps {
   onChange: (value: string) => void;
   onSelect: (place: PlaceSelection) => void;
   onBlur?: () => void;
+  /** ["(cities)"], ["country"] or ["address"]. */
   types: string[];
   placeholder?: string;
   showIcon?: boolean;
@@ -28,9 +30,8 @@ interface PlacesAutocompleteFieldProps {
 }
 
 /**
- * Shadcn-styled Places autocomplete. Uses legacy AutocompleteService for
- * predictions and renders a custom dropdown so the suggestions match the
- * rest of the design system. Manual typing always works.
+ * The app's location field: Google Places suggestions in a shadcn-styled
+ * dropdown (shared core in lib/placesAutocomplete). Manual typing always works.
  */
 const PlacesAutocompleteField = ({
   id,
@@ -43,21 +44,24 @@ const PlacesAutocompleteField = ({
   showIcon = true,
   className,
 }: PlacesAutocompleteFieldProps) => {
-  const [predictions, setPredictions] = useState<any[]>([]);
+  const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const [ready, setReady] = useState(false);
-  const serviceRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sessionTokenRef = useRef<any>(null);
-  const placesServiceRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<number | null>(null);
   const requestIdRef = useRef(0);
   const pendingInputRef = useRef<string | null>(null);
+  const mode = modeFromTypes(types);
 
-  // The Places library is not guaranteed to be on the page (create listing and
-  // onboarding have no map), so load it here before initialising services.
-  const { data: mapsConfig } = useGoogleMapsKey();
+  // The Places library isn't on every page (no map on most forms), so load it here.
+  const { data: mapsConfig, error: keyError } = useGoogleMapsKey();
+
+  useEffect(() => {
+    if (keyError) reportPlacesProblem("loading the Maps key", keyError);
+  }, [keyError]);
 
   useEffect(() => {
     if (!mapsConfig?.key) return;
@@ -65,105 +69,38 @@ const PlacesAutocompleteField = ({
     loadGooglePlaces(mapsConfig.key)
       .then(() => {
         if (cancelled) return;
-        const g = (window as any).google?.maps?.places;
-        if (!g) return;
-        if (g.AutocompleteSessionToken) sessionTokenRef.current = new g.AutocompleteSessionToken();
-        if (!g.AutocompleteSuggestion?.fetchAutocompleteSuggestions) {
-          serviceRef.current = new g.AutocompleteService();
-          placesServiceRef.current = new g.PlacesService(document.createElement("div"));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (!(window as any).google?.maps?.places) {
+          reportPlacesProblem("loading the Places library", "places library missing");
+          return;
         }
+        sessionTokenRef.current = newPlacesSessionToken();
         setReady(true);
       })
-      .catch(() => undefined);
+      .catch((err) => reportPlacesProblem("loading Google Maps", err));
     return () => {
       cancelled = true;
     };
   }, [mapsConfig?.key]);
 
-  // Primary types for the new Places API. Mixing incompatible types makes the
-  // request fail, so each field maps to one coherent set (address fields send
-  // none at all and accept any result).
-  const includedPrimaryTypes = types.includes("country")
-    ? ["country"]
-    : types.includes("(cities)") || types.includes("(regions)")
-      ? ["locality", "administrative_area_level_3"]
-      : undefined;
-
-  const fetchPredictions = useCallback(
+  const runPredictions = useCallback(
     async (input: string) => {
-      const g = (window as any).google?.maps?.places;
-      if (!g || input.trim().length < 3) {
-        setPredictions([]);
-        return;
-      }
       const requestId = ++requestIdRef.current;
-
-      const legacy = () => {
-        if (!serviceRef.current) {
-          if (g.AutocompleteService) {
-            serviceRef.current = new g.AutocompleteService();
-            placesServiceRef.current = new g.PlacesService(document.createElement("div"));
-          } else {
-            setPredictions([]);
-            return;
-          }
-        }
-        serviceRef.current.getPlacePredictions(
-          { input, types, sessionToken: sessionTokenRef.current },
-          (results: any[] | null) => {
-            if (requestId !== requestIdRef.current) return;
-            setPredictions((results || []).slice(0, 6));
-            setHighlight(0);
-          },
-        );
-      };
-
-      if (g.AutocompleteSuggestion?.fetchAutocompleteSuggestions) {
-        try {
-          const { suggestions } = await g.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-            input,
-            ...(includedPrimaryTypes ? { includedPrimaryTypes } : {}),
-            sessionToken: sessionTokenRef.current ?? undefined,
-          });
-          if (requestId !== requestIdRef.current) return;
-          const mapped = (suggestions || [])
-            .map((s: any) => s.placePrediction)
-            .filter(Boolean)
-            .slice(0, 6)
-            .map((p: any) => ({
-              place_id: p.placeId,
-              description: p.text?.toString?.() || p.text?.text || "",
-              _prediction: p,
-            }))
-            .filter((p: any) => p.description);
-          // If the new API is not enabled for this key it can return nothing;
-          // fall back to the legacy service so members still get suggestions.
-          if (mapped.length === 0) {
-            legacy();
-            return;
-          }
-          setPredictions(mapped);
-          setHighlight(0);
-        } catch {
-          if (requestId === requestIdRef.current) legacy();
-        }
-        return;
-      }
-
-      legacy();
-
+      const results = await fetchPlacePredictions(input, mode, sessionTokenRef.current);
+      if (requestId !== requestIdRef.current) return;
+      setPredictions(results);
+      setHighlight(0);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [types.join(",")]
+    [mode],
   );
 
   // Run any input typed before Google finished loading.
   useEffect(() => {
     if (ready && pendingInputRef.current) {
-      fetchPredictions(pendingInputRef.current);
+      runPredictions(pendingInputRef.current);
       pendingInputRef.current = null;
     }
-  }, [ready, fetchPredictions]);
+  }, [ready, runPredictions]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
@@ -171,6 +108,7 @@ const PlacesAutocompleteField = ({
     setOpen(true);
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     if (v.trim().length < 3) {
+      requestIdRef.current++;
       setPredictions([]);
       return;
     }
@@ -178,81 +116,18 @@ const PlacesAutocompleteField = ({
       pendingInputRef.current = v;
       return;
     }
-    debounceRef.current = window.setTimeout(() => fetchPredictions(v), 250);
+    debounceRef.current = window.setTimeout(() => runPredictions(v), 250);
   };
 
-
-  const parseComponents = (components: any[] | undefined) => {
-    let city = "";
-    let country = "";
-    components?.forEach((c: any) => {
-      const typesList: string[] = c.types || [];
-      const name = c.long_name ?? c.longText ?? "";
-      if (typesList.includes("locality")) city = city || name;
-      if (typesList.includes("postal_town")) city = city || name;
-      if (typesList.includes("administrative_area_level_1")) city = city || name;
-      if (typesList.includes("country")) country = country || name;
-    });
-    return { city, country };
-  };
-
-  const handleSelect = async (prediction: any) => {
+  const handleSelect = async (prediction: PlacePrediction) => {
     setOpen(false);
     setPredictions([]);
-    const g = (window as any).google?.maps?.places;
-
-    // New Places API path
-    if (prediction?._prediction?.toPlace) {
-      try {
-        const place = prediction._prediction.toPlace();
-        await place.fetchFields({
-          fields: ["addressComponents", "formattedAddress", "location", "displayName"],
-        });
-        if (g?.AutocompleteSessionToken) sessionTokenRef.current = new g.AutocompleteSessionToken();
-        const { city, country } = parseComponents(place.addressComponents);
-        onSelect({
-          description: prediction.description,
-          city,
-          country,
-          formattedAddress: place.formattedAddress || prediction.description,
-          latitude: place.location?.lat?.(),
-          longitude: place.location?.lng?.(),
-        });
-      } catch {
-        onChange(prediction.description);
-      }
-      return;
-    }
-
-    if (!placesServiceRef.current) {
-      onChange(prediction.description);
-      return;
-    }
-    placesServiceRef.current.getDetails(
-      {
-        placeId: prediction.place_id,
-        fields: ["address_components", "formatted_address", "geometry", "name"],
-        sessionToken: sessionTokenRef.current,
-      },
-      (place: any, status: string) => {
-        if (g) sessionTokenRef.current = new g.AutocompleteSessionToken();
-        if (status !== "OK" || !place) {
-          onChange(prediction.description);
-          return;
-        }
-        const { city, country } = parseComponents(place.address_components);
-        onSelect({
-          description: prediction.description,
-          city,
-          country,
-          formattedAddress: place.formatted_address || prediction.description,
-          latitude: place.geometry?.location?.lat?.(),
-          longitude: place.geometry?.location?.lng?.(),
-        });
-      }
-    );
+    const place = await fetchPlaceDetails(prediction, sessionTokenRef.current);
+    // A session ends with the details request.
+    sessionTokenRef.current = newPlacesSessionToken();
+    if (place) onSelect(place);
+    else onChange(prediction.description);
   };
-
 
   // Close on outside click
   useEffect(() => {
@@ -296,13 +171,21 @@ const PlacesAutocompleteField = ({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         autoComplete="off"
+        role="combobox"
+        aria-expanded={open && predictions.length > 0}
+        aria-autocomplete="list"
         className={cn(showIcon && "pl-10", className)}
       />
       {open && predictions.length > 0 && (
-        <ul className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover text-popover-foreground shadow-md overflow-hidden">
+        <ul
+          role="listbox"
+          className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover text-popover-foreground shadow-md overflow-hidden"
+        >
           {predictions.map((p, i) => (
             <li
               key={p.place_id}
+              role="option"
+              aria-selected={i === highlight}
               onMouseDown={(e) => {
                 e.preventDefault();
                 handleSelect(p);

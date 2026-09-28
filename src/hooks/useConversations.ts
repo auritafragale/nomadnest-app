@@ -294,11 +294,7 @@ export const useSendMessage = () => {
 
       if (error) throw error;
 
-      // Update conversation's updated_at
-      await supabase
-        .from("conversations")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", conversationId);
+      // conversations.updated_at is bumped by a database trigger on each message.
 
       // Get conversation to find recipient and sender name
       const { data: conversation } = await supabase

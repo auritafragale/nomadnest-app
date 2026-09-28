@@ -47,7 +47,16 @@ serve(async (req) => {
       console.error(JSON.stringify({ fn: "welcome-guide-photo-urls", rejected: "rpc_failed", detail: redact(error.message) }));
       return json({ error: "Could not load photos." }, 401);
     }
-    const photos = ((guide as { photos?: { id: string; storage_path: string }[] } | null)?.photos) ?? [];
+    const allPhotos = ((guide as { photos?: { id: string; storage_path: string }[] } | null)?.photos) ?? [];
+    // Defence in depth: only sign files inside this listing's folder,
+    // {owner_id}/{listing_id}/{file} (the database enforces this on insert).
+    const photos = allPhotos.filter((p) => {
+      const parts = typeof p.storage_path === "string" ? p.storage_path.split("/") : [];
+      return parts.length === 3 && UUID_RE.test(parts[0]) && parts[1] === listingId && /^[A-Za-z0-9_-]+.(jpg|jpeg|png|webp)$/.test(parts[2]);
+    });
+    if (photos.length < allPhotos.length) {
+      console.error(JSON.stringify({ fn: "welcome-guide-photo-urls", rejected: "path_outside_folder", listing: listingId, count: allPhotos.length - photos.length }));
+    }
     if (photos.length === 0) return json({ urls: {} });
 
     const service = createClient(

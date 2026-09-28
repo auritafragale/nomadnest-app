@@ -559,14 +559,14 @@ const EditSitterProfile = () => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="country">Country</Label>
-                      <Input
+                      <PlacesAutocompleteField
                         id="country"
                         value={profile.country}
-                        onChange={(e) =>
-                          setProfile((prev) => ({
-                            ...prev,
-                            country: e.target.value,
-                          }))
+                        types={["country"]}
+                        placeholder="Start typing your country…"
+                        onChange={(value) => setProfile((prev) => ({ ...prev, country: value }))}
+                        onSelect={(place) =>
+                          setProfile((prev) => ({ ...prev, country: place.country || place.description }))
                         }
                       />
                     </div>

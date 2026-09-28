@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { loadGooglePlaces } from "@/lib/loadGooglePlaces";
+import {
+  fetchPlacePredictions,
+  newPlacesSessionToken,
+  reportPlacesProblem,
+  type PlacePrediction,
+} from "@/lib/placesAutocomplete";
 
-export interface CityPrediction {
-  place_id: string;
-  description: string;
-  mainText: string;
-}
+export type CityPrediction = Pick<PlacePrediction, "place_id" | "description" | "mainText">;
 
 /**
- * Lightweight Google Places city suggestions for search bars.
- * Uses the new Places API (AutocompleteSuggestion) with a fallback to the
- * legacy AutocompleteService for older keys. Debounced, starts at 3 chars.
+ * City and country suggestions for search bars, from the same Places core as
+ * every location field (lib/placesAutocomplete). Debounced, starts at 3 chars.
  */
 export const useCityPredictions = (input: string, minChars = 3) => {
   const [predictions, setPredictions] = useState<CityPrediction[]>([]);
   const [ready, setReady] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tokenRef = useRef<any>(null);
   const debounceRef = useRef<number | null>(null);
   const requestIdRef = useRef(0);
@@ -28,12 +30,10 @@ export const useCityPredictions = (input: string, minChars = 3) => {
     loadGooglePlaces(mapsConfig.key)
       .then(() => {
         if (cancelled) return;
-        const g = (window as any).google?.maps?.places;
-        if (!g) return;
-        if (g.AutocompleteSessionToken) tokenRef.current = new g.AutocompleteSessionToken();
+        tokenRef.current = newPlacesSessionToken();
         setReady(true);
       })
-      .catch(() => undefined);
+      .catch((err) => reportPlacesProblem("loading Google Maps", err));
     return () => {
       cancelled = true;
     };
@@ -43,65 +43,18 @@ export const useCityPredictions = (input: string, minChars = 3) => {
     const query = input.trim();
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     if (query.length < minChars || !ready) {
-      if (query.length < minChars) setPredictions([]);
+      if (query.length < minChars) {
+        requestIdRef.current++;
+        setPredictions([]);
+      }
       return;
     }
 
     debounceRef.current = window.setTimeout(async () => {
-      const g = (window as any).google?.maps?.places;
-      if (!g) return;
       const requestId = ++requestIdRef.current;
-
-      try {
-        if (g.AutocompleteSuggestion?.fetchAutocompleteSuggestions) {
-          const { suggestions } = await g.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-            input: query,
-            includedPrimaryTypes: ["locality", "administrative_area_level_3", "country"],
-            sessionToken: tokenRef.current ?? undefined,
-          });
-          if (requestId !== requestIdRef.current) return;
-          setPredictions(
-            (suggestions || [])
-              .map((s: any) => s.placePrediction)
-              .filter(Boolean)
-              .slice(0, 6)
-              .map((p: any) => ({
-                place_id: p.placeId,
-                description: p.text?.toString?.() || p.text?.text || "",
-                mainText:
-                  p.structuredFormat?.mainText?.toString?.() ||
-                  p.structuredFormat?.mainText?.text ||
-                  p.text?.toString?.() ||
-                  p.text?.text ||
-                  "",
-              }))
-              .filter((p: CityPrediction) => p.description)
-          );
-          return;
-        }
-
-        // Legacy fallback
-        const service = new g.AutocompleteService();
-        service.getPlacePredictions(
-          { input: query, types: ["(cities)"], sessionToken: tokenRef.current ?? undefined },
-          (results: any[] | null, status?: string) => {
-            if (requestId !== requestIdRef.current) return;
-            if (status && status !== "OK" && status !== "ZERO_RESULTS") {
-              console.error("City prediction fetch failed (legacy):", status);
-            }
-            setPredictions(
-              (results || []).slice(0, 6).map((r) => ({
-                place_id: r.place_id,
-                description: r.description,
-                mainText: r.structured_formatting?.main_text || r.description,
-              }))
-            );
-          }
-        );
-      } catch (err) {
-        console.error("City prediction fetch failed:", err);
-        if (requestId === requestIdRef.current) setPredictions([]);
-      }
+      const results = await fetchPlacePredictions(query, "search", tokenRef.current);
+      if (requestId !== requestIdRef.current) return;
+      setPredictions(results.map(({ place_id, description, mainText }) => ({ place_id, description, mainText })));
     }, 250);
 
     return () => {

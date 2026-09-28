@@ -141,7 +141,11 @@ serve(async (req) => {
     });
 
     // Photo pool: this sit's update photos, evenly sampled to at most 20.
-    const allPaths = rows.flatMap((u) => u.photo_paths ?? []);
+    // Only this sit's own photo folder ({sit_id}/{file}); the database
+    // enforces this on insert, checked again here before downloading.
+    const allPaths = rows
+      .flatMap((u) => u.photo_paths ?? [])
+      .filter((p) => typeof p === "string" && p.startsWith(`${st.sit_id}/`) && p.split("/").length === 2);
     const step = Math.max(1, Math.ceil(allPaths.length / MAX_PHOTOS_IN));
     const pool = allPaths.filter((_, i) => i % step === 0).slice(0, MAX_PHOTOS_IN);
     const images: unknown[] = [];

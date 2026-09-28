@@ -233,8 +233,17 @@ export const MessageThread = ({
 
   if (!conversation) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center p-6">
-        <p className="text-muted-foreground">Select a conversation to view messages</p>
+      <div className="flex h-full flex-col">
+        {onBack && (
+          <div className="shrink-0 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:hidden">
+            <Button variant="ghost" size="icon" onClick={onBack} aria-label="Back to messages">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
+        <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+          <p className="text-muted-foreground">Select a conversation to view messages</p>
+        </div>
       </div>
     );
   }
@@ -250,49 +259,45 @@ export const MessageThread = ({
     : null;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-border">
+    <div className="flex flex-col h-full min-h-0">
+      {/* Header: compact on mobile, where the thread is full screen */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-border px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:gap-3 md:p-4">
         {onBack && (
-          <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden">
+          <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 md:hidden" aria-label="Back to messages">
             <ArrowLeft className="h-5 w-5" />
           </Button>
         )}
         {profileLink ? (
-          <Link to={profileLink} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <Avatar className="h-10 w-10">
+          <Link to={profileLink} className="flex min-w-0 items-center gap-2 hover:opacity-80 transition-opacity md:gap-3">
+            <Avatar className="h-9 w-9 md:h-10 md:w-10">
               <AvatarImage src={otherUser?.avatar_url || undefined} />
               <AvatarFallback className="bg-primary/10 text-primary">
                 {initials.toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <h3 className="font-medium text-foreground hover:text-primary transition-colors">
+            <div className="min-w-0">
+              <h3 className="truncate font-medium leading-tight text-foreground hover:text-primary transition-colors">
                 {otherUser?.first_name} {otherUser?.last_name}
               </h3>
               {conversation.listing && (
-                <p className="text-xs text-muted-foreground">
-                  Re: {conversation.listing.title}
-                </p>
+                <p className="truncate text-xs text-muted-foreground">{conversation.listing.title}</p>
               )}
             </div>
           </Link>
         ) : (
           <>
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-9 w-9 md:h-10 md:w-10">
               <AvatarImage src={otherUser?.avatar_url || undefined} />
               <AvatarFallback className="bg-primary/10 text-primary">
                 {initials.toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <h3 className="font-medium text-foreground">
+            <div className="min-w-0">
+              <h3 className="truncate font-medium leading-tight text-foreground">
                 {otherUser?.first_name} {otherUser?.last_name}
               </h3>
               {conversation.listing && (
-                <p className="text-xs text-muted-foreground">
-                  Re: {conversation.listing.title}
-                </p>
+                <p className="truncate text-xs text-muted-foreground">{conversation.listing.title}</p>
               )}
             </div>
           </>
@@ -318,7 +323,7 @@ export const MessageThread = ({
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="min-h-0 flex-1 px-3 py-3 md:p-4">
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -597,7 +602,10 @@ export const MessageThread = ({
           This member has left NomadNest. You can still read your conversation.
         </p>
       ) : (
-      <form onSubmit={handleSubmit} className="p-4 border-t border-border">
+      <form
+        onSubmit={handleSubmit}
+        className="shrink-0 border-t border-border bg-background px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:p-4"
+      >
         {pendingPhoto && (
           <div className="flex items-center gap-2 mb-2">
             <div className="relative">

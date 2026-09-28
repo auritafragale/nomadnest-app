@@ -202,7 +202,6 @@ export const useSendDailyUpdate = (context: SitUpdateContext | null | undefined)
               flagNote,
             }),
           });
-          await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
         }
       } catch (err) {
         console.error("Posting the update card to chat failed", err);

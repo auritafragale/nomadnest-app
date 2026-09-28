@@ -167,10 +167,6 @@ export const useCreateInvite = () => {
           sender_user_id: invite.owner_user_id,
           body: `Hi! I'd love to invite you to sit at my home. I've sent you a formal invitation — please check your notifications.`,
         });
-        await supabase
-          .from("conversations")
-          .update({ updated_at: new Date().toISOString() })
-          .eq("id", conversationId);
       }
 
       // 4) Existing push/email notification pipeline

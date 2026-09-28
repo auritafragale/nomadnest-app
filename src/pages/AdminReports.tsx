@@ -15,7 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Flag, ExternalLink, FileText } from "lucide-react";
+import { Flag, ExternalLink } from "lucide-react";
+import { ReportEvidenceGallery } from "@/components/admin/ReportEvidenceGallery";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -110,17 +111,6 @@ const AdminReports = () => {
       return { to: `/sitter/${r.target_profile_user_id}`, label: r.target_name || "View profile" };
     }
     return null;
-  };
-
-  const openEvidence = async (path: string) => {
-    const { data, error } = await supabase.storage
-      .from("report-evidence")
-      .createSignedUrl(path, 300);
-    if (error || !data?.signedUrl) {
-      toast({ variant: "destructive", title: "Could not open proof", description: error?.message });
-      return;
-    }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -227,25 +217,7 @@ const AdminReports = () => {
                               </p>
                             )}
 
-                            {evidence.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {evidence.map((path) => {
-                                  const name = path.split("/").pop() || "Proof";
-                                  return (
-                                    <Button
-                                      key={path}
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => openEvidence(path)}
-                                      className="gap-1.5"
-                                    >
-                                      <FileText className="w-3.5 h-3.5" />
-                                      {name.length > 24 ? name.slice(0, 21) + "…" : name}
-                                    </Button>
-                                  );
-                                })}
-                              </div>
-                            )}
+                            <ReportEvidenceGallery paths={evidence} />
 
                             <Select value={r.status} onValueChange={(v) => setStatus(r.id, v as ReportStatus)}>
                               <SelectTrigger className="w-full sm:w-56" aria-label="Change report status">

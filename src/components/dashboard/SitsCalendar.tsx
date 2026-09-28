@@ -4,7 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, CalendarClock, ChevronLeft, ChevronRight, MapPin, User, MessageSquare, CheckCircle, XCircle, Star, Bone, Camera, BookOpen, KeyRound, Lock } from "lucide-react";
+import { Calendar, CalendarClock, ChevronLeft, ChevronRight, MapPin, User, MessageSquare, CheckCircle, XCircle, Star, Bone, Camera, BookOpen, KeyRound, Lock, MoreVertical, Eye, BookHeart } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useStoryForSit } from "@/hooks/useSitStories";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { daysUntil, useMyGuideWindows } from "@/hooks/useSitterGuide";
 import { useAskNestAvailable } from "@/hooks/useAskNest";
@@ -181,6 +189,7 @@ export const SitCard = ({
   const [cancelReason, setCancelReason] = useState("");
   const [reopenChoice, setReopenChoice] = useState<"original" | "proposed">("proposed");
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [proposeOpen, setProposeOpen] = useState(false);
   const [abandonmentAnswer, setAbandonmentAnswer] = useState<"yes" | "no" | undefined>(undefined);
   const [abandonmentNote, setAbandonmentNote] = useState("");
   const [republishDates, setRepublishDates] = useState<"yes" | "no" | undefined>(undefined);
@@ -357,6 +366,7 @@ export const SitCard = ({
     daysSinceEnd === null ? null : Math.max(0, REVIEW_WINDOW_DAYS - daysSinceEnd);
   const reviewWindowOpen = reviewDaysLeft === null || reviewDaysLeft > 0;
   const canReview = isReviewable && !hasReviewed && reviewWindowOpen && !otherLeft;
+  const { data: story } = useStoryForSit(sit.status === "completed" || isFinished ? sit.id : undefined);
 
   // Check if user has already reviewed for this sit
   useEffect(() => {
@@ -445,73 +455,102 @@ export const SitCard = ({
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </Link>
       )}
-      {isSitter && guideWindow && askNestAvailable && (
-        <>
-          <Button size="sm" variant="outline" className="mt-2 w-full gap-1.5" onClick={() => setAskOpen(true)}>
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-            Ask the Nest
-          </Button>
-          <AskNestSheet listingId={sit.listing_id} open={askOpen} onOpenChange={setAskOpen} />
-        </>
-      )}
-
-      {/* Sit actions */}
-      {!otherLeft && (canCancelSit || isCurrent || sit.status === "confirmed") && (
-        <div className="mt-3 pt-2 border-t space-y-2">
-          <div className="flex gap-2 flex-wrap">
-          {(sit.status === "confirmed" || sit.status === "in_progress") && (
-            <Button
-              size="sm"
-              variant="secondary"
-              className="flex-1"
-              disabled={openingChat}
-              onClick={openConversation}
-            >
-              <MessageSquare className="w-3 h-3 mr-1" />
+      {/* One primary action; everything else in the ⋮ menu */}
+      {!otherLeft && (sit.status === "confirmed" || sit.status === "in_progress") && !isFinished && (
+        <div className="mt-3 flex items-center gap-2 border-t pt-3">
+          {isCurrent ? (
+            <Button size="sm" className="flex-1 rounded-full" asChild>
+              <Link to={`/sits/${sit.id}`}>
+                <Bone className="mr-1.5 h-3.5 w-3.5" />
+                {isSitter ? "Today's update" : "See updates"}
+              </Link>
+            </Button>
+          ) : (
+            <Button size="sm" variant="secondary" className="flex-1 rounded-full" disabled={openingChat} onClick={openConversation}>
+              <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
               Message
             </Button>
           )}
-          {isCurrent && isSitter && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1"
-              disabled={openingChat}
-              onClick={openConversation}
-            >
-              <Bone className="w-3 h-3 mr-1" />
-              Daily check-in
-            </Button>
-          )}
-          {isCurrent && isOwner && (
-            <Button size="sm" variant="outline" className="flex-1" asChild>
-              <Link to={`/sits/${sit.id}`}>
-                <Bone className="w-3 h-3 mr-1" />
-                Care log
-              </Link>
-            </Button>
-          )}
-          {isSitter && (sit.status === "confirmed" || sit.status === "in_progress") && (
-            <Button size="sm" variant="outline" className="flex-1" asChild>
-              <Link
-                to={`/sits/${sit.id}/arrival-vault`}
-                state={{ from: `${location.pathname}${location.search}${location.hash}` }}
-              >
-                <Camera className="w-3 h-3 mr-1" />
-                Arrival Check-In
-              </Link>
-            </Button>
-          )}
-          <div className="flex gap-2">
-          {isOwner && !pendingRequest && (sit.status === "confirmed" || sit.status === "in_progress") && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <CalendarClock className="w-3 h-3 mr-1" />
-                  Propose New Dates
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="outline" className="h-8 w-8 shrink-0 rounded-full" aria-label="More actions for this sit">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {isCurrent && (
+                <DropdownMenuItem disabled={openingChat} onSelect={openConversation}>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Message {otherParty?.first_name || otherPartyLabel.toLowerCase()}
+                </DropdownMenuItem>
+              )}
+              {!isCurrent && (
+                <DropdownMenuItem asChild>
+                  <Link to={`/sits/${sit.id}`}>
+                    <Bone className="mr-2 h-4 w-4" />
+                    Sit page
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              {isSitter && (
+                <DropdownMenuItem asChild>
+                  <Link to={`/sits/${sit.id}/arrival-vault`} state={{ from: `${location.pathname}${location.search}${location.hash}` }}>
+                    <Camera className="mr-2 h-4 w-4" />
+                    Arrival Check-In
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              {isSitter && guideWindow && (
+                <DropdownMenuItem asChild>
+                  <Link to={`/listing/${sit.listing_id}/welcome-guide`}>
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Welcome Guide
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              {isSitter && guideWindow && askNestAvailable && (
+                <DropdownMenuItem onSelect={() => setAskOpen(true)}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Ask the Nest
+                </DropdownMenuItem>
+              )}
+              {isOwner && !pendingRequest && (
+                <DropdownMenuItem onSelect={() => setProposeOpen(true)}>
+                  <CalendarClock className="mr-2 h-4 w-4" />
+                  Propose new dates
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem asChild>
+                <Link to={`/listing/${sit.listing_id}`}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  View listing
+                </Link>
+              </DropdownMenuItem>
+              {canCancelSit && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    disabled={isPending}
+                    onSelect={() => setCancelDialogOpen(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Cancel sit
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+
+      {isSitter && guideWindow && askNestAvailable && (
+        <AskNestSheet listingId={sit.listing_id} open={askOpen} onOpenChange={setAskOpen} />
+      )}
+
+      {isOwner && (
+        <AlertDialog open={proposeOpen} onOpenChange={setProposeOpen}>
+          <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Propose new dates</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -562,23 +601,18 @@ export const SitCard = ({
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
-            </AlertDialog>
-          )}
-          {canCancelSit && (
-            <AlertDialog
-              open={cancelDialogOpen}
-              onOpenChange={(next) => {
-                setCancelDialogOpen(next);
-                if (!next) resetCancelDialogState();
-              }}
-            >
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="destructive" disabled={isPending}>
-                  <XCircle className="w-3 h-3 mr-1" />
-                  Cancel
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {canCancelSit && (
+        <AlertDialog
+          open={cancelDialogOpen}
+          onOpenChange={(next) => {
+            setCancelDialogOpen(next);
+            if (!next) resetCancelDialogState();
+          }}
+        >
+          <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Cancel this sit?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -694,16 +728,26 @@ export const SitCard = ({
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
-            </AlertDialog>
-          )}
-          </div>
-          </div>
-        </div>
+        </AlertDialog>
       )}
 
       {/* Propose/respond to new dates */}
       {(sit.status === "confirmed" || sit.status === "in_progress") && (
         <SitRescheduleSection sit={sit} isOwner={isOwner} isSitter={isSitter} />
+      )}
+
+      {story?.status === "ready" && (
+        <Link
+          to={`/stories/${story.id}`}
+          className="mt-3 flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+        >
+          <BookHeart className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium">Read the Sit Story</span>
+            {story.title && <span className="block truncate text-xs text-muted-foreground">{story.title}</span>}
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        </Link>
       )}
 
       {/* Review Button for Completed Sits */}

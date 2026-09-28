@@ -10,7 +10,7 @@ import { AvatarUpload } from "@/components/onboarding/AvatarUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import PlacesAutocompleteInput from "@/components/maps/PlacesAutocompleteInput";
+import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 
 const CompleteProfile = () => {
   const { user, loading: authLoading, role } = useAuth();
@@ -23,6 +23,8 @@ const CompleteProfile = () => {
   const [location, setLocation] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  // Set when a suggestion is picked, saved alongside the location text.
+  const [pickedPlace, setPickedPlace] = useState<{ city: string; country: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -55,7 +57,7 @@ const CompleteProfile = () => {
     fetchProfile();
   }, [user, authLoading, navigate]);
 
-  // Removed old geocoding functions — now handled by PlacesAutocompleteInput
+  // Location suggestions come from PlacesAutocompleteField.
 
   const handleSubmit = async () => {
     if (!user || !fullName.trim()) return;
@@ -74,6 +76,8 @@ const CompleteProfile = () => {
           last_name: lastName,
           bio,
           location,
+          ...(pickedPlace?.city ? { city: pickedPlace.city } : {}),
+          ...(pickedPlace?.country ? { country: pickedPlace.country } : {}),
           ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
         })
         .eq("id", user.id);
@@ -184,13 +188,17 @@ const CompleteProfile = () => {
             {/* Location with Google Places */}
             <div className="space-y-2">
               <Label>Location</Label>
-              <PlacesAutocompleteInput
+              <PlacesAutocompleteField
                 value={location}
-                onChange={setLocation}
-                onPlaceSelect={(place) => {
-                  setLocation([place.city, place.country].filter(Boolean).join(", "));
-                  setLatitude(place.latitude);
-                  setLongitude(place.longitude);
+                onChange={(value) => {
+                  setLocation(value);
+                  setPickedPlace(null);
+                }}
+                onSelect={(place) => {
+                  setLocation([place.city, place.country].filter(Boolean).join(", ") || place.description);
+                  setPickedPlace({ city: place.city, country: place.country });
+                  setLatitude(place.latitude ?? null);
+                  setLongitude(place.longitude ?? null);
                 }}
                 placeholder="Search for your city..."
                 types={["(cities)"]}

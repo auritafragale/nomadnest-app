@@ -2586,6 +2586,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      attach_report_evidence: {
+        Args: { p_paths: string[]; p_report_id: string }
+        Returns: string[]
+      }
       admin_list_members: {
         Args: never
         Returns: {
@@ -2806,7 +2810,9 @@ export type Database = {
           membership_type: string
         }[]
       }
+      get_my_dashboard_summary: { Args: never; Returns: Json }
       get_my_settings: { Args: never; Returns: Json }
+      get_my_sit_stories: { Args: never; Returns: Json }
       get_my_verification: {
         Args: never
         Returns: {

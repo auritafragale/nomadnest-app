@@ -136,3 +136,35 @@ export const useSitterPortfolio = (sitterId: string | undefined) => {
     enabled: !!sitterId && !!user,
   });
 };
+
+// ─── Dashboard: the member's Sit Stories ────────────────────────────────────
+
+export type PortfolioStatus = "none" | "requested" | "approved" | "declined" | "revoked";
+
+export interface MySitStory {
+  id: string;
+  sit_id: string;
+  role: "owner" | "sitter";
+  status: "queued" | "generating" | "ready";
+  title: string | null;
+  excerpt: string | null;
+  photo_path: string | null;
+  listing_title: string | null;
+  city: string | null;
+  other_first_name: string;
+  portfolio_status: PortfolioStatus;
+  ready_at: string | null;
+}
+
+export const useMySitStories = () => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["my-sit-stories", user?.id],
+    queryFn: async (): Promise<MySitStory[]> => {
+      const { data, error } = await supabase.rpc("get_my_sit_stories");
+      if (error) throw error;
+      return (data ?? []) as unknown as MySitStory[];
+    },
+    enabled: !!user,
+  });
+};

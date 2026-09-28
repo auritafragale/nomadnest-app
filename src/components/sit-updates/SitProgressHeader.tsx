@@ -122,7 +122,7 @@ export const SitProgressHeader = ({ context, sentToday }: { context: SitUpdateCo
           <Button asChild size="sm" className="mt-4 mr-2 rounded-full">
             <Link to={`/stories/${story.id}`}>
               <BookHeart className="mr-1.5 h-4 w-4" aria-hidden="true" />
-              Read your Sit Story
+              Read the Sit Story
             </Link>
           </Button>
         )}

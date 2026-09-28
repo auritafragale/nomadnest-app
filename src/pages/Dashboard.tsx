@@ -1,39 +1,47 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Home, Search, Plus, MessageSquare, Calendar, Settings,
-  LogOut, User, Briefcase, ArrowRight, MapPin, Clock,
-  FileText, Star, ClipboardList, Heart, Eye, Bell, X
+  ArrowRight,
+  BookHeart,
+  BookOpen,
+  Bell,
+  CalendarPlus,
+  FileText,
+  Home,
+  Mail,
+  MessageSquare,
+  PawPrint,
+  Plus,
+  Star,
+  User,
+  Users,
+  X,
 } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
-import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import { useSitterApplications } from "@/hooks/useSitterApplications";
 import { SitterApplicationCard } from "@/components/applications/SitterApplicationCard";
 import { Skeleton } from "@/components/ui/skeleton";
-
 import { OwnerListingCard } from "@/components/dashboard/OwnerListingCard";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
 import { useListingAllowance, LISTING_LIMIT_NOTE } from "@/hooks/useListingAllowance";
 import { SitterInvitesSection } from "@/components/invites/SitterInvitesSection";
-
-import { ProfileCompletenessCard } from "@/components/dashboard/ProfileCompletenessCard";
-import { useOwnerApplications } from "@/hooks/useApplications";
-import { OwnerApplicationPreviewCard } from "@/components/dashboard/OwnerApplicationPreviewCard";
-
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import { HelpTooltip } from "@/components/ui/HelpTooltip";
-import MobileHomeScreen from "@/components/mobile/MobileHomeScreen";
 import { SitterAvailabilityCalendar } from "@/components/dashboard/SitterAvailabilityCalendar";
 import { UpcomingPastSits } from "@/components/dashboard/UpcomingPastSits";
-import OwnerWelcomeGuideCard from "@/components/dashboard/OwnerWelcomeGuideCard";
+import { NowCard } from "@/components/dashboard/NowCard";
+import { TodoList, type TodoItem } from "@/components/dashboard/TodoList";
+import { SitStoriesSection } from "@/components/dashboard/SitStoriesSection";
+import { useDashboardSummary, type DashboardSummary } from "@/hooks/useDashboardSummary";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useGuideCompletion } from "@/hooks/useWelcomeGuide";
+import { useMySitStories } from "@/hooks/useSitStories";
 
 interface Profile {
   first_name: string | null;
@@ -55,8 +63,10 @@ interface OwnerProfile {
 
 const PUSH_BANNER_DISMISSED_KEY = "nomadnest_push_banner_dismissed";
 
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
 const Dashboard = () => {
-  const { user, role, signOut, loading } = useAuth();
+  const { user, role, loading } = useAuth();
   const { activeRole, setActiveRole } = useActiveRole();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -68,12 +78,21 @@ const Dashboard = () => {
   const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
   const { isSupported, isSubscribed, isLoading: pushLoading, subscribe } = usePushNotifications();
-  const [pushBannerDismissed, setPushBannerDismissed] = useState(
-    () => localStorage.getItem(PUSH_BANNER_DISMISSED_KEY) === "true"
-  );
+  const [pushBannerDismissed, setPushBannerDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(PUSH_BANNER_DISMISSED_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
+  const { data: summary } = useDashboardSummary();
 
   const dismissPushBanner = () => {
-    localStorage.setItem(PUSH_BANNER_DISMISSED_KEY, "true");
+    try {
+      localStorage.setItem(PUSH_BANNER_DISMISSED_KEY, "true");
+    } catch {
+      // Private mode: dismiss for this visit only.
+    }
     setPushBannerDismissed(true);
   };
 
@@ -102,14 +121,12 @@ const Dashboard = () => {
     const mode = searchParams.get("mode");
     const openReview = searchParams.get("openReview");
     if (!mode && !openReview) return;
-
     if ((mode === "owner" || mode === "sitter") && role === "both") {
       setActiveRole(mode);
     }
     if (openReview) {
       setOpenReviewSitId(openReview);
     }
-
     searchParams.delete("mode");
     searchParams.delete("openReview");
     setSearchParams(searchParams, { replace: true });
@@ -118,35 +135,28 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchProfiles = async () => {
       if (!user) return;
-
-      // Fetch main profile
       const { data: profileData } = await supabase
         .from("profiles")
         .select("first_name, last_name, avatar_url, country, city")
         .eq("id", user.id)
         .maybeSingle();
-      
       if (profileData) setProfile(profileData);
 
-      // Fetch sitter profile if applicable
       if (role === "sitter" || role === "both") {
         const { data: sitterData } = await supabase
           .from("sitter_profiles")
           .select("headline, bio, pet_types")
           .eq("user_id", user.id)
           .maybeSingle();
-        
         if (sitterData) setSitterProfile(sitterData);
       }
 
-      // Fetch owner profile if applicable
       if (role === "owner" || role === "both") {
         const { data: ownerData } = await supabase
           .from("owner_profiles")
           .select("bio")
           .eq("user_id", user.id)
           .maybeSingle();
-        
         if (ownerData) setOwnerProfile(ownerData);
       }
     };
@@ -162,7 +172,21 @@ const Dashboard = () => {
     );
   }
 
-  const displayName = profile?.first_name || user?.email?.split("@")[0] || "User";
+  const displayName = profile?.first_name || user?.email?.split("@")[0] || "there";
+  const viewRole: "sitter" | "owner" =
+    role === "both" ? (activeRole === "owner" ? "owner" : "sitter") : role === "owner" ? "owner" : "sitter";
+  const profilePercent =
+    viewRole === "sitter"
+      ? calculateSitterProfileCompletion(profile, sitterProfile)
+      : calculateOwnerProfileCompletion(profile, ownerProfile);
+
+  // A review reminder opened from the to-do list: open it on its sit card.
+  const openReview = (sitId: string) => {
+    setOpenReviewSitId(sitId);
+    window.setTimeout(() => {
+      document.getElementById("your-sits")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -178,13 +202,7 @@ const Dashboard = () => {
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              size="sm"
-              variant="secondary"
-              className="h-7 text-xs"
-              disabled={pushLoading}
-              onClick={subscribe}
-            >
+            <Button size="sm" variant="secondary" className="h-7 text-xs" disabled={pushLoading} onClick={subscribe}>
               Enable
             </Button>
             <button
@@ -198,66 +216,35 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Mobile home — map + role toggle + FAB */}
-      <div className={showPushBanner ? "pt-28" : "pt-16"}>
-        <MobileHomeScreen />
-      </div>
-
-      <main className={`pb-12 ${showPushBanner ? "pt-16 md:pt-32" : "pt-4 md:pt-20"}`}>
-        <div className="container mx-auto px-3 sm:px-4 max-w-full">
-          <Breadcrumbs />
+      <main className={`pb-24 md:pb-12 ${showPushBanner ? "pt-32" : "pt-20 md:pt-24"}`}>
+        <div className="container mx-auto max-w-6xl px-4">
           <DashboardHeader
-            role={activeRole === "owner" ? "owner" : "sitter"}
+            role={viewRole}
             userId={user?.id || ""}
             displayName={displayName}
             avatarUrl={profile?.avatar_url}
             city={profile?.city}
             country={profile?.country}
+            profilePercent={profilePercent}
+            canSwitchRole={role === "both"}
+            onSwitchRole={setActiveRole}
           />
 
-          {/* Role Toggle for combined users */}
-          {role === "both" && (
-            <div className="mb-8 hidden md:block">
-              <Tabs value={activeRole} onValueChange={(v) => setActiveRole(v as "sitter" | "owner")}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-medium text-muted-foreground">Switch mode</span>
-                  <HelpTooltip
-                    label="About switching modes"
-                    content="Switching changes which listings, applications, and invites you see. Nomad Mode shows sits you can apply for; Pet Parent Mode shows your listings and incoming applications."
-                  />
-                </div>
-                <TabsList className="grid w-full max-w-md grid-cols-2">
-                  <TabsTrigger value="sitter" className="gap-2">
-                    <Briefcase className="w-4 h-4" />
-                    Nomad Mode
-                  </TabsTrigger>
-                  <TabsTrigger value="owner" className="gap-2">
-                    <Home className="w-4 h-4" />
-                    Pet Parent Mode
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          )}
-
-          {/* Dashboard Content */}
-          {(activeRole === "sitter" && (role === "sitter" || role === "both")) && (
+          {viewRole === "sitter" ? (
             <SitterDashboard
-              profile={profile}
-              sitterProfile={sitterProfile}
-              userId={user?.id || ""}
+              summary={summary}
+              profilePercent={profilePercent}
               openReview={openReviewSitId}
               onReviewAutoOpened={handleReviewAutoOpened}
+              onOpenReview={openReview}
             />
-          )}
-
-          {(activeRole === "owner" && (role === "owner" || role === "both")) && (
+          ) : (
             <OwnerDashboard
-              profile={profile}
-              ownerProfile={ownerProfile}
-              userId={user?.id || ""}
+              summary={summary}
+              profilePercent={profilePercent}
               openReview={openReviewSitId}
               onReviewAutoOpened={handleReviewAutoOpened}
+              onOpenReview={openReview}
             />
           )}
         </div>
@@ -266,28 +253,52 @@ const Dashboard = () => {
   );
 };
 
-const SitterDashboard = ({
-  profile,
-  sitterProfile,
-  userId,
-  openReview,
-  onReviewAutoOpened,
-}: {
-  profile: Profile | null;
-  sitterProfile: SitterProfile | null;
-  userId: string;
+interface RoleDashboardProps {
+  summary: DashboardSummary | undefined;
+  profilePercent: number;
   openReview?: string | null;
   onReviewAutoOpened?: (sitId: string) => void;
-}) => {
-  const profileCompletion = calculateSitterProfileCompletion(profile, sitterProfile);
+  onOpenReview: (sitId: string) => void;
+}
+
+/** To-do rows shared by both roles: messages, reviews, profile. */
+const commonTodos = (
+  role: "sitter" | "owner",
+  summary: DashboardSummary | undefined,
+  unread: number,
+  profilePercent: number,
+  onOpenReview: (sitId: string) => void,
+): TodoItem[] => {
+  const items: TodoItem[] = [];
+  for (const review of (summary?.reviews_due ?? []).filter((r) => r.role === role)) {
+    items.push({
+      key: `review-${review.sit_id}`,
+      icon: Star,
+      label: `Leave a review for ${review.other_first_name}${review.days_left <= 3 ? ` (${plural(review.days_left, "day")} left)` : ""}`,
+      onClick: () => onOpenReview(review.sit_id),
+    });
+  }
+  if (unread > 0) {
+    items.push({ key: "messages", icon: MessageSquare, label: `Reply to ${plural(unread, "unread message")}`, to: "/inbox" });
+  }
+  if (profilePercent < 100) {
+    items.push({
+      key: "profile",
+      icon: User,
+      label: `Complete your profile (${profilePercent}%)`,
+      to: role === "sitter" ? "/edit-sitter-profile" : "/edit-owner-profile",
+    });
+  }
+  return items;
+};
+
+const SitterDashboard = ({ summary, profilePercent, openReview, onReviewAutoOpened, onOpenReview }: RoleDashboardProps) => {
   const { data: applications = [], isLoading: applicationsLoading } = useSitterApplications();
+  const { unreadCount } = useUnreadMessages();
   const [dashParams] = useSearchParams();
   const initialAppTab = dashParams.get("appTab");
   const [appTab, setAppTab] = useState<"all" | "accepted" | "pending" | "past" | "cancelled">(
-    initialAppTab === "cancelled" ||
-      initialAppTab === "accepted" ||
-      initialAppTab === "pending" ||
-      initialAppTab === "past"
+    initialAppTab === "cancelled" || initialAppTab === "accepted" || initialAppTab === "pending" || initialAppTab === "past"
       ? initialAppTab
       : "all",
   );
@@ -296,9 +307,7 @@ const SitterDashboard = ({
   useEffect(() => {
     if (!initialAppTab) return;
     const t = setTimeout(() => {
-      document
-        .getElementById("my-applications")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("my-applications")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 300);
     return () => clearTimeout(t);
   }, [initialAppTab]);
@@ -308,238 +317,228 @@ const SitterDashboard = ({
   useEffect(() => {
     if (section !== "invites") return;
     const t = setTimeout(() => {
-      document
-        .getElementById("sitter-invites")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("sitter-invites")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 300);
     return () => clearTimeout(t);
   }, [section]);
 
   const todayISO = new Date().toISOString().slice(0, 10);
-  // Re-applying to the same date range after a cancellation (e.g. applied,
-  // accepted, cancelled, applied again, cancelled again) produces one
-  // cancelled row per attempt. applications is already sorted by
-  // created_at descending, so keeping the first occurrence per
-  // sit_dates_id keeps only the most recent cancelled application for that
-  // range and drops the older duplicates — display-only, nothing
-  // underlying is touched.
+  // One cancelled row per date range (the most recent attempt), display only.
   const seenCancelledDates = new Set<string>();
-  const visibleApplications = applications.filter((a) => {
-    if (appTab === "cancelled") {
-      if (a.status !== "cancelled") return false;
-      if (seenCancelledDates.has(a.sit_dates_id)) return false;
-      seenCancelledDates.add(a.sit_dates_id);
+  const visibleApplications = applications
+    .filter((a) => {
+      if (appTab === "cancelled") {
+        if (a.status !== "cancelled") return false;
+        if (seenCancelledDates.has(a.sit_dates_id)) return false;
+        seenCancelledDates.add(a.sit_dates_id);
+        return true;
+      }
+      const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
+      if (appTab === "accepted") return a.status === "accepted" && !ended;
+      if (appTab === "past") return a.status === "accepted" && ended;
+      if (appTab === "pending") return a.status === "applied" || a.status === "shortlisted";
+      if (appTab === "all") return a.status !== "cancelled";
       return true;
-    }
-    const ended = !!a.sit_dates?.end_date && a.sit_dates.end_date < todayISO;
-    if (appTab === "accepted") return a.status === "accepted" && !ended;
-    if (appTab === "past") return a.status === "accepted" && ended;
-    if (appTab === "pending") return a.status === "applied" || a.status === "shortlisted";
-    if (appTab === "all") return a.status !== "cancelled";
-    return true;
-  }).sort((a, b) => {
-    // chronological — earliest sit start date first
-    const aStart = a.sit_dates?.start_date ?? "";
-    const bStart = b.sit_dates?.start_date ?? "";
-    return aStart.localeCompare(bStart);
-  });
-  const showApplications = (tab: "all" | "accepted" | "pending" | "past" | "cancelled") => {
-    setAppTab(tab);
-    document.getElementById("my-applications")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+    })
+    .sort((a, b) => (a.sit_dates?.start_date ?? "").localeCompare(b.sit_dates?.start_date ?? ""));
+  const pendingCount = applications.filter((a) => a.status === "applied").length;
 
-  const applicationStats = {
-    total: applications.filter((a) => a.status !== "cancelled").length,
-    pending: applications.filter((a) => a.status === "applied").length,
-    accepted: applications.filter((a) => a.status === "accepted").length,
-  };
+  const current = summary?.current_sits.find((s) => s.role === "sitter") ?? null;
+  const next = summary?.next_sits.find((s) => s.role === "sitter") ?? null;
+
+  const todos = useMemo<TodoItem[]>(() => {
+    const items: TodoItem[] = [];
+    for (const sit of (summary?.current_sits ?? []).filter((s) => s.role === "sitter" && s.due_today && !s.sent_today)) {
+      items.push({ key: `update-${sit.sit_id}`, icon: PawPrint, label: `Send today's update to ${sit.other_first_name}`, to: `/sits/${sit.sit_id}` });
+    }
+    if ((summary?.pending_invites ?? 0) > 0) {
+      items.push({
+        key: "invites",
+        icon: Mail,
+        label: `Reply to ${plural(summary!.pending_invites, "invite")}`,
+        onClick: () => document.getElementById("sitter-invites")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      });
+    }
+    return [...items, ...commonTodos("sitter", summary, unreadCount, profilePercent, onOpenReview)];
+  }, [summary, unreadCount, profilePercent, onOpenReview]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {/* Left Column - Profile & Stats */}
-      <div className="space-y-6">
-        {/* Profile Completeness */}
-        <ProfileCompletenessCard
-          role="sitter"
-          profile={profile}
-          sitterProfile={sitterProfile}
-        />
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+      <div className="space-y-5 lg:col-span-3">
+        <NowCard role="sitter" current={current} next={next} />
+        <TodoList items={todos} />
 
-        {/* Membership details live on the Membership page; the header shows status pills */}
-      </div>
-
-      {/* Middle Column - Actions & Applications */}
-      <div className="md:col-span-1 lg:col-span-2 space-y-6">
-        {/* Saved Sits lives in the header actions, so no duplicate card here */}
-
-        {/* Upcoming & Past Sits */}
-        <UpcomingPastSits viewAs="sitter" openReview={openReview} onAutoOpened={onReviewAutoOpened} />
-
-        {/* My Applications */}
-        <Card id="my-applications">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              My Applications
-              <HelpTooltip label="About applications" content="Track your sit applications" />
-              {applicationStats.pending > 0 && (
-                <Badge variant="secondary" className="ml-auto">
-                  {applicationStats.pending} pending
-                </Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={appTab} onValueChange={(v) => setAppTab(v as typeof appTab)} className="mb-4">
-              <TabsList className="w-full justify-start flex-nowrap overflow-x-auto overflow-y-hidden">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="accepted">Accepted</TabsTrigger>
-                <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="past">Past</TabsTrigger>
-                <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            {applicationsLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                ))}
-              </div>
-            ) : visibleApplications.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="font-medium">No applications here yet</p>
-                <p className="text-sm mt-1">Start browsing sits to apply!</p>
-                <Link to="/browse-sits">
-                  <Button className="mt-4">
-                    Browse Sits
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {visibleApplications.slice(0, 5).map((application) => (
-                  <SitterApplicationCard key={application.id} application={application} />
-                ))}
-                {visibleApplications.length > 5 && (
-                  <p className="text-sm text-muted-foreground text-center pt-2">
-                    And {visibleApplications.length - 5} more applications...
-                  </p>
-                )}
-              </div>
+        <section id="my-applications" className="scroll-mt-24 rounded-3xl border bg-card p-4 shadow-sm">
+          <div className="flex items-center gap-2 px-1">
+            <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
+            <h2 className="font-display text-lg font-bold">My applications</h2>
+            {pendingCount > 0 && (
+              <Badge variant="secondary" className="ml-auto">
+                {pendingCount} pending
+              </Badge>
             )}
-          </CardContent>
-        </Card>
+          </div>
+          <Tabs value={appTab} onValueChange={(v) => setAppTab(v as typeof appTab)} className="my-3">
+            <TabsList className="w-full justify-start flex-nowrap overflow-x-auto overflow-y-hidden">
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="accepted">Accepted</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="past">Past</TabsTrigger>
+              <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {applicationsLoading ? (
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <Skeleton key={i} className="h-24 w-full rounded-2xl" />
+              ))}
+            </div>
+          ) : visibleApplications.length === 0 ? (
+            <div className="py-6 text-center text-muted-foreground">
+              <p className="font-medium">No applications here yet</p>
+              <Button asChild className="mt-3 rounded-full">
+                <Link to="/browse-sits">
+                  Browse sits
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {visibleApplications.slice(0, 5).map((application) => (
+                <SitterApplicationCard key={application.id} application={application} />
+              ))}
+              {visibleApplications.length > 5 && (
+                <p className="pt-1 text-center text-sm text-muted-foreground">
+                  And {plural(visibleApplications.length - 5, "more application")}
+                </p>
+              )}
+            </div>
+          )}
+        </section>
 
-        {/* Sitter Invites */}
-        <div id="sitter-invites">
+        <div id="sitter-invites" className="scroll-mt-24">
           <SitterInvitesSection />
         </div>
+      </div>
 
-        {/* Availability Calendar */}
+      <div className="space-y-5 lg:col-span-2">
+        <div id="your-sits" className="scroll-mt-24">
+          <UpcomingPastSits viewAs="sitter" openReview={openReview} onAutoOpened={onReviewAutoOpened} />
+        </div>
+        <SitStoriesSection role="sitter" />
         <SitterAvailabilityCalendar />
-
       </div>
     </div>
   );
 };
 
-const OwnerDashboard = ({
-  profile,
-  ownerProfile,
-  userId,
-  openReview,
-  onReviewAutoOpened,
-}: {
-  profile: Profile | null;
-  ownerProfile: OwnerProfile | null;
-  userId: string;
-  openReview?: string | null;
-  onReviewAutoOpened?: (sitId: string) => void;
-}) => {
+/** Welcome Guide to-do for the member's most recent listing. */
+const useGuideTodo = (listingId: string | undefined): TodoItem | null => {
+  const { data } = useGuideCompletion(listingId);
+  if (!listingId || !data || data.percent >= 100) return null;
+  return {
+    key: "guide",
+    icon: BookOpen,
+    label: `Finish your Welcome Guide (${data.percent}%)`,
+    to: `/listing/${listingId}/welcome-guide`,
+  };
+};
+
+const OwnerDashboard = ({ summary, profilePercent, openReview, onReviewAutoOpened, onOpenReview }: RoleDashboardProps) => {
   const { data: listings = [], isLoading: listingsLoading } = useOwnerListings();
-  const { atLimit } = useListingAllowance();
-  const listingStats = { total: listings.length };
+  const { atLimit, maxListings } = useListingAllowance();
+  const { unreadCount } = useUnreadMessages();
+  const { data: stories = [] } = useMySitStories();
+  const guideTodo = useGuideTodo(listings[0]?.id);
 
+  const current = summary?.current_sits.find((s) => s.role === "owner") ?? null;
+  const next = summary?.next_sits.find((s) => s.role === "owner") ?? null;
+  const applicantsByListing = new Map((summary?.new_applicants ?? []).map((a) => [a.listing_id, a.count]));
+  const totalApplicants = (summary?.new_applicants ?? []).reduce((n, a) => n + a.count, 0);
 
+  const todos = useMemo<TodoItem[]>(() => {
+    const items: TodoItem[] = [];
+    if (totalApplicants > 0) {
+      items.push({ key: "applicants", icon: Users, label: `Review ${plural(totalApplicants, "new applicant")}`, to: "/applications" });
+    }
+    for (const story of stories.filter((s) => s.role === "owner" && s.status === "ready" && s.portfolio_status === "requested")) {
+      items.push({
+        key: `portfolio-${story.id}`,
+        icon: BookHeart,
+        label: `${story.other_first_name} would like to show your Sit Story on their profile`,
+        to: `/stories/${story.id}`,
+      });
+    }
+    if (guideTodo) items.push(guideTodo);
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const needsDates = listings.find(
+      (l) => l.status === "published" && !l.sit_dates.some((d) => d.status === "open" && d.end_date >= todayIso),
+    );
+    if (needsDates && !current && !next) {
+      items.push({ key: "dates", icon: CalendarPlus, label: "Add new dates to find your next Nomad", to: `/edit-listing/${needsDates.id}?focus=dates` });
+    }
+    return [...items, ...commonTodos("owner", summary, unreadCount, profilePercent, onOpenReview)];
+  }, [totalApplicants, stories, guideTodo, listings, current, next, summary, unreadCount, profilePercent, onOpenReview]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {/* Left Column */}
-      <div className="space-y-6">
-        {/* Profile Completeness */}
-        <ProfileCompletenessCard
-          role="owner"
-          profile={profile}
-          ownerProfile={ownerProfile}
-        />
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+      <div className="space-y-5 lg:col-span-3">
+        <NowCard role="owner" current={current} next={next} />
+        <TodoList items={todos} />
 
-        {/* Membership details live on the Membership page; the header shows status pills */}
-
-        {/* Welcome Guide — one reusable guide per Pet Parent */}
-        <OwnerWelcomeGuideCard />
-
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 px-1 font-display text-lg font-bold">
+            <Home className="h-5 w-5 text-primary" aria-hidden="true" />
+            {listings.length > 1 ? "Your homes" : "Your home"}
+          </h2>
+          {listingsLoading ? (
+            <Skeleton className="h-48 w-full rounded-3xl" />
+          ) : listings.length === 0 ? (
+            <div className="rounded-3xl border border-dashed bg-card p-6 text-center">
+              <Home className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" aria-hidden="true" />
+              <p className="font-medium">No listing yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">Create your listing to find a Nomad for your pets.</p>
+              <Button asChild className="mt-4 rounded-full">
+                <Link to="/create-listing">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Listing
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <>
+              {listings.map((listing) => (
+                <OwnerListingCard key={listing.id} listing={listing} newApplicants={applicantsByListing.get(listing.id) ?? 0} />
+              ))}
+              {atLimit ? (
+                <p className="px-1 text-xs text-muted-foreground">{LISTING_LIMIT_NOTE}</p>
+              ) : (
+                maxListings > 1 && (
+                  <Button asChild variant="outline" size="sm" className="rounded-full">
+                    <Link to="/create-listing">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add another home
+                    </Link>
+                  </Button>
+                )
+              )}
+            </>
+          )}
+        </section>
       </div>
 
-      {/* Middle Column */}
-      <div className="md:col-span-1 lg:col-span-2 space-y-6">
-        {/* Upcoming & Past Sits — between Your Stats and My Listings */}
-        <UpcomingPastSits viewAs="owner" openReview={openReview} onAutoOpened={onReviewAutoOpened} />
-
-        {/* My Listings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Home className="w-5 h-5" />
-              My Listings
-              <HelpTooltip label="About listings" content="Manage your sit opportunities" />
-              {listingStats.total > 0 && (
-                <Badge variant="secondary" className="ml-auto">
-                  {listingStats.total} total
-                </Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {listingsLoading ? (
-              <div className="space-y-3">
-                {[1, 2].map((i) => (
-                  <Skeleton key={i} className="h-28 w-full rounded-lg" />
-                ))}
-              </div>
-            ) : listings.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Home className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="font-medium">No listings yet</p>
-                <p className="text-sm mt-1">Create your first listing to find a nomad!</p>
-                <Link to="/create-listing">
-                  <Button className="mt-4">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Listing
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {listings.map((listing) => (
-                  <OwnerListingCard key={listing.id} listing={listing} />
-                ))}
-                {atLimit && <p className="text-xs text-muted-foreground">{LISTING_LIMIT_NOTE}</p>}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
+      <div className="space-y-5 lg:col-span-2">
+        <div id="your-sits" className="scroll-mt-24">
+          <UpcomingPastSits viewAs="owner" openReview={openReview} onAutoOpened={onReviewAutoOpened} />
+        </div>
+        <SitStoriesSection role="owner" />
       </div>
     </div>
   );
 };
 
-function calculateSitterProfileCompletion(
-  profile: Profile | null, 
-  sitterProfile: SitterProfile | null
-): number {
+function calculateSitterProfileCompletion(profile: Profile | null, sitterProfile: SitterProfile | null): number {
   let completed = 0;
   const total = 8;
 
@@ -555,10 +554,7 @@ function calculateSitterProfileCompletion(
   return Math.round((completed / total) * 100);
 }
 
-function calculateOwnerProfileCompletion(
-  profile: Profile | null, 
-  ownerProfile: OwnerProfile | null
-): number {
+function calculateOwnerProfileCompletion(profile: Profile | null, ownerProfile: OwnerProfile | null): number {
   let completed = 0;
   const total = 6;
 
