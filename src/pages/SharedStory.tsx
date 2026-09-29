@@ -75,7 +75,7 @@ const SharedStory = () => {
             {data.photos[0] && (
               <img src={data.photos[0].url} alt={data.photos[0].alt} className="h-[260px] w-full rounded-[24px] object-cover" />
             )}
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#1E6B5F]">
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-brand-teal-text">
               A NomadNest Sit Story{data.city ? ` · ${data.city}` : ""}
               {data.month ? ` · ${data.month}` : ""}
             </p>
@@ -85,7 +85,7 @@ const SharedStory = () => {
               {data.story_days && data.story_days.length > 0
                 ? data.story_days.map((d, i) => (
                     <div key={d.date} className="flex flex-col gap-1.5">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#1E6B5F]">Day {i + 1}</span>
+                      <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-brand-teal-text">Day {i + 1}</span>
                       <p className="text-[16px] leading-relaxed">{d.text}</p>
                     </div>
                   ))
@@ -107,7 +107,7 @@ const SharedStory = () => {
             )}
             <p className="border-t border-[#E4F0EC] pt-4 text-sm text-[#656B74]">
               NomadNest connects Pet Parents with trusted Nomads who look after their pets and home.{" "}
-              <a href="/" className="font-bold text-[#237A6D]">
+              <a href="/" className="font-bold text-brand-teal-text">
                 Learn more
               </a>
             </p>

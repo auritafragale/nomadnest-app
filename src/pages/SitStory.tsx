@@ -14,7 +14,7 @@ import { useSitStory, useSitStoryActions, type SitStory as SitStoryData } from "
 import { useUpdatePhotoUrls } from "@/hooks/useDailyUpdates";
 import { PhotoPicker } from "@/components/stories/StoryShare";
 import { ParentStoryView } from "@/components/stories/ParentStoryView";
-import { RoleTheme } from "@/components/nn/ui";
+import { NN_PAGE, RoleTheme } from "@/components/nn/ui";
 
 const PortfolioPanel = ({ story, urls }: { story: SitStoryData; urls: Record<string, string> }) => {
   const { requestPortfolio, decidePortfolio, removePortfolioPhoto } = useSitStoryActions(story.id);
@@ -147,8 +147,8 @@ const SitStory = () => {
   if (story && story.role === "owner" && story.status === "ready") {
     return (
       <RoleTheme role="owner" className="flex min-h-screen flex-col">
-        <Navbar />
-        <main className="mx-auto w-full max-w-xl flex-1 px-5 pb-12 pt-20">
+        <Navbar wide />
+        <main className={cn(NN_PAGE, "flex-1 pb-12 pt-20 md:pt-24")}>
           <ParentStoryView story={story} urls={urls} paragraphs={paragraphs} onReviewed={() => refetch()} />
         </main>
         <Footer />
@@ -159,7 +159,7 @@ const SitStory = () => {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
-      <main className="container max-w-2xl flex-1 px-4 pb-12 pt-20">
+      <main className="container max-w-2xl flex-1 px-4 pb-12 pt-20 lg:max-w-5xl">
         <BackButton fallback="/dashboard" className="mb-4" />
 
         {isLoading ? (
@@ -181,7 +181,7 @@ const SitStory = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-6 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-6 lg:space-y-0">
             <article className="space-y-5 rounded-3xl border bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm sm:p-7">
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
                 <BookHeart className="h-4 w-4" aria-hidden="true" />
@@ -213,6 +213,7 @@ const SitStory = () => {
               )}
             </article>
 
+            <div className="space-y-6">
             <PortfolioPanel story={story} urls={urls} />
 
             {story.can_review && story.sitter_user_id && (
@@ -237,6 +238,7 @@ const SitStory = () => {
                 />
               </section>
             )}
+            </div>
           </div>
         )}
       </main>

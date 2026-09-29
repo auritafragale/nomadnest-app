@@ -96,14 +96,14 @@ const InviteAgainDialog = ({ story, open, onOpenChange }: { story: SitStory; ope
                     onClick={() => setPicked(o.date.id)}
                     className={cn(
                       "flex min-h-[52px] items-center justify-between rounded-2xl border-[1.5px] px-4 text-left",
-                      on ? "border-[#237A6D] bg-[#F3F8F6]" : "border-[#D3E7E1]",
+                      on ? "border-brand-teal bg-[#F3F8F6]" : "border-[#D3E7E1]",
                     )}
                   >
                     <span>
                       <span className="block text-[15px] font-bold">{shortRange(o.date.start_date, o.date.end_date)}</span>
                       <span className="block text-xs text-[#656B74]">{o.listing.title}</span>
                     </span>
-                    {on && <Check className="h-5 w-5 text-[#237A6D]" aria-hidden="true" />}
+                    {on && <Check className="h-5 w-5 text-brand-teal-text" aria-hidden="true" />}
                   </button>
                 );
               })}
@@ -194,8 +194,8 @@ export const ParentStoryView = ({
             : `${nomad} hasn't asked to show it on their profile.`;
 
   return (
-    <div className="flex flex-col gap-[18px] pb-8">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-[18px] pb-8 md:max-w-3xl lg:grid lg:max-w-none lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-x-8 lg:gap-y-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="order-1 flex items-center justify-between lg:order-none lg:col-span-2">
         <BackButton fallback="/dashboard" className="h-11" />
         <button
           type="button"
@@ -210,15 +210,16 @@ export const ParentStoryView = ({
         </button>
       </div>
 
-      <div className="relative -mx-5 h-[240px] bg-[#D6B98F] sm:mx-0 sm:rounded-[24px] sm:overflow-hidden">
+      <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-5">
+      <div className="relative order-2 -mx-5 h-[240px] bg-[#D6B98F] sm:mx-0 sm:rounded-[24px] sm:overflow-hidden lg:order-none lg:h-[340px]">
         {cover && <img src={cover} alt={coverPath ? altOf(coverPath) : ""} className="h-full w-full object-cover" />}
-        <span className="absolute bottom-3.5 left-4 inline-flex h-7 items-center gap-1.5 rounded-full bg-white px-3 text-xs font-bold text-[#1E6B5F]">
+        <span className="absolute bottom-3.5 left-4 inline-flex h-7 items-center gap-1.5 rounded-full bg-white px-3 text-xs font-bold text-brand-teal-text">
           Sit Story
         </span>
       </div>
 
-      <section aria-label="About this sit" className="flex flex-col gap-3">
-        <h1 className="font-display text-[32px] font-normal leading-[1.08]">{story.title}</h1>
+      <section aria-label="About this sit" className="order-3 flex flex-col gap-3 lg:order-none">
+        <h1 className="font-display text-[32px] font-normal leading-[1.08] lg:text-[40px]">{story.title}</h1>
         <p className="text-sm text-[#656B74]">
           {[sit?.listing?.title, story.start_date && story.end_date && shortRange(story.start_date, story.end_date), nights && `${nights} ${nights === 1 ? "day" : "days"}`]
             .filter(Boolean)
@@ -240,213 +241,218 @@ export const ParentStoryView = ({
         )}
       </section>
 
-      {story.sitter_user_id && (
-        <section aria-label={`Show on ${nomad}'s profile`} className="flex flex-col gap-3 rounded-[22px] bg-[#F2F8F6] p-4">
-          <div className="flex items-start gap-3">
-            <span className="flex flex-1 flex-col gap-1">
-              <span className="text-[15px] font-bold">Show on {nomad}'s profile</span>
-              <span className="text-[13px] leading-snug text-[#3F444B]">{profileText}</span>
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={status === "approved"}
-              aria-label={`Show this story on ${nomad}'s profile`}
-              disabled={status !== "approved"}
-              onClick={() => setConfirmWithdraw(true)}
-              className={cn(
-                "relative h-8 w-[52px] shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60",
-                status === "approved" ? "bg-[#237A6D]" : "bg-[#C9BDB8]",
-              )}
-            >
-              <span className={cn("absolute top-1 h-6 w-6 rounded-full bg-white", status === "approved" ? "left-6" : "left-1")} />
-            </button>
-          </div>
-
-          {status === "requested" && (
-            <div className="flex flex-col gap-3">
-              <PhotoPicker paths={story.photo_paths} urls={urls} selected={picked} max={2} onChange={setPicked} />
-              <p className="rounded-xl bg-white px-3 py-2 text-[13px] font-semibold text-[#1F1B16]">
-                Every NomadNest member will be able to read this.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={decidePortfolio.isPending}
-                  onClick={() => run(decidePortfolio.mutateAsync({ decision: "approve", photoPaths: picked }), "Approved")}
-                  className={nnButton("primary", "flex-1")}
-                >
-                  Approve
-                </button>
-                <button
-                  type="button"
-                  disabled={decidePortfolio.isPending}
-                  onClick={() => run(decidePortfolio.mutateAsync({ decision: "decline" }), "Kept private")}
-                  className={nnButton("secondary", "flex-1")}
-                >
-                  Keep private
-                </button>
-              </div>
+        <section aria-label="The story" className="order-5 flex flex-col gap-4 lg:order-none">
+          {story.story_days && story.story_days.length > 0
+            ? story.story_days.map((d, i) => (
+                <div key={d.date} className="flex flex-col gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-brand-teal-text">{dayLabel(d.date, i)}</span>
+                  <p className="text-[15px] leading-relaxed text-[#2B2722]">{d.text}</p>
+                </div>
+              ))
+            : paragraphs.map((p, i) => (
+                <p key={i} className="text-[15px] leading-relaxed text-[#2B2722]">
+                  {p}
+                </p>
+              ))}
+          {typeof story.updates_sent === "number" && story.updates_sent > 0 && (
+            <div className="flex items-center gap-2.5 rounded-[14px] border border-[#D3E7E1] px-3.5 py-3 text-[13px] text-[#3F444B]">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-teal text-white">
+                <Check className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span>
+                <strong className="text-[#1F1B16]">
+                  {story.updates_expected
+                    ? `${Math.min(story.updates_sent, story.updates_expected)} of ${story.updates_expected} daily updates sent.`
+                    : `${story.updates_sent} daily ${story.updates_sent === 1 ? "update" : "updates"} sent.`}
+                </strong>{" "}
+                This story was made from them.
+              </span>
             </div>
           )}
-
-          <p className="flex items-start gap-2 border-t border-[#D3E7E1] pt-2.5 text-xs leading-snug text-[#3F444B]">
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            Your address, door codes and Welcome Guide are never shown. Only the story and the photos you leave on.
-          </p>
         </section>
-      )}
 
-      <section aria-label="The story" className="flex flex-col gap-4">
-        {story.story_days && story.story_days.length > 0
-          ? story.story_days.map((d, i) => (
-              <div key={d.date} className="flex flex-col gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#1E6B5F]">{dayLabel(d.date, i)}</span>
-                <p className="text-[15px] leading-relaxed text-[#2B2722]">{d.text}</p>
-              </div>
-            ))
-          : paragraphs.map((p, i) => (
-              <p key={i} className="text-[15px] leading-relaxed text-[#2B2722]">
-                {p}
-              </p>
-            ))}
-        {typeof story.updates_sent === "number" && story.updates_sent > 0 && (
-          <div className="flex items-center gap-2.5 rounded-[14px] border border-[#D3E7E1] px-3.5 py-3 text-[13px] text-[#3F444B]">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#237A6D] text-white">
-              <Check className="h-4 w-4" aria-hidden="true" />
-            </span>
-            <span>
-              <strong className="text-[#1F1B16]">
-                {story.updates_expected
-                  ? `${Math.min(story.updates_sent, story.updates_expected)} of ${story.updates_expected} daily updates sent.`
-                  : `${story.updates_sent} daily ${story.updates_sent === 1 ? "update" : "updates"} sent.`}
-              </strong>{" "}
-              This story was made from them.
-            </span>
-          </div>
-        )}
-      </section>
-
-      <section aria-label="Photos" className="flex flex-col gap-2.5">
-        <div className="flex items-baseline justify-between">
-          <SerifTitle>Photos</SerifTitle>
-          <span className="text-[13px] text-[#656B74]">
-            {status === "approved" ? `${shownPhotos.length} on ${nomad}'s profile` : `${story.photo_paths.length} in this story`}
+        <p className="order-8 flex items-start gap-2 text-xs leading-snug text-[#656B74] lg:order-none">
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span>
+            Written by NomadNest AI from {nomad}'s daily updates. Something not right?{" "}
+            <button type="button" onClick={() => setReportOpen(true)} className="min-h-[44px] font-bold text-brand-teal-text underline-offset-2 hover:underline">
+              Report it
+            </button>
           </span>
-        </div>
-        <p className="text-[13px] leading-snug text-[#656B74]">
-          {status === "approved"
-            ? `Remove a photo from ${nomad}'s profile at any time. You'll always see every photo here.`
-            : "You choose which photos appear if the story goes on your Nomad's profile."}
         </p>
-        <div className="grid grid-cols-2 gap-2.5">
-          {story.photo_paths.map((p) => {
-            const shown = shownPhotos.includes(p);
-            return (
-              <div key={p} className="relative h-[130px] overflow-hidden rounded-2xl bg-[#DCCDBB]">
-                {urls[p] && <img src={urls[p]} alt={altOf(p)} className="h-full w-full object-cover" />}
-                {status === "approved" && (
-                  <span
-                    className={cn(
-                      "absolute right-2 top-2 inline-flex h-6 items-center rounded-full px-2 text-[11px] font-bold",
-                      shown ? "bg-[#237A6D] text-white" : "bg-white text-[#3F444B]",
-                    )}
-                  >
-                    {shown ? "On profile" : "Not shown"}
-                  </span>
-                )}
-                {shown && (
-                  <button
-                    type="button"
-                    onClick={() => setRemoving(p)}
-                    className="absolute bottom-2 left-1/2 flex h-11 -translate-x-1/2 items-center gap-1 rounded-full bg-white px-3 text-xs font-bold shadow"
-                    aria-label={`Remove this photo from ${nomad}'s profile`}
-                  >
-                    <X className="h-3.5 w-3.5" aria-hidden="true" />
-                    Remove
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
 
-      <section aria-label="What next" className="flex flex-col gap-2">
-        <button
-          type="button"
-          onClick={() => setShareOpen((v) => !v)}
-          aria-expanded={shareOpen}
-          className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-[#237A6D] text-[15px] font-bold text-white"
-        >
-          <Share2 className="h-[18px] w-[18px]" aria-hidden="true" />
-          Share your story
-        </button>
-        {shareOpen && (
-          <div id="share-options" role="group" aria-label="Share options" className="flex flex-col rounded-[20px] border border-[#D3E7E1] px-3.5 pb-3 pt-1.5">
-            <button type="button" onClick={() => setImageOpen(true)} className="flex min-h-[56px] items-center gap-3 py-2 text-left">
-              <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-[#E4F0EC] text-[#1E6B5F]">
-                <ImageIcon className="h-5 w-5" aria-hidden="true" />
+      </div>
+
+      <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-5">
+        {story.sitter_user_id && (
+          <section aria-label={`Show on ${nomad}'s profile`} className="order-4 flex flex-col gap-3 rounded-[22px] bg-[#F2F8F6] p-4 lg:order-none">
+            <div className="flex items-start gap-3">
+              <span className="flex flex-1 flex-col gap-1">
+                <span className="text-[15px] font-bold">Show on {nomad}'s profile</span>
+                <span className="text-[13px] leading-snug text-[#3F444B]">{profileText}</span>
               </span>
-              <span className="flex flex-col">
-                <span className="text-[15px] font-bold">Save as a story image</span>
-                <span className="text-xs text-[#656B74]">Story-sized for Instagram, TikTok and WhatsApp</span>
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={copyLink}
-              disabled={createShareLink.isPending}
-              className="flex min-h-[56px] items-center gap-3 border-t border-[#E4F0EC] py-2 text-left"
-            >
-              <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-[#E4F0EC] text-[#1E6B5F]">
-                {createShareLink.isPending ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <Link2 className="h-5 w-5" aria-hidden="true" />}
-              </span>
-              <span className="flex flex-col">
-                <span className="text-[15px] font-bold">{copied ? "Link copied" : "Copy a share link"}</span>
-                <span className="text-xs text-[#656B74]">Anyone with the link can read it. You can switch it off.</span>
-              </span>
-            </button>
-            {story.share_link && (
               <button
                 type="button"
-                onClick={() => run(disableShareLink.mutateAsync().then(() => setCopied(false)), "Share link switched off")}
-                disabled={disableShareLink.isPending}
-                className="flex min-h-[44px] items-center gap-2 border-t border-[#E4F0EC] py-2 text-left text-sm font-bold text-[#A2412C]"
+                role="switch"
+                aria-checked={status === "approved"}
+                aria-label={`Show this story on ${nomad}'s profile`}
+                disabled={status !== "approved"}
+                onClick={() => setConfirmWithdraw(true)}
+                className={cn(
+                  "relative h-8 w-[52px] shrink-0 rounded-full transition-colors before:absolute before:-inset-x-1 before:-inset-y-1.5 before:content-[''] disabled:cursor-not-allowed disabled:opacity-60",
+                  status === "approved" ? "bg-brand-teal" : "bg-[#C9BDB8]",
+                )}
               >
-                Switch off the share link
-                <span className="text-xs font-normal text-[#656B74]">
-                  ({story.share_link.views} {story.share_link.views === 1 ? "view" : "views"})
+                <span className={cn("absolute top-1 h-6 w-6 rounded-full bg-white", status === "approved" ? "left-6" : "left-1")} />
+              </button>
+            </div>
+
+            {status === "requested" && (
+              <div className="flex flex-col gap-3">
+                <PhotoPicker paths={story.photo_paths} urls={urls} selected={picked} max={2} onChange={setPicked} />
+                <p className="rounded-xl bg-white px-3 py-2 text-[13px] font-semibold text-[#1F1B16]">
+                  Every NomadNest member will be able to read this.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={decidePortfolio.isPending}
+                    onClick={() => run(decidePortfolio.mutateAsync({ decision: "approve", photoPaths: picked }), "Approved")}
+                    className={nnButton("primary", "flex-1")}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    disabled={decidePortfolio.isPending}
+                    onClick={() => run(decidePortfolio.mutateAsync({ decision: "decline" }), "Kept private")}
+                    className={nnButton("secondary", "flex-1")}
+                  >
+                    Keep private
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <p className="flex items-start gap-2 border-t border-[#D3E7E1] pt-2.5 text-xs leading-snug text-[#3F444B]">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              Your address, door codes and Welcome Guide are never shown. Only the story and the photos you leave on.
+            </p>
+          </section>
+        )}
+
+        <section aria-label="Photos" className="order-6 flex flex-col gap-2.5 lg:order-none">
+          <div className="flex items-baseline justify-between">
+            <SerifTitle>Photos</SerifTitle>
+            <span className="text-[13px] text-[#656B74]">
+              {status === "approved" ? `${shownPhotos.length} on ${nomad}'s profile` : `${story.photo_paths.length} in this story`}
+            </span>
+          </div>
+          <p className="text-[13px] leading-snug text-[#656B74]">
+            {status === "approved"
+              ? `Remove a photo from ${nomad}'s profile at any time. You'll always see every photo here.`
+              : "You choose which photos appear if the story goes on your Nomad's profile."}
+          </p>
+          <div className="grid grid-cols-2 gap-2.5">
+            {story.photo_paths.map((p) => {
+              const shown = shownPhotos.includes(p);
+              return (
+                <div key={p} className="relative h-[130px] overflow-hidden rounded-2xl bg-[#DCCDBB]">
+                  {urls[p] && <img src={urls[p]} alt={altOf(p)} className="h-full w-full object-cover" />}
+                  {status === "approved" && (
+                    <span
+                      className={cn(
+                        "absolute right-2 top-2 inline-flex h-6 items-center rounded-full px-2 text-[11px] font-bold",
+                        shown ? "bg-brand-teal text-white" : "bg-white text-[#3F444B]",
+                      )}
+                    >
+                      {shown ? "On profile" : "Not shown"}
+                    </span>
+                  )}
+                  {shown && (
+                    <button
+                      type="button"
+                      onClick={() => setRemoving(p)}
+                      className="absolute bottom-2 left-1/2 flex h-11 -translate-x-1/2 items-center gap-1 rounded-full bg-white px-3 text-xs font-bold shadow"
+                      aria-label={`Remove this photo from ${nomad}'s profile`}
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
+                      Remove
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section aria-label="What next" className="order-7 flex flex-col gap-2 lg:order-none">
+          <button
+            type="button"
+            onClick={() => setShareOpen((v) => !v)}
+            aria-expanded={shareOpen}
+            className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand-teal text-[15px] font-bold text-white"
+          >
+            <Share2 className="h-[18px] w-[18px]" aria-hidden="true" />
+            Share your story
+          </button>
+          {shareOpen && (
+            <div id="share-options" role="group" aria-label="Share options" className="flex flex-col rounded-[20px] border border-[#D3E7E1] px-3.5 pb-3 pt-1.5">
+              <button type="button" onClick={() => setImageOpen(true)} className="flex min-h-[56px] items-center gap-3 py-2 text-left">
+                <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-[#E4F0EC] text-brand-teal-text">
+                  <ImageIcon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="flex flex-col">
+                  <span className="text-[15px] font-bold">Save as a story image</span>
+                  <span className="text-xs text-[#656B74]">Story-sized for Instagram, TikTok and WhatsApp</span>
                 </span>
               </button>
-            )}
-            <p className="mt-1.5 flex items-start gap-2 text-xs leading-snug text-[#3F444B]">
-              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              Shared stories show the city only, first names only, and just the photos on {nomad}'s profile.
-            </p>
-          </div>
-        )}
-        {story.sitter_user_id && (
-          <button type="button" onClick={() => setInviteOpen(true)} className={nnButton("secondary", "h-[50px] rounded-2xl text-[15px]")}>
-            Invite {nomad} to sit again
-          </button>
-        )}
-        {story.can_review && story.sitter_user_id && (
-          <button type="button" onClick={() => setReviewOpen(true)} className={nnButton("secondary", "h-[50px] rounded-2xl text-[15px]")}>
-            Leave a review for {nomad}
-          </button>
-        )}
-      </section>
+              <button
+                type="button"
+                onClick={copyLink}
+                disabled={createShareLink.isPending}
+                className="flex min-h-[56px] items-center gap-3 border-t border-[#E4F0EC] py-2 text-left"
+              >
+                <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-[#E4F0EC] text-brand-teal-text">
+                  {createShareLink.isPending ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <Link2 className="h-5 w-5" aria-hidden="true" />}
+                </span>
+                <span className="flex flex-col">
+                  <span className="text-[15px] font-bold">{copied ? "Link copied" : "Copy a share link"}</span>
+                  <span className="text-xs text-[#656B74]">Anyone with the link can read it. You can switch it off.</span>
+                </span>
+              </button>
+              {story.share_link && (
+                <button
+                  type="button"
+                  onClick={() => run(disableShareLink.mutateAsync().then(() => setCopied(false)), "Share link switched off")}
+                  disabled={disableShareLink.isPending}
+                  className="flex min-h-[44px] items-center gap-2 border-t border-[#E4F0EC] py-2 text-left text-sm font-bold text-brand-coral-text"
+                >
+                  Switch off the share link
+                  <span className="text-xs font-normal text-[#656B74]">
+                    ({story.share_link.views} {story.share_link.views === 1 ? "view" : "views"})
+                  </span>
+                </button>
+              )}
+              <p className="mt-1.5 flex items-start gap-2 text-xs leading-snug text-[#3F444B]">
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                Shared stories show the city only, first names only, and just the photos on {nomad}'s profile.
+              </p>
+            </div>
+          )}
+          {story.sitter_user_id && (
+            <button type="button" onClick={() => setInviteOpen(true)} className={nnButton("secondary", "h-[50px] rounded-2xl text-[15px]")}>
+              Invite {nomad} to sit again
+            </button>
+          )}
+          {story.can_review && story.sitter_user_id && (
+            <button type="button" onClick={() => setReviewOpen(true)} className={nnButton("secondary", "h-[50px] rounded-2xl text-[15px]")}>
+              Leave a review for {nomad}
+            </button>
+          )}
+        </section>
 
-      <p className="flex items-start gap-2 text-xs leading-snug text-[#656B74]">
-        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <span>
-          Written by NomadNest AI from {nomad}'s daily updates. Something not right?{" "}
-          <button type="button" onClick={() => setReportOpen(true)} className="min-h-[44px] font-bold text-[#237A6D] underline-offset-2 hover:underline">
-            Report it
-          </button>
-        </span>
-      </p>
+      </div>
 
       <AlertDialog open={confirmWithdraw} onOpenChange={setConfirmWithdraw}>
         <AlertDialogContent>

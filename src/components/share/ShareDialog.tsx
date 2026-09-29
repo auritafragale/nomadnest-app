@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Share2, Copy, Check, Twitter, Facebook, Linkedin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -71,8 +72,8 @@ export const ShareDialog = ({ title, url, description, triggerClassName }: Share
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" className={triggerClassName}>
-          <Share2 className="h-4 w-4" />
+        <Button variant="outline" size="icon" aria-label="Share" className={cn("h-11 w-11", triggerClassName)}>
+          <Share2 className="h-4 w-4" aria-hidden="true" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

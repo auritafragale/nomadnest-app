@@ -1,6 +1,7 @@
 import { CircleCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { NavRow, SectionCard, SerifTitle } from "@/components/nn/ui";
+import { cn } from "@/lib/utils";
 
 export interface TodoItem {
   key: string;
@@ -16,14 +17,14 @@ export interface TodoItem {
 }
 
 /** "To do": at most four rows, most urgent first. */
-export const TodoList = ({ items }: { items: TodoItem[] }) => {
+export const TodoList = ({ items, className }: { items: TodoItem[]; className?: string }) => {
   const visible = items.slice(0, 4);
   return (
-    <SectionCard label="To do" className="px-[18px] py-1.5">
+    <SectionCard label="To do" className={cn("px-[18px] py-1.5", className)}>
       <SerifTitle className="mb-1.5 mt-3">To do</SerifTitle>
       {visible.length === 0 ? (
         <p className="flex items-center gap-2 border-t border-[var(--nn-line)] py-3 text-sm text-[#656B74]">
-          <CircleCheck className="h-4 w-4 text-[#1E6B5F]" aria-hidden="true" />
+          <CircleCheck className="h-4 w-4 text-brand-teal-text" aria-hidden="true" />
           You're all caught up.
         </p>
       ) : (

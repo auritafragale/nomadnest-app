@@ -32,8 +32,11 @@ BEGIN
   WHERE is_admin IS NOT TRUE AND id NOT IN (v_owner, v_sitter) ORDER BY created_at LIMIT 1;
 
   -- Fixture: the story is on the Nomad's profile with one test photo.
+  -- Alt text for an approved photo and for one that isn't approved: only the
+  -- first may reach the shared story (photo_alt, ai_dates_alt_text migration).
   UPDATE public.sit_stories
-  SET portfolio_status = 'approved', portfolio_photo_paths = ARRAY[v_sit::text || '/member-test.jpg']
+  SET portfolio_status = 'approved', portfolio_photo_paths = ARRAY[v_sit::text || '/member-test.jpg'],
+      photo_alt = jsonb_build_object(v_sit::text || '/member-test.jpg', 'A dog on a sofa', v_sit::text || '/member-test-private.jpg', 'A cat by a window')
   WHERE id = v_story;
   DELETE FROM public.sit_story_share_links WHERE story_id = v_story;
 
@@ -84,11 +87,17 @@ BEGIN
     RAISE EXCEPTION 'FAIL: an enabled link returned nothing';
   END IF;
   IF EXISTS (SELECT 1 FROM jsonb_object_keys(v_json) k
-             WHERE k NOT IN ('title', 'story', 'story_days', 'city', 'month', 'owner_first_name', 'sitter_name', 'photo_paths')) THEN
+             WHERE k NOT IN ('title', 'story', 'story_days', 'city', 'month', 'owner_first_name', 'sitter_name', 'photo_paths', 'photo_alt')) THEN
     RAISE EXCEPTION 'FAIL: the shared story returns more than planned: %', (SELECT string_agg(k, ', ') FROM jsonb_object_keys(v_json) k);
   END IF;
   IF v_json->'photo_paths' <> to_jsonb(ARRAY[v_sit::text || '/member-test.jpg']) THEN
     RAISE EXCEPTION 'FAIL: the shared story shows photos that aren''t approved for the profile';
+  END IF;
+  -- photo_alt covers approved photos only.
+  IF jsonb_typeof(v_json->'photo_alt') = 'object' AND EXISTS (
+       SELECT 1 FROM jsonb_object_keys(v_json->'photo_alt') k WHERE NOT ((v_json->'photo_paths') ? k)) THEN
+    RAISE EXCEPTION 'FAIL: the shared story has alt text for a photo that isn''t approved: %',
+      (SELECT string_agg(k, ', ') FROM jsonb_object_keys(v_json->'photo_alt') k);
   END IF;
 
   -- Per-link rate limit: 60 a minute.

@@ -12,7 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { EmptyState, PageHeader, PillTabs, RoleTheme, SectionCard, StatusChip, nnButton, shortRange } from "@/components/nn/ui";
+import { NN_LIST, NN_MAIN, EmptyState, PageHeader, PillTabs, RoleTheme, SectionCard, StatusChip, nnButton, shortRange } from "@/components/nn/ui";
 import { useSitterApplications, useWithdrawApplication, type SitterApplication } from "@/hooks/useSitterApplications";
 import { useSits } from "@/hooks/useSits";
 import { applicationChip, groupApplications } from "@/lib/applicationGroups";
@@ -131,9 +131,10 @@ const MyApplications = () => {
 
   return (
     <RoleTheme role="sitter" className="min-h-screen">
-      <Navbar />
-      <main className="mx-auto flex max-w-xl flex-col gap-[18px] px-5 pb-24 pt-20 md:pt-24">
+      <Navbar wide />
+      <main className={NN_MAIN}>
         <PageHeader title="My applications" fallback="/dashboard" />
+        <div className={NN_LIST}>
         <PillTabs
           label="Filter applications"
           value={tab}
@@ -192,6 +193,7 @@ const MyApplications = () => {
               )}
           </>
         )}
+        </div>
       </main>
 
       <AlertDialog open={!!withdrawing} onOpenChange={(open) => !open && setWithdrawing(null)}>

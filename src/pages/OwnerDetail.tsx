@@ -266,12 +266,14 @@ const OwnerDetail = () => {
       <main className="flex-1 pt-16">
         {preview && <PreviewBar showTips={showTips} onToggleTips={() => setShowTips((v) => !v)} accent="teal" />}
         <div className="container mx-auto px-4 pt-6 pb-8">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto lg:max-w-6xl">
             {/* Back button */}
             {!preview && <BackButton fallback={user?.id === userId ? "/dashboard" : "/browse-sits"} className="mb-6" />}
 
+            {/* Desktop: summary column on the left, sections on the right */}
+            <div className="lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start lg:gap-8 xl:grid-cols-[340px_minmax(0,1fr)]">
             {/* Header Section */}
-            <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-8">
+            <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-8 lg:grid-cols-1 lg:gap-5 lg:mb-0 lg:rounded-2xl lg:border lg:border-border lg:p-5">
               {/* Avatar + share */}
               <div className="space-y-3">
                 <div className="relative aspect-square w-28 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted flex items-center justify-center">
@@ -291,7 +293,7 @@ const OwnerDetail = () => {
               </div>
 
               {/* Profile Info */}
-              <div className="md:col-span-2 min-w-0">
+              <div className="md:col-span-2 lg:col-span-1 min-w-0">
                 <div className="mb-3">
                   {/* Name, founding badge and report flag share a line */}
                   <div className="flex items-center gap-2 min-w-0">
@@ -398,6 +400,7 @@ const OwnerDetail = () => {
               </div>
             </div>
 
+            <div className="min-w-0">
             {preview && showTips && !ownerProfile?.bio && (
               <PreviewTip
                 title="Your About is empty"
@@ -492,6 +495,8 @@ const OwnerDetail = () => {
                 after you confirm them for a sit.
               </NeverShownNote>
             )}
+            </div>
+            </div>
           </div>
         </div>
       </main>

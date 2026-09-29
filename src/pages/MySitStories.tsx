@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { BookHeart, ChevronRight, Loader2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState, PageHeader, PillTabs, RoleTheme, SectionCard, SerifTitle, StatusChip, type ChipTone } from "@/components/nn/ui";
+import { NN_LIST, NN_MAIN, EmptyState, PageHeader, PillTabs, RoleTheme, SectionCard, SerifTitle, StatusChip, type ChipTone } from "@/components/nn/ui";
 import { useMySitStories, type MySitStory } from "@/hooks/useSitStories";
 import { useUpdatePhotoUrls } from "@/hooks/useDailyUpdates";
 
@@ -43,13 +43,14 @@ const MySitStories = () => {
 
   return (
     <RoleTheme role="sitter" className="min-h-screen">
-      <Navbar />
-      <main className="mx-auto flex max-w-xl flex-col gap-[18px] px-5 pb-24 pt-20 md:pt-24">
+      <Navbar wide />
+      <main className={NN_MAIN}>
         <PageHeader
           title="Sit Stories"
           intro="Stories from your sits. Choose which ones future hosts see on your profile."
           fallback="/dashboard"
         />
+        <div className={NN_LIST}>
         <PillTabs<Tab>
           label="Filter Sit Stories"
           value={tab}
@@ -90,7 +91,7 @@ const MySitStories = () => {
                     {s.photo_path && urls[s.photo_path] ? (
                       <img src={urls[s.photo_path]} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <BookHeart className="m-3.5 h-6 w-6 text-[var(--nn-accent)]" aria-hidden="true" />
+                      <BookHeart className="m-3.5 h-6 w-6 text-[var(--nn-accent-dark)]" aria-hidden="true" />
                     )}
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -126,6 +127,7 @@ const MySitStories = () => {
             ))}
           </ol>
         </SectionCard>
+        </div>
       </main>
     </RoleTheme>
   );

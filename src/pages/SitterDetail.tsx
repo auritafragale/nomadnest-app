@@ -503,12 +503,14 @@ const SitterDetail = () => {
       <main className="flex-1 pt-16">
         {preview && <PreviewBar showTips={showTips} onToggleTips={() => setShowTips((v) => !v)} accent="coral" />}
         <div className="container mx-auto px-4 pt-6 pb-8">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto lg:max-w-6xl">
             {/* Back button */}
             {!preview && <BackButton fallback={user?.id === userId ? "/dashboard" : "/browse-sitters"} className="mb-6" />}
 
+            {/* Desktop: summary column on the left, sections on the right */}
+            <div className="lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start lg:gap-8 xl:grid-cols-[340px_minmax(0,1fr)]">
             {/* Header Section */}
-            <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8">
+            <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8 lg:grid-cols-1 lg:gap-5 lg:mb-0 lg:rounded-2xl lg:border lg:border-border lg:p-5">
               {/* Photo Gallery — sit-style arrows, tap to open full size */}
               <div className="space-y-3">
                 <div className="relative aspect-[3/2] w-56 sm:w-64 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted">
@@ -581,7 +583,7 @@ const SitterDetail = () => {
               </div>
 
               {/* Profile Info */}
-              <div className="md:col-span-2 min-w-0">
+              <div className="md:col-span-2 lg:col-span-1 min-w-0">
                 <div className="mb-3">
                   {/* Name + founding badge + report flag on one line */}
                   <div className="flex items-center gap-2 min-w-0">
@@ -772,7 +774,7 @@ const SitterDetail = () => {
                     </p>
                     <ul className="flex flex-wrap gap-2">
                       {freeDates.map((r) => (
-                        <li key={r.start} className="rounded-full bg-[#E3F1EE] px-3 py-1 text-sm font-semibold text-[#1E6B5F]">
+                        <li key={r.start} className="rounded-full bg-[#E3F1EE] px-3 py-1 text-sm font-semibold text-brand-teal-text">
                           {shortRange(r.start, r.end)} · {r.days} {r.days === 1 ? "day" : "days"}
                         </li>
                       ))}
@@ -812,6 +814,7 @@ const SitterDetail = () => {
               </div>
             </div>
 
+            <div className="min-w-0">
             {preview && showTips && !sitter.bio && (
               <PreviewTip
                 title="About me is empty"
@@ -1018,6 +1021,8 @@ const SitterDetail = () => {
                 your last name, email, phone number, date of birth, ID documents or exact location.
               </NeverShownNote>
             )}
+            </div>
+            </div>
           </div>
         </div>
       </main>

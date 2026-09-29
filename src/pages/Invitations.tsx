@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Check, Loader2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState, PageHeader, PillTabs, RoleTheme, SectionCard, SerifTitle, nightsBetween, nnButton, shortRange } from "@/components/nn/ui";
+import { NN_LIST, NN_MAIN, EmptyState, PageHeader, PillTabs, RoleTheme, SectionCard, SerifTitle, nightsBetween, nnButton, shortRange } from "@/components/nn/ui";
 import { useAcceptInvite, useSitterInvites, useUpdateInviteStatus, type SitterInvite } from "@/hooks/useSitterInvites";
 import { useListingPets } from "@/hooks/useListingPets";
 import { useMyAvailability } from "@/hooks/useMyAvailability";
@@ -135,7 +135,7 @@ const AcceptedCard = ({ invite }: { invite: SitterInvite }) => {
   return (
     <SectionCard className="flex flex-col gap-3 p-[18px]">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E1F2EC] text-[#1E6B5F]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E1F2EC] text-brand-teal-text">
           <Check className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="min-w-0">
@@ -220,7 +220,7 @@ const InviteTips = () => {
               <span
                 className={cn(
                   "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px]",
-                  done ? "border-[#1E6B5F] bg-[#1E6B5F] text-white" : "border-[var(--nn-border)]",
+                  done ? "border-brand-teal-text bg-brand-teal-text text-white" : "border-[var(--nn-border)]",
                 )}
                 aria-hidden="true"
               >
@@ -249,13 +249,14 @@ const Invitations = () => {
 
   return (
     <RoleTheme role="sitter" className="min-h-screen">
-      <Navbar />
-      <main className="mx-auto flex max-w-xl flex-col gap-[18px] px-5 pb-24 pt-20 md:pt-24">
+      <Navbar wide />
+      <main className={NN_MAIN}>
         <PageHeader
           title="Invitations"
           intro="When a Pet Parent likes your profile, they can invite you straight to their sit. Accept or decline here."
           fallback="/dashboard"
         />
+        <div className={NN_LIST}>
         <PillTabs<Tab>
           label="Invitations"
           value={tab}
@@ -292,6 +293,7 @@ const Invitations = () => {
         )}
 
         <InviteTips />
+        </div>
       </main>
     </RoleTheme>
   );

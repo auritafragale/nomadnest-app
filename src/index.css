@@ -11,6 +11,9 @@
     --brand-teal: 171 58% 39%;
     --brand-coral-light: 10 75% 95%;
     --brand-teal-light: 171 58% 95%;
+    /* Darker shades for small text and icons on white: #C95B43, #1E6B5F */
+    --brand-coral-text: 11 55% 53%;
+    --brand-teal-text: 171 56% 27%;
 
     --background: 34 33% 96%;
     --foreground: 0 0% 10%;

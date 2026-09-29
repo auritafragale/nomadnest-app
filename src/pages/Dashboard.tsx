@@ -11,7 +11,7 @@ import Navbar from "@/components/layout/Navbar";
 import DashboardHeader, { ModeSwitch } from "@/components/dashboard/DashboardHeader";
 import { NomadDashboard } from "@/components/nomad/NomadDashboard";
 import { ParentDashboard } from "@/components/parent/ParentDashboard";
-import { RoleTheme } from "@/components/nn/ui";
+import { NN_PAGE, RoleTheme } from "@/components/nn/ui";
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 import { ownerCompletion, sitterCompletion } from "@/lib/profileCompletion";
 
@@ -156,10 +156,22 @@ const Dashboard = () => {
   const viewRole: "sitter" | "owner" =
     role === "both" ? (activeRole === "owner" ? "owner" : "sitter") : role === "owner" ? "owner" : "sitter";
   const completion = viewRole === "sitter" ? sitterCompletion(profile, sitterProfile) : ownerCompletion(profile, ownerProfile);
+  const header = (
+    <DashboardHeader
+      role={viewRole}
+      userId={user?.id || ""}
+      displayName={displayName}
+      avatarUrl={profile?.avatar_url}
+      city={profile?.city}
+      country={profile?.country}
+      completion={completion}
+      modeSwitch={role === "both" ? <ModeSwitch role={viewRole} onChange={setActiveRole} /> : undefined}
+    />
+  );
 
   return (
     <RoleTheme role={viewRole} className="min-h-screen">
-      <Navbar />
+      <Navbar wide />
 
       {/* Push notification opt-in banner */}
       {showPushBanner && (
@@ -186,21 +198,10 @@ const Dashboard = () => {
       )}
 
       <main className={`pb-24 md:pb-12 ${showPushBanner ? "pt-32" : "pt-20 md:pt-24"}`}>
-        <div className="mx-auto flex max-w-xl flex-col gap-[18px] px-5">
-          <DashboardHeader
-            role={viewRole}
-            userId={user?.id || ""}
-            displayName={displayName}
-            avatarUrl={profile?.avatar_url}
-            city={profile?.city}
-            country={profile?.country}
-            completion={completion}
-          />
-
-          {role === "both" && <ModeSwitch role={viewRole} onChange={setActiveRole} />}
-
+        <div className={NN_PAGE}>
           {viewRole === "sitter" ? (
             <NomadDashboard
+              header={header}
               summary={summary}
               completion={completion}
               openReviewSitId={openReviewSitId}
@@ -208,6 +209,7 @@ const Dashboard = () => {
             />
           ) : (
             <ParentDashboard
+              header={header}
               summary={summary}
               completion={completion}
               openReview={openReviewSitId}

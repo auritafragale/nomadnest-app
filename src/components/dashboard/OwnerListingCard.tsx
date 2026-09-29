@@ -48,7 +48,7 @@ interface OwnerListingCardProps {
 }
 
 const STATUS: Record<string, { label: string; dot: string; text: string }> = {
-  published: { label: "Published", dot: "bg-[#237A6D]", text: "text-[#1E6B5F]" },
+  published: { label: "Published", dot: "bg-brand-teal", text: "text-brand-teal-text" },
   paused: { label: "Paused", dot: "bg-[#E8B53E]", text: "text-[#8A6A12]" },
   draft: { label: "Draft", dot: "bg-[#9097A1]", text: "text-[#4B5058]" },
 };
@@ -79,8 +79,11 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
 
   return (
     <>
-      <SectionCard label="Your home" className="overflow-hidden">
-        <div className="relative h-[190px] bg-[#BFA98F]">
+      <SectionCard
+        label="Your home"
+        className="overflow-hidden md:grid md:grid-cols-[260px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)]"
+      >
+        <div className="relative h-[190px] bg-[#BFA98F] md:h-auto md:min-h-[300px]">
           {listing.photos?.[0] ? (
             <img src={listing.photos[0]} alt="" className="h-full w-full object-cover" />
           ) : (
@@ -142,7 +145,7 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
           </DropdownMenu>
         </div>
 
-        <div className="flex flex-col gap-3.5 p-[18px]">
+        <div className="flex min-w-0 flex-col gap-3.5 p-[18px] md:p-5 xl:p-6">
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#656B74]">Your home</span>
             <h2 className="font-display text-[27px] font-normal leading-[1.1]">
@@ -156,7 +159,7 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
           <div className="grid grid-cols-3 gap-2">
             <Link to={`/listing/${listing.id}/welcome-guide`} className={cn(tile, "bg-[#F3F8F6]")}>
               <span
-                className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#E1EEEA] text-[#1E6B5F]"
+                className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#E1EEEA] text-brand-teal-text"
                 aria-hidden="true"
               >
                 <BookOpen className="h-4 w-4" />
@@ -178,7 +181,7 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
               <span
                 className={cn(
                   "flex h-[30px] w-[30px] items-center justify-center rounded-full",
-                  openDates.length === 0 ? "bg-[#F9DCD3] text-[#A2412C]" : "bg-[#E1EEEA] text-[#3F444B]",
+                  openDates.length === 0 ? "bg-[#F9DCD3] text-brand-coral-text" : "bg-[#E1EEEA] text-[#3F444B]",
                 )}
                 aria-hidden="true"
               >
@@ -187,14 +190,14 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
               <span className="text-[15px] font-bold">
                 {openDates.length === 0 ? "None" : shortRange(openDates[0].start_date, openDates[0].end_date)}
               </span>
-              <span className={cn("text-xs", openDates.length === 0 ? "text-[#A2412C]" : "text-[#3F444B]")}>
+              <span className={cn("text-xs", openDates.length === 0 ? "text-brand-coral-text" : "text-[#3F444B]")}>
                 {openDates.length > 1 ? `Open dates · +${openDates.length - 1}` : "Open dates"}
               </span>
             </Link>
           </div>
 
           {notInBrowse && (
-            <p className="text-sm leading-snug text-[#A2412C]">Your home isn't showing in Browse. Add dates so Nomads can find it.</p>
+            <p className="text-sm leading-snug text-brand-coral-text">Your home isn't showing in Browse. Add dates so Nomads can find it.</p>
           )}
 
           {closedDates.length > 0 && (
@@ -215,7 +218,7 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
                       type="button"
                       onClick={() => reopenSitDate.mutate(date.id)}
                       disabled={reopenSitDate.isPending}
-                      className="flex min-h-[44px] items-center gap-1 rounded-full px-3 font-semibold text-[#1E6B5F]"
+                      className="flex min-h-[44px] items-center gap-1 rounded-full px-3 font-semibold text-brand-teal-text"
                     >
                       {reopenSitDate.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -232,7 +235,7 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
 
           <Link
             to={`/edit-listing/${listing.id}?focus=dates`}
-            className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-[#237A6D] text-[15px] font-bold text-white hover:bg-[#1B5F55]"
+            className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand-teal text-[15px] font-bold text-white hover:bg-brand-teal-text"
           >
             <CalendarPlus className="h-[18px] w-[18px]" aria-hidden="true" />
             Add new dates

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { differenceInCalendarDays, parseISO, startOfToday } from "date-fns";
 import { BookOpen, BookHeart, Calendar, Camera, Mail, MessageSquare, Sparkles, Star, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { SectionCard, SerifTitle, StatusChip, nnButton, shortRange } from "@/components/nn/ui";
+import { NavRow, SectionCard, SerifTitle, StatusChip, nnButton, shortRange } from "@/components/nn/ui";
 import { TodoList, type TodoItem } from "@/components/dashboard/TodoList";
 import { UpcomingPastSits } from "@/components/dashboard/UpcomingPastSits";
 import { AskNestSheet } from "@/components/welcome-guide/AskNestSheet";
@@ -21,6 +21,7 @@ import type { CurrentSit, DashboardSummary, NextSit } from "@/hooks/useDashboard
 import { applicationChip, groupApplications } from "@/lib/applicationGroups";
 import { resolveListingConversation } from "@/lib/conversations";
 import type { Completion } from "@/lib/profileCompletion";
+import { DashboardColumns } from "@/components/dashboard/DashboardColumns";
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
@@ -53,7 +54,7 @@ const Tile = ({
 }) => {
   const iconCls =
     tone === "teal"
-      ? "bg-[#E3F1EE] text-[#1E6B5F]"
+      ? "bg-[#E3F1EE] text-brand-teal-text"
       : tone === "accent"
         ? "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]"
         : "bg-[var(--nn-chip)] text-[#3F444B]";
@@ -63,7 +64,7 @@ const Tile = ({
         <Icon className="h-[17px] w-[17px]" aria-hidden="true" />
       </span>
       <span className="text-[13px] font-bold">{title}</span>
-      <span className={`text-[11px] ${tone === "teal" ? "font-semibold text-[#1E6B5F]" : "text-[#656B74]"}`}>{detail}</span>
+      <span className={`text-[11px] ${tone === "teal" ? "font-semibold text-brand-teal-text" : "text-[#656B74]"}`}>{detail}</span>
     </>
   );
   const cls = "flex min-h-[44px] flex-col gap-1.5 rounded-2xl bg-[var(--nn-soft)] px-2.5 py-3 text-left";
@@ -117,8 +118,11 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
   };
 
   return (
-    <SectionCard label={current ? "Your sit now" : "Your next sit"} className="overflow-hidden">
-      <div className="relative flex h-[150px] items-center justify-center bg-[#CDB79E]">
+    <SectionCard
+      label={current ? "Your sit now" : "Your next sit"}
+      className="overflow-hidden md:col-span-2 md:grid md:grid-cols-[260px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]"
+    >
+      <div className="relative flex h-[150px] items-center justify-center bg-[#CDB79E] md:h-auto md:min-h-[300px]">
         {photo && <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover" />}
         <span className="absolute left-3 top-3 inline-flex h-7 items-center rounded-full bg-white px-3 text-xs font-bold text-[var(--nn-accent-dark)]">
           {current ? "Your sit now" : "Your next sit"}
@@ -133,9 +137,9 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
                 : `Starts in ${days} days`}
         </span>
       </div>
-      <div className="flex flex-col gap-3.5 p-[18px]">
+      <div className="flex min-w-0 flex-col gap-3.5 p-[18px] md:p-5 xl:p-6">
         <div className="flex flex-col gap-1">
-          <h2 className="font-display text-[25px] font-normal leading-[1.1]">{s.listing_title}</h2>
+          <h2 className="font-display text-[25px] font-normal leading-[1.1] xl:text-[30px]">{s.listing_title}</h2>
           <p className="text-sm text-[#656B74]">
             {[`With ${other}`, pets, shortRange(s.start_date, s.end_date)].filter(Boolean).join(" · ")}
           </p>
@@ -158,7 +162,7 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
         {current && (current.sent_today || current.due_today) && (
           <div
             className={`flex items-center gap-2.5 rounded-[14px] px-3.5 py-3 text-sm leading-snug ${
-              current.sent_today ? "bg-[#E1F2EC] text-[#1E6B5F]" : "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]"
+              current.sent_today ? "bg-[#E1F2EC] text-brand-teal-text" : "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]"
             }`}
           >
             <Camera className="h-5 w-5 shrink-0" aria-hidden="true" />
@@ -214,7 +218,7 @@ const CountTile = ({ to, count, label, tone }: { to: string; count: number; labe
     to={to}
     className={`flex min-h-[44px] flex-col gap-0.5 rounded-2xl p-3 ${
       tone === "green"
-        ? "bg-[#E3F1EE] text-[#1E6B5F]"
+        ? "bg-[#E3F1EE] text-brand-teal-text"
         : tone === "accent"
           ? "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]"
           : "bg-[#F6E8E3] text-[#3F444B]"
@@ -236,7 +240,7 @@ const ApplicationsSummary = () => {
       <div className="flex items-baseline justify-between">
         <SerifTitle>My applications</SerifTitle>
         {groups.all.length > 0 && (
-          <Link to="/my-applications" className="text-sm font-bold text-[var(--nn-accent)]">
+          <Link to="/my-applications" className="-my-3 inline-flex min-h-[44px] items-center text-sm font-bold text-[var(--nn-accent-dark)]">
             See all {groups.all.length}
           </Link>
         )}
@@ -285,14 +289,54 @@ const ApplicationsSummary = () => {
   );
 };
 
-/** "Your Nomad profile": Invitations, Availability and Sit Stories tiles. */
-const NomadProfileTiles = () => {
+/** Invitations, Availability and Sit Stories: what the tiles and the list show. */
+const useNomadProfileLinks = () => {
   const { data: pendingInvites = 0 } = usePendingInvitesCount();
   const { data: availability } = useMyAvailability();
   const { data: stories = [] } = useMySitStories();
   const mine = stories.filter((s) => s.role === "sitter" && s.status === "ready");
   const onProfile = mine.filter((s) => s.portfolio_status === "approved").length;
   const ranges = availability?.ranges ?? [];
+  return {
+    invites: { detail: pendingInvites > 0 ? `${pendingInvites} waiting` : "None waiting", urgent: pendingInvites > 0 },
+    availability: { detail: ranges.length === 0 ? "Set your dates" : plural(ranges.length, "date range"), urgent: ranges.length === 0 },
+    stories: {
+      detail:
+        mine.length === 0 ? "After your first sit" : onProfile > 0 ? `${onProfile} on your profile` : plural(mine.length, "story", "stories"),
+    },
+  };
+};
+
+/** "Your Nomad profile" as a list: the desktop profile column. */
+const NomadProfileList = ({ className }: { className?: string }) => {
+  const links = useNomadProfileLinks();
+  return (
+    <SectionCard label="Your Nomad profile" className={`px-[18px] py-1.5 ${className ?? ""}`}>
+      <SerifTitle className="mb-1 mt-3">Your Nomad profile</SerifTitle>
+      <NavRow
+        to="/invitations"
+        icon={Mail}
+        title="Invitations"
+        subtitle={links.invites.detail}
+        subtitleTone={links.invites.urgent ? "accent" : "grey"}
+        iconTone="neutral"
+      />
+      <NavRow
+        to="/availability"
+        icon={Calendar}
+        title="Availability"
+        subtitle={links.availability.detail}
+        subtitleTone={links.availability.urgent ? "accent" : "grey"}
+        iconTone="teal"
+      />
+      <NavRow to="/my-sit-stories" icon={BookHeart} title="Sit Stories" subtitle={links.stories.detail} />
+    </SectionCard>
+  );
+};
+
+/** "Your Nomad profile": Invitations, Availability and Sit Stories tiles (phone and tablet). */
+const NomadProfileTiles = ({ className }: { className?: string }) => {
+  const links = useNomadProfileLinks();
 
   const tile = (to: string, icon: typeof Mail, iconCls: string, title: string, detail: string, urgent = false) => (
     <Link
@@ -311,7 +355,7 @@ const NomadProfileTiles = () => {
   );
 
   return (
-    <section aria-label="Your Nomad profile" className="flex flex-col gap-3">
+    <section aria-label="Your Nomad profile" className={`flex flex-col gap-3 ${className ?? ""}`}>
       <SerifTitle>Your Nomad profile</SerifTitle>
       <div className="grid grid-cols-3 gap-2">
         {tile(
@@ -319,36 +363,43 @@ const NomadProfileTiles = () => {
           Mail,
           "bg-[var(--nn-chip)] text-[#3F444B]",
           "Invitations",
-          pendingInvites > 0 ? `${pendingInvites} waiting` : "None waiting",
-          pendingInvites > 0,
+          links.invites.detail,
+          links.invites.urgent,
         )}
         {tile(
           "/availability",
           Calendar,
-          "bg-[#E3F1EE] text-[#1E6B5F]",
+          "bg-[#E3F1EE] text-brand-teal-text",
           "Availability",
-          ranges.length === 0 ? "Set your dates" : `${plural(ranges.length, "date range")}`,
-          ranges.length === 0,
+          links.availability.detail,
+          links.availability.urgent,
         )}
         {tile(
           "/my-sit-stories",
           BookHeart,
           "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]",
           "Sit Stories",
-          mine.length === 0 ? "After your first sit" : onProfile > 0 ? `${onProfile} on your profile` : plural(mine.length, "story", "stories"),
+          links.stories.detail,
         )}
       </div>
     </section>
   );
 };
 
-/** The Nomad side of the dashboard (design: Main.dc.html). */
+/**
+ * The Nomad side of the dashboard. Phone: Main.dc.html, one column. Tablet
+ * (md): NomadTablet.dc.html. Desktop (lg): NomadDesktop.dc.html, the profile
+ * column on the left and the sit, To do and My applications on the right.
+ */
 export const NomadDashboard = ({
+  header,
   summary,
   completion,
   openReviewSitId,
   onReviewHandled,
 }: {
+  /** Profile block and mode switch (DashboardHeader). */
+  header: React.ReactNode;
   summary: DashboardSummary | undefined;
   completion: Completion;
   openReviewSitId: string | null;
@@ -410,12 +461,19 @@ export const NomadDashboard = ({
   };
 
   return (
-    <div className="flex flex-col gap-[18px]">
+    <DashboardColumns
+      aside={
+        <>
+          {header}
+          <NomadProfileList className="hidden lg:block" />
+        </>
+      }
+    >
       <YourSitCard current={current} next={next} />
       <TodoList items={todos} />
       <ApplicationsSummary />
-      <NomadProfileTiles />
-      <div id="your-sits" className="scroll-mt-24">
+      <NomadProfileTiles className="md:col-span-2 lg:hidden" />
+      <div id="your-sits" className="min-w-0 scroll-mt-24 md:col-span-2">
         <UpcomingPastSits viewAs="sitter" openReview={null} onAutoOpened={() => undefined} />
       </div>
 
@@ -430,6 +488,6 @@ export const NomadDashboard = ({
           onReviewSubmitted={closeReview}
         />
       )}
-    </div>
+    </DashboardColumns>
   );
 };

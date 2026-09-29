@@ -22,6 +22,16 @@ export default {
         body: ['"Plus Jakarta Sans"', 'sans-serif'],
       },
       colors: {
+        // Brand accents (Nomad coral, Pet Parent teal) and their darker shades
+        // for small text and icons on white.
+        "brand-coral": {
+          DEFAULT: "hsl(var(--brand-coral) / <alpha-value>)",
+          text: "hsl(var(--brand-coral-text) / <alpha-value>)",
+        },
+        "brand-teal": {
+          DEFAULT: "hsl(var(--brand-teal) / <alpha-value>)",
+          text: "hsl(var(--brand-teal-text) / <alpha-value>)",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

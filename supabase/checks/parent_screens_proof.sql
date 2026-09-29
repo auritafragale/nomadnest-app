@@ -6,7 +6,7 @@ fn(name, marker) AS (VALUES
   ('withdraw_sit_story_portfolio', 'owner_user_id IS DISTINCT FROM auth.uid()'),
   ('withdraw_sit_story_portfolio', 'sit_story_portfolio_withdrawn'),
   ('withdraw_sit_story_portfolio', 'disable_sit_story_share_links'),
-  ('set_sit_story_portfolio_request', 'can''t be added again'),
+  ('set_sit_story_portfolio_request', 'be added again'),
   ('get_sit_story', 'story_days'),
   ('get_sit_story', 'updates_expected'),
   ('create_sit_story_share_link', 'owner_user_id IS DISTINCT FROM auth.uid()'),

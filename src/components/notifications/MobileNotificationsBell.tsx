@@ -42,12 +42,12 @@ export const MobileNotificationsBell = () => {
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <button
-          className="relative p-2.5 text-muted-foreground hover:text-foreground transition-colors rounded-md"
+          className="relative flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground transition-colors rounded-md"
           aria-label="Notifications"
         >
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive" />
+            <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-destructive" />
           )}
         </button>
       </DropdownMenuTrigger>

@@ -6,7 +6,8 @@ import { BackButton } from "@/components/layout/BackButton";
 
 /**
  * Shared look of the redesigned dashboard screens (design reference
- * 28 Sep 2026): coral for Nomad screens, teal for Pet Parent screens, plain
+ * v4, 28 Sep 2026): the theme's coral for Nomad screens and teal for Pet
+ * Parent screens (never hex, so they match Messages and the rest of the app), plain
  * white pages, DM Serif Display headings (font-display) and Plus Jakarta
  * Sans body (the app's default fonts).
  *
@@ -17,8 +18,8 @@ export type NnRole = "sitter" | "owner";
 
 const THEMES: Record<NnRole, Record<string, string>> = {
   sitter: {
-    "--nn-accent": "#C4553E",
-    "--nn-accent-dark": "#A2412C",
+    "--nn-accent": "hsl(var(--brand-coral))",
+    "--nn-accent-dark": "hsl(var(--brand-coral-text))",
     "--nn-tint": "#FDEEEA",
     "--nn-soft": "#FCF3F0",
     "--nn-chip": "#F6E4DD",
@@ -27,8 +28,8 @@ const THEMES: Record<NnRole, Record<string, string>> = {
     "--nn-track": "#F6E1DB",
   },
   owner: {
-    "--nn-accent": "#237A6D",
-    "--nn-accent-dark": "#1B5F55",
+    "--nn-accent": "hsl(var(--brand-teal))",
+    "--nn-accent-dark": "hsl(var(--brand-teal-text))",
     "--nn-tint": "#E3F1EE",
     "--nn-soft": "#F3F8F6",
     "--nn-chip": "#E1EEEA",
@@ -37,6 +38,20 @@ const THEMES: Record<NnRole, Record<string, string>> = {
     "--nn-track": "#DCEDE9",
   },
 };
+
+/**
+ * Page width of the redesigned screens. Phone: the 36rem column (unchanged).
+ * Tablet (md): full width with 32px sides. Desktop: the header's width, about
+ * 976px at lg and 1152px from xl. Pass `wide` to <Navbar> on these pages so
+ * the header lines up.
+ */
+export const NN_PAGE = "mx-auto w-full max-w-xl px-5 md:max-w-none md:px-8 lg:max-w-[1024px] lg:px-6 xl:max-w-[1200px]";
+
+/** Main element of the redesigned sub-pages (below the fixed header). */
+export const NN_MAIN = `${NN_PAGE} flex flex-col gap-[18px] pb-24 pt-20 md:pt-24 lg:gap-5`;
+
+/** Lists on sub-pages: one column, up to 56rem wide from tablet up. */
+export const NN_LIST = "flex w-full min-w-0 flex-col gap-[18px] md:max-w-4xl";
 
 export const NN_INK = "#1F1B16";
 export const NN_GREY = "#656B74";
@@ -64,7 +79,7 @@ export const SectionCard = ({
 );
 
 export const SerifTitle = ({ as: Tag = "h2", className, children }: { as?: "h1" | "h2" | "h3"; className?: string; children: React.ReactNode }) => (
-  <Tag className={cn("font-display font-normal leading-tight", Tag === "h1" ? "text-[32px]" : "text-[21px]", className)}>{children}</Tag>
+  <Tag className={cn("font-display font-normal leading-tight", Tag === "h1" ? "text-[32px] lg:text-[38px]" : "text-[21px]", className)}>{children}</Tag>
 );
 
 /** Full-page screens: Back, serif title and a short intro. */
@@ -72,7 +87,7 @@ export const PageHeader = ({ title, intro, fallback }: { title: string; intro?: 
   <div className="space-y-2">
     <BackButton fallback={fallback} className="h-11" />
     <SerifTitle as="h1">{title}</SerifTitle>
-    {intro && <p className="text-[15px] leading-snug text-[#656B74]">{intro}</p>}
+    {intro && <p className="max-w-2xl text-[15px] leading-snug text-[#656B74]">{intro}</p>}
   </div>
 );
 
@@ -94,7 +109,7 @@ export const PillTabs = <T extends string>({
   onChange: (id: T) => void;
   label: string;
 }) => (
-  <div role="group" aria-label={label} className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+  <div role="group" aria-label={label} className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 md:mx-0 md:flex-wrap md:px-0">
     {tabs.map((t) => {
       const on = t.id === value;
       return (
@@ -145,7 +160,7 @@ export const NavRow = ({
           "flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full",
           iconTone === "accent" && "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]",
           iconTone === "neutral" && "bg-[var(--nn-chip)] text-[#3F444B]",
-          iconTone === "teal" && "bg-[#E3F1EE] text-[#1E6B5F]",
+          iconTone === "teal" && "bg-[#E3F1EE] text-brand-teal-text",
         )}
       >
         <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
@@ -182,7 +197,7 @@ export const StatusChip = ({ tone, children }: { tone: ChipTone; children: React
   <span
     className={cn(
       "inline-flex h-[26px] shrink-0 items-center rounded-full px-2.5 text-xs font-bold",
-      tone === "green" && "bg-[#E1F2EC] text-[#1E6B5F]",
+      tone === "green" && "bg-[#E1F2EC] text-brand-teal-text",
       tone === "accent" && "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]",
       tone === "grey" && "bg-[#F3EEEA] text-[#4B5058]",
       tone === "gold" && "bg-[#E8B53E] text-[#3A2A06]",

@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Loader2, Plus, Sparkles } from "lucide-react
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader, RoleTheme, SectionCard, SerifTitle, nnButton, shortRange } from "@/components/nn/ui";
+import { NN_MAIN, PageHeader, RoleTheme, SectionCard, SerifTitle, nnButton, shortRange } from "@/components/nn/ui";
 import {
   useAvailabilityAiAvailable,
   useMyAvailability,
@@ -46,7 +46,11 @@ const merge = (list: DateRange[]) => {
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const MONTHS_AHEAD = 12;
 
-/** My availability (design: Availability.dc.html). */
+/**
+ * My availability. Phone: Availability.dc.html, one month. Tablet: two months.
+ * Desktop: AvailabilityDesktop.dc.html, two months with Your dates, Save and
+ * Suggest my dates beside the calendar.
+ */
 const MyAvailability = () => {
   const { user } = useAuth();
   const { data, isLoading } = useMyAvailability();
@@ -84,11 +88,17 @@ const MyAvailability = () => {
 
   const first = new Date();
   first.setDate(1);
-  const view = new Date(first.getFullYear(), first.getMonth() + month, 1);
-  const monthName = view.toLocaleString("en-GB", { month: "long", year: "numeric" });
-  const monthLong = view.toLocaleString("en-GB", { month: "long" });
-  const offset = view.getDay();
-  const days = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
+  const monthView = (n: number) => {
+    const view = new Date(first.getFullYear(), first.getMonth() + n, 1);
+    return {
+      view,
+      name: view.toLocaleString("en-GB", { month: "long", year: "numeric" }),
+      long: view.toLocaleString("en-GB", { month: "long" }),
+      offset: view.getDay(),
+      days: new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate(),
+    };
+  };
+  const monthName = monthView(month).name;
 
   const pick = (d: string) => {
     setSaved(false);
@@ -125,10 +135,59 @@ const MyAvailability = () => {
   const navBtn =
     "flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-[#EBD3CA] bg-white disabled:opacity-35";
 
+  // One month's grid. From tablet up a second month shows beside the first.
+  const renderMonth = (n: number, className?: string) => {
+    const m = monthView(n);
+    return (
+      <div key={n} className={cn("flex min-w-0 flex-col gap-3", className)}>
+        <h2 className="hidden text-center font-display text-[22px] font-normal md:block">{m.name}</h2>
+        <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-[#656B74]" aria-hidden="true">
+          {WEEKDAYS.map((w) => (
+            <span key={w}>{w}</span>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1" role="grid" aria-label={m.name}>
+          {Array.from({ length: m.offset }).map((_, i) => (
+            <span key={`x${i}`} aria-hidden="true" />
+          ))}
+          {Array.from({ length: m.days }).map((_, i) => {
+            const d = iso(new Date(m.view.getFullYear(), m.view.getMonth(), i + 1));
+            const isPast = d < today;
+            const isBooked = booked.days.has(d);
+            const isFree = inRange(d);
+            const isPending = pending === d;
+            const state = isBooked ? ", booked sit" : isPast ? ", past" : isPending ? ", first day picked" : isFree ? ", free to sit" : "";
+            return (
+              <button
+                key={d}
+                type="button"
+                disabled={isBooked || isPast}
+                onClick={() => pick(d)}
+                aria-label={`${i + 1} ${m.long}${state}`}
+                aria-pressed={isFree || isPending}
+                className={cn(
+                  "h-11 rounded-xl text-sm",
+                  isBooked && "bg-brand-coral font-bold text-white",
+                  !isBooked && isPast && "text-[#B5B9C0]",
+                  !isBooked && !isPast && isPending && "bg-white font-bold text-brand-coral-text shadow-[inset_0_0_0_2px_hsl(var(--brand-coral))]",
+                  !isBooked && !isPast && !isPending && isFree && "bg-brand-teal font-bold text-white",
+                  !isBooked && !isPast && !isPending && !isFree && "bg-[#FCF3F0] font-semibold",
+                  d === today && !isBooked && "ring-2 ring-[#1F1B16] ring-offset-1",
+                )}
+              >
+                {i + 1}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <RoleTheme role="sitter" className="min-h-screen">
-      <Navbar />
-      <main className="mx-auto flex max-w-xl flex-col gap-[18px] px-5 pb-24 pt-20 md:pt-24">
+      <Navbar wide />
+      <main className={NN_MAIN}>
         <PageHeader title="My availability" intro="Let Pet Parents know when you're free to sit." fallback="/dashboard" />
 
         {isLoading || ranges === null ? (
@@ -138,14 +197,17 @@ const MyAvailability = () => {
             <p className="text-sm text-[#656B74]">Availability is being switched on. Please try again in a few minutes.</p>
           </SectionCard>
         ) : (
-          <>
-            <SectionCard label="Calendar" className="flex flex-col gap-3 p-[18px]">
+          <div className="flex flex-col gap-[18px] lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-6">
+            <SectionCard label="Calendar" className="flex min-w-0 flex-col gap-3 p-[18px] lg:gap-4 lg:p-5">
               <div className="flex items-center justify-between">
                 <button type="button" className={navBtn} onClick={() => setMonth((m) => Math.max(0, m - 1))} disabled={month === 0} aria-label="Previous month">
                   <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                 </button>
-                <p className="font-display text-xl" aria-live="polite">
+                <p className="font-display text-xl md:hidden" aria-live="polite">
                   {monthName}
+                </p>
+                <p className="hidden text-sm text-[#656B74] md:block" aria-live="polite">
+                  Showing {monthName} and {monthView(month + 1).name}
                 </p>
                 <button
                   type="button"
@@ -157,57 +219,23 @@ const MyAvailability = () => {
                   <ChevronRight className="h-5 w-5" aria-hidden="true" />
                 </button>
               </div>
-              <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-[#656B74]" aria-hidden="true">
-                {WEEKDAYS.map((w) => (
-                  <span key={w}>{w}</span>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1" role="grid" aria-label={monthName}>
-                {Array.from({ length: offset }).map((_, i) => (
-                  <span key={`x${i}`} aria-hidden="true" />
-                ))}
-                {Array.from({ length: days }).map((_, i) => {
-                  const d = iso(new Date(view.getFullYear(), view.getMonth(), i + 1));
-                  const isPast = d < today;
-                  const isBooked = booked.days.has(d);
-                  const isFree = inRange(d);
-                  const isPending = pending === d;
-                  const state = isBooked ? ", booked sit" : isPast ? ", past" : isPending ? ", first day picked" : isFree ? ", free to sit" : "";
-                  return (
-                    <button
-                      key={d}
-                      type="button"
-                      disabled={isBooked || isPast}
-                      onClick={() => pick(d)}
-                      aria-label={`${i + 1} ${monthLong}${state}`}
-                      aria-pressed={isFree || isPending}
-                      className={cn(
-                        "h-[42px] rounded-xl text-sm",
-                        isBooked && "bg-[#C4553E] font-bold text-white",
-                        !isBooked && isPast && "text-[#B5B9C0]",
-                        !isBooked && !isPast && isPending && "bg-white font-bold text-[#C4553E] shadow-[inset_0_0_0_2px_#C4553E]",
-                        !isBooked && !isPast && !isPending && isFree && "bg-[#237A6D] font-bold text-white",
-                        !isBooked && !isPast && !isPending && !isFree && "bg-[#FCF3F0] font-semibold",
-                        d === today && !isBooked && "ring-2 ring-[#1F1B16] ring-offset-1",
-                      )}
-                    >
-                      {i + 1}
-                    </button>
-                  );
-                })}
+              <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
+                {renderMonth(month)}
+                {month + 1 < MONTHS_AHEAD && renderMonth(month + 1, "hidden md:flex")}
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#656B74]" aria-hidden="true">
-                <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-[#C4553E]" />Booked sit</span>
-                <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-[#237A6D]" />Free to sit</span>
-                <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded shadow-[inset_0_0_0_2px_#C4553E]" />First day picked</span>
+                <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-brand-coral" />Booked sit</span>
+                <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-brand-teal" />Free to sit</span>
+                <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded shadow-[inset_0_0_0_2px_hsl(var(--brand-coral))]" />First day picked</span>
               </div>
-              <p className={cn("text-[13px] leading-snug", error ? "font-semibold text-[#A2412C]" : "text-[#656B74]")} role={error ? "alert" : undefined}>
+              <p className={cn("text-[13px] leading-snug", error ? "font-semibold text-brand-coral-text" : "text-[#656B74]")} role={error ? "alert" : undefined}>
                 {hint}
               </p>
             </SectionCard>
 
+            <div className="flex min-w-0 flex-col gap-[18px] lg:gap-4">
             {aiAvailable && (
-              <SectionCard label="Suggest my dates" className="flex flex-col gap-2 p-[18px]">
+              <SectionCard label="Suggest my dates" className="flex flex-col gap-2 p-[18px] lg:order-last">
                 <button
                   type="button"
                   onClick={() =>
@@ -264,7 +292,7 @@ const MyAvailability = () => {
               <SerifTitle className="mb-1">Your dates</SerifTitle>
               {booked.sits.map((s) => (
                 <div key={s.id} className="flex items-center gap-3 border-t border-[var(--nn-line)] py-3 first:border-t-0">
-                  <span className="h-3 w-3 shrink-0 rounded-full bg-[#C4553E]" aria-hidden="true" />
+                  <span className="h-3 w-3 shrink-0 rounded-full bg-brand-coral" aria-hidden="true" />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-[15px] font-semibold">{s.listing?.title ?? "Your sit"}</span>
                     <span className="text-[13px] text-[#656B74]">Booked sit · {shortRange(s.sit_dates!.start_date, s.sit_dates!.end_date)}</span>
@@ -273,7 +301,7 @@ const MyAvailability = () => {
               ))}
               {list.map((r) => (
                 <div key={r.start} className="flex items-center gap-3 border-t border-[var(--nn-line)] py-2 first:border-t-0">
-                  <span className="h-3 w-3 shrink-0 rounded-full bg-[#237A6D]" aria-hidden="true" />
+                  <span className="h-3 w-3 shrink-0 rounded-full bg-brand-teal" aria-hidden="true" />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="text-[15px] font-semibold">Free to sit</span>
                     <span className="text-[13px] text-[#656B74]">{rangeText(r)}</span>
@@ -302,7 +330,7 @@ const MyAvailability = () => {
               disabled={save.isPending}
               className={cn(
                 "flex h-[52px] items-center justify-center gap-2 rounded-2xl text-[15px] font-bold text-white",
-                saved ? "bg-[#237A6D]" : "bg-[#C4553E]",
+                saved ? "bg-brand-teal" : "bg-brand-coral",
               )}
             >
               {save.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
@@ -311,7 +339,8 @@ const MyAvailability = () => {
             <p className="text-xs text-[#656B74]">
               Pet Parents see only your free dates. Where you're sitting is never shown.
             </p>
-          </>
+            </div>
+          </div>
         )}
       </main>
     </RoleTheme>

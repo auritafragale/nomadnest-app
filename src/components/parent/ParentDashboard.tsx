@@ -16,16 +16,18 @@ import { useUpdatePhotoUrls } from "@/hooks/useDailyUpdates";
 import { useSits, type Sit } from "@/hooks/useSits";
 import type { CurrentSit, DashboardSummary, NextSit } from "@/hooks/useDashboardSummary";
 import type { Completion } from "@/lib/profileCompletion";
+import { DashboardColumns } from "@/components/dashboard/DashboardColumns";
+import { cn } from "@/lib/utils";
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** The sit at your home now ("Day 3 of 7"), or the next one's countdown. */
-const HomeSitCard = ({ current, next }: { current: CurrentSit | null; next: NextSit | null }) => {
+const HomeSitCard = ({ current, next, className }: { current: CurrentSit | null; next: NextSit | null; className?: string }) => {
   if (!current && !next) return null;
   const s = current ?? next!;
   const days = next && !current ? differenceInCalendarDays(parseISO(next.start_date), startOfToday()) : 0;
   return (
-    <SectionCard label={current ? "Now at your home" : "Next sit at your home"} className="flex flex-col gap-3 p-[18px]">
+    <SectionCard label={current ? "Now at your home" : "Next sit at your home"} className={cn("flex flex-col gap-3 p-[18px]", className)}>
       <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#656B74]">
         {current ? "Now at your home" : "Next sit at your home"}
       </span>
@@ -59,7 +61,7 @@ const HomeSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
       {current && (current.sent_today || current.due_today) && (
         <p
           className={`flex items-center gap-2.5 rounded-[14px] px-3.5 py-3 text-sm ${
-            current.sent_today ? "bg-[#E1F2EC] text-[#1E6B5F]" : "bg-[#F6F3F1] text-[#3F444B]"
+            current.sent_today ? "bg-[#E1F2EC] text-brand-teal-text" : "bg-[#F6F3F1] text-[#3F444B]"
           }`}
         >
           <Camera className="h-5 w-5 shrink-0" aria-hidden="true" />
@@ -109,7 +111,7 @@ const SitRow = ({ sit }: { sit: Sit }) => {
           className="flex h-11 items-center justify-between rounded-[14px] bg-[var(--nn-soft)] px-3.5 text-sm font-bold"
         >
           <span className="flex items-center gap-2">
-            <BookHeart className="h-4 w-4 text-[var(--nn-accent)]" aria-hidden="true" />
+            <BookHeart className="h-4 w-4 text-[var(--nn-accent-dark)]" aria-hidden="true" />
             Read the Sit Story
           </span>
           <ChevronRight className="h-4 w-4 text-[#9097A1]" aria-hidden="true" />
@@ -120,7 +122,15 @@ const SitRow = ({ sit }: { sit: Sit }) => {
 };
 
 /** "Sits": the latest three, and See all for every sit with its actions. */
-const SitsSection = ({ openReview, onReviewAutoOpened }: { openReview?: string | null; onReviewAutoOpened?: (id: string) => void }) => {
+const SitsSection = ({
+  openReview,
+  onReviewAutoOpened,
+  className,
+}: {
+  openReview?: string | null;
+  onReviewAutoOpened?: (id: string) => void;
+  className?: string;
+}) => {
   const { data: sits = [] } = useSits();
   const [showAll, setShowAll] = useState(!!openReview);
   const mine = sits
@@ -128,10 +138,10 @@ const SitsSection = ({ openReview, onReviewAutoOpened }: { openReview?: string |
     .sort((a, b) => (b.sit_dates?.start_date ?? "").localeCompare(a.sit_dates?.start_date ?? ""));
   if (mine.length === 0 && !showAll) return null;
   return (
-    <SectionCard label="Sits" className="flex flex-col gap-2.5 p-[18px]">
+    <SectionCard label="Sits" className={cn("flex min-w-0 flex-col gap-2.5 p-[18px]", className)}>
       <div className="flex items-baseline justify-between">
         <SerifTitle>Sits</SerifTitle>
-        <button type="button" onClick={() => setShowAll((v) => !v)} className="min-h-[44px] text-sm font-bold text-[var(--nn-accent)]">
+        <button type="button" onClick={() => setShowAll((v) => !v)} className="min-h-[44px] text-sm font-bold text-[var(--nn-accent-dark)]">
           {showAll ? "Show less" : "See all"}
         </button>
       </div>
@@ -146,8 +156,11 @@ const SitsSection = ({ openReview, onReviewAutoOpened }: { openReview?: string |
   );
 };
 
-/** "Sit Stories": a sideways row of story cards with their profile status. */
-const StoriesRow = () => {
+/**
+ * "Sit Stories": a sideways row of story cards with their profile status.
+ * Desktop: a card with one row per story (ParentDesktop.dc.html).
+ */
+const StoriesRow = ({ className }: { className?: string }) => {
   const { data: all = [] } = useMySitStories();
   const stories = all.filter((s) => s.role === "owner" && s.status === "ready");
   const { data: urls = {} } = useUpdatePhotoUrls(stories.map((s) => s.photo_path).filter((p): p is string => !!p));
@@ -158,7 +171,13 @@ const StoriesRow = () => {
         ? { label: `${other} asked to show it`, tone: "accent" }
         : { label: "Private", tone: "grey" };
   return (
-    <section aria-label="Sit Stories" className="flex flex-col gap-3">
+    <section
+      aria-label="Sit Stories"
+      className={cn(
+        "flex min-w-0 flex-col gap-3 lg:rounded-[24px] lg:border lg:border-[var(--nn-border)] lg:bg-white lg:p-[18px]",
+        className,
+      )}
+    >
       <div className="flex items-center gap-2">
         <SerifTitle>Sit Stories</SerifTitle>
         {stories.length > 0 && (
@@ -167,7 +186,7 @@ const StoriesRow = () => {
           </span>
         )}
       </div>
-      <div className="-mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1">
+      <div className="-mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1 md:mx-0 md:px-0 lg:flex-col lg:overflow-visible lg:pb-0">
         {stories.map((s) => {
           const st = status(s.portfolio_status, s.other_first_name);
           const photo = s.photo_path ? urls[s.photo_path] : undefined;
@@ -175,11 +194,13 @@ const StoriesRow = () => {
             <Link
               key={s.id}
               to={`/stories/${s.id}`}
-              className="flex w-[250px] shrink-0 snap-start flex-col overflow-hidden rounded-[22px] border border-[var(--nn-border)] bg-white"
+              className="flex w-[250px] shrink-0 snap-start flex-col overflow-hidden rounded-[22px] border border-[var(--nn-border)] bg-white lg:w-full lg:flex-row lg:items-center lg:gap-3 lg:rounded-none lg:border-0"
             >
-              <span className="h-[150px] bg-[#D6B98F]">{photo && <img src={photo} alt="" className="h-full w-full object-cover" />}</span>
-              <span className="flex flex-col gap-2 p-3.5">
-                <span className="font-display text-xl leading-[1.15]">{s.title}</span>
+              <span className="h-[150px] bg-[#D6B98F] lg:h-[72px] lg:w-[88px] lg:shrink-0 lg:overflow-hidden lg:rounded-[14px]">
+                {photo && <img src={photo} alt="" className="h-full w-full object-cover" />}
+              </span>
+              <span className="flex min-w-0 flex-col gap-2 p-3.5 lg:gap-1 lg:p-0">
+                <span className="font-display text-xl leading-[1.15] lg:text-lg">{s.title}</span>
                 {s.city && <span className="text-[13px] text-[#656B74]">{s.city}</span>}
                 <span className="self-start">
                   <StatusChip tone={st.tone}>{st.label}</StatusChip>
@@ -188,7 +209,7 @@ const StoriesRow = () => {
             </Link>
           );
         })}
-        <span className="flex w-[190px] shrink-0 flex-col justify-center gap-2 rounded-[22px] border-[1.5px] border-dashed border-[#BFDCD4] bg-white p-[18px] text-sm leading-snug text-[#656B74]">
+        <span className="flex w-[190px] shrink-0 flex-col justify-center gap-2 rounded-[22px] border-[1.5px] border-dashed border-[#BFDCD4] bg-white p-[18px] text-sm leading-snug text-[#656B74] lg:w-full lg:p-3.5">
           {stories.length === 0 ? "Your first Sit Story appears after your first sit." : "Your next Sit Story appears after your next sit."}
         </span>
       </div>
@@ -210,13 +231,21 @@ const useGuideTodo = (listingId: string | undefined): TodoItem | null => {
   };
 };
 
-/** The Pet Parent side of the dashboard (design: PetParent.dc.html). */
+/**
+ * The Pet Parent side of the dashboard. Phone: PetParent.dc.html. Tablet: the
+ * Nomad tablet pattern (the sit and your home wide, then To do beside Sits).
+ * Desktop: ParentDesktop.dc.html, with To do in the profile column and Sits
+ * beside Sit Stories.
+ */
 export const ParentDashboard = ({
+  header,
   summary,
   completion,
   openReview,
   onReviewAutoOpened,
 }: {
+  /** Profile block and mode switch (DashboardHeader). */
+  header: React.ReactNode;
   summary: DashboardSummary | undefined;
   completion: Completion;
   openReview: string | null;
@@ -226,6 +255,7 @@ export const ParentDashboard = ({
   const { atLimit, maxListings } = useListingAllowance();
   const { unreadCount } = useUnreadMessages();
   const { data: stories = [] } = useMySitStories();
+  const { data: sits = [] } = useSits();
   const guideTodo = useGuideTodo(listings[0]?.id);
   const [reviewRequest, setReviewRequest] = useState<string | null>(null);
 
@@ -275,12 +305,23 @@ export const ParentDashboard = ({
   }, [totalApplicants, stories, guideTodo, listings, current, next, summary, unreadCount, completion.percent]);
 
   const reviewSitId = reviewRequest ?? openReview;
+  // Same rule as SitsSection: without sits, To do (tablet) and Sit Stories
+  // (desktop) take the full width.
+  const hasSits = !!reviewSitId || sits.some((s) => s.status !== "cancelled" || s.cancelled_from_status === "in_progress");
 
   return (
-    <div className="flex flex-col gap-[18px]">
-      <TodoList items={todos} />
-      <HomeSitCard current={current} next={next} />
+    <DashboardColumns
+      aside={
+        <>
+          {header}
+          <TodoList items={todos} className="hidden lg:block" />
+        </>
+      }
+    >
+      <TodoList items={todos} className={cn("md:order-3 lg:hidden", !hasSits && "md:col-span-2")} />
+      <HomeSitCard current={current} next={next} className="md:order-1 md:col-span-2" />
 
+      <div className="flex min-w-0 flex-col gap-[18px] md:order-2 md:col-span-2 md:gap-4 lg:gap-5">
       {listingsLoading ? (
         <Skeleton className="h-[420px] w-full rounded-[24px]" />
       ) : listings.length === 0 ? (
@@ -305,16 +346,18 @@ export const ParentDashboard = ({
           )}
         </>
       )}
+      </div>
 
       <SitsSection
         key={reviewSitId ?? "sits"}
+        className="md:order-4"
         openReview={reviewSitId}
         onReviewAutoOpened={(id) => {
           setReviewRequest(null);
           onReviewAutoOpened(id);
         }}
       />
-      <StoriesRow />
-    </div>
+      <StoriesRow className={cn("md:order-5 md:col-span-2", hasSits && "lg:col-span-1")} />
+    </DashboardColumns>
   );
 };

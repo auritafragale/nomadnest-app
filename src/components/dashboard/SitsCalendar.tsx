@@ -459,21 +459,21 @@ export const SitCard = ({
       {!otherLeft && (sit.status === "confirmed" || sit.status === "in_progress") && !isFinished && (
         <div className="mt-3 flex items-center gap-2 border-t pt-3">
           {isCurrent ? (
-            <Button size="sm" className="flex-1 rounded-full" asChild>
+            <Button size="sm" className="h-11 flex-1 rounded-full" asChild>
               <Link to={`/sits/${sit.id}`}>
                 <Bone className="mr-1.5 h-3.5 w-3.5" />
                 {isSitter ? "Today's update" : "See updates"}
               </Link>
             </Button>
           ) : (
-            <Button size="sm" variant="secondary" className="flex-1 rounded-full" disabled={openingChat} onClick={openConversation}>
+            <Button size="sm" variant="secondary" className="h-11 flex-1 rounded-full" disabled={openingChat} onClick={openConversation}>
               <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
               Message
             </Button>
           )}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="outline" className="h-8 w-8 shrink-0 rounded-full" aria-label="More actions for this sit">
+              <Button size="icon" variant="outline" className="h-11 w-11 shrink-0 rounded-full" aria-label="More actions for this sit">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

@@ -111,8 +111,8 @@ export const UpcomingPastSits = ({ viewAs, openReview, onAutoOpened }: UpcomingP
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "upcoming" | "past")}>
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="upcoming" className="gap-1.5">
+          <TabsList className="grid h-auto w-full grid-cols-2 mb-4">
+            <TabsTrigger value="upcoming" className="min-h-[44px] gap-1.5">
               Upcoming
               {upcomingSits.length > 0 && (
                 <Badge variant="secondary" className="h-5 px-1.5 text-xs">
@@ -120,7 +120,7 @@ export const UpcomingPastSits = ({ viewAs, openReview, onAutoOpened }: UpcomingP
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="past" className="gap-1.5">
+            <TabsTrigger value="past" className="min-h-[44px] gap-1.5">
               Past
               {pastSits.length > 0 && (
                 <Badge variant="outline" className="h-5 px-1.5 text-xs">

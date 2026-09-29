@@ -15,7 +15,13 @@ import { useTheme } from "@/contexts/ThemeContext";
 import blackLogo from "@/assets/Black_Logo.png";
 import whiteLogo from "@/assets/White_Logo.png";
 
-const Navbar = () => {
+/**
+ * Site header. Phone (below md): logo, bell, theme and the menu. Tablet (md to
+ * lg): logo, Messages, bell, Dashboard and the menu for everything else.
+ * Desktop (lg and up): the full link row. `wide` lines the header up with
+ * the redesigned pages (NN_PAGE) instead of the default container.
+ */
+const Navbar = ({ wide = false }: { wide?: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
@@ -58,28 +64,27 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-lg border-b border-border">
-      <div className="container mx-auto">
+      <div className={cn("container mx-auto", wide && "md:max-w-none md:px-8 lg:max-w-[1024px] lg:px-6 xl:max-w-[1200px]")}>
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link 
-            to="/" 
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          <Link
+            to="/"
+            className="flex h-11 shrink-0 items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <img src={logo} alt="NomadNest" className="h-10 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden min-w-0 lg:flex items-center gap-0.5">
             {navLinks.map((link) => (
               <Link key={link.href} to={link.href}>
                 <Button
                   variant="ghost"
                   className={cn(
-                    "text-muted-foreground hover:text-foreground",
+                    "h-11 px-3 text-muted-foreground hover:text-foreground",
                     isActive(link.href) && "text-primary bg-terracotta-light"
                   )}
                 >
-                  <link.icon className="w-4 h-4 mr-2" />
                   {link.label}
                 </Button>
               </Link>
@@ -90,11 +95,10 @@ const Navbar = () => {
                 <Button
                   variant="ghost"
                   className={cn(
-                    "text-muted-foreground hover:text-foreground",
+                    "h-11 px-3 text-muted-foreground hover:text-foreground",
                     isActive("/find-nomads") && "text-primary bg-terracotta-light"
                   )}
                 >
-                  <MapPin className="w-4 h-4 mr-2" />
                   Nomads Near Me
                 </Button>
               </Link>
@@ -102,24 +106,28 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden shrink-0 md:flex items-center gap-1 lg:gap-0.5 xl:gap-1">
             {loading ? (
               <div className="w-24 h-9 bg-muted animate-pulse rounded-md" />
             ) : user ? (
               <>
                 {(role === "sitter" || role === "both") && (
-                  <Link to="/saved">
-                    <Button variant="ghost" className={cn(isActive("/saved") && "text-primary bg-terracotta-light")}>
-                      <Heart className="w-4 h-4 mr-2" />
-                      Saved
+                  <Link to="/saved" className="hidden lg:block">
+                    <Button variant="ghost" aria-label="Saved" className={cn("h-11 px-3", isActive("/saved") && "text-primary bg-terracotta-light")}>
+                      <Heart className="w-4 h-4 xl:mr-2" aria-hidden="true" />
+                      <span className="hidden xl:inline">Saved</span>
                     </Button>
                   </Link>
                 )}
                 {(role === "owner" || role === "both") && (
-                  <Link to="/applications">
-                    <Button variant="ghost" className={cn("relative", isActive("/applications") && "text-primary bg-terracotta-light")}>
-                      <FileText className="w-4 h-4 mr-2" />
-                      Applications
+                  <Link to="/applications" className="hidden lg:block">
+                    <Button
+                      variant="ghost"
+                      aria-label={newApplicationsCount > 0 ? `Applications, ${newApplicationsCount} new` : "Applications"}
+                      className={cn("relative h-11 px-3", isActive("/applications") && "text-primary bg-terracotta-light")}
+                    >
+                      <FileText className="w-4 h-4 2xl:mr-2" aria-hidden="true" />
+                      <span className="hidden 2xl:inline">Applications</span>
                       {newApplicationsCount > 0 && (
                         <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
                           {newApplicationsCount > 99 ? "99+" : newApplicationsCount}
@@ -128,10 +136,30 @@ const Navbar = () => {
                     </Button>
                   </Link>
                 )}
-                <Link to="/inbox">
-                  <Button variant="ghost" className={cn("relative", isActive("/inbox") && "text-primary bg-terracotta-light")}>
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Messages
+                {/* Tablet: Messages as an icon with its badge */}
+                <Link
+                  to="/inbox"
+                  aria-label={unreadCount > 0 ? `Messages, ${unreadCount} unread` : "Messages"}
+                  className={cn(
+                    "relative flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground lg:hidden",
+                    isActive("/inbox") && "text-primary bg-terracotta-light",
+                  )}
+                >
+                  <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                  {unreadCount > 0 && (
+                    <Badge className="absolute right-0 top-1 flex h-5 min-w-5 items-center justify-center p-0 text-xs">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </Badge>
+                  )}
+                </Link>
+                <Link to="/inbox" className="hidden lg:block">
+                  <Button
+                    variant="ghost"
+                    aria-label={unreadCount > 0 ? `Messages, ${unreadCount} unread` : "Messages"}
+                    className={cn("relative h-11 px-3", isActive("/inbox") && "text-primary bg-terracotta-light")}
+                  >
+                    <MessageCircle className="w-4 h-4 xl:mr-2" aria-hidden="true" />
+                    <span className="hidden xl:inline">Messages</span>
                     {unreadCount > 0 && (
                       <Badge className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
                         {unreadCount > 99 ? "99+" : unreadCount}
@@ -141,20 +169,20 @@ const Navbar = () => {
                 </Link>
                 <NotificationsDropdown />
                 {isAdmin && (
-                  <Link to="/admin">
-                    <Button variant="ghost" className={cn(isActive("/admin") && "text-primary bg-terracotta-light")}>
-                      <ShieldCheck className="w-4 h-4 mr-2" />
-                      Admin
+                  <Link to="/admin" className="hidden lg:block">
+                    <Button variant="ghost" aria-label="Admin" className={cn("h-11 px-3", isActive("/admin") && "text-primary bg-terracotta-light")}>
+                      <ShieldCheck className="w-4 h-4 2xl:mr-2" aria-hidden="true" />
+                      <span className="hidden 2xl:inline">Admin</span>
                     </Button>
                   </Link>
                 )}
-                <Link to="/dashboard">
-                  <Button>
-                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                <Link to="/dashboard" className="ml-1">
+                  <Button className="h-11 px-4">
+                    <LayoutDashboard className="w-4 h-4 mr-2" aria-hidden="true" />
                     Dashboard
                   </Button>
                 </Link>
-                <Button variant="ghost" onClick={handleSignOut} aria-label="Sign out">
+                <Button variant="ghost" onClick={handleSignOut} aria-label="Sign out" className="hidden h-11 w-11 p-0 lg:inline-flex">
                   <LogOut className="w-4 h-4" />
                 </Button>
 
@@ -172,23 +200,24 @@ const Navbar = () => {
           </div>
 
           {/* Theme Toggle + Mobile Notifications + Mobile Menu Toggle */}
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             {user && (
               <div className="md:hidden">
                 <MobileNotificationsBell />
               </div>
             )}
             <button
-              className="p-2.5 text-muted-foreground hover:text-foreground transition-colors rounded-md"
+              className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground transition-colors rounded-md"
               onClick={toggleTheme}
               aria-label="Toggle theme"
             >
               {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             <button
-              className="md:hidden p-2.5 text-foreground"
+              className="flex h-11 w-11 items-center justify-center text-foreground lg:hidden"
               onClick={() => (isOpen ? closeMenu() : setIsOpen(true))}
-              aria-label="Toggle menu"
+              aria-label={isOpen ? "Close menu" : "Menu"}
+              aria-expanded={isOpen}
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -198,7 +227,7 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden bg-surface border-b border-border animate-fade-in">
+        <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto lg:hidden bg-surface border-b border-border animate-fade-in">
           {showHelp ? (
             <div className="container py-4 space-y-2 animate-fade-in">
               <div className="flex items-center gap-2 pb-2 border-b border-border">
