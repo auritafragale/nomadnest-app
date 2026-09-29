@@ -15,7 +15,7 @@
     --brand-coral-text: 11 55% 53%;
     --brand-teal-text: 171 56% 27%;
 
-    --background: 34 33% 96%;
+    --background: 0 0% 100%;
     --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
@@ -137,6 +137,91 @@
     --sidebar-primary: var(--brand-teal);
     --sidebar-accent: var(--brand-teal-light);
     --sidebar-ring: var(--brand-teal);
+  }
+
+  /* Redesigned screens (nn): role colours as tokens, so dark mode can
+     override them. The page's active role sets the defaults on :root;
+     <RoleTheme role> (data-nn-role) sets its own role for its subtree,
+     including primary, so a Nomad-only page stays coral in Pet Parent mode. */
+  :root,
+  [data-nn-role="sitter"] {
+    --nn-accent: hsl(var(--brand-coral));
+    --nn-accent-dark: hsl(var(--brand-coral-text));
+    --nn-tint: hsl(12 82% 95%);
+    --nn-soft: hsl(14 64% 97%);
+    --nn-chip: hsl(16 55% 92%);
+    --nn-border: hsl(16 50% 89%);
+    --nn-line: hsl(15 52% 93%);
+    --nn-track: hsl(13 60% 91%);
+  }
+  :root {
+    --nn-ok-bg: hsl(158 40% 92%);
+    --nn-ok-text: hsl(var(--brand-teal-text));
+    --nn-warn-bg: hsl(12 82% 95%);
+    --nn-warn-text: hsl(var(--brand-coral-text));
+    --nn-tip-bg: hsl(43 100% 95%);
+    --nn-tip-border: hsl(42 78% 58%);
+    --nn-tip-text: hsl(43 77% 27%);
+  }
+  :root[data-active-role="owner"],
+  [data-nn-role="owner"] {
+    --nn-accent: hsl(var(--brand-teal));
+    --nn-accent-dark: hsl(var(--brand-teal-text));
+    --nn-tint: hsl(166 38% 92%);
+    --nn-soft: hsl(155 22% 96%);
+    --nn-chip: hsl(162 26% 90%);
+    --nn-border: hsl(162 30% 87%);
+    --nn-line: hsl(160 28% 92%);
+    --nn-track: hsl(166 33% 89%);
+  }
+  [data-nn-role="sitter"] {
+    --primary: var(--brand-coral);
+    --secondary: var(--brand-teal);
+    --ring: var(--brand-coral);
+    --terracotta-light: var(--brand-coral-light);
+    --ocean-light: var(--brand-teal-light);
+  }
+  [data-nn-role="owner"] {
+    --primary: var(--brand-teal);
+    --secondary: var(--brand-coral);
+    --ring: var(--brand-teal);
+    --terracotta-light: var(--brand-teal-light);
+    --ocean-light: var(--brand-coral-light);
+  }
+
+  .dark,
+  .dark [data-nn-role="sitter"] {
+    --nn-accent: hsl(var(--brand-coral));
+    --nn-accent-dark: hsl(var(--brand-coral-text));
+    --nn-tint: hsl(10 40% 17%);
+    --nn-soft: hsl(10 22% 13%);
+    --nn-chip: hsl(10 20% 20%);
+    --nn-border: hsl(10 16% 25%);
+    --nn-line: hsl(10 12% 20%);
+    --nn-track: hsl(10 18% 26%);
+  }
+  .dark {
+    --nn-ok-bg: hsl(165 35% 16%);
+    --nn-ok-text: hsl(var(--brand-teal-text));
+    --nn-warn-bg: hsl(10 40% 17%);
+    --nn-warn-text: hsl(var(--brand-coral-text));
+    --nn-tip-bg: hsl(43 40% 13%);
+    --nn-tip-border: hsl(42 60% 40%);
+    --nn-tip-text: hsl(43 80% 68%);
+    /* Small coral and teal text on dark surfaces: lighter shades. */
+    --brand-coral-text: 11 85% 72%;
+    --brand-teal-text: 168 50% 58%;
+  }
+  .dark[data-active-role="owner"],
+  .dark [data-nn-role="owner"] {
+    --nn-accent: hsl(var(--brand-teal));
+    --nn-accent-dark: hsl(var(--brand-teal-text));
+    --nn-tint: hsl(171 40% 15%);
+    --nn-soft: hsl(171 22% 12%);
+    --nn-chip: hsl(171 18% 19%);
+    --nn-border: hsl(171 16% 25%);
+    --nn-line: hsl(171 12% 20%);
+    --nn-track: hsl(171 18% 26%);
   }
 }
 

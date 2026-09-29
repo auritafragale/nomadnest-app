@@ -80,8 +80,8 @@ const MySitStories = () => {
             {list.map((s) =>
               s.status !== "ready" ? (
                 <div key={s.id} className="flex items-center gap-3 border-t border-[var(--nn-line)] py-3 first:border-t-0">
-                  <Loader2 className="h-5 w-5 shrink-0 animate-spin text-[#656B74]" aria-hidden="true" />
-                  <span className="text-sm text-[#656B74]">
+                  <Loader2 className="h-5 w-5 shrink-0 animate-spin text-muted-foreground" aria-hidden="true" />
+                  <span className="text-sm text-muted-foreground">
                     Your story with {s.other_first_name} is being written.
                   </span>
                 </div>
@@ -96,7 +96,7 @@ const MySitStories = () => {
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className="truncate text-[15px] font-bold">{s.title}</span>
-                    <span className="truncate text-[13px] text-[#656B74]">
+                    <span className="truncate text-[13px] text-muted-foreground">
                       With {s.other_first_name}
                       {s.city ? ` · ${s.city}` : ""}
                     </span>
@@ -104,7 +104,7 @@ const MySitStories = () => {
                       <StatusChip tone={status(s).tone}>{status(s).label}</StatusChip>
                     </span>
                   </span>
-                  <ChevronRight className="h-[18px] w-[18px] shrink-0 text-[#9097A1]" aria-hidden="true" />
+                  <ChevronRight className="h-[18px] w-[18px] shrink-0 text-muted-foreground" aria-hidden="true" />
                 </Link>
               ),
             )}
@@ -121,7 +121,7 @@ const MySitStories = () => {
                 </span>
                 <span className="flex flex-col">
                   <span className="text-[15px] font-semibold">{title}</span>
-                  <span className="text-[13px] text-[#656B74]">{text}</span>
+                  <span className="text-[13px] text-muted-foreground">{text}</span>
                 </span>
               </li>
             ))}

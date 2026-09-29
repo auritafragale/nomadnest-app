@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/Black_Logo.png";
+import blackLogo from "@/assets/Black_Logo.png";
+import whiteLogo from "@/assets/White_Logo.png";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface SharedStoryData {
   title: string | null;
@@ -22,6 +24,7 @@ interface SharedStoryData {
  */
 const SharedStory = () => {
   const { token } = useParams<{ token: string }>();
+  const { theme } = useTheme();
   const [data, setData] = useState<SharedStoryData | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "busy">("loading");
 
@@ -47,26 +50,26 @@ const SharedStory = () => {
   const people = data ? [data.owner_first_name, data.sitter_name ?? "their NomadNest sitter"].join(" and ") : "";
 
   return (
-    <div className="min-h-screen bg-white text-[#1F1B16]">
+    <div data-nn-role="owner" className="min-h-screen bg-background text-foreground">
       <Helmet>
         <title>{data?.title ? `${data.title} | A NomadNest Sit Story` : "A NomadNest Sit Story"}</title>
         <meta name="robots" content="noindex, nofollow, noarchive" />
         <meta name="referrer" content="no-referrer" />
       </Helmet>
       <main className="mx-auto flex max-w-xl flex-col gap-5 px-5 pb-16 pt-8">
-        <img src={logo} alt="NomadNest" className="h-14 w-auto self-start" />
+        <img src={theme === "dark" ? whiteLogo : blackLogo} alt="NomadNest" className="h-14 w-auto self-start" />
 
-        {state === "loading" && <p className="text-sm text-[#656B74]">Loading the story…</p>}
+        {state === "loading" && <p className="text-sm text-muted-foreground">Loading the story…</p>}
         {state === "missing" && (
-          <div className="rounded-[24px] border border-[#D3E7E1] p-6">
+          <div className="rounded-[24px] border border-[var(--nn-border)] p-6">
             <h1 className="font-display text-2xl">This story isn't available</h1>
-            <p className="mt-1 text-sm text-[#656B74]">The link may have been switched off.</p>
+            <p className="mt-1 text-sm text-muted-foreground">The link may have been switched off.</p>
           </div>
         )}
         {state === "busy" && (
-          <div className="rounded-[24px] border border-[#D3E7E1] p-6">
+          <div className="rounded-[24px] border border-[var(--nn-border)] p-6">
             <h1 className="font-display text-2xl">Too many visits just now</h1>
-            <p className="mt-1 text-sm text-[#656B74]">Please try again in a minute.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Please try again in a minute.</p>
           </div>
         )}
 
@@ -80,7 +83,7 @@ const SharedStory = () => {
               {data.month ? ` · ${data.month}` : ""}
             </p>
             <h1 className="font-display text-[34px] leading-[1.08]">{data.title}</h1>
-            <p className="text-sm text-[#656B74]">{people}</p>
+            <p className="text-sm text-muted-foreground">{people}</p>
             <div className="flex flex-col gap-4">
               {data.story_days && data.story_days.length > 0
                 ? data.story_days.map((d, i) => (
@@ -105,7 +108,7 @@ const SharedStory = () => {
                 ))}
               </div>
             )}
-            <p className="border-t border-[#E4F0EC] pt-4 text-sm text-[#656B74]">
+            <p className="border-t border-[var(--nn-line)] pt-4 text-sm text-muted-foreground">
               NomadNest connects Pet Parents with trusted Nomads who look after their pets and home.{" "}
               <a href="/" className="font-bold text-brand-teal-text">
                 Learn more

@@ -49,8 +49,8 @@ interface OwnerListingCardProps {
 
 const STATUS: Record<string, { label: string; dot: string; text: string }> = {
   published: { label: "Published", dot: "bg-brand-teal", text: "text-brand-teal-text" },
-  paused: { label: "Paused", dot: "bg-[#E8B53E]", text: "text-[#8A6A12]" },
-  draft: { label: "Draft", dot: "bg-[#9097A1]", text: "text-[#4B5058]" },
+  paused: { label: "Paused", dot: "bg-[var(--nn-tip-border)]", text: "text-[var(--nn-tip-text)]" },
+  draft: { label: "Draft", dot: "bg-muted-foreground", text: "text-muted-foreground" },
 };
 
 /**
@@ -91,7 +91,7 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
               <Home className="h-8 w-8 text-white/80" aria-hidden="true" />
             </span>
           )}
-          <span className={cn("absolute left-3 top-3 inline-flex h-7 items-center gap-1.5 rounded-full bg-white px-3 text-xs font-bold", status.text)}>
+          <span className={cn("absolute left-3 top-3 inline-flex h-7 items-center gap-1.5 rounded-full bg-card px-3 text-xs font-bold", status.text)}>
             <span className={cn("h-[7px] w-[7px] rounded-full", status.dot)} />
             {status.label}
           </span>
@@ -100,7 +100,7 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
               <button
                 type="button"
                 aria-label="Listing options"
-                className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full bg-white"
+                className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full bg-card"
               >
                 <MoreVertical className="h-5 w-5" aria-hidden="true" />
               </button>
@@ -147,41 +147,41 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
 
         <div className="flex min-w-0 flex-col gap-3.5 p-[18px] md:p-5 xl:p-6">
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#656B74]">Your home</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Your home</span>
             <h2 className="font-display text-[27px] font-normal leading-[1.1]">
               <Link to={`/listing/${listing.id}`}>{listing.title}</Link>
             </h2>
-            <span className="text-sm text-[#656B74]">
+            <span className="text-sm text-muted-foreground">
               {[[listing.city, listing.country].filter(Boolean).join(", "), petNames].filter(Boolean).join(" · ")}
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <Link to={`/listing/${listing.id}/welcome-guide`} className={cn(tile, "bg-[#F3F8F6]")}>
+            <Link to={`/listing/${listing.id}/welcome-guide`} className={cn(tile, "bg-[var(--nn-soft)]")}>
               <span
-                className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#E1EEEA] text-brand-teal-text"
+                className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[var(--nn-chip)] text-brand-teal-text"
                 aria-hidden="true"
               >
                 <BookOpen className="h-4 w-4" />
               </span>
               <span className="text-[15px] font-bold">{guidePercent}%</span>
-              <span className="text-xs text-[#3F444B]">Welcome Guide</span>
+              <span className="text-xs text-muted-foreground">Welcome Guide</span>
             </Link>
-            <Link to="/applications" className={cn(tile, "bg-[#F2F8F6]")}>
-              <span className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#E1EEEA] text-[#3F444B]" aria-hidden="true">
+            <Link to="/applications" className={cn(tile, "bg-[var(--nn-soft)]")}>
+              <span className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[var(--nn-chip)] text-muted-foreground" aria-hidden="true">
                 <Users className="h-4 w-4" />
               </span>
               <span className="text-[15px] font-bold">{newApplicants} new</span>
-              <span className="text-xs text-[#3F444B]">Applicants</span>
+              <span className="text-xs text-muted-foreground">Applicants</span>
             </Link>
             <Link
               to={`/edit-listing/${listing.id}?focus=dates`}
-              className={cn(tile, openDates.length === 0 ? "bg-[#FDEEEA]" : "bg-[#F2F8F6]")}
+              className={cn(tile, openDates.length === 0 ? "bg-[var(--nn-warn-bg)]" : "bg-[var(--nn-soft)]")}
             >
               <span
                 className={cn(
                   "flex h-[30px] w-[30px] items-center justify-center rounded-full",
-                  openDates.length === 0 ? "bg-[#F9DCD3] text-brand-coral-text" : "bg-[#E1EEEA] text-[#3F444B]",
+                  openDates.length === 0 ? "bg-[var(--nn-warn-bg)] text-brand-coral-text" : "bg-[var(--nn-chip)] text-muted-foreground",
                 )}
                 aria-hidden="true"
               >
@@ -190,7 +190,7 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
               <span className="text-[15px] font-bold">
                 {openDates.length === 0 ? "None" : shortRange(openDates[0].start_date, openDates[0].end_date)}
               </span>
-              <span className={cn("text-xs", openDates.length === 0 ? "text-brand-coral-text" : "text-[#3F444B]")}>
+              <span className={cn("text-xs", openDates.length === 0 ? "text-brand-coral-text" : "text-muted-foreground")}>
                 {openDates.length > 1 ? `Open dates · +${openDates.length - 1}` : "Open dates"}
               </span>
             </Link>
@@ -203,14 +203,14 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
           {closedDates.length > 0 && (
             <Collapsible open={showClosed} onOpenChange={setShowClosed}>
               <CollapsibleTrigger asChild>
-                <button type="button" className="flex min-h-[44px] w-full items-center justify-center gap-1 text-sm font-semibold text-[#656B74]">
+                <button type="button" className="flex min-h-[44px] w-full items-center justify-center gap-1 text-sm font-semibold text-muted-foreground">
                   <ChevronDown className={cn("h-4 w-4 transition-transform", showClosed && "rotate-180")} aria-hidden="true" />
                   {closedDates.length} closed date{closedDates.length !== 1 ? "s" : ""}
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent className="flex flex-col gap-2 pt-1">
                 {closedDates.map((date) => (
-                  <div key={date.id} className="flex items-center gap-2 rounded-xl bg-[#F3F8F6] p-2 pl-3 text-sm">
+                  <div key={date.id} className="flex items-center gap-2 rounded-xl bg-[var(--nn-soft)] p-2 pl-3 text-sm">
                     <span className="flex-1">
                       {shortRange(date.start_date, date.end_date)} · {date.status}
                     </span>
@@ -235,7 +235,7 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
 
           <Link
             to={`/edit-listing/${listing.id}?focus=dates`}
-            className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand-teal text-[15px] font-bold text-white hover:bg-brand-teal-text"
+            className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand-teal text-[15px] font-bold text-white hover:opacity-90"
           >
             <CalendarPlus className="h-[18px] w-[18px]" aria-hidden="true" />
             Add new dates

@@ -82,6 +82,7 @@ export const useAddArrivalVaultPhotos = (sitId: string | undefined) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["arrival-vault-photos", sitId] });
+      queryClient.invalidateQueries({ queryKey: ["arrival-vault-count", sitId] });
       toast({ title: "Photos added to your Arrival Check-In" });
     },
     onError: (error: any) => {
@@ -92,5 +93,25 @@ export const useAddArrivalVaultPhotos = (sitId: string | undefined) => {
         description: error.message || "Could not upload one or more photos. Please try again.",
       });
     },
+  });
+};
+
+/**
+ * How many Arrival Check-In photos the Nomad has saved for a sit. Only the
+ * Nomad can read these rows; the Pet Parent never asks and is never told.
+ */
+export const useArrivalPhotoCount = (sitId: string | undefined, enabled = true) => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["arrival-vault-count", sitId],
+    queryFn: async (): Promise<number> => {
+      const { count, error } = await supabase
+        .from("arrival_vault_photos")
+        .select("id", { count: "exact", head: true })
+        .eq("sit_id", sitId!);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!sitId && !!user && enabled,
   });
 };

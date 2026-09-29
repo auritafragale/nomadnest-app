@@ -436,7 +436,7 @@ const SitterDetail = () => {
 
   if (preview && (!profile || hiddenFromMembers)) {
     return (
-      <div className="min-h-screen flex flex-col bg-white">
+      <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
         <main className="flex-1 pt-16">
           <PreviewBar showTips={showTips} onToggleTips={() => setShowTips((v) => !v)} accent="coral" />
@@ -774,7 +774,7 @@ const SitterDetail = () => {
                     </p>
                     <ul className="flex flex-wrap gap-2">
                       {freeDates.map((r) => (
-                        <li key={r.start} className="rounded-full bg-[#E3F1EE] px-3 py-1 text-sm font-semibold text-brand-teal-text">
+                        <li key={r.start} className="rounded-full bg-[var(--nn-ok-bg)] px-3 py-1 text-sm font-semibold text-[var(--nn-ok-text)]">
                           {shortRange(r.start, r.end)} · {r.days} {r.days === 1 ? "day" : "days"}
                         </li>
                       ))}

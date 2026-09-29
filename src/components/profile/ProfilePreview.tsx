@@ -24,7 +24,7 @@ export const PreviewBar = ({
     else navigate("/dashboard", { replace: true });
   };
   return (
-    <div className="sticky top-16 z-30 border-b border-[#F0DCD4] bg-white/95 backdrop-blur">
+    <div className="sticky top-16 z-30 border-b border-[var(--nn-border)] bg-card/95 backdrop-blur">
       <div className="mx-auto flex max-w-4xl flex-col gap-2 px-4 py-3 lg:max-w-[74rem]">
         <div className="flex items-center justify-between gap-3">
           <p className="font-display text-lg">Preview of your profile</p>
@@ -33,7 +33,7 @@ export const PreviewBar = ({
           </button>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[13px] text-[#656B74]">
+          <p className="text-[13px] text-muted-foreground">
             {showTips ? "Tips are on. Turn them off to see exactly what other members see." : "Exactly what other members see."}
           </p>
           <button
@@ -42,11 +42,11 @@ export const PreviewBar = ({
             aria-checked={showTips}
             aria-label="Show tips"
             onClick={onToggleTips}
-            className={cn("relative h-8 w-[52px] shrink-0 rounded-full transition-colors before:absolute before:-inset-x-1 before:-inset-y-1.5 before:content-['']", showTips ? on : "bg-[#C9BDB8]")}
+            className={cn("relative h-8 w-[52px] shrink-0 rounded-full transition-colors before:absolute before:-inset-x-1 before:-inset-y-1.5 before:content-['']", showTips ? on : "bg-muted-foreground/40")}
           >
             <span
               className={cn(
-                "absolute top-1 h-6 w-6 rounded-full bg-white transition-[left]",
+                "absolute top-1 h-6 w-6 rounded-full bg-card transition-[left]",
                 showTips ? "left-6" : "left-1",
               )}
             />
@@ -59,15 +59,15 @@ export const PreviewBar = ({
 
 /** An owner-only hint shown in preview with tips on. */
 export const PreviewTip = ({ title, text, action }: { title: string; text: string; action?: { label: string; to: string } }) => (
-  <div className="mb-6 rounded-[20px] border border-dashed border-[#E8B53E] bg-[#FFF8E6] p-4">
-    <p className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[#8A6A12]">
+  <div className="mb-6 rounded-[20px] border border-dashed border-[var(--nn-tip-border)] bg-[var(--nn-tip-bg)] p-4">
+    <p className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[var(--nn-tip-text)]">
       <Lightbulb className="h-3.5 w-3.5" aria-hidden="true" />
       Tip · Only you see this
     </p>
     <p className="text-[15px] font-bold">{title}</p>
-    <p className="mt-0.5 text-sm text-[#5B5145]">{text}</p>
+    <p className="mt-0.5 text-sm text-muted-foreground">{text}</p>
     {action && (
-      <Link to={action.to} className="mt-2 inline-flex min-h-[44px] items-center text-sm font-bold text-[#8A4B00] underline-offset-2 hover:underline">
+      <Link to={action.to} className="mt-2 inline-flex min-h-[44px] items-center text-sm font-bold text-[var(--nn-tip-text)] underline-offset-2 hover:underline">
         {action.label}
       </Link>
     )}
@@ -76,11 +76,11 @@ export const PreviewTip = ({ title, text, action }: { title: string; text: strin
 
 /** Shown instead of the profile when other members can't see it at all. */
 export const HiddenProfileNotice = ({ text, action }: { text: string; action?: { label: string; to: string } }) => (
-  <div className="mb-6 flex items-start gap-3 rounded-[20px] border border-[#F0DCD4] bg-[#FCF3F0] p-4">
+  <div className="mb-6 flex items-start gap-3 rounded-[20px] border border-[var(--nn-border)] bg-[var(--nn-soft)] p-4">
     <EyeOff className="mt-0.5 h-5 w-5 shrink-0 text-brand-coral-text" aria-hidden="true" />
     <div>
       <p className="text-[15px] font-bold">Your profile is hidden</p>
-      <p className="text-sm text-[#5B5145]">{text}</p>
+      <p className="text-sm text-muted-foreground">{text}</p>
       {action && (
         <Link to={action.to} className="mt-1 inline-flex min-h-[44px] items-center text-sm font-bold text-brand-coral-text underline-offset-2 hover:underline">
           {action.label}
@@ -92,7 +92,7 @@ export const HiddenProfileNotice = ({ text, action }: { text: string; action?: {
 
 /** "Never shown on your profile" footnote. */
 export const NeverShownNote = ({ children }: { children: React.ReactNode }) => (
-  <p className="mt-6 rounded-[20px] bg-[#F6F3F1] p-4 text-[13px] leading-relaxed text-[#4B5058]">
+  <p className="mt-6 rounded-[20px] bg-muted p-4 text-[13px] leading-relaxed text-muted-foreground">
     <strong>Never shown on your profile:</strong> {children}
   </p>
 );

@@ -59,7 +59,7 @@ const ApplicationRow = ({
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="truncate text-[15px] font-bold">{app.listing?.title ?? "A sit"}</span>
-          <span className="truncate text-[13px] text-[#656B74]">
+          <span className="truncate text-[13px] text-muted-foreground">
             {[app.sit_dates && shortRange(app.sit_dates.start_date, app.sit_dates.end_date), owner].filter(Boolean).join(" · ")}
           </span>
         </span>
@@ -115,7 +115,7 @@ const MyApplications = () => {
 
   const group = (title: string, list: SitterApplication[], empty: React.ReactNode, extra?: React.ReactNode, withdrawable = false) => (
     <SectionCard className="p-[18px]">
-      <h2 className="mb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#656B74]">
+      <h2 className="mb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
         {title} · {list === past ? groups.past.length : list.length}
       </h2>
       {list.length === 0 ? (
@@ -165,14 +165,14 @@ const MyApplications = () => {
               group(
                 "Accepted",
                 groups.accepted,
-                <p className="py-2 text-sm text-[#656B74]">Nothing accepted yet.</p>,
+                <p className="py-2 text-sm text-muted-foreground">Nothing accepted yet.</p>,
               )}
             {show("pending") &&
               group(
                 "Waiting to hear back",
                 groups.pending,
                 <div className="flex flex-col items-start gap-2 py-2">
-                  <p className="text-sm text-[#656B74]">Nothing pending right now.</p>
+                  <p className="text-sm text-muted-foreground">Nothing pending right now.</p>
                   <Link to="/browse-sits" className={nnButton("secondary")}>
                     Browse sits
                   </Link>
@@ -184,7 +184,7 @@ const MyApplications = () => {
               group(
                 "Past",
                 past,
-                <p className="py-2 text-sm text-[#656B74]">No past applications.</p>,
+                <p className="py-2 text-sm text-muted-foreground">No past applications.</p>,
                 !showAllPast && groups.past.length > PAST_PAGE ? (
                   <button type="button" onClick={() => setShowAllPast(true)} className={nnButton("ghost", "mt-1 w-full")}>
                     Show {groups.past.length - PAST_PAGE} more past applications

@@ -45,6 +45,7 @@ import Inbox from "./pages/Inbox";
 import Applications from "./pages/Applications";
 import SavedListings from "./pages/SavedListings";
 import MyApplications from "./pages/MyApplications";
+import MySits from "./pages/MySits";
 import Invitations from "./pages/Invitations";
 import MyAvailability from "./pages/MyAvailability";
 import MySitStories from "./pages/MySitStories";
@@ -164,6 +165,7 @@ const AppShell = () => {
         <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
         <Route path="/saved" element={<ProtectedRoute><SavedListings /></ProtectedRoute>} />
         <Route path="/my-applications" element={<ProtectedRoute><MyApplications /></ProtectedRoute>} />
+        <Route path="/my-sits" element={<ProtectedRoute><MySits /></ProtectedRoute>} />
         <Route path="/invitations" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
         <Route path="/availability" element={<ProtectedRoute><MyAvailability /></ProtectedRoute>} />
         <Route path="/my-sit-stories" element={<ProtectedRoute><MySitStories /></ProtectedRoute>} />

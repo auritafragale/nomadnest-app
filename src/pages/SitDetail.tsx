@@ -1,4 +1,5 @@
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, Link } from "react-router-dom";
+import { Camera, ChevronRight } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,7 +13,8 @@ import { UpdatesTimeline } from "@/components/sit-updates/UpdatesTimeline";
 /**
  * A sit's daily updates. The Nomad sends today's update (photos first, quick
  * taps, a short message); both see the story feed, newest day first. The
- * private Arrival Check-In stays on its own page.
+ * private Arrival Check-In stays on its own page, linked here for the Nomad
+ * only (the Pet Parent never sees it).
  */
 const SitDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +45,22 @@ const SitDetail = () => {
         ) : (
           <div className="space-y-6 pt-2">
             <SitProgressHeader context={context} sentToday={sentToday} />
+            {context.role === "sitter" && (
+              <Link
+                to={`/sits/${id}/arrival-vault`}
+                state={{ from: `/sits/${id}` }}
+                className="flex min-h-[56px] items-center gap-3 rounded-2xl border bg-card px-4 py-3 transition-colors hover:bg-muted/50"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-terracotta-light text-primary">
+                  <Camera className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="text-sm font-bold">Arrival Check-In</span>
+                  <span className="text-xs text-muted-foreground">Photograph the home as you found it. Only you can see these.</span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              </Link>
+            )}
             {showComposer && <DailyUpdateComposer context={context} todayChips={todayChips} />}
             <section aria-labelledby="updates-heading" className="space-y-3">
               <h2 id="updates-heading" className="font-display text-xl font-bold">

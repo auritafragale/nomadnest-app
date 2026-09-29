@@ -11,33 +11,13 @@ import { BackButton } from "@/components/layout/BackButton";
  * white pages, DM Serif Display headings (font-display) and Plus Jakarta
  * Sans body (the app's default fonts).
  *
- * <RoleTheme role> sets CSS variables; components use them through Tailwind
- * arbitrary values, e.g. bg-[var(--nn-accent)].
+ * The colours are tokens in src/index.css (--nn-accent, --nn-tint, --nn-soft,
+ * --nn-chip, --nn-border, --nn-line, --nn-track, and --nn-ok-*, --nn-warn-*,
+ * --nn-tip-* for status), with light and dark values. <RoleTheme role> sets
+ * data-nn-role so its subtree uses that role's colours (and primary) in both
+ * modes; components use them through Tailwind, e.g. bg-[var(--nn-accent)].
  */
 export type NnRole = "sitter" | "owner";
-
-const THEMES: Record<NnRole, Record<string, string>> = {
-  sitter: {
-    "--nn-accent": "hsl(var(--brand-coral))",
-    "--nn-accent-dark": "hsl(var(--brand-coral-text))",
-    "--nn-tint": "#FDEEEA",
-    "--nn-soft": "#FCF3F0",
-    "--nn-chip": "#F6E4DD",
-    "--nn-border": "#F0DCD4",
-    "--nn-line": "#F6E8E3",
-    "--nn-track": "#F6E1DB",
-  },
-  owner: {
-    "--nn-accent": "hsl(var(--brand-teal))",
-    "--nn-accent-dark": "hsl(var(--brand-teal-text))",
-    "--nn-tint": "#E3F1EE",
-    "--nn-soft": "#F3F8F6",
-    "--nn-chip": "#E1EEEA",
-    "--nn-border": "#D3E7E1",
-    "--nn-line": "#E4F0EC",
-    "--nn-track": "#DCEDE9",
-  },
-};
 
 /**
  * Page width of the redesigned screens. Phone: the 36rem column (unchanged).
@@ -53,13 +33,8 @@ export const NN_MAIN = `${NN_PAGE} flex flex-col gap-[18px] pb-24 pt-20 md:pt-24
 /** Lists on sub-pages: one column, up to 56rem wide from tablet up. */
 export const NN_LIST = "flex w-full min-w-0 flex-col gap-[18px] md:max-w-4xl";
 
-export const NN_INK = "#1F1B16";
-export const NN_GREY = "#656B74";
-export const NN_GOLD = "#E8B53E";
-export const NN_GOLD_INK = "#3A2A06";
-
 export const RoleTheme = ({ role, className, children }: { role: NnRole; className?: string; children: React.ReactNode }) => (
-  <div style={THEMES[role] as React.CSSProperties} className={cn("bg-white text-[#1F1B16]", className)}>
+  <div data-nn-role={role} className={cn("bg-background text-foreground", className)}>
     {children}
   </div>
 );
@@ -73,7 +48,7 @@ export const SectionCard = ({
   children: React.ReactNode;
   label?: string;
 }) => (
-  <section aria-label={label} className={cn("rounded-[24px] border border-[var(--nn-border)] bg-white", className)}>
+  <section aria-label={label} className={cn("rounded-[24px] border border-[var(--nn-border)] bg-card", className)}>
     {children}
   </section>
 );
@@ -87,7 +62,7 @@ export const PageHeader = ({ title, intro, fallback }: { title: string; intro?: 
   <div className="space-y-2">
     <BackButton fallback={fallback} className="h-11" />
     <SerifTitle as="h1">{title}</SerifTitle>
-    {intro && <p className="max-w-2xl text-[15px] leading-snug text-[#656B74]">{intro}</p>}
+    {intro && <p className="max-w-2xl text-[15px] leading-snug text-muted-foreground">{intro}</p>}
   </div>
 );
 
@@ -122,11 +97,11 @@ export const PillTabs = <T extends string>({
             "inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] px-4 text-sm",
             on
               ? "border-[var(--nn-accent)] bg-[var(--nn-accent)] font-bold text-white"
-              : "border-[var(--nn-border)] bg-white font-semibold text-[#1F1B16]",
+              : "border-[var(--nn-border)] bg-card font-semibold text-foreground",
           )}
         >
           {t.label}
-          {t.count !== undefined && <span className={on ? "opacity-85" : "text-[#656B74]"}>{t.count}</span>}
+          {t.count !== undefined && <span className={on ? "opacity-85" : "text-muted-foreground"}>{t.count}</span>}
         </button>
       );
     })}
@@ -159,8 +134,8 @@ export const NavRow = ({
         className={cn(
           "flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full",
           iconTone === "accent" && "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]",
-          iconTone === "neutral" && "bg-[var(--nn-chip)] text-[#3F444B]",
-          iconTone === "teal" && "bg-[#E3F1EE] text-brand-teal-text",
+          iconTone === "neutral" && "bg-[var(--nn-chip)] text-muted-foreground",
+          iconTone === "teal" && "bg-[var(--nn-ok-bg)] text-brand-teal-text",
         )}
       >
         <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
@@ -168,12 +143,12 @@ export const NavRow = ({
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="text-[15px] font-semibold">{title}</span>
         {subtitle && (
-          <span className={cn("text-xs", subtitleTone === "accent" ? "font-semibold text-[var(--nn-accent-dark)]" : "text-[#656B74]")}>
+          <span className={cn("text-xs", subtitleTone === "accent" ? "font-semibold text-[var(--nn-accent-dark)]" : "text-muted-foreground")}>
             {subtitle}
           </span>
         )}
       </span>
-      <ChevronRight className="h-[18px] w-[18px] shrink-0 text-[#9097A1]" aria-hidden="true" />
+      <ChevronRight className="h-[18px] w-[18px] shrink-0 text-muted-foreground" aria-hidden="true" />
     </>
   );
   const cls = cn(
@@ -197,9 +172,9 @@ export const StatusChip = ({ tone, children }: { tone: ChipTone; children: React
   <span
     className={cn(
       "inline-flex h-[26px] shrink-0 items-center rounded-full px-2.5 text-xs font-bold",
-      tone === "green" && "bg-[#E1F2EC] text-brand-teal-text",
+      tone === "green" && "bg-[var(--nn-ok-bg)] text-brand-teal-text",
       tone === "accent" && "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]",
-      tone === "grey" && "bg-[#F3EEEA] text-[#4B5058]",
+      tone === "grey" && "bg-muted text-muted-foreground",
       tone === "gold" && "bg-[#E8B53E] text-[#3A2A06]",
     )}
   >
@@ -211,8 +186,8 @@ export const StatusChip = ({ tone, children }: { tone: ChipTone; children: React
 export const nnButton = (variant: "primary" | "secondary" | "ghost" = "primary", className?: string) =>
   cn(
     "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition-colors disabled:opacity-50",
-    variant === "primary" && "bg-[var(--nn-accent)] text-white hover:bg-[var(--nn-accent-dark)]",
-    variant === "secondary" && "border-[1.5px] border-[var(--nn-border)] bg-white text-[#1F1B16] hover:bg-[var(--nn-soft)]",
+    variant === "primary" && "bg-[var(--nn-accent)] text-white hover:opacity-90",
+    variant === "secondary" && "border-[1.5px] border-[var(--nn-border)] bg-card text-foreground hover:bg-[var(--nn-soft)]",
     variant === "ghost" && "text-[var(--nn-accent-dark)] hover:bg-[var(--nn-soft)]",
     className,
   );
@@ -220,7 +195,7 @@ export const nnButton = (variant: "primary" | "secondary" | "ghost" = "primary",
 export const EmptyState = ({ title, text, action }: { title: string; text: string; action?: React.ReactNode }) => (
   <div className="flex flex-col items-center gap-2 rounded-[24px] border border-dashed border-[var(--nn-border)] px-6 py-8 text-center">
     <p className="font-display text-xl">{title}</p>
-    <p className="max-w-xs text-sm text-[#656B74]">{text}</p>
+    <p className="max-w-xs text-sm text-muted-foreground">{text}</p>
     {action && <div className="mt-2">{action}</div>}
   </div>
 );

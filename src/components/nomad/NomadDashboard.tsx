@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { differenceInCalendarDays, parseISO, startOfToday } from "date-fns";
-import { BookOpen, BookHeart, Calendar, Camera, Mail, MessageSquare, Sparkles, Star, User } from "lucide-react";
+import { BookOpen, BookHeart, Calendar, Camera, ChevronRight, Mail, MessageSquare, Sparkles, Star, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NavRow, SectionCard, SerifTitle, StatusChip, nnButton, shortRange } from "@/components/nn/ui";
 import { TodoList, type TodoItem } from "@/components/dashboard/TodoList";
-import { UpcomingPastSits } from "@/components/dashboard/UpcomingPastSits";
+import { SitMoreMenu, SitRescheduleNotice } from "@/components/sits/SitActions";
+import { useArrivalPhotoCount } from "@/hooks/useArrivalVault";
+import { useAuth } from "@/contexts/AuthContext";
+import { arrivalWindowOpen, sitTiming } from "@/lib/sitTiming";
 import { AskNestSheet } from "@/components/welcome-guide/AskNestSheet";
 import WriteReviewDialog from "@/components/reviews/WriteReviewDialog";
 import { useSits } from "@/hooks/useSits";
@@ -54,17 +57,17 @@ const Tile = ({
 }) => {
   const iconCls =
     tone === "teal"
-      ? "bg-[#E3F1EE] text-brand-teal-text"
+      ? "bg-[var(--nn-ok-bg)] text-brand-teal-text"
       : tone === "accent"
         ? "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]"
-        : "bg-[var(--nn-chip)] text-[#3F444B]";
+        : "bg-[var(--nn-chip)] text-muted-foreground";
   const body = (
     <>
       <span className={`flex h-[34px] w-[34px] items-center justify-center rounded-full ${iconCls}`}>
         <Icon className="h-[17px] w-[17px]" aria-hidden="true" />
       </span>
       <span className="text-[13px] font-bold">{title}</span>
-      <span className={`text-[11px] ${tone === "teal" ? "font-semibold text-brand-teal-text" : "text-[#656B74]"}`}>{detail}</span>
+      <span className={`text-[11px] ${tone === "teal" ? "font-semibold text-brand-teal-text" : "text-muted-foreground"}`}>{detail}</span>
     </>
   );
   const cls = "flex min-h-[44px] flex-col gap-1.5 rounded-2xl bg-[var(--nn-soft)] px-2.5 py-3 text-left";
@@ -92,6 +95,11 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
   const askNestAvailable = useAskNestAvailable();
   const [askOpen, setAskOpen] = useState(false);
   const [opening, setOpening] = useState(false);
+  const location = useLocation();
+  const inArrivalWindow = arrivalWindowOpen(current?.start_date ?? next?.start_date);
+  const { data: arrivalPhotos = 0 } = useArrivalPhotoCount(sitId, inArrivalWindow);
+  const { user } = useAuth();
+  const upcomingCount = sits.filter((x) => x.sitter_user_id === user?.id && sitTiming(x).isUpcoming).length;
 
   if (!current && !next) return null;
   const s = current ?? next!;
@@ -124,7 +132,7 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
     >
       <div className="relative flex h-[150px] items-center justify-center bg-[#CDB79E] md:h-auto md:min-h-[300px]">
         {photo && <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover" />}
-        <span className="absolute left-3 top-3 inline-flex h-7 items-center rounded-full bg-white px-3 text-xs font-bold text-[var(--nn-accent-dark)]">
+        <span className="absolute left-3 top-3 inline-flex h-7 items-center rounded-full bg-card px-3 text-xs font-bold text-[var(--nn-accent-dark)]">
           {current ? "Your sit now" : "Your next sit"}
         </span>
         <span className="absolute right-3 top-3 inline-flex h-7 items-center rounded-full bg-[var(--nn-accent)] px-3 text-xs font-bold text-white">
@@ -138,12 +146,16 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
         </span>
       </div>
       <div className="flex min-w-0 flex-col gap-3.5 p-[18px] md:p-5 xl:p-6">
-        <div className="flex flex-col gap-1">
-          <h2 className="font-display text-[25px] font-normal leading-[1.1] xl:text-[30px]">{s.listing_title}</h2>
-          <p className="text-sm text-[#656B74]">
-            {[`With ${other}`, pets, shortRange(s.start_date, s.end_date)].filter(Boolean).join(" · ")}
-          </p>
+        <div className="flex items-start gap-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <h2 className="font-display text-[25px] font-normal leading-[1.1] xl:text-[30px]">{s.listing_title}</h2>
+            <p className="text-sm text-muted-foreground">
+              {[`With ${other}`, pets, shortRange(s.start_date, s.end_date)].filter(Boolean).join(" · ")}
+            </p>
+          </div>
+          {sit && <SitMoreMenu sit={sit} items={["listing", "guide", "arrival"]} />}
         </div>
+        {sit && <SitRescheduleNotice sit={sit} />}
         {current && (
           <div
             role="progressbar"
@@ -151,7 +163,7 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
             aria-valuenow={current.day_number}
             aria-valuemin={0}
             aria-valuemax={current.total_days}
-            className="h-1.5 rounded-full bg-[#EDEFF2]"
+            className="h-1.5 rounded-full bg-muted"
           >
             <div
               className="h-1.5 rounded-full bg-[var(--nn-accent)]"
@@ -162,7 +174,7 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
         {current && (current.sent_today || current.due_today) && (
           <div
             className={`flex items-center gap-2.5 rounded-[14px] px-3.5 py-3 text-sm leading-snug ${
-              current.sent_today ? "bg-[#E1F2EC] text-brand-teal-text" : "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]"
+              current.sent_today ? "bg-[var(--nn-ok-bg)] text-brand-teal-text" : "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]"
             }`}
           >
             <Camera className="h-5 w-5 shrink-0" aria-hidden="true" />
@@ -180,7 +192,7 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
         <Link
           to={`/sits/${s.sit_id}`}
           className={`flex h-[52px] items-center justify-center gap-2 rounded-2xl text-[15px] font-bold ${
-            dueNow ? "bg-[var(--nn-accent)] text-white" : "border-[1.5px] border-[var(--nn-border)] bg-white text-[#1F1B16]"
+            dueNow ? "bg-[var(--nn-accent)] text-white" : "border-[1.5px] border-[var(--nn-border)] bg-card text-foreground"
           }`}
         >
           {dueNow && <Camera className="h-[18px] w-[18px]" aria-hidden="true" />}
@@ -205,6 +217,31 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
           )}
           <Tile onClick={openChat} icon={MessageSquare} title="Message" detail={`Chat with ${other}`} tone="neutral" />
         </div>
+        {inArrivalWindow && (
+          <Link
+            to={`/sits/${s.sit_id}/arrival-vault`}
+            state={{ from: `${location.pathname}${location.search}` }}
+            className="flex min-h-[56px] items-center gap-3 rounded-2xl border border-[var(--nn-border)] px-3.5 py-3"
+          >
+            <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]">
+              <Camera className="h-[18px] w-[18px]" aria-hidden="true" />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="text-[15px] font-bold">Arrival Check-In</span>
+              <span className="text-xs text-muted-foreground">Photograph the home as you found it. Only you can see these.</span>
+            </span>
+            <StatusChip tone={arrivalPhotos > 0 ? "green" : "accent"}>
+              {arrivalPhotos > 0 ? `${plural(arrivalPhotos, "photo")} saved` : "To do"}
+            </StatusChip>
+          </Link>
+        )}
+        <Link
+          to="/my-sits?as=sitter"
+          className="-my-1 flex min-h-[44px] items-center justify-between text-sm font-bold text-[var(--nn-accent-dark)]"
+        >
+          {upcomingCount > 1 ? `See all sits (${upcomingCount} coming up)` : "See all sits"}
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
       </div>
       {guideWindow && askNestAvailable && listingId && (
         <AskNestSheet listingId={listingId} open={askOpen} onOpenChange={setAskOpen} />
@@ -218,10 +255,10 @@ const CountTile = ({ to, count, label, tone }: { to: string; count: number; labe
     to={to}
     className={`flex min-h-[44px] flex-col gap-0.5 rounded-2xl p-3 ${
       tone === "green"
-        ? "bg-[#E3F1EE] text-brand-teal-text"
+        ? "bg-[var(--nn-ok-bg)] text-brand-teal-text"
         : tone === "accent"
           ? "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]"
-          : "bg-[#F6E8E3] text-[#3F444B]"
+          : "bg-muted text-muted-foreground"
     }`}
   >
     <span className="font-display text-[26px] leading-none">{count}</span>
@@ -252,14 +289,14 @@ const ApplicationsSummary = () => {
       </div>
       {isLoading ? null : latest.length === 0 ? (
         <div className="flex flex-col items-start gap-2 border-t border-[var(--nn-line)] pt-3">
-          <p className="text-sm text-[#656B74]">You haven't applied for a sit yet.</p>
+          <p className="text-sm text-muted-foreground">You haven't applied for a sit yet.</p>
           <Link to="/browse-sits" className={nnButton("primary")}>
             Browse sits
           </Link>
         </div>
       ) : (
         <div className="flex flex-col">
-          <span className="pb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#656B74]">Latest</span>
+          <span className="pb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Latest</span>
           {latest.map((a) => {
             const chip = applicationChip(a);
             return (
@@ -273,7 +310,7 @@ const ApplicationsSummary = () => {
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-[15px] font-bold">{a.listing?.title ?? "A sit"}</span>
-                  <span className="truncate text-[13px] text-[#656B74]">
+                  <span className="truncate text-[13px] text-muted-foreground">
                     {[a.listing?.city, a.sit_dates && shortRange(a.sit_dates.start_date, a.sit_dates.end_date)]
                       .filter(Boolean)
                       .join(" · ")}
@@ -341,7 +378,7 @@ const NomadProfileTiles = ({ className }: { className?: string }) => {
   const tile = (to: string, icon: typeof Mail, iconCls: string, title: string, detail: string, urgent = false) => (
     <Link
       to={to}
-      className="flex min-h-[44px] flex-col gap-1.5 rounded-[18px] border border-[var(--nn-border)] bg-white px-3 py-3.5"
+      className="flex min-h-[44px] flex-col gap-1.5 rounded-[18px] border border-[var(--nn-border)] bg-card px-3 py-3.5"
     >
       <span className={`flex h-9 w-9 items-center justify-center rounded-full ${iconCls}`}>
         {(() => {
@@ -350,7 +387,7 @@ const NomadProfileTiles = ({ className }: { className?: string }) => {
         })()}
       </span>
       <span className="text-[13px] font-bold">{title}</span>
-      <span className={`text-[11px] ${urgent ? "font-semibold text-[var(--nn-accent-dark)]" : "text-[#656B74]"}`}>{detail}</span>
+      <span className={`text-[11px] ${urgent ? "font-semibold text-[var(--nn-accent-dark)]" : "text-muted-foreground"}`}>{detail}</span>
     </Link>
   );
 
@@ -361,7 +398,7 @@ const NomadProfileTiles = ({ className }: { className?: string }) => {
         {tile(
           "/invitations",
           Mail,
-          "bg-[var(--nn-chip)] text-[#3F444B]",
+          "bg-[var(--nn-chip)] text-muted-foreground",
           "Invitations",
           links.invites.detail,
           links.invites.urgent,
@@ -369,7 +406,7 @@ const NomadProfileTiles = ({ className }: { className?: string }) => {
         {tile(
           "/availability",
           Calendar,
-          "bg-[#E3F1EE] text-brand-teal-text",
+          "bg-[var(--nn-ok-bg)] text-brand-teal-text",
           "Availability",
           links.availability.detail,
           links.availability.urgent,
@@ -414,6 +451,11 @@ export const NomadDashboard = ({
 
   const current = summary?.current_sits.find((s) => s.role === "sitter") ?? null;
   const next = summary?.next_sits.find((s) => s.role === "sitter") ?? null;
+  const { user } = useAuth();
+  const arrivalSit = current ?? next;
+  const inArrivalWindow = arrivalWindowOpen(arrivalSit?.start_date);
+  const { data: arrivalPhotos } = useArrivalPhotoCount(arrivalSit?.sit_id, inArrivalWindow);
+  const myPastSits = sits.filter((s) => s.sitter_user_id === user?.id && sitTiming(s).isPast).length;
 
   const todos = useMemo<TodoItem[]>(() => {
     const items: TodoItem[] = [];
@@ -425,6 +467,16 @@ export const NomadDashboard = ({
         detail: "Due today",
         urgent: true,
         to: `/sits/${sit.sit_id}`,
+      });
+    }
+    if (arrivalSit && inArrivalWindow && arrivalPhotos === 0) {
+      items.push({
+        key: `arrival-${arrivalSit.sit_id}`,
+        icon: Camera,
+        label: "Take your Arrival Check-In photos",
+        detail: "Only you can see these",
+        urgent: true,
+        to: `/sits/${arrivalSit.sit_id}/arrival-vault`,
       });
     }
     if (pendingInvites > 0) {
@@ -453,7 +505,7 @@ export const NomadDashboard = ({
       items.push({ key: "profile", icon: User, label: "Finish your profile", detail: `${completion.percent}% done`, to: "/edit-sitter-profile" });
     }
     return items;
-  }, [summary, pendingInvites, unreadCount, completion.percent]);
+  }, [summary, pendingInvites, unreadCount, completion.percent, arrivalSit, inArrivalWindow, arrivalPhotos]);
 
   const closeReview = () => {
     setReviewSitId(null);
@@ -473,9 +525,12 @@ export const NomadDashboard = ({
       <TodoList items={todos} />
       <ApplicationsSummary />
       <NomadProfileTiles className="md:col-span-2 lg:hidden" />
-      <div id="your-sits" className="min-w-0 scroll-mt-24 md:col-span-2">
-        <UpcomingPastSits viewAs="sitter" openReview={null} onAutoOpened={() => undefined} />
-      </div>
+      {/* Without a sit now or next, My sits (past sits, reviews, Sit Stories) is one tap away here. */}
+      {!current && !next && myPastSits > 0 && (
+        <SectionCard label="Your sits" className="px-[18px] py-1.5 md:col-span-2">
+          <NavRow first to="/my-sits?as=sitter&tab=past" icon={Calendar} title="My sits" subtitle={plural(myPastSits, "past sit")} iconTone="neutral" />
+        </SectionCard>
+      )}
 
       {reviewSit && reviewSit.owner_user_id && (
         <WriteReviewDialog

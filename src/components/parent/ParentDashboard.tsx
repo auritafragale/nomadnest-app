@@ -6,7 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SectionCard, SerifTitle, StatusChip, nnButton, shortRange, type ChipTone } from "@/components/nn/ui";
 import { TodoList, type TodoItem } from "@/components/dashboard/TodoList";
 import { OwnerListingCard } from "@/components/dashboard/OwnerListingCard";
-import { UpcomingPastSits } from "@/components/dashboard/UpcomingPastSits";
+import WriteReviewDialog from "@/components/reviews/WriteReviewDialog";
+import { SitMoreMenu, SitRescheduleNotice } from "@/components/sits/SitActions";
+import { useAuth } from "@/contexts/AuthContext";
+import { sitChip, sitTiming } from "@/lib/sitTiming";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
 import { useListingAllowance } from "@/hooks/useListingAllowance";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
@@ -23,14 +26,21 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 
 /** The sit at your home now ("Day 3 of 7"), or the next one's countdown. */
 const HomeSitCard = ({ current, next, className }: { current: CurrentSit | null; next: NextSit | null; className?: string }) => {
+  const { data: sits = [] } = useSits();
+  const homeSits = useHomeSits();
   if (!current && !next) return null;
   const s = current ?? next!;
+  const sit = sits.find((x) => x.id === s.sit_id);
+  const upcomingCount = homeSits.filter((x) => sitTiming(x).isUpcoming).length;
   const days = next && !current ? differenceInCalendarDays(parseISO(next.start_date), startOfToday()) : 0;
   return (
     <SectionCard label={current ? "Now at your home" : "Next sit at your home"} className={cn("flex flex-col gap-3 p-[18px]", className)}>
-      <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#656B74]">
+      <div className="flex items-start justify-between gap-3">
+      <span className="pt-1 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
         {current ? "Now at your home" : "Next sit at your home"}
       </span>
+      {sit && <SitMoreMenu sit={sit} items={["message", "listing", "propose"]} />}
+      </div>
       <h2 className="font-display text-[25px] leading-[1.1]">
         {current
           ? `Day ${current.day_number} of ${current.total_days}`
@@ -40,7 +50,7 @@ const HomeSitCard = ({ current, next, className }: { current: CurrentSit | null;
               ? "Starts tomorrow"
               : `Starts in ${days} days`}
       </h2>
-      <p className="text-sm text-[#656B74]">
+      <p className="text-sm text-muted-foreground">
         {s.other_first_name} is {current ? "sitting" : "sitting for you"} · {shortRange(s.start_date, s.end_date)}
       </p>
       {current && (
@@ -50,7 +60,7 @@ const HomeSitCard = ({ current, next, className }: { current: CurrentSit | null;
           aria-valuenow={current.day_number}
           aria-valuemin={0}
           aria-valuemax={current.total_days}
-          className="h-1.5 rounded-full bg-[#EDEFF2]"
+          className="h-1.5 rounded-full bg-muted"
         >
           <div
             className="h-1.5 rounded-full bg-[var(--nn-accent)]"
@@ -61,33 +71,31 @@ const HomeSitCard = ({ current, next, className }: { current: CurrentSit | null;
       {current && (current.sent_today || current.due_today) && (
         <p
           className={`flex items-center gap-2.5 rounded-[14px] px-3.5 py-3 text-sm ${
-            current.sent_today ? "bg-[#E1F2EC] text-brand-teal-text" : "bg-[#F6F3F1] text-[#3F444B]"
+            current.sent_today ? "bg-[var(--nn-ok-bg)] text-brand-teal-text" : "bg-muted text-muted-foreground"
           }`}
         >
           <Camera className="h-5 w-5 shrink-0" aria-hidden="true" />
           {current.sent_today ? `${current.other_first_name} sent today's update.` : `No update from ${current.other_first_name} yet today.`}
         </p>
       )}
+      {sit && <SitRescheduleNotice sit={sit} />}
       <Link to={`/sits/${s.sit_id}`} className={nnButton(current?.sent_today ? "primary" : "secondary", "h-[52px] rounded-2xl text-[15px]")}>
         {current ? (current.sent_today ? "See today's update" : "Open the sit") : "View sit"}
+      </Link>
+      <Link
+        to="/my-sits?as=owner"
+        className="-my-1 flex min-h-[44px] items-center justify-between text-sm font-bold text-[var(--nn-accent-dark)]"
+      >
+        {upcomingCount > 1 ? `See all sits (${upcomingCount} coming up)` : "See all sits"}
+        <ChevronRight className="h-4 w-4" aria-hidden="true" />
       </Link>
     </SectionCard>
   );
 };
 
-const sitChip = (sit: Sit): { label: string; tone: ChipTone } => {
-  const today = new Date().toISOString().slice(0, 10);
-  const end = sit.sit_dates?.end_date;
-  const start = sit.sit_dates?.start_date;
-  if (sit.status === "cancelled") return { label: "Cancelled", tone: "grey" };
-  if (sit.status === "completed" || (end && end < today)) return { label: "Completed", tone: "grey" };
-  if (start && start <= today) return { label: "Now", tone: "green" };
-  return { label: "Upcoming", tone: "accent" };
-};
-
 const SitRow = ({ sit }: { sit: Sit }) => {
   const chip = sitChip(sit);
-  const finished = chip.label === "Completed";
+  const finished = sitTiming(sit).isPast;
   const { data: story } = useStoryForSit(finished ? sit.id : undefined);
   return (
     <div className="flex flex-col gap-2 border-t border-[var(--nn-line)] pt-3 first:border-t-0 first:pt-1">
@@ -97,7 +105,7 @@ const SitRow = ({ sit }: { sit: Sit }) => {
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="truncate text-[15px] font-bold">{sit.listing?.title ?? "Your home"}</span>
-          <span className="truncate text-[13px] text-[#656B74]">
+          <span className="truncate text-[13px] text-muted-foreground">
             {[sit.sitter_profile?.first_name, sit.sit_dates && shortRange(sit.sit_dates.start_date, sit.sit_dates.end_date)]
               .filter(Boolean)
               .join(" · ")}
@@ -114,44 +122,37 @@ const SitRow = ({ sit }: { sit: Sit }) => {
             <BookHeart className="h-4 w-4 text-[var(--nn-accent-dark)]" aria-hidden="true" />
             Read the Sit Story
           </span>
-          <ChevronRight className="h-4 w-4 text-[#9097A1]" aria-hidden="true" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         </Link>
       )}
     </div>
   );
 };
 
-/** "Sits": the latest three, and See all for every sit with its actions. */
-const SitsSection = ({
-  openReview,
-  onReviewAutoOpened,
-  className,
-}: {
-  openReview?: string | null;
-  onReviewAutoOpened?: (id: string) => void;
-  className?: string;
-}) => {
+/** Sits at your home, newest first (cancelled before they started left out). */
+const useHomeSits = () => {
+  const { user } = useAuth();
   const { data: sits = [] } = useSits();
-  const [showAll, setShowAll] = useState(!!openReview);
-  const mine = sits
-    .filter((s) => s.status !== "cancelled" || s.cancelled_from_status === "in_progress")
+  return sits
+    .filter((s) => s.owner_user_id === user?.id && (s.status !== "cancelled" || s.cancelled_from_status === "in_progress"))
     .sort((a, b) => (b.sit_dates?.start_date ?? "").localeCompare(a.sit_dates?.start_date ?? ""));
-  if (mine.length === 0 && !showAll) return null;
+};
+
+/** "Sits": the latest sit (the next one coming up, else the most recent), and See all (My sits). */
+const SitsSection = ({ className }: { className?: string }) => {
+  const mine = useHomeSits();
+  if (mine.length === 0) return null;
+  const upcoming = mine.filter((s) => sitTiming(s).isUpcoming);
+  const latest = upcoming.length > 0 ? upcoming[upcoming.length - 1] : mine[0];
   return (
     <SectionCard label="Sits" className={cn("flex min-w-0 flex-col gap-2.5 p-[18px]", className)}>
       <div className="flex items-baseline justify-between">
         <SerifTitle>Sits</SerifTitle>
-        <button type="button" onClick={() => setShowAll((v) => !v)} className="min-h-[44px] text-sm font-bold text-[var(--nn-accent-dark)]">
-          {showAll ? "Show less" : "See all"}
-        </button>
+        <Link to="/my-sits?as=owner" className="-my-3 inline-flex min-h-[44px] items-center text-sm font-bold text-[var(--nn-accent-dark)]">
+          See all{mine.length > 1 ? ` ${mine.length}` : ""}
+        </Link>
       </div>
-      {showAll ? (
-        <div id="your-sits" className="scroll-mt-24">
-          <UpcomingPastSits viewAs="owner" openReview={openReview} onAutoOpened={onReviewAutoOpened} />
-        </div>
-      ) : (
-        mine.slice(0, 3).map((s) => <SitRow key={s.id} sit={s} />)
-      )}
+      <SitRow sit={latest} />
     </SectionCard>
   );
 };
@@ -174,7 +175,7 @@ const StoriesRow = ({ className }: { className?: string }) => {
     <section
       aria-label="Sit Stories"
       className={cn(
-        "flex min-w-0 flex-col gap-3 lg:rounded-[24px] lg:border lg:border-[var(--nn-border)] lg:bg-white lg:p-[18px]",
+        "flex min-w-0 flex-col gap-3 lg:rounded-[24px] lg:border lg:border-[var(--nn-border)] lg:bg-card lg:p-[18px]",
         className,
       )}
     >
@@ -194,14 +195,14 @@ const StoriesRow = ({ className }: { className?: string }) => {
             <Link
               key={s.id}
               to={`/stories/${s.id}`}
-              className="flex w-[250px] shrink-0 snap-start flex-col overflow-hidden rounded-[22px] border border-[var(--nn-border)] bg-white lg:w-full lg:flex-row lg:items-center lg:gap-3 lg:rounded-none lg:border-0"
+              className="flex w-[250px] shrink-0 snap-start flex-col overflow-hidden rounded-[22px] border border-[var(--nn-border)] bg-card lg:w-full lg:flex-row lg:items-center lg:gap-3 lg:rounded-none lg:border-0"
             >
               <span className="h-[150px] bg-[#D6B98F] lg:h-[72px] lg:w-[88px] lg:shrink-0 lg:overflow-hidden lg:rounded-[14px]">
                 {photo && <img src={photo} alt="" className="h-full w-full object-cover" />}
               </span>
               <span className="flex min-w-0 flex-col gap-2 p-3.5 lg:gap-1 lg:p-0">
                 <span className="font-display text-xl leading-[1.15] lg:text-lg">{s.title}</span>
-                {s.city && <span className="text-[13px] text-[#656B74]">{s.city}</span>}
+                {s.city && <span className="text-[13px] text-muted-foreground">{s.city}</span>}
                 <span className="self-start">
                   <StatusChip tone={st.tone}>{st.label}</StatusChip>
                 </span>
@@ -209,7 +210,7 @@ const StoriesRow = ({ className }: { className?: string }) => {
             </Link>
           );
         })}
-        <span className="flex w-[190px] shrink-0 flex-col justify-center gap-2 rounded-[22px] border-[1.5px] border-dashed border-[#BFDCD4] bg-white p-[18px] text-sm leading-snug text-[#656B74] lg:w-full lg:p-3.5">
+        <span className="flex w-[190px] shrink-0 flex-col justify-center gap-2 rounded-[22px] border-[1.5px] border-dashed border-[var(--nn-border)] bg-card p-[18px] text-sm leading-snug text-muted-foreground lg:w-full lg:p-3.5">
           {stories.length === 0 ? "Your first Sit Story appears after your first sit." : "Your next Sit Story appears after your next sit."}
         </span>
       </div>
@@ -256,6 +257,8 @@ export const ParentDashboard = ({
   const { unreadCount } = useUnreadMessages();
   const { data: stories = [] } = useMySitStories();
   const { data: sits = [] } = useSits();
+  const homeSits = useHomeSits();
+  const { user } = useAuth();
   const guideTodo = useGuideTodo(listings[0]?.id);
   const [reviewRequest, setReviewRequest] = useState<string | null>(null);
 
@@ -305,9 +308,15 @@ export const ParentDashboard = ({
   }, [totalApplicants, stories, guideTodo, listings, current, next, summary, unreadCount, completion.percent]);
 
   const reviewSitId = reviewRequest ?? openReview;
+  const reviewSit = sits.find((s) => s.id === reviewSitId && s.owner_user_id === user?.id);
+  const closeReview = () => {
+    const id = reviewSitId;
+    setReviewRequest(null);
+    if (id) onReviewAutoOpened(id);
+  };
   // Same rule as SitsSection: without sits, To do (tablet) and Sit Stories
   // (desktop) take the full width.
-  const hasSits = !!reviewSitId || sits.some((s) => s.status !== "cancelled" || s.cancelled_from_status === "in_progress");
+  const hasSits = homeSits.length > 0;
 
   return (
     <DashboardColumns
@@ -327,7 +336,7 @@ export const ParentDashboard = ({
       ) : listings.length === 0 ? (
         <SectionCard className="flex flex-col items-center gap-2 p-6 text-center">
           <SerifTitle>Your home</SerifTitle>
-          <p className="text-sm text-[#656B74]">Create your listing to find a Nomad for your pets.</p>
+          <p className="text-sm text-muted-foreground">Create your listing to find a Nomad for your pets.</p>
           <Link to="/create-listing" className={nnButton("primary", "mt-2")}>
             <Plus className="h-4 w-4" aria-hidden="true" />
             Create listing
@@ -348,15 +357,20 @@ export const ParentDashboard = ({
       )}
       </div>
 
-      <SitsSection
-        key={reviewSitId ?? "sits"}
-        className="md:order-4"
-        openReview={reviewSitId}
-        onReviewAutoOpened={(id) => {
-          setReviewRequest(null);
-          onReviewAutoOpened(id);
-        }}
-      />
+      <SitsSection className="md:order-4" />
+
+      {/* A review opened from To do or from a review reminder link. */}
+      {reviewSit && reviewSit.sitter_user_id && (
+        <WriteReviewDialog
+          sitId={reviewSit.id}
+          revieweeUserId={reviewSit.sitter_user_id}
+          revieweeName={reviewSit.sitter_profile?.first_name || "your Nomad"}
+          reviewType="sitter"
+          open
+          onOpenChange={(open) => !open && closeReview()}
+          onReviewSubmitted={closeReview}
+        />
+      )}
       <StoriesRow className={cn("md:order-5 md:col-span-2", hasSits && "lg:col-span-1")} />
     </DashboardColumns>
   );

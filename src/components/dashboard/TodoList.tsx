@@ -23,7 +23,7 @@ export const TodoList = ({ items, className }: { items: TodoItem[]; className?: 
     <SectionCard label="To do" className={cn("px-[18px] py-1.5", className)}>
       <SerifTitle className="mb-1.5 mt-3">To do</SerifTitle>
       {visible.length === 0 ? (
-        <p className="flex items-center gap-2 border-t border-[var(--nn-line)] py-3 text-sm text-[#656B74]">
+        <p className="flex items-center gap-2 border-t border-[var(--nn-line)] py-3 text-sm text-muted-foreground">
           <CircleCheck className="h-4 w-4 text-brand-teal-text" aria-hidden="true" />
           You're all caught up.
         </p>

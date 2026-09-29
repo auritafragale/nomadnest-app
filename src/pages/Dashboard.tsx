@@ -42,7 +42,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openReviewSitId, setOpenReviewSitId] = useState<string | null>(null);
-  // Stable identity so it doesn't re-trigger SitCard's auto-open effect on
+  // Stable identity so the review dialog's close handler doesn't change on
   // every unrelated Dashboard re-render.
   const handleReviewAutoOpened = useCallback(() => setOpenReviewSitId(null), []);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -146,7 +146,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
       </div>
     );

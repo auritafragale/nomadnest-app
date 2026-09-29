@@ -65,7 +65,7 @@ const InviteCard = ({ invite }: { invite: SitterInvite }) => {
         {invite.listing?.photos?.[0] && (
           <img src={invite.listing.photos[0]} alt="" className="absolute inset-0 h-full w-full object-cover" />
         )}
-        <span className="absolute left-3 top-3 inline-flex h-7 items-center rounded-full bg-white px-3 text-xs font-bold text-[var(--nn-accent-dark)]">
+        <span className="absolute left-3 top-3 inline-flex h-7 items-center rounded-full bg-card px-3 text-xs font-bold text-[var(--nn-accent-dark)]">
           New invitation
         </span>
       </div>
@@ -84,13 +84,13 @@ const InviteCard = ({ invite }: { invite: SitterInvite }) => {
         </div>
         <div className="flex flex-col gap-1">
           <h2 className="font-display text-[25px] leading-[1.1]">{invite.listing?.title ?? "A home"}</h2>
-          <p className="text-sm text-[#656B74]">
+          <p className="text-sm text-muted-foreground">
             {[invite.listing?.city, d && shortRange(d.start_date, d.end_date), nights > 0 && `${nights} night${nights === 1 ? "" : "s"}`]
               .filter(Boolean)
               .join(" · ")}
           </p>
           {pets?.names && (
-            <p className="text-sm text-[#656B74]">{[pets.names, pets.summary].filter(Boolean).join(" · ")}</p>
+            <p className="text-sm text-muted-foreground">{[pets.names, pets.summary].filter(Boolean).join(" · ")}</p>
           )}
         </div>
         {invite.message && (
@@ -107,7 +107,7 @@ const InviteCard = ({ invite }: { invite: SitterInvite }) => {
             Decline
           </button>
         </div>
-        <p className="text-xs text-[#656B74]">Accepting sends your application straight to {owner}.</p>
+        <p className="text-xs text-muted-foreground">Accepting sends your application straight to {owner}.</p>
         <Link to={`/listing/${invite.listing_id}`} className={nnButton("ghost", "self-start px-3")}>
           View listing
         </Link>
@@ -135,17 +135,17 @@ const AcceptedCard = ({ invite }: { invite: SitterInvite }) => {
   return (
     <SectionCard className="flex flex-col gap-3 p-[18px]">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E1F2EC] text-brand-teal-text">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--nn-ok-bg)] text-brand-teal-text">
           <Check className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="min-w-0">
           <p className="text-[15px] font-bold">Application sent to {owner}</p>
-          <p className="text-sm text-[#656B74]">We'll let you know as soon as they confirm.</p>
+          <p className="text-sm text-muted-foreground">We'll let you know as soon as they confirm.</p>
         </div>
       </div>
       <div className="border-t border-[var(--nn-line)] pt-3">
         <p className="text-[15px] font-bold">{invite.listing?.title ?? "A home"}</p>
-        <p className="text-[13px] text-[#656B74]">{[d && shortRange(d.start_date, d.end_date), owner].filter(Boolean).join(" · ")}</p>
+        <p className="text-[13px] text-muted-foreground">{[d && shortRange(d.start_date, d.end_date), owner].filter(Boolean).join(" · ")}</p>
       </div>
       <div className="flex gap-2">
         <button type="button" onClick={message} className={nnButton("secondary", "flex-1")}>
@@ -170,7 +170,7 @@ const PastRow = ({ invite }: { invite: SitterInvite }) => {
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate text-[15px] font-bold">{invite.listing?.title ?? "A home"}</span>
-        <span className="truncate text-[13px] text-[#656B74]">
+        <span className="truncate text-[13px] text-muted-foreground">
           {invite.status === "declined" ? "You declined" : invite.status === "applied" ? "You applied" : "Dates passed"}
           {d ? ` · ${shortRange(d.start_date, d.end_date)}` : ""}
         </span>
@@ -212,7 +212,7 @@ const InviteTips = () => {
   return (
     <SectionCard label="Get invited more often" className="flex flex-col gap-2 p-[18px]">
       <SerifTitle>Get invited more often</SerifTitle>
-      <p className="text-sm text-[#656B74]">Pet Parents invite Nomads whose profiles feel complete.</p>
+      <p className="text-sm text-muted-foreground">Pet Parents invite Nomads whose profiles feel complete.</p>
       <ul className="mt-1 flex flex-col">
         {items.map(([done, label, to]) => (
           <li key={label}>
@@ -226,7 +226,7 @@ const InviteTips = () => {
               >
                 {done && <Check className="h-3.5 w-3.5" />}
               </span>
-              <span className={cn("text-sm", done ? "text-[#656B74] line-through" : "font-semibold")}>{label}</span>
+              <span className={cn("text-sm", done ? "text-muted-foreground line-through" : "font-semibold")}>{label}</span>
               <span className="sr-only">{done ? "done" : "to do"}</span>
             </Link>
           </li>

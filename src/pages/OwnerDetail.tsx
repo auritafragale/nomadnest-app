@@ -225,7 +225,7 @@ const OwnerDetail = () => {
 
   if (preview && (!profile || ownerProfile?.is_active === false)) {
     return (
-      <div className="min-h-screen flex flex-col bg-white">
+      <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
         <main className="flex-1 pt-16">
           <PreviewBar showTips={showTips} onToggleTips={() => setShowTips((v) => !v)} accent="teal" />

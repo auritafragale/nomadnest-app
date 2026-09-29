@@ -133,7 +133,7 @@ const MyAvailability = () => {
 
   const hint = error || (pending !== null ? "Now tap the last day you're free." : "Tap the first day you're free, then the last.");
   const navBtn =
-    "flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-[#EBD3CA] bg-white disabled:opacity-35";
+    "flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-[var(--nn-border)] bg-card disabled:opacity-35";
 
   // One month's grid. From tablet up a second month shows beside the first.
   const renderMonth = (n: number, className?: string) => {
@@ -141,7 +141,7 @@ const MyAvailability = () => {
     return (
       <div key={n} className={cn("flex min-w-0 flex-col gap-3", className)}>
         <h2 className="hidden text-center font-display text-[22px] font-normal md:block">{m.name}</h2>
-        <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-[#656B74]" aria-hidden="true">
+        <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-muted-foreground" aria-hidden="true">
           {WEEKDAYS.map((w) => (
             <span key={w}>{w}</span>
           ))}
@@ -168,11 +168,11 @@ const MyAvailability = () => {
                 className={cn(
                   "h-11 rounded-xl text-sm",
                   isBooked && "bg-brand-coral font-bold text-white",
-                  !isBooked && isPast && "text-[#B5B9C0]",
-                  !isBooked && !isPast && isPending && "bg-white font-bold text-brand-coral-text shadow-[inset_0_0_0_2px_hsl(var(--brand-coral))]",
+                  !isBooked && isPast && "text-muted-foreground/50",
+                  !isBooked && !isPast && isPending && "bg-card font-bold text-brand-coral-text shadow-[inset_0_0_0_2px_hsl(var(--brand-coral))]",
                   !isBooked && !isPast && !isPending && isFree && "bg-brand-teal font-bold text-white",
-                  !isBooked && !isPast && !isPending && !isFree && "bg-[#FCF3F0] font-semibold",
-                  d === today && !isBooked && "ring-2 ring-[#1F1B16] ring-offset-1",
+                  !isBooked && !isPast && !isPending && !isFree && "bg-[var(--nn-soft)] font-semibold",
+                  d === today && !isBooked && "ring-2 ring-foreground ring-offset-1",
                 )}
               >
                 {i + 1}
@@ -194,7 +194,7 @@ const MyAvailability = () => {
           <Skeleton className="h-96 w-full rounded-[24px]" />
         ) : data?.unavailable ? (
           <SectionCard className="p-[18px]">
-            <p className="text-sm text-[#656B74]">Availability is being switched on. Please try again in a few minutes.</p>
+            <p className="text-sm text-muted-foreground">Availability is being switched on. Please try again in a few minutes.</p>
           </SectionCard>
         ) : (
           <div className="flex flex-col gap-[18px] lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-6">
@@ -206,7 +206,7 @@ const MyAvailability = () => {
                 <p className="font-display text-xl md:hidden" aria-live="polite">
                   {monthName}
                 </p>
-                <p className="hidden text-sm text-[#656B74] md:block" aria-live="polite">
+                <p className="hidden text-sm text-muted-foreground md:block" aria-live="polite">
                   Showing {monthName} and {monthView(month + 1).name}
                 </p>
                 <button
@@ -223,12 +223,12 @@ const MyAvailability = () => {
                 {renderMonth(month)}
                 {month + 1 < MONTHS_AHEAD && renderMonth(month + 1, "hidden md:flex")}
               </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#656B74]" aria-hidden="true">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-hidden="true">
                 <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-brand-coral" />Booked sit</span>
                 <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-brand-teal" />Free to sit</span>
                 <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded shadow-[inset_0_0_0_2px_hsl(var(--brand-coral))]" />First day picked</span>
               </div>
-              <p className={cn("text-[13px] leading-snug", error ? "font-semibold text-brand-coral-text" : "text-[#656B74]")} role={error ? "alert" : undefined}>
+              <p className={cn("text-[13px] leading-snug", error ? "font-semibold text-brand-coral-text" : "text-muted-foreground")} role={error ? "alert" : undefined}>
                 {hint}
               </p>
             </SectionCard>
@@ -250,12 +250,12 @@ const MyAvailability = () => {
                   {suggest.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Sparkles className="h-4 w-4" aria-hidden="true" />}
                   Suggest my dates
                 </button>
-                <p className="text-xs text-[#656B74]">
+                <p className="text-xs text-muted-foreground">
                   Uses your saved dates, your booked sits' dates, your home city and open sits' dates and cities. Nothing is
                   added until you tap Add.
                 </p>
                 {suggestions && suggestions.length === 0 && (
-                  <p className="text-sm text-[#656B74]">No suggestions right now. Check back as new sits open.</p>
+                  <p className="text-sm text-muted-foreground">No suggestions right now. Check back as new sits open.</p>
                 )}
                 {suggestions?.map((s) => {
                   const added = list.some((r) => r.start <= s.start && r.end >= s.end);
@@ -263,7 +263,7 @@ const MyAvailability = () => {
                     <div key={s.start} className="flex items-center gap-3 border-t border-[var(--nn-line)] py-2">
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="text-[15px] font-semibold">{rangeText(s)}</span>
-                        <span className="text-[13px] text-[#656B74]">{s.why}</span>
+                        <span className="text-[13px] text-muted-foreground">{s.why}</span>
                       </span>
                       <button
                         type="button"
@@ -295,7 +295,7 @@ const MyAvailability = () => {
                   <span className="h-3 w-3 shrink-0 rounded-full bg-brand-coral" aria-hidden="true" />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-[15px] font-semibold">{s.listing?.title ?? "Your sit"}</span>
-                    <span className="text-[13px] text-[#656B74]">Booked sit · {shortRange(s.sit_dates!.start_date, s.sit_dates!.end_date)}</span>
+                    <span className="text-[13px] text-muted-foreground">Booked sit · {shortRange(s.sit_dates!.start_date, s.sit_dates!.end_date)}</span>
                   </span>
                 </div>
               ))}
@@ -304,7 +304,7 @@ const MyAvailability = () => {
                   <span className="h-3 w-3 shrink-0 rounded-full bg-brand-teal" aria-hidden="true" />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="text-[15px] font-semibold">Free to sit</span>
-                    <span className="text-[13px] text-[#656B74]">{rangeText(r)}</span>
+                    <span className="text-[13px] text-muted-foreground">{rangeText(r)}</span>
                   </span>
                   <button
                     type="button"
@@ -320,7 +320,7 @@ const MyAvailability = () => {
                 </div>
               ))}
               {list.length === 0 && booked.sits.length === 0 && (
-                <p className="py-2 text-sm text-[#656B74]">No dates added yet</p>
+                <p className="py-2 text-sm text-muted-foreground">No dates added yet</p>
               )}
             </SectionCard>
 
@@ -336,7 +336,7 @@ const MyAvailability = () => {
               {save.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
               {saved ? "Saved" : "Save availability"}
             </button>
-            <p className="text-xs text-[#656B74]">
+            <p className="text-xs text-muted-foreground">
               Pet Parents see only your free dates. Where you're sitting is never shown.
             </p>
             </div>

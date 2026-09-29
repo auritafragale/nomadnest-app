@@ -24,10 +24,10 @@ const greeting = () => {
 };
 
 const circleBtn =
-  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[var(--nn-border)] bg-white text-[#1F1B16] hover:bg-[var(--nn-soft)]";
+  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[var(--nn-border)] bg-card text-foreground hover:bg-[var(--nn-soft)]";
 // Phone and desktop: two equal pills. Tablet: sized to their labels.
 const pillBtn =
-  "flex h-11 min-w-0 flex-1 md:flex-none md:px-4 lg:flex-1 lg:px-2 lg:text-[13px] xl:text-sm items-center justify-center gap-1.5 rounded-full border-[1.5px] border-[var(--nn-border)] bg-white px-3 text-sm font-bold text-[#1F1B16] hover:bg-[var(--nn-soft)]";
+  "flex h-11 min-w-0 flex-1 md:flex-none md:px-4 lg:flex-1 lg:px-2 lg:text-[13px] xl:text-sm items-center justify-center gap-1.5 rounded-full border-[1.5px] border-[var(--nn-border)] bg-card px-3 text-sm font-bold text-foreground hover:bg-[var(--nn-soft)]";
 
 /**
  * Profile block of both dashboards: photo with the completion ring, greeting,
@@ -67,7 +67,7 @@ const DashboardHeader = ({ role, modeSwitch, userId, displayName, avatarUrl, cit
           </span>
         )}
         {subscribed && planName && (
-          <span className="inline-flex h-[26px] items-center rounded-full bg-[var(--nn-chip)] px-2.5 text-xs font-bold text-[#3F444B]">
+          <span className="inline-flex h-[26px] items-center rounded-full bg-[var(--nn-chip)] px-2.5 text-xs font-bold text-muted-foreground">
             {planName.toLowerCase().includes("membership") ? planName : `${planName} membership`}
           </span>
         )}
@@ -78,7 +78,7 @@ const DashboardHeader = ({ role, modeSwitch, userId, displayName, avatarUrl, cit
     <>
     <section
       aria-label="Your profile"
-      className="flex flex-col gap-4 md:contents lg:flex lg:rounded-[24px] lg:border lg:border-[var(--nn-border)] lg:bg-white lg:p-5 xl:p-[22px]"
+      className="flex flex-col gap-4 md:contents lg:flex lg:rounded-[24px] lg:border lg:border-[var(--nn-border)] lg:bg-card lg:p-5 xl:p-[22px]"
     >
       <div className="flex flex-col gap-4 md:col-span-2 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-x-5 md:gap-y-3 md:rounded-[24px] md:border md:border-[var(--nn-border)] md:p-[22px] lg:flex lg:items-stretch lg:rounded-none lg:border-0 lg:p-0">
       <div className="flex min-w-0 items-center gap-3.5 md:gap-4 lg:gap-3.5">
@@ -113,9 +113,9 @@ const DashboardHeader = ({ role, modeSwitch, userId, displayName, avatarUrl, cit
           </span>
         </Link>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-sm text-[#656B74]">{greeting()}</span>
+          <span className="text-sm text-muted-foreground">{greeting()}</span>
           <h1 className="truncate font-display text-[32px] font-normal leading-[1.05]">{displayName}</h1>
-          <span className="flex min-w-0 items-center gap-1 text-[13px] text-[#656B74]">
+          <span className="flex min-w-0 items-center gap-1 text-[13px] text-muted-foreground">
             <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             <span className="truncate">{location || "Add your city"}</span>
           </span>
@@ -185,7 +185,7 @@ const DashboardHeader = ({ role, modeSwitch, userId, displayName, avatarUrl, cit
               <span className="block h-1.5 rounded-full bg-[var(--nn-accent)]" style={{ width: `${percent}%` }} />
             </span>
             {completion.line && (
-              <span className="text-xs text-[#656B74]">
+              <span className="text-xs text-muted-foreground">
                 {completion.line}
                 {role === "sitter" ? " to get invited more often." : " so Nomads get to know you."}
               </span>
@@ -218,7 +218,7 @@ export const ModeSwitch = ({ role, onChange }: { role: "sitter" | "owner"; onCha
         aria-pressed={role === value}
         className={cn(
           "flex h-11 items-center justify-center gap-1.5 rounded-full text-sm",
-          role === value ? "bg-[var(--nn-accent)] font-bold text-white" : "font-semibold text-[#3F444B]",
+          role === value ? "bg-[var(--nn-accent)] font-bold text-white" : "font-semibold text-muted-foreground",
         )}
       >
         <Icon className="h-4 w-4" aria-hidden="true" />

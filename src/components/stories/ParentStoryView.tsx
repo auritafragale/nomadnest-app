@@ -96,12 +96,12 @@ const InviteAgainDialog = ({ story, open, onOpenChange }: { story: SitStory; ope
                     onClick={() => setPicked(o.date.id)}
                     className={cn(
                       "flex min-h-[52px] items-center justify-between rounded-2xl border-[1.5px] px-4 text-left",
-                      on ? "border-brand-teal bg-[#F3F8F6]" : "border-[#D3E7E1]",
+                      on ? "border-brand-teal bg-[var(--nn-soft)]" : "border-[var(--nn-border)]",
                     )}
                   >
                     <span>
                       <span className="block text-[15px] font-bold">{shortRange(o.date.start_date, o.date.end_date)}</span>
-                      <span className="block text-xs text-[#656B74]">{o.listing.title}</span>
+                      <span className="block text-xs text-muted-foreground">{o.listing.title}</span>
                     </span>
                     {on && <Check className="h-5 w-5 text-brand-teal-text" aria-hidden="true" />}
                   </button>
@@ -204,7 +204,7 @@ export const ParentStoryView = ({
             setShareOpen(true);
             window.setTimeout(() => document.getElementById("share-options")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
           }}
-          className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-[#CFE3DD]"
+          className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-[var(--nn-border)]"
         >
           <Share2 className="h-5 w-5" aria-hidden="true" />
         </button>
@@ -213,28 +213,28 @@ export const ParentStoryView = ({
       <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-5">
       <div className="relative order-2 -mx-5 h-[240px] bg-[#D6B98F] sm:mx-0 sm:rounded-[24px] sm:overflow-hidden lg:order-none lg:h-[340px]">
         {cover && <img src={cover} alt={coverPath ? altOf(coverPath) : ""} className="h-full w-full object-cover" />}
-        <span className="absolute bottom-3.5 left-4 inline-flex h-7 items-center gap-1.5 rounded-full bg-white px-3 text-xs font-bold text-brand-teal-text">
+        <span className="absolute bottom-3.5 left-4 inline-flex h-7 items-center gap-1.5 rounded-full bg-card px-3 text-xs font-bold text-brand-teal-text">
           Sit Story
         </span>
       </div>
 
       <section aria-label="About this sit" className="order-3 flex flex-col gap-3 lg:order-none">
         <h1 className="font-display text-[32px] font-normal leading-[1.08] lg:text-[40px]">{story.title}</h1>
-        <p className="text-sm text-[#656B74]">
+        <p className="text-sm text-muted-foreground">
           {[sit?.listing?.title, story.start_date && story.end_date && shortRange(story.start_date, story.end_date), nights && `${nights} ${nights === 1 ? "day" : "days"}`]
             .filter(Boolean)
             .join(" · ")}
         </p>
         {story.sitter_user_id && (
-          <div className="flex items-center gap-3 rounded-[18px] border border-[#D3E7E1] px-3.5 py-3">
+          <div className="flex items-center gap-3 rounded-[18px] border border-[var(--nn-border)] px-3.5 py-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#D8C3B0] text-base font-bold text-[#5A4636]">
               {story.sitter_avatar_url ? <img src={story.sitter_avatar_url} alt="" className="h-full w-full object-cover" /> : nomad.slice(0, 1)}
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-[15px] font-bold">{nomad}</span>
-              <span className="text-[13px] text-[#656B74]">Your Nomad for this sit</span>
+              <span className="text-[13px] text-muted-foreground">Your Nomad for this sit</span>
             </span>
-            <button type="button" onClick={openChat} className="inline-flex h-11 items-center rounded-full border-[1.5px] border-[#CFE3DD] px-3.5 text-[13px] font-bold">
+            <button type="button" onClick={openChat} className="inline-flex h-11 items-center rounded-full border-[1.5px] border-[var(--nn-border)] px-3.5 text-[13px] font-bold">
               Message
             </button>
           </div>
@@ -246,21 +246,21 @@ export const ParentStoryView = ({
             ? story.story_days.map((d, i) => (
                 <div key={d.date} className="flex flex-col gap-2">
                   <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-brand-teal-text">{dayLabel(d.date, i)}</span>
-                  <p className="text-[15px] leading-relaxed text-[#2B2722]">{d.text}</p>
+                  <p className="text-[15px] leading-relaxed text-foreground">{d.text}</p>
                 </div>
               ))
             : paragraphs.map((p, i) => (
-                <p key={i} className="text-[15px] leading-relaxed text-[#2B2722]">
+                <p key={i} className="text-[15px] leading-relaxed text-foreground">
                   {p}
                 </p>
               ))}
           {typeof story.updates_sent === "number" && story.updates_sent > 0 && (
-            <div className="flex items-center gap-2.5 rounded-[14px] border border-[#D3E7E1] px-3.5 py-3 text-[13px] text-[#3F444B]">
+            <div className="flex items-center gap-2.5 rounded-[14px] border border-[var(--nn-border)] px-3.5 py-3 text-[13px] text-muted-foreground">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-teal text-white">
                 <Check className="h-4 w-4" aria-hidden="true" />
               </span>
               <span>
-                <strong className="text-[#1F1B16]">
+                <strong className="text-foreground">
                   {story.updates_expected
                     ? `${Math.min(story.updates_sent, story.updates_expected)} of ${story.updates_expected} daily updates sent.`
                     : `${story.updates_sent} daily ${story.updates_sent === 1 ? "update" : "updates"} sent.`}
@@ -271,7 +271,7 @@ export const ParentStoryView = ({
           )}
         </section>
 
-        <p className="order-8 flex items-start gap-2 text-xs leading-snug text-[#656B74] lg:order-none">
+        <p className="order-8 flex items-start gap-2 text-xs leading-snug text-muted-foreground lg:order-none">
           <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span>
             Written by NomadNest AI from {nomad}'s daily updates. Something not right?{" "}
@@ -285,11 +285,11 @@ export const ParentStoryView = ({
 
       <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-5">
         {story.sitter_user_id && (
-          <section aria-label={`Show on ${nomad}'s profile`} className="order-4 flex flex-col gap-3 rounded-[22px] bg-[#F2F8F6] p-4 lg:order-none">
+          <section aria-label={`Show on ${nomad}'s profile`} className="order-4 flex flex-col gap-3 rounded-[22px] bg-[var(--nn-soft)] p-4 lg:order-none">
             <div className="flex items-start gap-3">
               <span className="flex flex-1 flex-col gap-1">
                 <span className="text-[15px] font-bold">Show on {nomad}'s profile</span>
-                <span className="text-[13px] leading-snug text-[#3F444B]">{profileText}</span>
+                <span className="text-[13px] leading-snug text-muted-foreground">{profileText}</span>
               </span>
               <button
                 type="button"
@@ -300,17 +300,17 @@ export const ParentStoryView = ({
                 onClick={() => setConfirmWithdraw(true)}
                 className={cn(
                   "relative h-8 w-[52px] shrink-0 rounded-full transition-colors before:absolute before:-inset-x-1 before:-inset-y-1.5 before:content-[''] disabled:cursor-not-allowed disabled:opacity-60",
-                  status === "approved" ? "bg-brand-teal" : "bg-[#C9BDB8]",
+                  status === "approved" ? "bg-brand-teal" : "bg-muted-foreground/40",
                 )}
               >
-                <span className={cn("absolute top-1 h-6 w-6 rounded-full bg-white", status === "approved" ? "left-6" : "left-1")} />
+                <span className={cn("absolute top-1 h-6 w-6 rounded-full bg-card", status === "approved" ? "left-6" : "left-1")} />
               </button>
             </div>
 
             {status === "requested" && (
               <div className="flex flex-col gap-3">
                 <PhotoPicker paths={story.photo_paths} urls={urls} selected={picked} max={2} onChange={setPicked} />
-                <p className="rounded-xl bg-white px-3 py-2 text-[13px] font-semibold text-[#1F1B16]">
+                <p className="rounded-xl bg-card px-3 py-2 text-[13px] font-semibold text-foreground">
                   Every NomadNest member will be able to read this.
                 </p>
                 <div className="flex gap-2">
@@ -334,7 +334,7 @@ export const ParentStoryView = ({
               </div>
             )}
 
-            <p className="flex items-start gap-2 border-t border-[#D3E7E1] pt-2.5 text-xs leading-snug text-[#3F444B]">
+            <p className="flex items-start gap-2 border-t border-[var(--nn-border)] pt-2.5 text-xs leading-snug text-muted-foreground">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               Your address, door codes and Welcome Guide are never shown. Only the story and the photos you leave on.
             </p>
@@ -344,11 +344,11 @@ export const ParentStoryView = ({
         <section aria-label="Photos" className="order-6 flex flex-col gap-2.5 lg:order-none">
           <div className="flex items-baseline justify-between">
             <SerifTitle>Photos</SerifTitle>
-            <span className="text-[13px] text-[#656B74]">
+            <span className="text-[13px] text-muted-foreground">
               {status === "approved" ? `${shownPhotos.length} on ${nomad}'s profile` : `${story.photo_paths.length} in this story`}
             </span>
           </div>
-          <p className="text-[13px] leading-snug text-[#656B74]">
+          <p className="text-[13px] leading-snug text-muted-foreground">
             {status === "approved"
               ? `Remove a photo from ${nomad}'s profile at any time. You'll always see every photo here.`
               : "You choose which photos appear if the story goes on your Nomad's profile."}
@@ -363,7 +363,7 @@ export const ParentStoryView = ({
                     <span
                       className={cn(
                         "absolute right-2 top-2 inline-flex h-6 items-center rounded-full px-2 text-[11px] font-bold",
-                        shown ? "bg-brand-teal text-white" : "bg-white text-[#3F444B]",
+                        shown ? "bg-brand-teal text-white" : "bg-card text-muted-foreground",
                       )}
                     >
                       {shown ? "On profile" : "Not shown"}
@@ -373,7 +373,7 @@ export const ParentStoryView = ({
                     <button
                       type="button"
                       onClick={() => setRemoving(p)}
-                      className="absolute bottom-2 left-1/2 flex h-11 -translate-x-1/2 items-center gap-1 rounded-full bg-white px-3 text-xs font-bold shadow"
+                      className="absolute bottom-2 left-1/2 flex h-11 -translate-x-1/2 items-center gap-1 rounded-full bg-card px-3 text-xs font-bold shadow"
                       aria-label={`Remove this photo from ${nomad}'s profile`}
                     >
                       <X className="h-3.5 w-3.5" aria-hidden="true" />
@@ -397,28 +397,28 @@ export const ParentStoryView = ({
             Share your story
           </button>
           {shareOpen && (
-            <div id="share-options" role="group" aria-label="Share options" className="flex flex-col rounded-[20px] border border-[#D3E7E1] px-3.5 pb-3 pt-1.5">
+            <div id="share-options" role="group" aria-label="Share options" className="flex flex-col rounded-[20px] border border-[var(--nn-border)] px-3.5 pb-3 pt-1.5">
               <button type="button" onClick={() => setImageOpen(true)} className="flex min-h-[56px] items-center gap-3 py-2 text-left">
-                <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-[#E4F0EC] text-brand-teal-text">
+                <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-[var(--nn-tint)] text-brand-teal-text">
                   <ImageIcon className="h-5 w-5" aria-hidden="true" />
                 </span>
                 <span className="flex flex-col">
                   <span className="text-[15px] font-bold">Save as a story image</span>
-                  <span className="text-xs text-[#656B74]">Story-sized for Instagram, TikTok and WhatsApp</span>
+                  <span className="text-xs text-muted-foreground">Story-sized for Instagram, TikTok and WhatsApp</span>
                 </span>
               </button>
               <button
                 type="button"
                 onClick={copyLink}
                 disabled={createShareLink.isPending}
-                className="flex min-h-[56px] items-center gap-3 border-t border-[#E4F0EC] py-2 text-left"
+                className="flex min-h-[56px] items-center gap-3 border-t border-[var(--nn-border)] py-2 text-left"
               >
-                <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-[#E4F0EC] text-brand-teal-text">
+                <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-[var(--nn-tint)] text-brand-teal-text">
                   {createShareLink.isPending ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <Link2 className="h-5 w-5" aria-hidden="true" />}
                 </span>
                 <span className="flex flex-col">
                   <span className="text-[15px] font-bold">{copied ? "Link copied" : "Copy a share link"}</span>
-                  <span className="text-xs text-[#656B74]">Anyone with the link can read it. You can switch it off.</span>
+                  <span className="text-xs text-muted-foreground">Anyone with the link can read it. You can switch it off.</span>
                 </span>
               </button>
               {story.share_link && (
@@ -426,15 +426,15 @@ export const ParentStoryView = ({
                   type="button"
                   onClick={() => run(disableShareLink.mutateAsync().then(() => setCopied(false)), "Share link switched off")}
                   disabled={disableShareLink.isPending}
-                  className="flex min-h-[44px] items-center gap-2 border-t border-[#E4F0EC] py-2 text-left text-sm font-bold text-brand-coral-text"
+                  className="flex min-h-[44px] items-center gap-2 border-t border-[var(--nn-border)] py-2 text-left text-sm font-bold text-brand-coral-text"
                 >
                   Switch off the share link
-                  <span className="text-xs font-normal text-[#656B74]">
+                  <span className="text-xs font-normal text-muted-foreground">
                     ({story.share_link.views} {story.share_link.views === 1 ? "view" : "views"})
                   </span>
                 </button>
               )}
-              <p className="mt-1.5 flex items-start gap-2 text-xs leading-snug text-[#3F444B]">
+              <p className="mt-1.5 flex items-start gap-2 text-xs leading-snug text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 Shared stories show the city only, first names only, and just the photos on {nomad}'s profile.
               </p>
