@@ -46,6 +46,7 @@ import Applications from "./pages/Applications";
 import SavedListings from "./pages/SavedListings";
 import MyApplications from "./pages/MyApplications";
 import MySits from "./pages/MySits";
+import { GuidePreviewPage, GuideQuestionsPage } from "./pages/WelcomeGuideOwnerPages";
 import Invitations from "./pages/Invitations";
 import MyAvailability from "./pages/MyAvailability";
 import MySitStories from "./pages/MySitStories";
@@ -152,6 +153,8 @@ const AppShell = () => {
         <Route path="/edit-listing/:id" element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
         <Route path="/listing/:id" element={<ListingDetail />} />
         <Route path="/listing/:id/welcome-guide" element={<WelcomeGuidePage />} />
+        <Route path="/listing/:id/welcome-guide/questions" element={<ProtectedRoute><GuideQuestionsPage /></ProtectedRoute>} />
+        <Route path="/listing/:id/welcome-guide/preview" element={<ProtectedRoute><GuidePreviewPage /></ProtectedRoute>} />
         <Route path="/sits/:id" element={<SitDetail />} />
         <Route path="/stories/:id" element={<ProtectedRoute><SitStory /></ProtectedRoute>} />
         <Route path="/sits/:id/arrival-vault" element={<ProtectedRoute><ArrivalVault /></ProtectedRoute>} />

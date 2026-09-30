@@ -9,6 +9,7 @@ import { GuideEditor } from "@/components/welcome-guide/GuideEditor";
 import { SitterGuideView } from "@/components/welcome-guide/SitterGuideView";
 import { GUIDE_SECTIONS, type GuideSection } from "@/lib/welcomeGuide";
 import { ArrowLeft } from "lucide-react";
+import { NN_MAIN, RoleTheme } from "@/components/nn/ui";
 
 /**
  * /listing/:id/welcome-guide
@@ -51,19 +52,19 @@ const WelcomeGuidePage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <main className="flex-1 pt-20 container max-w-3xl px-4 py-8">
+    <RoleTheme role={isOwner ? "owner" : "sitter"} className="flex min-h-screen flex-col">
+      <Navbar wide />
+      <main className={NN_MAIN}>
         <button
           type="button"
           onClick={goBack}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground mb-5 print-hidden hover:text-foreground"
+          className="-ml-2 inline-flex h-11 items-center gap-2 self-start rounded-md px-2 text-[15px] font-semibold print-hidden hover:bg-[var(--nn-soft)]"
         >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to listing
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
         </button>
 
         {authLoading || listingLoading || !id ? (
-          <Skeleton className="h-96 w-full rounded-2xl" />
+          <Skeleton className="h-96 w-full rounded-[24px]" />
         ) : isOwner ? (
           <GuideEditor listingId={id} initialSection={initialSection} />
         ) : (
@@ -71,7 +72,7 @@ const WelcomeGuidePage = () => {
         )}
       </main>
       <Footer />
-    </div>
+    </RoleTheme>
   );
 };
 

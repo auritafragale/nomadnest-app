@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertCircle,
-  CheckCircle2,
+  BookmarkCheck,
   ChevronLeft,
   ChevronRight,
+  Eye,
+  MessageCircleQuestion,
   Home,
   KeyRound,
   Lock,
@@ -35,7 +37,10 @@ import {
 } from "@/lib/welcomeGuide";
 import { GuideTextField } from "./GuideTextField";
 import { GuidePhotos } from "./GuidePhotos";
-import { GuideQuestionsCard, SavedQaCard } from "./GuideQuestionsCards";
+import { useGuideQuestionGroups } from "./GuideQuestions";
+import { useGuideQa } from "@/hooks/useAskNest";
+import { SectionCard, StatusChip, nnButton } from "@/components/nn/ui";
+import { Link } from "react-router-dom";
 
 const SECTION_ICON: Record<GuideSection, typeof PawPrint> = {
   pets: PawPrint,
@@ -59,6 +64,8 @@ export const GuideEditor = ({
   const { data: completion } = useGuideCompletion(listingId);
   const actions = useGuideEditorActions(listingId);
   const ai = useGuideAi();
+  const questions = useGuideQuestionGroups(listingId);
+  const { data: savedQa = [] } = useGuideQa(listingId);
 
   const [active, setActive] = useState<GuideSection | null>(initialSection);
   const [guideDraft, setGuideDraft] = useState<Record<string, string>>({});
@@ -108,12 +115,12 @@ export const GuideEditor = ({
   const percent = completion?.percent ?? 0;
   const nudge = useMemo(() => guideNudge(completion), [completion]);
 
-  if (isLoading) return <Skeleton className="h-96 w-full rounded-2xl" />;
+  if (isLoading) return <Skeleton className="h-96 w-full rounded-[24px]" />;
   if (error) {
     return (
-      <div className="rounded-2xl border bg-card p-6 text-center">
-        <p className="font-medium">We couldn't load your guide.</p>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <div className="rounded-[24px] border border-[var(--nn-border)] bg-card p-6 text-center">
+        <p className="text-[16px] font-bold">We couldn't load your guide.</p>
+        <p className="mt-1 text-[15px] text-muted-foreground">
           {(error as { message?: string }).message || "Please refresh and try again."}
         </p>
       </div>
@@ -174,95 +181,136 @@ export const GuideEditor = ({
     }
   };
 
-  // ─── Overview ──────────────────────────────────────────────────────────────
+  // ─── Overview (GuideEditorPhone / Tablet / Desktop) ──────────────────────
   if (!active) {
+    const questionsTo = `/listing/${listingId}/welcome-guide/questions`;
     return (
-      <div className="space-y-6">
-        <header className="space-y-3">
-          <h1 ref={headingRef} tabIndex={-1} className="font-display text-2xl font-semibold outline-none sm:text-3xl">
+      <div className="flex flex-col gap-[18px]">
+        <header className="flex flex-col gap-2">
+          <h1 ref={headingRef} tabIndex={-1} className="font-display text-[32px] font-normal leading-tight outline-none lg:text-[38px]">
             {GUIDE_COPY.header}
           </h1>
-          <p className="text-sm text-muted-foreground sm:text-base">{GUIDE_COPY.subtext}</p>
-          <p className="text-sm text-muted-foreground">{data.listing.title}</p>
+          <p className="max-w-2xl text-[15px] text-muted-foreground">{GUIDE_COPY.subtext}</p>
+          <p className="text-[15px] text-muted-foreground">{data.listing.title}</p>
         </header>
 
-        <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-          <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="font-semibold">{GUIDE_COPY.progress(percent)}</span>
-          </div>
-          <div
-            className="h-2.5 overflow-hidden rounded-full bg-muted"
-            role="progressbar"
-            aria-label={GUIDE_COPY.progress(percent)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={percent}
-          >
-            <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${percent}%` }} />
-          </div>
-          {nudge && (
-            <p
-              className={cn(
-                "rounded-xl px-3 py-2.5 text-sm",
-                percent >= 100 ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300" : "bg-primary/5 text-foreground",
-              )}
-            >
-              {nudge}
-            </p>
-          )}
-        </div>
+        <div className="flex flex-col gap-[18px] lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-7">
+          <div className="flex min-w-0 flex-col gap-[18px]">
+            <SectionCard label="Your progress" className="flex flex-col gap-3 p-[18px]">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-[16px] font-bold">{GUIDE_COPY.progress(percent)}</span>
+                <span className="text-[15px] font-bold text-[var(--nn-accent-dark)]">{percent}%</span>
+              </div>
+              <div
+                className="h-2 overflow-hidden rounded-full bg-[var(--nn-track)]"
+                role="progressbar"
+                aria-label={GUIDE_COPY.progress(percent)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={percent}
+              >
+                <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${percent}%` }} />
+              </div>
+              {nudge && <p className="text-[15px] text-muted-foreground">{nudge}</p>}
+            </SectionCard>
 
-        {data.guide?.migrated_notes && (
-          <div className="space-y-3 rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4">
-            <p className="flex items-center gap-2 text-sm font-semibold">
-              <AlertCircle className="h-4 w-4 text-amber-600" aria-hidden="true" />
-              From your previous guide
-            </p>
-            <p className="text-sm text-muted-foreground">
-              We couldn't place these automatically. Copy them into the right pet or section, then hide this note.
-            </p>
-            <p className="whitespace-pre-line rounded-xl bg-background p-3 text-sm">{data.guide.migrated_notes}</p>
-            <Button variant="outline" size="sm" onClick={dismissMigrated}>
-              Done, hide this
-            </Button>
-          </div>
-        )}
+            <Link to={`/listing/${listingId}/welcome-guide/preview`} className={nnButton("secondary", "h-[52px] rounded-2xl text-[15px] lg:hidden")}>
+              <Eye className="h-4 w-4" aria-hidden="true" />
+              Preview and print
+            </Link>
 
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {GUIDE_SECTIONS.map((s) => {
-            const Icon = SECTION_ICON[s.key];
-            const state = completion?.sections?.[s.key];
-            const done = state?.complete;
-            return (
-              <li key={s.key}>
-                <button
-                  type="button"
-                  onClick={() => setActive(s.key)}
-                  className="flex w-full items-center gap-3 rounded-2xl border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="h-5 w-5" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{s.title}</p>
-                    <p className="truncate text-xs text-muted-foreground">{s.short}</p>
-                  </div>
-                  {done ? (
-                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" aria-label="Complete" />
-                  ) : (
-                    <span className="shrink-0 text-xs font-medium text-muted-foreground">
-                      {Math.round((state?.fraction ?? 0) * 100)}%
-                    </span>
-                  )}
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            {data.guide?.migrated_notes && (
+              <SectionCard className="flex flex-col gap-3 border-[var(--nn-tip-border)] bg-[var(--nn-tip-bg)] p-[18px]">
+                <p className="flex items-center gap-2 text-[15px] font-bold">
+                  <AlertCircle className="h-4 w-4 text-[var(--nn-tip-text)]" aria-hidden="true" />
+                  From your previous guide
+                </p>
+                <p className="text-[15px] text-muted-foreground">
+                  We couldn't place these automatically. Copy them into the right pet or section, then hide this note.
+                </p>
+                <p className="whitespace-pre-line rounded-xl bg-background p-3 text-[15px]">{data.guide.migrated_notes}</p>
+                <button type="button" onClick={dismissMigrated} className={nnButton("secondary", "self-start")}>
+                  Done, hide this
                 </button>
-              </li>
-            );
-          })}
-        </ul>
+              </SectionCard>
+            )}
 
-        <GuideQuestionsCard listingId={listingId} />
-        <SavedQaCard listingId={listingId} />
+            <ul aria-label="Sections" className="grid grid-cols-2 gap-3">
+              {GUIDE_SECTIONS.map((s, i) => {
+                const Icon = SECTION_ICON[s.key];
+                const state = completion?.sections?.[s.key];
+                const done = state?.complete;
+                return (
+                  <li key={s.key}>
+                    <button
+                      type="button"
+                      onClick={() => setActive(s.key)}
+                      className="flex h-full min-h-[132px] w-full flex-col gap-2 rounded-[20px] border border-[var(--nn-border)] bg-card p-4 text-left hover:bg-[var(--nn-soft)]"
+                    >
+                      <span className="flex w-full items-center justify-between gap-2">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]">
+                          <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                        </span>
+                        {done ? (
+                          <StatusChip tone="green">Done</StatusChip>
+                        ) : (
+                          <StatusChip tone="accent">{Math.round((state?.fraction ?? 0) * 100)}%</StatusChip>
+                        )}
+                      </span>
+                      <span className="text-[13px] text-muted-foreground">Section {i + 1}</span>
+                      <span className="text-[16px] font-bold leading-snug">{s.title}</span>
+                      <span className="line-clamp-2 text-[13px] text-muted-foreground">{s.short}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-[18px] lg:sticky lg:top-24">
+            <Link
+              to={`/listing/${listingId}/welcome-guide/preview`}
+              className={nnButton("secondary", "hidden h-[52px] rounded-2xl text-[15px] lg:inline-flex")}
+            >
+              <Eye className="h-4 w-4" aria-hidden="true" />
+              Preview and print
+            </Link>
+            <SectionCard label="Questions" className="px-[18px] py-1.5">
+              <Link to={questionsTo} className="flex min-h-[60px] items-center gap-3 py-3">
+                <span className="relative flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]">
+                  <MessageCircleQuestion className="h-[18px] w-[18px]" aria-hidden="true" />
+                  {questions.emergencies.length > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-card bg-destructive" aria-hidden="true" />
+                  )}
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-[15px] font-semibold">Questions from your sitters</span>
+                  <span className="text-[13px] text-muted-foreground">
+                    {questions.open.length === 0 ? "You're all caught up" : `${questions.open.length} to answer`}
+                    {questions.emergencies.length > 0 ? " · emergency check" : ""}
+                  </span>
+                </span>
+                {questions.open.length > 0 ? (
+                  <StatusChip tone="accent">{questions.open.length} new</StatusChip>
+                ) : (
+                  <ChevronRight className="h-[18px] w-[18px] shrink-0 text-muted-foreground" aria-hidden="true" />
+                )}
+              </Link>
+              <Link to={`${questionsTo}?tab=saved`} className="flex min-h-[60px] items-center gap-3 border-t border-[var(--nn-line)] py-3">
+                <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[var(--nn-chip)] text-muted-foreground">
+                  <BookmarkCheck className="h-[18px] w-[18px]" aria-hidden="true" />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-[15px] font-semibold">Saved answers</span>
+                  <span className="text-[13px] text-muted-foreground">
+                    {savedQa.length === 0 ? "None yet" : `${savedQa.length} ${savedQa.length === 1 ? "answer" : "answers"} in your guide`}
+                  </span>
+                </span>
+                <ChevronRight className="h-[18px] w-[18px] shrink-0 text-muted-foreground" aria-hidden="true" />
+              </Link>
+            </SectionCard>
+          </div>
+        </div>
       </div>
     );
   }
@@ -276,27 +324,27 @@ export const GuideEditor = ({
   const activePet = data.pets.find((p) => p.id === activePetId) ?? data.pets[0];
 
   return (
-    <div className="space-y-6 pb-4">
-      <div className="space-y-2">
+    <div className="flex flex-col gap-[18px] pb-4 lg:max-w-3xl">
+      <div className="flex flex-col gap-2">
         <button
           type="button"
           onClick={() => setActive(null)}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          className="-ml-2 inline-flex h-11 items-center gap-1 self-start rounded-md px-2 text-[15px] font-semibold hover:bg-[var(--nn-soft)]"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           All sections
         </button>
-        <p className="text-xs font-medium text-muted-foreground">
+        <p className="text-[13px] font-semibold text-muted-foreground">
           Section {index + 1} of {GUIDE_SECTIONS.length}
         </p>
-        <h2 ref={headingRef} tabIndex={-1} className="font-display text-2xl font-semibold outline-none">
+        <h2 ref={headingRef} tabIndex={-1} className="font-display text-[30px] font-normal leading-tight outline-none">
           {meta.title}
         </h2>
       </div>
 
       {active === "pets" &&
         (data.pets.length === 0 ? (
-          <p className="rounded-2xl border bg-card p-4 text-sm text-muted-foreground">
+          <p className="rounded-[20px] border border-[var(--nn-border)] bg-card p-4 text-[15px] text-muted-foreground">
             This listing has no pets. Add pets from Edit listing if you have any.
           </p>
         ) : (
@@ -311,8 +359,10 @@ export const GuideEditor = ({
                     aria-selected={activePet?.id === p.id}
                     onClick={() => setActivePetId(p.id)}
                     className={cn(
-                      "rounded-full border px-4 py-2 text-sm transition-colors",
-                      activePet?.id === p.id ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:border-primary/40",
+                      "inline-flex h-11 items-center rounded-full border-[1.5px] px-4 text-sm",
+                      activePet?.id === p.id
+                        ? "border-[var(--nn-accent)] bg-[var(--nn-accent)] font-bold text-primary-foreground"
+                        : "border-[var(--nn-border)] bg-card font-semibold",
                     )}
                   >
                     {p.name || p.type}
@@ -321,8 +371,8 @@ export const GuideEditor = ({
               </div>
             )}
             {activePet && (
-              <div className="space-y-5 rounded-2xl border bg-card p-4 sm:p-5">
-                <p className="text-sm text-muted-foreground">
+              <div className="space-y-5 rounded-[24px] border border-[var(--nn-border)] bg-card p-[18px] lg:p-5">
+                <p className="text-[15px] text-muted-foreground">
                   This is the same information shown on your listing, so you only keep it in one place.
                 </p>
                 {PET_FIELDS.map((f) => (
@@ -347,7 +397,7 @@ export const GuideEditor = ({
         ))}
 
       {active === "emergency" && (
-        <div className="space-y-5 rounded-2xl border bg-card p-4 sm:p-5">
+        <div className="space-y-5 rounded-[24px] border border-[var(--nn-border)] bg-card p-[18px] lg:p-5">
           {data.pets.map((p, i) => (
             <div key={p.id} className="space-y-2">
               <GuideTextField
@@ -363,7 +413,7 @@ export const GuideEditor = ({
                   type="button"
                   variant="link"
                   size="sm"
-                  className="h-auto p-0"
+                  className="h-11 p-0"
                   onClick={() =>
                     setPetDrafts((d) =>
                       Object.fromEntries(
@@ -393,7 +443,7 @@ export const GuideEditor = ({
       )}
 
       {active === "house" && (
-        <div className="space-y-5 rounded-2xl border bg-card p-4 sm:p-5">
+        <div className="space-y-5 rounded-[24px] border border-[var(--nn-border)] bg-card p-[18px] lg:p-5">
           {HOUSE_FIELDS.map((f) => (
             <GuideTextField
               key={f.key}
@@ -412,8 +462,8 @@ export const GuideEditor = ({
       )}
 
       {active === "access" && (
-        <div className="space-y-5 rounded-2xl border bg-card p-4 sm:p-5">
-          <p className="flex items-start gap-2 rounded-xl bg-muted/50 px-3 py-2.5 text-sm text-muted-foreground">
+        <div className="space-y-5 rounded-[24px] border border-[var(--nn-border)] bg-card p-[18px] lg:p-5">
+          <p className="flex items-start gap-2 rounded-xl bg-muted px-3 py-2.5 text-[15px] text-muted-foreground">
             <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             Only you can see these details for now.
           </p>
@@ -435,7 +485,7 @@ export const GuideEditor = ({
         </div>
       )}
 
-      <div className="rounded-2xl border bg-card p-4 sm:p-5">
+      <div className="rounded-[24px] border border-[var(--nn-border)] bg-card p-[18px] lg:p-5">
         <GuidePhotos
           listingId={listingId}
           section={active}
@@ -449,14 +499,19 @@ export const GuideEditor = ({
         />
       </div>
 
-      <div className="sticky bottom-0 -mx-4 border-t bg-background/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border">
+      <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] -mx-5 border-t border-[var(--nn-line)] bg-background/95 px-5 pb-3 pt-3 backdrop-blur md:bottom-0 md:mx-0 md:rounded-[20px] md:border md:px-4">
         <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={() => saveSection(active, false)} disabled={saving}>
+          <button type="button" onClick={() => saveSection(active, false)} disabled={saving} className={nnButton("secondary", "h-[52px] rounded-2xl px-6")}>
             Save
-          </Button>
-          <Button className="ml-auto flex-1 sm:flex-none sm:min-w-44" onClick={() => saveSection(active, true)} disabled={saving}>
+          </button>
+          <button
+            type="button"
+            onClick={() => saveSection(active, true)}
+            disabled={saving}
+            className={nnButton("primary", "ml-auto h-[52px] flex-1 rounded-2xl text-[15px] md:min-w-52 md:flex-none")}
+          >
             {saving ? "Saving…" : isLast ? "Save and finish" : "Save and next"}
-          </Button>
+          </button>
         </div>
       </div>
     </div>
