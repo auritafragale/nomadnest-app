@@ -1,3 +1,4 @@
+import { photoWithoutMetadata } from "@/lib/imageResize";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload, X, Loader2, Image as ImageIcon, Camera } from "lucide-react";
@@ -71,12 +72,13 @@ const ImageUpload = ({
           continue;
         }
 
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${user.id}/${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        // Re-encoded on the device so no location or other metadata is published.
+        const clean = await photoWithoutMetadata(file);
+        const fileName = `${user.id}/${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${clean.ext}`;
 
         const { error: uploadError } = await supabase.storage
           .from("listing-images")
-          .upload(fileName, file);
+          .upload(fileName, clean.body, { contentType: clean.contentType });
 
         if (uploadError) {
           console.error("Upload error:", uploadError);

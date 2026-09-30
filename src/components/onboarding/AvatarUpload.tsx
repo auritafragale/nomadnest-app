@@ -1,3 +1,4 @@
+import { photoWithoutMetadata } from "@/lib/imageResize";
 import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, User, Loader2, X } from "lucide-react";
@@ -61,14 +62,16 @@ export const AvatarUpload = ({
       setPreviewUrl(objectUrl);
 
       // Generate unique filename
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+      // Re-encoded on the device so no location or other metadata is published.
+      const clean = await photoWithoutMetadata(file, 1200);
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${clean.ext}`;
       const filePath = `${userId}/avatar/${fileName}`;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("listing-images")
-        .upload(filePath, file, {
+        .upload(filePath, clean.body, {
+          contentType: clean.contentType,
           cacheControl: "3600",
           upsert: true,
         });

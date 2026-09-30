@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { resizeImage } from "@/lib/imageResize";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -376,12 +377,12 @@ const WriteReviewDialog = ({
         const draft = flagEvidence[q.column];
         let photoPath: string | null = draft?.vaultPhotoPath || null;
         if (!photoPath && draft?.photoFile) {
-          const file = draft.photoFile;
-          const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
-          const path = `${user.id}/${reviewId}/${crypto.randomUUID()}${ext}`;
+          // Resized and re-encoded on the device: no location or other metadata.
+          const blob = await resizeImage(draft.photoFile, 1600, 0.85);
+          const path = `${user.id}/${reviewId}/${crypto.randomUUID()}.jpg`;
           const { error: uploadError } = await supabase.storage
             .from(EVIDENCE_BUCKET)
-            .upload(path, file, { upsert: false, contentType: file.type || undefined });
+            .upload(path, blob, { upsert: false, contentType: "image/jpeg" });
           if (uploadError) {
             console.error("Error uploading flag evidence photo:", uploadError);
           } else {

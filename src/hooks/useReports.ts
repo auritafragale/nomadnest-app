@@ -1,3 +1,4 @@
+import { photoWithoutMetadata } from "@/lib/imageResize";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,11 +24,12 @@ const EVIDENCE_PATH_PREFIX = "report-evidence";
 const uploadEvidence = async (userId: string, reportId: string, files: File[]) => {
   const paths: string[] = [];
   for (const file of files) {
-    const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
-    const path = `${userId}/${reportId}/${crypto.randomUUID()}${ext}`;
+    // Photos are re-encoded on the device (no location or other metadata); other files as they are.
+    const clean = await photoWithoutMetadata(file);
+    const path = `${userId}/${reportId}/${crypto.randomUUID()}.${clean.ext}`;
     const { error } = await supabase.storage
       .from(EVIDENCE_PATH_PREFIX)
-      .upload(path, file, { upsert: false, contentType: file.type || undefined });
+      .upload(path, clean.body, { upsert: false, contentType: clean.contentType });
     if (error) throw error;
     paths.push(path);
   }

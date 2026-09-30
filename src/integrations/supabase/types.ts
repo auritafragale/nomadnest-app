@@ -114,6 +114,7 @@ export type Database = {
           photo_url: string
           sit_id: string
           sitter_user_id: string
+          taken_at: string | null
         }
         Insert: {
           created_at?: string
@@ -121,6 +122,7 @@ export type Database = {
           photo_url: string
           sit_id: string
           sitter_user_id: string
+          taken_at?: string | null
         }
         Update: {
           created_at?: string
@@ -128,6 +130,7 @@ export type Database = {
           photo_url?: string
           sit_id?: string
           sitter_user_id?: string
+          taken_at?: string | null
         }
         Relationships: [
           {
@@ -2570,6 +2573,8 @@ export type Database = {
       }
     }
     Functions: {
+      arrival_photo_file_deletable: { Args: { p_path: string }; Returns: boolean }
+      arrival_photo_is_evidence: { Args: { p_path: string }; Returns: boolean }
       accept_application: { Args: { p_application_id: string }; Returns: Json }
       accept_invite: {
         Args: { p_invite_id: string; p_message?: string }

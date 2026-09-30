@@ -39,3 +39,21 @@ export const resizeImage = async (
     URL.revokeObjectURL(url);
   }
 };
+
+/**
+ * A photo ready to upload with no location or other metadata: JPEG, PNG,
+ * WebP and HEIC photos are redrawn and re-encoded on the device as JPEG
+ * (longest side at most `maxDimension`). Other files (PDFs, GIFs) are
+ * returned unchanged.
+ */
+export const photoWithoutMetadata = async (
+  file: File,
+  maxDimension = 2000,
+): Promise<{ body: Blob; ext: string; contentType: string }> => {
+  if (!/^image\/(jpeg|jpg|png|webp|heic|heif)$/i.test(file.type)) {
+    const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".") + 1) : "bin";
+    return { body: file, ext, contentType: file.type || "application/octet-stream" };
+  }
+  const body = await resizeImage(file, maxDimension, 0.88);
+  return { body, ext: "jpg", contentType: "image/jpeg" };
+};
