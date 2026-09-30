@@ -213,46 +213,37 @@ export const AskNestSheet = ({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
+        data-nn-role="sitter"
         side={isMobile ? "bottom" : "right"}
-        className={cn("flex flex-col gap-0 p-0", isMobile ? "h-[88dvh] rounded-t-2xl" : "w-full sm:max-w-md")}
+        className={cn(
+          "flex flex-col gap-0 border-[var(--nn-border)] bg-background p-0 text-foreground",
+          isMobile ? "h-[88dvh] rounded-t-[28px]" : "w-full sm:max-w-md lg:max-w-[440px]",
+        )}
       >
-        <SheetHeader className="border-b px-4 py-4 text-left">
-          <SheetTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
+        {isMobile && <span className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-muted-foreground/30" aria-hidden="true" />}
+        <SheetHeader className="border-b border-[var(--nn-line)] px-5 py-4 text-left">
+          <SheetTitle className="flex items-center gap-2 font-display text-[24px] font-normal">
+            <Sparkles className="h-5 w-5 text-[var(--nn-accent-dark)]" aria-hidden="true" />
             Ask the Nest
           </SheetTitle>
-          <SheetDescription>Answers come only from {owner}'s Welcome Guide.</SheetDescription>
+          <SheetDescription className="text-[15px]">Answers come only from {owner}'s Welcome Guide.</SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4" aria-live="polite">
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4" aria-live="polite">
           {!guide ? (
-            <p className="text-sm text-muted-foreground">Loading the guide…</p>
+            <p className="text-[15px] text-muted-foreground">Loading the guide…</p>
           ) : turns.length === 0 ? (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Ask anything about the home and the pets.</p>
-              <div className="flex flex-wrap gap-2">
-                {chips.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => ask(c)}
-                    className="rounded-full border bg-card px-3.5 py-2 text-sm transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <p className="text-[15px] text-muted-foreground">Ask anything about the home and the pets.</p>
           ) : (
             turns.map((turn) => (
               <div key={turn.id} className="space-y-2">
-                <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-primary px-3.5 py-2 text-sm text-primary-foreground">
+                <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-[15px] text-primary-foreground">
                   {turn.question}
                 </p>
                 <div
                   className={cn(
-                    "max-w-[92%] rounded-2xl rounded-bl-md border px-3.5 py-3 text-sm",
-                    turn.kind === "emergency" ? "border-destructive/40 bg-destructive/5" : "bg-card",
+                    "max-w-[92%] rounded-2xl rounded-bl-md border px-3.5 py-3 text-[15px]",
+                    turn.kind === "emergency" ? "border-destructive/40 bg-destructive/5" : "border-[var(--nn-border)] bg-card",
                   )}
                 >
                   {turn.kind === "pending" && (
@@ -268,7 +259,7 @@ export const AskNestSheet = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-1.5"
+                        className="h-11 gap-1.5 rounded-full"
                         disabled={turn.sent || sendChat.isPending}
                         onClick={() => sendToOwner(turn)}
                       >
@@ -301,7 +292,7 @@ export const AskNestSheet = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          className="gap-1.5"
+                          className="h-11 gap-1.5 rounded-full"
                           disabled={turn.sent || sendChat.isPending}
                           onClick={() => sendToOwner(turn)}
                         >
@@ -315,11 +306,32 @@ export const AskNestSheet = ({
               </div>
             ))
           )}
+          {/* Suggested questions stay below the conversation. */}
+          {guide && chips.filter((c) => !turns.some((t) => t.question === c)).length > 0 && (
+            <div className="space-y-2 pt-1">
+              <p className="text-[13px] font-bold uppercase tracking-[0.06em] text-muted-foreground">Try asking</p>
+              <div className="flex flex-wrap gap-2">
+                {chips
+                  .filter((c) => !turns.some((t) => t.question === c))
+                  .map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => ask(c)}
+                      disabled={busy}
+                      className="min-h-11 rounded-full border-[1.5px] border-[var(--nn-border)] bg-card px-4 py-2 text-left text-sm font-semibold hover:bg-[var(--nn-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    >
+                      {c}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
           <div ref={bottomRef} />
         </div>
 
         <form
-          className="border-t bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
+          className="border-t border-[var(--nn-line)] bg-background px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
           onSubmit={(e) => {
             e.preventDefault();
             ask(input);
@@ -332,7 +344,7 @@ export const AskNestSheet = ({
               placeholder={listening ? "Listening…" : "Ask about the home or the pets"}
               aria-label="Your question"
               disabled={!guide}
-              className="h-11 flex-1 rounded-full px-4 text-base sm:text-sm"
+              className="h-11 flex-1 rounded-full border-[var(--nn-border)] px-4 text-base"
             />
             {SpeechRecognition && (
               <Button
@@ -359,7 +371,7 @@ export const AskNestSheet = ({
             </Button>
           </div>
           {showVoiceNotice && (
-            <p className="mt-2 text-xs text-muted-foreground">Voice questions are transcribed by your phone's speech service.</p>
+            <p className="mt-2 text-[13px] text-muted-foreground">Voice questions are transcribed by your phone's speech service.</p>
           )}
         </form>
       </SheetContent>
