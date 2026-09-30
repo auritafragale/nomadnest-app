@@ -41,7 +41,7 @@ const HowItWorksSection = () => {
             <div key={step.number} className="relative flex flex-col items-center text-center group">
               {/* Step bubble */}
               <div className="relative z-10 w-20 h-20 rounded-full bg-primary flex items-center justify-center mb-6 shadow-glow-primary group-hover:scale-110 transition-transform duration-300">
-                <step.icon className="w-8 h-8 text-white" />
+                <step.icon className="w-8 h-8 text-primary-foreground" />
                 <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-accent text-accent-foreground text-xs font-bold flex items-center justify-center">
                   {index + 1}
                 </span>

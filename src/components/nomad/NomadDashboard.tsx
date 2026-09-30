@@ -135,7 +135,7 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
         <span className="absolute left-3 top-3 inline-flex h-7 items-center rounded-full bg-card px-3 text-xs font-bold text-[var(--nn-accent-dark)]">
           {current ? "Your sit now" : "Your next sit"}
         </span>
-        <span className="absolute right-3 top-3 inline-flex h-7 items-center rounded-full bg-[var(--nn-accent)] px-3 text-xs font-bold text-white">
+        <span className="absolute right-3 top-3 inline-flex h-7 items-center rounded-full bg-[var(--nn-accent)] px-3 text-xs font-bold text-primary-foreground">
           {current
             ? `Day ${current.day_number} of ${current.total_days}`
             : days <= 0
@@ -192,7 +192,7 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
         <Link
           to={`/sits/${s.sit_id}`}
           className={`flex h-[52px] items-center justify-center gap-2 rounded-2xl text-[15px] font-bold ${
-            dueNow ? "bg-[var(--nn-accent)] text-white" : "border-[1.5px] border-[var(--nn-border)] bg-card text-foreground"
+            dueNow ? "bg-[var(--nn-accent)] text-primary-foreground" : "border-[1.5px] border-[var(--nn-border)] bg-card text-foreground"
           }`}
         >
           {dueNow && <Camera className="h-[18px] w-[18px]" aria-hidden="true" />}

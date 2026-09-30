@@ -96,7 +96,7 @@ export const PillTabs = <T extends string>({
           className={cn(
             "inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] px-4 text-sm",
             on
-              ? "border-[var(--nn-accent)] bg-[var(--nn-accent)] font-bold text-white"
+              ? "border-[var(--nn-accent)] bg-[var(--nn-accent)] font-bold text-primary-foreground"
               : "border-[var(--nn-border)] bg-card font-semibold text-foreground",
           )}
         >
@@ -186,7 +186,7 @@ export const StatusChip = ({ tone, children }: { tone: ChipTone; children: React
 export const nnButton = (variant: "primary" | "secondary" | "ghost" = "primary", className?: string) =>
   cn(
     "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition-colors disabled:opacity-50",
-    variant === "primary" && "bg-[var(--nn-accent)] text-white hover:opacity-90",
+    variant === "primary" && "bg-[var(--nn-accent)] text-primary-foreground hover:opacity-90",
     variant === "secondary" && "border-[1.5px] border-[var(--nn-border)] bg-card text-foreground hover:bg-[var(--nn-soft)]",
     variant === "ghost" && "text-[var(--nn-accent-dark)] hover:bg-[var(--nn-soft)]",
     className,

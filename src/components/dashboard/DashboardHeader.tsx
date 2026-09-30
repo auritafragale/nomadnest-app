@@ -218,7 +218,7 @@ export const ModeSwitch = ({ role, onChange }: { role: "sitter" | "owner"; onCha
         aria-pressed={role === value}
         className={cn(
           "flex h-11 items-center justify-center gap-1.5 rounded-full text-sm",
-          role === value ? "bg-[var(--nn-accent)] font-bold text-white" : "font-semibold text-muted-foreground",
+          role === value ? "bg-[var(--nn-accent)] font-bold text-primary-foreground" : "font-semibold text-muted-foreground",
         )}
       >
         <Icon className="h-4 w-4" aria-hidden="true" />

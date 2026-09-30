@@ -27,7 +27,7 @@ const SplashScreen = ({ onDone }: SplashScreenProps) => {
       }}
     >
       <img src={whiteLogo} alt="NomadNest" className="h-32 w-auto mb-6" />
-      <p className="text-white/90 text-center text-base font-medium px-8 leading-relaxed max-w-xs">
+      <p className="text-[#1F1B16] text-center text-base font-medium px-8 leading-relaxed max-w-xs">
         Where Travellers Find Homes & Pets Find Care
       </p>
     </div>

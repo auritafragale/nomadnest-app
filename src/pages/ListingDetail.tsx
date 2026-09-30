@@ -612,7 +612,7 @@ const ListingDetail = () => {
                 <ShareDialog
                   title={listing.title}
                   description={`Check out this pet sitting opportunity in ${listing.city}, ${listing.country}`}
-                  triggerClassName="border-0 bg-transparent text-primary-foreground shadow-none hover:bg-transparent hover:text-primary-foreground [&_svg]:h-7 [&_svg]:w-7"
+                  triggerClassName="border-0 bg-transparent text-white shadow-none drop-shadow hover:bg-transparent hover:text-white [&_svg]:h-7 [&_svg]:w-7"
                 />
               </div>
               {/* Favourite — top right */}
@@ -626,7 +626,7 @@ const ListingDetail = () => {
                   <Heart
                     className={cn(
                       "h-8 w-8 transition-colors",
-                      isFavorited ? "fill-primary text-primary" : "text-primary-foreground",
+                      isFavorited ? "fill-primary text-primary" : "text-white drop-shadow",
                     )}
                   />
                 </button>

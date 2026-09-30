@@ -97,7 +97,7 @@ const HeroSection = () => {
           <Link to="/auth?signup=true&role=sitter" className="w-full sm:w-auto">
             <Button
               size="xl"
-              className="w-full sm:w-auto bg-primary text-white border-2 border-white/30 hover:bg-primary/90 shadow-xl hover:-translate-y-1 transition-all"
+              className="w-full sm:w-auto bg-primary text-primary-foreground border-2 border-white/30 hover:bg-primary/90 shadow-xl hover:-translate-y-1 transition-all"
             >
               Join as a Nomad
             </Button>
@@ -139,7 +139,7 @@ const HeroSection = () => {
             <button
               type="submit"
               aria-label="Search"
-              className="h-14 px-5 bg-primary text-white font-semibold hover:bg-primary/90 transition-colors flex items-center gap-2 flex-shrink-0"
+              className="h-14 px-5 bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors flex items-center gap-2 flex-shrink-0"
             >
               <Search className="w-5 h-5" />
               <span className="hidden sm:inline">Search</span>

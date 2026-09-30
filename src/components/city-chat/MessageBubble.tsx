@@ -94,7 +94,7 @@ const MessageBubble = ({
             <p
               className={cn(
                 "text-[10px] mt-1",
-                isOwn ? "text-primary-foreground/70" : "text-muted-foreground",
+                isOwn ? "text-primary-foreground/80" : "text-muted-foreground",
               )}
             >
               {formatStamp(message.created_at)}

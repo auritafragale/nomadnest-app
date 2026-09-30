@@ -235,7 +235,7 @@ export const OwnerListingCard = ({ listing, newApplicants = 0 }: OwnerListingCar
 
           <Link
             to={`/edit-listing/${listing.id}?focus=dates`}
-            className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand-teal text-[15px] font-bold text-white hover:opacity-90"
+            className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand-teal text-[15px] font-bold text-primary-foreground hover:opacity-90"
           >
             <CalendarPlus className="h-[18px] w-[18px]" aria-hidden="true" />
             Add new dates

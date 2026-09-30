@@ -450,7 +450,7 @@ export const MessageThread = ({
                         <div
                           className={cn(
                             "flex items-center justify-end gap-1 mt-1",
-                            isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                            isOwn ? "text-primary-foreground/80" : "text-muted-foreground"
                           )}
                         >
                           <span className="text-xs">{formatMessageDate(message.created_at)}</span>
@@ -521,7 +521,7 @@ export const MessageThread = ({
                     <div
                       className={cn(
                         "flex items-center justify-end gap-1 mt-1",
-                        isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                        isOwn ? "text-primary-foreground/80" : "text-muted-foreground"
                       )}
                     >
                       <span className="text-xs">

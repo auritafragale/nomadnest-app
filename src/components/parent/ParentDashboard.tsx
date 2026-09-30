@@ -182,7 +182,7 @@ const StoriesRow = ({ className }: { className?: string }) => {
       <div className="flex items-center gap-2">
         <SerifTitle>Sit Stories</SerifTitle>
         {stories.length > 0 && (
-          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--nn-accent)] px-1.5 text-xs font-bold text-white">
+          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--nn-accent)] px-1.5 text-xs font-bold text-primary-foreground">
             {stories.length}
           </span>
         )}

@@ -28,7 +28,7 @@ export const PreviewBar = ({
       <div className="mx-auto flex max-w-4xl flex-col gap-2 px-4 py-3 lg:max-w-[74rem]">
         <div className="flex items-center justify-between gap-3">
           <p className="font-display text-lg">Preview of your profile</p>
-          <button type="button" onClick={done} className={cn("h-11 rounded-full px-5 text-sm font-bold text-white", on)}>
+          <button type="button" onClick={done} className={cn("h-11 rounded-full px-5 text-sm font-bold text-primary-foreground", on)}>
             Done
           </button>
         </div>

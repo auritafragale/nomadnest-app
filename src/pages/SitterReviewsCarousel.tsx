@@ -25,7 +25,7 @@ const StarRowLight = ({ rating }: { rating: number }) => (
     {[1, 2, 3, 4, 5].map((star) => (
       <Star
         key={star}
-        className={`w-5 h-5 ${star <= rating ? "fill-white text-white" : "text-white/30"}`}
+        className={`w-5 h-5 ${star <= rating ? "fill-current text-primary-foreground" : "text-primary-foreground/30"}`}
       />
     ))}
   </div>

@@ -43,7 +43,7 @@ const ValuePropsSection = () => {
             onClick={() => setActive("nomad")}
             className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-full text-sm sm:text-base font-semibold transition-colors ${
               active === "nomad"
-                ? "bg-primary text-white"
+                ? "bg-primary text-primary-foreground"
                 : "bg-surface text-foreground border border-border hover:bg-terracotta-light"
             }`}
           >
@@ -54,7 +54,7 @@ const ValuePropsSection = () => {
             onClick={() => setActive("owner")}
             className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-full text-sm sm:text-base font-semibold transition-colors ${
               active === "owner"
-                ? "bg-secondary text-white"
+                ? "bg-secondary text-secondary-foreground"
                 : "bg-surface text-foreground border border-border hover:bg-ocean-light"
             }`}
           >

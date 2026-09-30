@@ -26,11 +26,11 @@
 
     /* Primary Coral #E8735A */
     --primary: var(--brand-coral);
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 34 16% 10%;
 
     /* Secondary Ocean Teal */
     --secondary: var(--brand-teal);
-    --secondary-foreground: 0 0% 100%;
+    --secondary-foreground: 34 16% 10%;
 
     /* Gold Accent #F5C842 */
     --accent: 43 90% 61%;
@@ -71,7 +71,7 @@
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 10%;
     --sidebar-primary: 10 75% 63%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary-foreground: 34 16% 10%;
     --sidebar-accent: 171 58% 95%;
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 220 13% 91%;
@@ -92,10 +92,10 @@
     --popover-foreground: 34 33% 96%;
 
     --primary: var(--brand-coral);
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 34 16% 10%;
 
     --secondary: var(--brand-teal);
-    --secondary-foreground: 0 0% 100%;
+    --secondary-foreground: 34 16% 10%;
 
     --accent: 43 90% 61%;
     --accent-foreground: 0 0% 10%;
@@ -119,7 +119,7 @@
     --sidebar-background: 0 0% 10%;
     --sidebar-foreground: 34 33% 96%;
     --sidebar-primary: 10 75% 63%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary-foreground: 34 16% 10%;
     --sidebar-accent: 171 58% 18%;
     --sidebar-accent-foreground: 34 33% 96%;
     --sidebar-border: 0 0% 18%;

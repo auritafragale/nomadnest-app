@@ -167,10 +167,10 @@ const MyAvailability = () => {
                 aria-pressed={isFree || isPending}
                 className={cn(
                   "h-11 rounded-xl text-sm",
-                  isBooked && "bg-brand-coral font-bold text-white",
+                  isBooked && "bg-brand-coral font-bold text-primary-foreground",
                   !isBooked && isPast && "text-muted-foreground/50",
                   !isBooked && !isPast && isPending && "bg-card font-bold text-brand-coral-text shadow-[inset_0_0_0_2px_hsl(var(--brand-coral))]",
-                  !isBooked && !isPast && !isPending && isFree && "bg-brand-teal font-bold text-white",
+                  !isBooked && !isPast && !isPending && isFree && "bg-brand-teal font-bold text-primary-foreground",
                   !isBooked && !isPast && !isPending && !isFree && "bg-[var(--nn-soft)] font-semibold",
                   d === today && !isBooked && "ring-2 ring-foreground ring-offset-1",
                 )}
@@ -329,7 +329,7 @@ const MyAvailability = () => {
               onClick={onSave}
               disabled={save.isPending}
               className={cn(
-                "flex h-[52px] items-center justify-center gap-2 rounded-2xl text-[15px] font-bold text-white",
+                "flex h-[52px] items-center justify-center gap-2 rounded-2xl text-[15px] font-bold text-primary-foreground",
                 saved ? "bg-brand-teal" : "bg-brand-coral",
               )}
             >

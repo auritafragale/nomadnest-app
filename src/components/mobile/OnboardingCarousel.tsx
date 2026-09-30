@@ -108,7 +108,7 @@ const OnboardingCarousel = ({ onDone }: OnboardingCarouselProps) => {
           <Button
             onClick={next}
             className="flex-1 h-12 text-base font-semibold"
-            style={{ backgroundColor: "#E8735A", color: "white" }}
+            style={{ backgroundColor: "#E8735A", color: "#1F1B16" }}
           >
             {current < slides.length - 1 ? "Next" : "Get Started"}
           </Button>

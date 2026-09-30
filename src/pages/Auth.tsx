@@ -298,7 +298,7 @@ const Auth = () => {
                 </div>
               )}
 
-              <Button type="submit" className="w-full h-12 group text-white" style={{ backgroundColor: "#E8735A" }} disabled={isLoading}>
+              <Button type="submit" className="w-full h-12 group bg-primary text-primary-foreground hover:bg-primary/90" disabled={isLoading}>
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (

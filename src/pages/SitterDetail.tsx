@@ -566,7 +566,7 @@ const SitterDetail = () => {
                     <ShareDialog
                       title={`${name} - Pet Sitter`}
                       description={sitter.headline || `Check out ${name}'s pet sitting profile`}
-                      triggerClassName="border-0 bg-transparent text-primary-foreground shadow-none hover:bg-transparent hover:text-primary-foreground [&_svg]:h-7 [&_svg]:w-7"
+                      triggerClassName="border-0 bg-transparent text-white shadow-none drop-shadow hover:bg-transparent hover:text-white [&_svg]:h-7 [&_svg]:w-7"
                     />
                   </div>
                 </div>

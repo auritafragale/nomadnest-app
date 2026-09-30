@@ -220,7 +220,7 @@ const InviteTips = () => {
               <span
                 className={cn(
                   "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px]",
-                  done ? "border-brand-teal-text bg-brand-teal-text text-white" : "border-[var(--nn-border)]",
+                  done ? "border-brand-teal bg-brand-teal text-primary-foreground" : "border-[var(--nn-border)]",
                 )}
                 aria-hidden="true"
               >

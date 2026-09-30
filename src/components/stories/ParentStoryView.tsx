@@ -256,7 +256,7 @@ export const ParentStoryView = ({
               ))}
           {typeof story.updates_sent === "number" && story.updates_sent > 0 && (
             <div className="flex items-center gap-2.5 rounded-[14px] border border-[var(--nn-border)] px-3.5 py-3 text-[13px] text-muted-foreground">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-teal text-white">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-teal text-primary-foreground">
                 <Check className="h-4 w-4" aria-hidden="true" />
               </span>
               <span>
@@ -363,7 +363,7 @@ export const ParentStoryView = ({
                     <span
                       className={cn(
                         "absolute right-2 top-2 inline-flex h-6 items-center rounded-full px-2 text-[11px] font-bold",
-                        shown ? "bg-brand-teal text-white" : "bg-card text-muted-foreground",
+                        shown ? "bg-brand-teal text-primary-foreground" : "bg-card text-muted-foreground",
                       )}
                     >
                       {shown ? "On profile" : "Not shown"}
@@ -391,7 +391,7 @@ export const ParentStoryView = ({
             type="button"
             onClick={() => setShareOpen((v) => !v)}
             aria-expanded={shareOpen}
-            className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand-teal text-[15px] font-bold text-white"
+            className="flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-brand-teal text-[15px] font-bold text-primary-foreground"
           >
             <Share2 className="h-[18px] w-[18px]" aria-hidden="true" />
             Share your story
