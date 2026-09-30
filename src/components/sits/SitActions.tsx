@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useOpenSitChat } from "@/hooks/useSitActions";
-import { format, parseISO } from "date-fns";
+import { differenceInCalendarDays, format, parseISO, startOfToday } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import {
   BookOpen,
@@ -254,6 +254,12 @@ const ProposeDatesDialog = ({ sit, open, onOpenChange }: { sit: Sit; open: boole
 const CancelSitDialog = ({ sit, open, onOpenChange }: { sit: Sit; open: boolean; onOpenChange: (open: boolean) => void }) => {
   const { mutate: updateStatus } = useUpdateSitStatus();
   const sendMessage = useSendMessage();
+  const { user } = useAuth();
+  const other = (sit.owner_user_id === user?.id ? sit.sitter_profile : sit.owner_profile)?.first_name || "The other member";
+  // Same rule as the server (handle_sit_cancellation_trust): a strike goes to
+  // whoever cancels when the sit starts in 0 to 14 days.
+  const daysToStart = sit.sit_dates ? differenceInCalendarDays(parseISO(sit.sit_dates.start_date), startOfToday()) : null;
+  const addsStrike = daysToStart !== null && daysToStart >= 0 && daysToStart <= 14;
   const { data: declinedRequest } = useLatestDeclinedReschedule(sit.id);
   const [cancelReason, setCancelReason] = useState("");
   const [reopenChoice, setReopenChoice] = useState<"original" | "proposed">("proposed");
@@ -347,6 +353,11 @@ const CancelSitDialog = ({ sit, open, onOpenChange }: { sit: Sit; open: boolean;
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Cancel this sit?</AlertDialogTitle>
+          <p role="note" className="rounded-xl bg-[var(--nn-warn-bg)] px-3.5 py-3 text-left text-sm font-medium text-foreground">
+            {addsStrike
+              ? `Cancelling within 2 weeks of the start adds a strike to your reliability record. ${other} will be told straight away.`
+              : `${other} will be told straight away.`}
+          </p>
           <AlertDialogDescription>
             This will cancel the sit and re-open the dates. Please tell the other party why — a reason is required.
           </AlertDialogDescription>
