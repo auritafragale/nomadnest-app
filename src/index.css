@@ -11,8 +11,9 @@
     --brand-teal: 171 58% 39%;
     --brand-coral-light: 10 75% 95%;
     --brand-teal-light: 171 58% 95%;
-    /* Darker shades for small text and icons on white: #C95B43, #1E6B5F */
-    --brand-coral-text: 11 55% 53%;
+    /* Darker shades for small text and icons, at least 4.5:1 on white and the
+       pale tints: #AC4832 (the design's #C95B43 is 4.1:1), #1E6B5F */
+    --brand-coral-text: 11 55% 43%;
     --brand-teal-text: 171 56% 27%;
 
     --background: 0 0% 100%;
@@ -37,7 +38,7 @@
     --accent-foreground: 0 0% 10%;
 
     --muted: 220 13% 91%;
-    --muted-foreground: 220 9% 46%;
+    --muted-foreground: 220 9% 41%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -101,7 +102,7 @@
     --accent-foreground: 0 0% 10%;
 
     --muted: 0 0% 18%;
-    --muted-foreground: 220 9% 60%;
+    --muted-foreground: 220 9% 64%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;

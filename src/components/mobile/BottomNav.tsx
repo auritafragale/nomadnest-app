@@ -71,20 +71,22 @@ const BottomNav = () => {
             <Link
               key={href}
               to={href}
+              aria-current={active ? "page" : undefined}
               className={cn(
                 "flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative",
-                active ? "text-primary" : "text-muted-foreground"
+                active ? "text-foreground" : "text-muted-foreground"
               )}
             >
               <div className="relative">
-                <Icon className="w-6 h-6" />
+                {/* The icon carries the brand colour; the label stays dark enough to read. */}
+                <Icon className={cn("w-6 h-6", active && "text-primary")} aria-hidden="true" />
                 {showBadge && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-medium">
                     {badgeCount > 9 ? "9+" : badgeCount}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-medium text-center px-1 leading-tight">{label}</span>
+              <span className={cn("text-[11px] text-center px-1 leading-tight", active ? "font-bold" : "font-medium")}>{label}</span>
             </Link>
           );
         })}

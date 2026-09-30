@@ -646,7 +646,7 @@ const SitterDetail = () => {
                         {ratingData.average.toFixed(1)} ({ratingData.count} review{ratingData.count !== 1 ? "s" : ""})
                       </div>
                     ) : ratingData ? (
-                      <div className="flex items-center gap-1 text-muted-foreground/70">
+                      <div className="flex items-center gap-1 text-muted-foreground">
                         <Star className="w-4 h-4" />
                         <span className="italic">No reviews yet</span>
                       </div>

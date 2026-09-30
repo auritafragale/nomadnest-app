@@ -101,7 +101,7 @@ export const PillTabs = <T extends string>({
           )}
         >
           {t.label}
-          {t.count !== undefined && <span className={on ? "opacity-85" : "text-muted-foreground"}>{t.count}</span>}
+          {t.count !== undefined && <span className={on ? undefined : "text-muted-foreground"}>{t.count}</span>}
         </button>
       );
     })}
