@@ -7,6 +7,7 @@ import {
   BookOpen,
   Calendar,
   CalendarClock,
+  CalendarDays,
   Camera,
   CheckCircle,
   Eye,
@@ -63,7 +64,7 @@ import { cn } from "@/lib/utils";
  * to live in the old dashboard Sits card, SitCard).
  */
 
-export type SitMenuItem = "message" | "arrival" | "guide" | "askNest" | "listing" | "propose" | "sitPage";
+export type SitMenuItem = "message" | "arrival" | "guide" | "askNest" | "listing" | "propose" | "sitPage" | "mySits";
 
 /**
  * The ⋮ "More actions" menu for a sit. Items only show when they apply to the
@@ -72,7 +73,18 @@ export type SitMenuItem = "message" | "arrival" | "guide" | "askNest" | "listing
  * with the same flow as before. Nothing shows for a sit whose other member
  * left NomadNest.
  */
-export const SitMoreMenu = ({ sit, items, className }: { sit: Sit; items: SitMenuItem[]; className?: string }) => {
+export const SitMoreMenu = ({
+  sit,
+  items,
+  className,
+  keepAfterSit = false,
+}: {
+  sit: Sit;
+  items: SitMenuItem[];
+  className?: string;
+  /** The sit page keeps the menu after the sit (View listing, My sits); actions that need a live sit still hide. */
+  keepAfterSit?: boolean;
+}) => {
   const { user } = useAuth();
   const location = useLocation();
   const isOwner = sit.owner_user_id === user?.id;
@@ -88,7 +100,8 @@ export const SitMoreMenu = ({ sit, items, className }: { sit: Sit; items: SitMen
   const [cancelOpen, setCancelOpen] = useState(false);
   const [proposeOpen, setProposeOpen] = useState(false);
 
-  if (t.otherLeft || !(sit.status === "confirmed" || sit.status === "in_progress") || t.isFinished) return null;
+  const live = !t.otherLeft && (sit.status === "confirmed" || sit.status === "in_progress") && !t.isFinished;
+  if (!live && !keepAfterSit) return null;
   const has = (i: SitMenuItem) => items.includes(i);
   const from = `${location.pathname}${location.search}${location.hash}`;
 
@@ -108,7 +121,7 @@ export const SitMoreMenu = ({ sit, items, className }: { sit: Sit; items: SitMen
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-[220px]">
-          {has("message") && (
+          {has("message") && live && (
             <DropdownMenuItem disabled={chat.opening} onSelect={chat.open} className="min-h-[44px]">
               <MessageSquare className="mr-2 h-4 w-4" />
               Message {other ?? (isOwner ? "your Nomad" : "your Pet Parent")}
@@ -144,17 +157,25 @@ export const SitMoreMenu = ({ sit, items, className }: { sit: Sit; items: SitMen
               Ask the Nest
             </DropdownMenuItem>
           )}
-          {has("propose") && isOwner && !pendingRequest && (
+          {has("propose") && live && isOwner && !pendingRequest && (
             <DropdownMenuItem onSelect={() => setProposeOpen(true)} className="min-h-[44px]">
               <CalendarClock className="mr-2 h-4 w-4" />
               Propose new dates
             </DropdownMenuItem>
           )}
-          {has("listing") && (
+          {has("listing") && sit.listing_id && (
             <DropdownMenuItem asChild className="min-h-[44px]">
               <Link to={`/listing/${sit.listing_id}`}>
                 <Eye className="mr-2 h-4 w-4" />
                 View listing
+              </Link>
+            </DropdownMenuItem>
+          )}
+          {has("mySits") && (
+            <DropdownMenuItem asChild className="min-h-[44px]">
+              <Link to={`/my-sits?as=${isOwner ? "owner" : "sitter"}`}>
+                <CalendarDays className="mr-2 h-4 w-4" />
+                My sits
               </Link>
             </DropdownMenuItem>
           )}

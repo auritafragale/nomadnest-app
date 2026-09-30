@@ -1,26 +1,32 @@
-import { useParams, Navigate, Link } from "react-router-dom";
-import { Camera, ChevronRight } from "lucide-react";
+import { useParams, Navigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { BackButton } from "@/components/layout/BackButton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NN_MAIN, RoleTheme, SerifTitle } from "@/components/nn/ui";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSits } from "@/hooks/useSits";
 import { useSitCheckins } from "@/hooks/useSitCheckins";
 import { useSitUpdateContext } from "@/hooks/useDailyUpdates";
-import { SitProgressHeader } from "@/components/sit-updates/SitProgressHeader";
+import { SitSummary, SitActions } from "@/components/sit-updates/SitSummary";
 import { DailyUpdateComposer } from "@/components/sit-updates/DailyUpdateComposer";
 import { UpdatesTimeline } from "@/components/sit-updates/UpdatesTimeline";
+import { SitMoreMenu } from "@/components/sits/SitActions";
 
 /**
- * A sit's daily updates. The Nomad sends today's update (photos first, quick
- * taps, a short message); both see the story feed, newest day first. The
- * private Arrival Check-In stays on its own page, linked here for the Nomad
- * only (the Pet Parent never sees it).
+ * A sit (design: SitNomad, SitParent, SitTabletDark, SitDesktop). The Nomad
+ * sends today's update (photos first, quick taps, a short message); both see
+ * the updates, newest day first. Phone: one column. Tablet: updates with the
+ * summary and actions in a column on the right. Desktop: summary and actions
+ * on the left. The private Arrival Check-In is linked for the Nomad only.
  */
 const SitDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user, loading: authLoading } = useAuth();
   const { data: context, isLoading } = useSitUpdateContext(id);
   const { data: updates = [] } = useSitCheckins(context ? id : undefined);
+  const { data: sits = [] } = useSits();
+  const sit = sits.find((s) => s.id === id);
 
   if (!authLoading && !user) return <Navigate to="/auth" replace />;
 
@@ -30,49 +36,46 @@ const SitDetail = () => {
   const todayChips = todays.flatMap((u) => [...(u.chips ?? []), ...(u.kind === "meds_given" ? ["meds"] : [])]);
   // During the sit's dates only (in the home's time zone).
   const showComposer = !!context?.can_post && context.day_number !== null;
+  const role = context?.role ?? "sitter";
+  const menuItems = role === "owner" ? (["propose", "listing", "mySits"] as const) : (["arrival", "listing", "mySits"] as const);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <Navbar />
-      <main className="container max-w-2xl flex-1 px-4 pb-10 pt-20">
+    <RoleTheme role={role} className="flex min-h-screen flex-col">
+      <Navbar wide />
+      <main className={NN_MAIN}>
+        <div className="flex items-center justify-between">
+          <BackButton fallback="/dashboard" className="h-11" />
+          {sit && <SitMoreMenu sit={sit} items={[...menuItems]} keepAfterSit />}
+        </div>
         {isLoading ? (
-          <div className="space-y-4 pt-4">
-            <Skeleton className="h-44 w-full rounded-3xl" />
-            <Skeleton className="h-72 w-full rounded-3xl" />
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-44 w-full rounded-[24px]" />
+            <Skeleton className="h-72 w-full rounded-[24px]" />
           </div>
         ) : !context ? (
-          <div className="mt-8 rounded-3xl border p-10 text-center text-muted-foreground">This sit could not be found.</div>
+          <div className="rounded-[24px] border border-[var(--nn-border)] p-10 text-center text-muted-foreground">
+            This sit could not be found.
+          </div>
         ) : (
-          <div className="space-y-6 pt-2">
-            <SitProgressHeader context={context} sentToday={sentToday} />
-            {context.role === "sitter" && (
-              <Link
-                to={`/sits/${id}/arrival-vault`}
-                state={{ from: `/sits/${id}` }}
-                className="flex min-h-[56px] items-center gap-3 rounded-2xl border bg-card px-4 py-3 transition-colors hover:bg-muted/50"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-terracotta-light text-primary">
-                  <Camera className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-sm font-bold">Arrival Check-In</span>
-                  <span className="text-xs text-muted-foreground">Photograph the home as you found it. Only you can see these.</span>
-                </span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              </Link>
-            )}
-            {showComposer && <DailyUpdateComposer context={context} todayChips={todayChips} />}
-            <section aria-labelledby="updates-heading" className="space-y-3">
-              <h2 id="updates-heading" className="font-display text-xl font-bold">
-                {context.role === "owner" ? `Updates from ${context.sitter.first_name}` : "Your updates"}
-              </h2>
-              <UpdatesTimeline updates={updates} context={context} />
-            </section>
+          <div className="flex flex-col gap-[18px] md:grid md:grid-cols-[minmax(0,1fr)_280px] md:items-start md:gap-5 lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-7 xl:grid-cols-[380px_minmax(0,1fr)]">
+            <aside className="flex min-w-0 flex-col gap-[18px] md:order-2 md:sticky md:top-24 md:gap-4 lg:order-1">
+              <SitSummary context={context} sentToday={sentToday} />
+              <SitActions context={context} />
+            </aside>
+            <div className="flex min-w-0 flex-col gap-[18px] md:order-1 md:gap-5 lg:order-2">
+              {showComposer && <DailyUpdateComposer context={context} todayChips={todayChips} />}
+              <section aria-labelledby="updates-heading" className="flex flex-col gap-3">
+                <SerifTitle as="h2" className="text-[22px]">
+                  <span id="updates-heading">{context.role === "owner" ? `Updates from ${context.sitter.first_name}` : "Your updates"}</span>
+                </SerifTitle>
+                <UpdatesTimeline updates={updates} context={context} />
+              </section>
+            </div>
           </div>
         )}
       </main>
       <Footer />
-    </div>
+    </RoleTheme>
   );
 };
 

@@ -28,7 +28,7 @@ export const UpdateChips = ({ chips, className }: { chips: string[]; className?:
   return (
     <ul className={cn("flex flex-wrap gap-1.5", className)} aria-label="Today's care">
       {shown.map(({ code, label, Icon }) => (
-        <li key={code} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+        <li key={code} className="inline-flex items-center gap-1 rounded-full bg-[var(--nn-tint)] px-2.5 py-1 text-[13px] font-semibold text-[var(--nn-accent-dark)]">
           <Icon className="h-3.5 w-3.5" aria-hidden="true" />
           {label}
         </li>
@@ -111,8 +111,8 @@ const UpdateItem = ({
   return (
     <article className="space-y-3">
       {update.flagged && (
-        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-sm">
-          <p className="font-medium text-amber-900 dark:text-amber-200">A note from {sitter}</p>
+        <div className="rounded-2xl border border-[var(--nn-tip-border)] bg-[var(--nn-tip-bg)] px-3.5 py-3 text-[15px]">
+          <p className="font-semibold text-[var(--nn-tip-text)]">A note from {sitter}</p>
           {flagNote && <p className="mt-0.5 whitespace-pre-line text-foreground">{flagNote}</p>}
         </div>
       )}
@@ -120,7 +120,7 @@ const UpdateItem = ({
       <UpdateChips chips={chipsOf(update)} />
       {message && <p className="whitespace-pre-line text-[15px] leading-relaxed">{message}</p>}
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
         <span>{time(update.created_at)}</span>
         {/* Only the sitter sees that AI helped; owners just see the update. */}
         {!isOwner && update.ai_drafted && (
@@ -130,13 +130,13 @@ const UpdateItem = ({
           </span>
         )}
         {hasTranslation && (
-          <button type="button" className="inline-flex items-center gap-1 font-medium text-foreground hover:underline" onClick={() => setShowOriginal((v) => !v)}>
+          <button type="button" className="inline-flex min-h-[44px] items-center gap-1 font-semibold text-foreground hover:underline" onClick={() => setShowOriginal((v) => !v)}>
             <Languages className="h-3 w-3" aria-hidden="true" />
             {showOriginal ? `See in ${languageLabel(update.translated_lang) ?? "your language"}` : "See original"}
           </button>
         )}
         {!isOwner && update.owner_heart_at && (
-          <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400">
+          <span className="inline-flex items-center gap-1 font-semibold text-[var(--nn-accent-dark)]">
             <Heart className="h-3 w-3 fill-current" aria-hidden="true" />
             {context.owner.first_name} loved this
           </span>
@@ -150,7 +150,7 @@ const UpdateItem = ({
               type="button"
               variant="ghost"
               size="sm"
-              className={cn("h-9 gap-1.5 rounded-full px-3", update.owner_heart_at && "text-rose-600 dark:text-rose-400")}
+              className={cn("h-11 gap-1.5 rounded-full border border-[var(--nn-border)] px-4", update.owner_heart_at && "text-[var(--nn-accent-dark)]")}
               aria-pressed={!!update.owner_heart_at}
               disabled={heart.isPending}
               onClick={() => heart.mutate(update.id, { onError: () => toast.error("Couldn't save that. Please try again.") })}
@@ -158,7 +158,7 @@ const UpdateItem = ({
               <Heart className={cn("h-4 w-4", update.owner_heart_at && "fill-current")} aria-hidden="true" />
               {update.owner_heart_at ? "Loved" : "Love"}
             </Button>
-            <Button type="button" variant="ghost" size="sm" className="h-9 gap-1.5 rounded-full px-3" onClick={() => setReplying((v) => !v)}>
+            <Button type="button" variant="ghost" size="sm" className="h-11 gap-1.5 rounded-full border border-[var(--nn-border)] px-4" onClick={() => setReplying((v) => !v)}>
               <MessageCircle className="h-4 w-4" aria-hidden="true" />
               Reply
             </Button>
@@ -174,14 +174,14 @@ const UpdateItem = ({
                 aria-label={`Reply to ${sitter}`}
                 className="rounded-2xl text-base sm:text-sm"
               />
-              <Button size="icon" className="h-10 w-10 shrink-0 rounded-full" disabled={!replyText.trim() || reply.isPending} onClick={sendReply} aria-label="Send reply">
+              <Button size="icon" className="h-11 w-11 shrink-0 rounded-full" disabled={!replyText.trim() || reply.isPending} onClick={sendReply} aria-label="Send reply">
                 {reply.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
             </div>
           )}
           {sentReply && (
-            <p className="text-xs text-muted-foreground">
-              Sent to {sitter} in <Link to="/inbox" className="font-medium text-foreground underline">chat</Link>.
+            <p className="text-sm text-muted-foreground">
+              Sent to {sitter} in <Link to="/inbox" className="font-semibold text-foreground underline">chat</Link>.
             </p>
           )}
         </div>
@@ -199,7 +199,7 @@ const MedsLine = ({ day, items, today }: { day: string; items: SitCheckin[]; tod
     <p
       className={cn(
         "mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-        logged ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300" : "bg-muted text-muted-foreground",
+        logged ? "bg-[var(--nn-ok-bg)] text-[var(--nn-ok-text)]" : "bg-muted text-muted-foreground",
       )}
     >
       {logged ? <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> : <Pill className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -241,7 +241,7 @@ export const UpdatesTimeline = ({ updates, context }: { updates: SitCheckin[]; c
 
   if (updates.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+      <div className="rounded-[24px] border border-dashed border-[var(--nn-border)] p-8 text-center text-[15px] text-muted-foreground">
         {context.role === "owner"
           ? `${context.sitter.first_name}'s daily updates will appear here.`
           : "Your updates will appear here once you send them."}
@@ -273,7 +273,7 @@ export const UpdatesTimeline = ({ updates, context }: { updates: SitCheckin[]; c
               type="button"
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-full"
+              className="h-11 w-11 rounded-full border-[var(--nn-border)]"
               onClick={() => api?.scrollPrev()}
               disabled={current === 0}
               aria-label="Newer day"
@@ -284,7 +284,7 @@ export const UpdatesTimeline = ({ updates, context }: { updates: SitCheckin[]; c
               type="button"
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-full"
+              className="h-11 w-11 rounded-full border-[var(--nn-border)]"
               onClick={() => api?.scrollNext()}
               disabled={current >= days.length - 1}
               aria-label="Older day"
@@ -303,7 +303,7 @@ export const UpdatesTimeline = ({ updates, context }: { updates: SitCheckin[]; c
               className="basis-[92%] pl-3 sm:basis-full"
               aria-label={`${dayLabel(day) ?? "Update"}, ${formatDay(day)}`}
             >
-              <article className="max-h-[75vh] overflow-y-auto rounded-3xl border bg-card p-4 shadow-sm sm:p-5">
+              <article className="max-h-[75vh] overflow-y-auto rounded-[24px] border border-[var(--nn-border)] bg-card p-[18px] lg:p-5">
                 <h3 className="mb-3 flex items-baseline gap-2">
                   {dayLabel(day) && <span className="font-display text-lg font-bold">{dayLabel(day)?.replace(/ of \d+$/, "")}</span>}
                   <span className="text-sm text-muted-foreground">{formatDay(day)}</span>
@@ -323,18 +323,11 @@ export const UpdatesTimeline = ({ updates, context }: { updates: SitCheckin[]; c
       </Carousel>
 
       {days.length > 1 && (
-        <div className="flex flex-wrap justify-center gap-1.5" role="group" aria-label="Choose a day">
+        <div className="flex flex-wrap justify-center gap-1.5" aria-hidden="true">
           {days.map(([day], i) => (
-            <button
+            <span
               key={day}
-              type="button"
-              onClick={() => api?.scrollTo(i)}
-              aria-label={`${dayLabel(day) ?? "Update"}, ${formatDay(day)}`}
-              aria-current={i === current ? "true" : undefined}
-              className={cn(
-                "h-2 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-                i === current ? "w-5 bg-primary" : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50",
-              )}
+              className={cn("h-2 rounded-full transition-all", i === current ? "w-5 bg-primary" : "w-2 bg-muted-foreground/30")}
             />
           ))}
         </div>

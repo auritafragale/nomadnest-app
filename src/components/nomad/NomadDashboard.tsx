@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { differenceInCalendarDays, parseISO, startOfToday } from "date-fns";
 import { BookOpen, BookHeart, Calendar, Camera, ChevronRight, Mail, MessageSquare, Sparkles, Star, User } from "lucide-react";
@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { NavRow, SectionCard, SerifTitle, StatusChip, nnButton, shortRange } from "@/components/nn/ui";
 import { TodoList, type TodoItem } from "@/components/dashboard/TodoList";
 import { SitMoreMenu, SitRescheduleNotice } from "@/components/sits/SitActions";
+import { ArrivalCheckInRow } from "@/components/sits/ArrivalCheckInRow";
 import { useArrivalPhotoCount } from "@/hooks/useArrivalVault";
 import { useAuth } from "@/contexts/AuthContext";
 import { arrivalWindowOpen, sitTiming } from "@/lib/sitTiming";
@@ -95,9 +96,6 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
   const askNestAvailable = useAskNestAvailable();
   const [askOpen, setAskOpen] = useState(false);
   const [opening, setOpening] = useState(false);
-  const location = useLocation();
-  const inArrivalWindow = arrivalWindowOpen(current?.start_date ?? next?.start_date);
-  const { data: arrivalPhotos = 0 } = useArrivalPhotoCount(sitId, inArrivalWindow);
   const { user } = useAuth();
   const upcomingCount = sits.filter((x) => x.sitter_user_id === user?.id && sitTiming(x).isUpcoming).length;
 
@@ -217,24 +215,7 @@ const YourSitCard = ({ current, next }: { current: CurrentSit | null; next: Next
           )}
           <Tile onClick={openChat} icon={MessageSquare} title="Message" detail={`Chat with ${other}`} tone="neutral" />
         </div>
-        {inArrivalWindow && (
-          <Link
-            to={`/sits/${s.sit_id}/arrival-vault`}
-            state={{ from: `${location.pathname}${location.search}` }}
-            className="flex min-h-[56px] items-center gap-3 rounded-2xl border border-[var(--nn-border)] px-3.5 py-3"
-          >
-            <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]">
-              <Camera className="h-[18px] w-[18px]" aria-hidden="true" />
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-[15px] font-bold">Arrival Check-In</span>
-              <span className="text-xs text-muted-foreground">Photograph the home as you found it. Only you can see these.</span>
-            </span>
-            <StatusChip tone={arrivalPhotos > 0 ? "green" : "accent"}>
-              {arrivalPhotos > 0 ? `${plural(arrivalPhotos, "photo")} saved` : "To do"}
-            </StatusChip>
-          </Link>
-        )}
+        <ArrivalCheckInRow sitId={s.sit_id} startDate={s.start_date} />
         <Link
           to="/my-sits?as=sitter"
           className="-my-1 flex min-h-[44px] items-center justify-between text-sm font-bold text-[var(--nn-accent-dark)]"

@@ -62,8 +62,8 @@ export const ChatUpdateCard = ({
           {isOwn ? "Your daily update" : `Daily update from ${senderName}`}
         </p>
         {update.flagged && (
-          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-2.5 py-2 text-sm">
-            <p className="font-medium text-amber-900 dark:text-amber-200">A note from {isOwn ? "you" : senderName}</p>
+          <div className="rounded-xl border border-[var(--nn-tip-border)] bg-[var(--nn-tip-bg)] px-2.5 py-2 text-sm">
+            <p className="font-medium text-[var(--nn-tip-text)]">A note from {isOwn ? "you" : senderName}</p>
             {flagNote && <p className="mt-0.5 whitespace-pre-line">{flagNote}</p>}
           </div>
         )}
