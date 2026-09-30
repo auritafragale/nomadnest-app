@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { BookHeart, ChevronRight, Star } from "lucide-react";
+import { BookHeart, ChevronRight, MessageSquare, Star } from "lucide-react";
 import { parseISO } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import Navbar from "@/components/layout/Navbar";
@@ -19,7 +19,7 @@ import {
   shortRange,
 } from "@/components/nn/ui";
 import { SitMoreMenu, SitRescheduleNotice } from "@/components/sits/SitActions";
-import { useHasReviewed } from "@/hooks/useSitActions";
+import { useHasReviewed, useOpenSitChat } from "@/hooks/useSitActions";
 import { useSits, type Sit } from "@/hooks/useSits";
 import { useStoryForSit } from "@/hooks/useSitStories";
 import { useMyGuideWindows, daysUntil } from "@/hooks/useSitterGuide";
@@ -31,10 +31,12 @@ type Tab = "upcoming" | "past";
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/** One sit (design: MySitsPhone / Tablet / Desktop). */
 const SitRow = ({ sit, role }: { sit: Sit; role: "sitter" | "owner" }) => {
   const t = sitTiming(sit);
   const chip = sitChip(sit);
-  const other = (role === "owner" ? sit.sitter_profile : sit.owner_profile)?.first_name || (t.otherLeft ? "Former member" : null);
+  const otherName = (role === "owner" ? sit.sitter_profile : sit.owner_profile)?.first_name;
+  const other = otherName || (role === "owner" ? "your Nomad" : "your Pet Parent");
   const { data: windows = [] } = useMyGuideWindows();
   const guide = role === "sitter" && t.isUpcoming ? windows.find((w) => w.sit_id === sit.id) : undefined;
   const past = t.isPast && !t.isUpcoming;
@@ -45,39 +47,34 @@ const SitRow = ({ sit, role }: { sit: Sit; role: "sitter" | "owner" }) => {
   const canReview = past && t.isReviewable && !t.otherLeft && hasReviewed === false && reviewOpen;
   const revieweeId = role === "owner" ? sit.sitter_user_id : sit.owner_user_id;
   const queryClient = useQueryClient();
+  const chat = useOpenSitChat(sit);
+  const live = !past && !t.otherLeft;
 
   return (
-    <div className="flex flex-col gap-3 border-t border-[var(--nn-line)] py-3 first:border-t-0">
-      <div className="flex items-center gap-3">
-        <Link to={`/sits/${sit.id}`} className="flex min-w-0 flex-1 items-center gap-3">
-          <span className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[14px] bg-[#CDB79E]">
-            {sit.listing?.photos?.[0] && <img src={sit.listing.photos[0]} alt="" className="h-full w-full object-cover" />}
+    <article className="flex flex-col gap-3 border-t border-[var(--nn-line)] py-4 first:border-t-0">
+      <Link to={`/sits/${sit.id}`} className="flex items-start gap-3">
+        <span className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-[#CDB79E]">
+          {sit.listing?.photos?.[0] && <img src={sit.listing.photos[0]} alt="" className="h-full w-full object-cover" />}
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="flex items-start justify-between gap-2">
+            <span className="text-[16px] font-bold leading-snug">{sit.listing?.title ?? "A sit"}</span>
+            <StatusChip tone={chip.tone}>{chip.label}</StatusChip>
           </span>
-          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="truncate text-[15px] font-bold">{sit.listing?.title ?? "A sit"}</span>
-            <span className="truncate text-[13px] text-muted-foreground">
-              {[sit.listing?.city, sit.sit_dates && shortRange(sit.sit_dates.start_date, sit.sit_dates.end_date), other]
-                .filter(Boolean)
-                .join(" · ")}
-            </span>
-            <span className="mt-1 self-start">
-              <StatusChip tone={chip.tone}>{chip.label}</StatusChip>
-            </span>
+          <span className="text-sm text-muted-foreground">
+            {[sit.listing?.city, sit.sit_dates && shortRange(sit.sit_dates.start_date, sit.sit_dates.end_date)].filter(Boolean).join(" · ")}
           </span>
-        </Link>
-        {!past && (
-          <SitMoreMenu sit={sit} items={["message", "sitPage", "arrival", "guide", "askNest", "propose", "listing"]} />
-        )}
-      </div>
+          <span className="text-sm text-muted-foreground">{t.otherLeft ? "With a former member" : `With ${other}`}</span>
+        </span>
+      </Link>
 
       {guide && (
-        <p className="text-[13px] text-muted-foreground">
-          Welcome Guide:{" "}
-          {guide.access_open ? (
-            <span className="font-semibold text-[var(--nn-ok-text)]">arrival details ready</span>
-          ) : (
-            `arrival details unlock in ${plural(daysUntil(guide.unlock_at), "day")}`
-          )}
+        <p className="rounded-[14px] bg-[var(--nn-ok-bg)] px-3.5 py-2.5 text-sm">
+          Welcome Guide ready ·{" "}
+          {guide.access_open
+            ? "arrival details ready"
+            : `arrival details unlock ${new Date(guide.unlock_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
+          {!guide.access_open && <span className="text-muted-foreground"> (in {plural(daysUntil(guide.unlock_at), "day")})</span>}
         </p>
       )}
 
@@ -86,43 +83,63 @@ const SitRow = ({ sit, role }: { sit: Sit; role: "sitter" | "owner" }) => {
       {story?.status === "ready" && (
         <Link
           to={`/stories/${story.id}`}
-          className="flex min-h-[44px] items-center justify-between gap-2 rounded-[14px] bg-[var(--nn-soft)] px-3.5 text-sm font-bold"
+          className="flex min-h-[44px] items-center justify-between gap-2 rounded-[14px] bg-[var(--nn-soft)] px-3.5 text-[15px] font-bold"
         >
           <span className="flex min-w-0 items-center gap-2">
             <BookHeart className="h-4 w-4 shrink-0 text-[var(--nn-accent-dark)]" aria-hidden="true" />
-            <span className="truncate">Read the Sit Story{story.title ? `: ${story.title}` : ""}</span>
+            <span className="truncate">Read the Sit Story</span>
           </span>
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </Link>
       )}
 
+      {past && t.otherLeft && <p className="text-sm text-muted-foreground">This member has left NomadNest.</p>}
       {canReview && revieweeId && (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-sm text-muted-foreground">
+            {daysLeft === null ? "Your review helps other members" : daysLeft === 1 ? "Last day to leave your review" : `${daysLeft} days left to leave your review`}
+          </span>
           <WriteReviewDialog
             sitId={sit.id}
             revieweeUserId={revieweeId}
-            revieweeName={other ?? "them"}
+            revieweeName={other}
             reviewType={role === "owner" ? "sitter" : "owner"}
             onReviewSubmitted={() => queryClient.invalidateQueries({ queryKey: ["has-reviewed", sit.id] })}
             trigger={
-              <button type="button" className={nnButton("secondary", "w-full")}>
+              <button type="button" className={nnButton("primary", "px-5")}>
                 <Star className="h-4 w-4" aria-hidden="true" />
-                Leave a review for {other}
+                Review {otherName ?? (role === "owner" ? "your Nomad" : "your Pet Parent")}
               </button>
             }
           />
-          {daysLeft !== null && (
-            <p className="text-center text-xs text-muted-foreground">
-              {daysLeft === 1 ? "Last day to leave your review" : `${daysLeft} days left to leave your review`}
-            </p>
-          )}
         </div>
       )}
       {past && t.isReviewable && !t.otherLeft && hasReviewed === false && !reviewOpen && (
-        <p className="text-xs text-muted-foreground">The {REVIEW_WINDOW_DAYS}-day review window for this sit has closed.</p>
+        <p className="text-sm text-muted-foreground">The {REVIEW_WINDOW_DAYS}-day review window for this sit has closed.</p>
       )}
-      {past && hasReviewed && <p className="text-xs text-muted-foreground">You reviewed {other}.</p>}
-    </div>
+      {past && hasReviewed && (
+        <p className="flex items-center gap-1 text-sm text-muted-foreground">
+          You reviewed this {role === "owner" ? "Nomad" : "Pet Parent"}
+          <Star className="h-3.5 w-3.5 fill-current text-[var(--nn-accent-dark)]" aria-hidden="true" />
+        </p>
+      )}
+
+      {live && (
+        <div className="flex items-center gap-2">
+          {t.isCurrent ? (
+            <Link to={`/sits/${sit.id}`} className={nnButton("primary", "flex-1")}>
+              {role === "owner" ? "See today's update" : "Today's update"}
+            </Link>
+          ) : (
+            <button type="button" onClick={chat.open} disabled={chat.opening} className={nnButton("secondary", "flex-1")}>
+              <MessageSquare className="h-4 w-4" aria-hidden="true" />
+              Message
+            </button>
+          )}
+          <SitMoreMenu sit={sit} items={["message", "sitPage", "arrival", "guide", "askNest", "propose", "listing"]} />
+        </div>
+      )}
+    </article>
   );
 };
 

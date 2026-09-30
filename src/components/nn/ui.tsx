@@ -166,7 +166,7 @@ export const NavRow = ({
   );
 };
 
-export type ChipTone = "green" | "accent" | "grey" | "gold";
+export type ChipTone = "green" | "accent" | "grey" | "gold" | "solid";
 
 export const StatusChip = ({ tone, children }: { tone: ChipTone; children: React.ReactNode }) => (
   <span
@@ -174,6 +174,7 @@ export const StatusChip = ({ tone, children }: { tone: ChipTone; children: React
       "inline-flex h-[26px] shrink-0 items-center rounded-full px-2.5 text-xs font-bold",
       tone === "green" && "bg-[var(--nn-ok-bg)] text-brand-teal-text",
       tone === "accent" && "bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]",
+      tone === "solid" && "bg-[var(--nn-accent)] text-primary-foreground",
       tone === "grey" && "bg-muted text-muted-foreground",
       tone === "gold" && "bg-[#E8B53E] text-[#3A2A06]",
     )}

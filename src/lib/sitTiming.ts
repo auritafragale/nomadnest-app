@@ -53,10 +53,9 @@ export const reviewDaysLeft = (sit: Sit, today = startOfToday()) => {
 
 export const sitChip = (sit: Sit): { label: string; tone: ChipTone } => {
   const t = sitTiming(sit);
-  if (t.otherLeft) return { label: "Former member", tone: "grey" };
   if (t.isEarlyCancelled) return { label: "Cancelled early", tone: "grey" };
   if (sit.status === "cancelled") return { label: "Cancelled", tone: "grey" };
-  if (t.isCurrent) return { label: "Now", tone: "green" };
+  if (t.isCurrent) return { label: "Now", tone: "solid" };
   if (sit.status === "completed" || t.isFinished) return { label: "Completed", tone: "grey" };
-  return { label: "Upcoming", tone: "accent" };
+  return { label: "Confirmed", tone: "green" };
 };

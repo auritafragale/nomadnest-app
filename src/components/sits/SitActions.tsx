@@ -501,12 +501,20 @@ export const SitRescheduleNotice = ({ sit, className }: { sit: Sit; className?: 
 
   if (!live || isLoading || !pendingRequest) return null;
 
+  const dates = `${format(parseISO(pendingRequest.proposed_start_date), "d MMM")} – ${format(parseISO(pendingRequest.proposed_end_date), "d MMM")}`;
+  const other = (isOwner ? sit.sitter_profile : sit.owner_profile)?.first_name || (isOwner ? "Your Nomad" : "Your Pet Parent");
+
   if (isOwner) {
     return (
-      <p className={cn("flex items-center gap-2 rounded-[14px] bg-muted px-3.5 py-3 text-[13px] text-muted-foreground", className)}>
-        <CalendarClock className="h-4 w-4 shrink-0" aria-hidden="true" />
-        You proposed new dates. Waiting for an answer.
-      </p>
+      <div className={cn("flex flex-col gap-1 rounded-[16px] bg-muted px-3.5 py-3", className)}>
+        <p className="flex items-center gap-2 text-[15px] font-bold">
+          <CalendarClock className="h-4 w-4 shrink-0" aria-hidden="true" />
+          You proposed new dates
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {dates}. Waiting for {other} to answer.
+        </p>
+      </div>
     );
   }
   if (!isSitter) return null;
@@ -521,20 +529,19 @@ export const SitRescheduleNotice = ({ sit, className }: { sit: Sit; className?: 
     });
 
   return (
-    <div className={cn("flex flex-col gap-2.5 rounded-[14px] bg-[var(--nn-tint)] px-3.5 py-3", className)}>
-      <p className="flex items-center gap-2 text-sm font-bold">
+    <div className={cn("flex flex-col gap-2.5 rounded-[16px] border border-[var(--nn-border)] bg-[var(--nn-tint)] px-3.5 py-3", className)}>
+      <p className="flex items-center gap-2 text-[15px] font-bold">
         <CalendarClock className="h-4 w-4 shrink-0" aria-hidden="true" />
-        New dates proposed: {format(parseISO(pendingRequest.proposed_start_date), "d MMM")} –{" "}
-        {format(parseISO(pendingRequest.proposed_end_date), "d MMM yyyy")}
+        {other} proposed new dates
       </p>
-      {pendingRequest.note && <p className="text-[13px] italic text-muted-foreground">"{pendingRequest.note}"</p>}
+      <p className="text-sm">
+        {dates}.{pendingRequest.note ? <span className="text-muted-foreground"> "{pendingRequest.note}"</span> : null}
+      </p>
       <div className="flex gap-2">
         <button type="button" disabled={respond.isPending} onClick={() => answer(true)} className={nnButton("primary", "flex-1")}>
-          <CheckCircle className="h-4 w-4" aria-hidden="true" />
-          Accept
+          Accept new dates
         </button>
         <button type="button" disabled={respond.isPending} onClick={() => answer(false)} className={nnButton("secondary", "flex-1")}>
-          <XCircle className="h-4 w-4" aria-hidden="true" />
           Decline
         </button>
       </div>
