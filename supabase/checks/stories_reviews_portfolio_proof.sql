@@ -1,5 +1,5 @@
 -- Sit Story portfolio, review notifications and "Write it again" removal:
--- proof that the live database matches 20260928120000_stories_reviews_portfolio.sql.
+-- proof that the live database matches 20260928095830_81e8492c-ea47-40fa-98db-3da45765bb7f.sql (stories, reviews, portfolio).
 -- READ-ONLY. One row per check; every row should have ok = true.
 
 WITH

@@ -1,4 +1,4 @@
--- Stage 3 (Pet Parent screens): proof that the live database matches 20260928180000_parent_screens.sql.
+-- Stage 3 (Pet Parent screens): proof that the live database matches 20260928134307_ba5059d4-e758-4331-960c-9dea1617c98b.sql (Pet Parent screens).
 -- READ-ONLY. One row per check; every row should have ok = true.
 
 WITH

@@ -1,4 +1,4 @@
--- Stage 2 (Nomad screens): proof that the live database matches 20260928160000_nomad_screens.sql.
+-- Stage 2 (Nomad screens): proof that the live database matches 20260928134135_45eeb6f4-e6cd-4676-8b37-525b0ff1dedf.sql (Nomad screens).
 -- READ-ONLY. One row per check; every row should have ok = true.
 
 WITH

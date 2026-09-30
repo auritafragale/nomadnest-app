@@ -1,4 +1,4 @@
--- Profiles privacy: proof that the live database matches 20260928140000_profiles_privacy.sql.
+-- Profiles privacy: proof that the live database matches 20260928103712_052a86c9-5347-4ca0-be23-35296d0c5f2a.sql (profiles privacy).
 -- READ-ONLY. One row per check; every row should have ok = true.
 
 WITH

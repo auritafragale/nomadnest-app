@@ -1,4 +1,4 @@
--- Stage 4 (AI): proof that the live database matches 20260928200000_ai_dates_alt_text.sql.
+-- Stage 4 (AI): proof that the live database matches 20260928134351_6c341758-b490-4f28-8c86-29b9d456ccc0.sql (AI dates, alt text).
 -- READ-ONLY. One row per check; every row should have ok = true.
 
 SELECT format('flag %s exists', k) AS item, 'present (off until you switch it on)' AS expected,
