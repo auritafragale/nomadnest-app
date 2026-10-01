@@ -21,6 +21,7 @@ import {
   Search,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PhotoPrivacyCleanupCard } from "@/components/admin/PhotoPrivacyCleanupCard";
 
 interface Stats {
   pending_verifications: number;
@@ -276,6 +277,8 @@ const AdminHub = () => {
           </Card>
 
 
+
+          <PhotoPrivacyCleanupCard />
 
           {/* Tools */}
           <h2 className="text-lg font-semibold mb-3">Tools</h2>

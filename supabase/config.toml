@@ -113,3 +113,6 @@ verify_jwt = false
 
 [functions.suggest-availability]
 verify_jwt = false
+
+[functions.strip-photo-metadata]
+verify_jwt = false
