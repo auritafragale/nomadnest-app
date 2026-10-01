@@ -51,17 +51,42 @@ const Pagination = ({ currentPage, totalPages, onPageChange, className }: Pagina
   const visiblePages = getVisiblePages();
 
   return (
+    <>
+    {/* Phone: Previous · Page 1 of 2 · Next */}
+    <nav className={cn("flex items-center justify-between gap-2 md:hidden", className)} aria-label="Pagination">
+      <button
+        type="button"
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="flex h-11 items-center gap-1 rounded-full border-[1.5px] border-border px-4 text-sm font-bold disabled:opacity-40"
+      >
+        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+        Previous
+      </button>
+      <span className="text-[15px] font-semibold" aria-live="polite">
+        Page {currentPage} of {totalPages}
+      </span>
+      <button
+        type="button"
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="flex h-11 items-center gap-1 rounded-full border-[1.5px] border-border px-4 text-sm font-bold disabled:opacity-40"
+      >
+        Next
+        <ChevronRight className="h-4 w-4" aria-hidden="true" />
+      </button>
+    </nav>
     <nav
-      className={cn("flex items-center justify-center gap-1", className)}
+      className={cn("hidden items-center justify-center gap-1 md:flex", className)}
       aria-label="Pagination"
     >
       {/* First page */}
       <Button
         variant="outline"
         size="icon"
+        className="hidden h-11 w-11 sm:flex"
         onClick={() => onPageChange(1)}
         disabled={currentPage === 1}
-        className="hidden sm:flex"
         aria-label="Go to first page"
       >
         <ChevronsLeft className="h-4 w-4" />
@@ -71,6 +96,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange, className }: Pagina
       <Button
         variant="outline"
         size="icon"
+        className="h-11 w-11"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
         aria-label="Go to previous page"
@@ -90,6 +116,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange, className }: Pagina
               key={page}
               variant={currentPage === page ? "default" : "outline"}
               size="icon"
+        className="h-11 w-11"
               onClick={() => onPageChange(page)}
               aria-label={`Go to page ${page}`}
               aria-current={currentPage === page ? "page" : undefined}
@@ -104,6 +131,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange, className }: Pagina
       <Button
         variant="outline"
         size="icon"
+        className="h-11 w-11"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         aria-label="Go to next page"
@@ -115,14 +143,15 @@ const Pagination = ({ currentPage, totalPages, onPageChange, className }: Pagina
       <Button
         variant="outline"
         size="icon"
+        className="hidden h-11 w-11 sm:flex"
         onClick={() => onPageChange(totalPages)}
         disabled={currentPage === totalPages}
-        className="hidden sm:flex"
         aria-label="Go to last page"
       >
         <ChevronsRight className="h-4 w-4" />
       </Button>
     </nav>
+    </>
   );
 };
 

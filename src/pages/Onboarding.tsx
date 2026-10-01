@@ -174,7 +174,7 @@ const Onboarding = () => {
           toast({
             variant: "destructive",
             title: "All founding spots claimed",
-            description: "The code was valid but all 900 spots are taken. You can join with a paid plan.",
+            description: "The code was valid but all founding spots are taken. You can join with a paid plan.",
           });
         } else {
           toast({

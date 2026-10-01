@@ -10,6 +10,7 @@ import {
 import { weightedAverage } from "@/lib/ratingWeights";
 import { REVIEW_RATE_BOOST_THRESHOLD } from "@/hooks/useReviewRates";
 import { useAuth } from "@/contexts/AuthContext";
+import { canonicalPetType } from "@/lib/petTypes";
 
 export interface SitterWithProfile {
   id: string;
@@ -150,7 +151,8 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         if (options.searchQuery) {
           const search = options.searchQuery.toLowerCase();
           filteredData = filteredData.filter((sitter) => {
-            const name = `${sitter.profile?.first_name || ""} ${sitter.profile?.last_name || ""}`.toLowerCase();
+            // First names only between members.
+            const name = (sitter.profile?.first_name || "").toLowerCase();
             const location = `${sitter.profile?.city || ""} ${sitter.profile?.country || ""}`.toLowerCase();
             const headline = (sitter.headline || "").toLowerCase();
             const languages = (sitter.languages || []).join(" ").toLowerCase();
@@ -159,8 +161,9 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         }
 
         if (options.petTypes && options.petTypes.length > 0) {
+          const wanted = new Set(options.petTypes.map(canonicalPetType));
           filteredData = filteredData.filter((sitter) =>
-            options.petTypes!.some((type) => (sitter.pet_types || []).includes(type))
+            (sitter.pet_types || []).some((type) => wanted.has(canonicalPetType(type)))
           );
         }
 
@@ -203,5 +206,6 @@ export const useSitters = (options: UseSittersOptions = {}) => {
     sitters: query.data ?? [],
     loading: authLoading || (!!user && query.isLoading),
     error: query.error ? (query.error as Error).message : null,
+    refetch: query.refetch,
   };
 };

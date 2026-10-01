@@ -15,6 +15,7 @@ import RouteSeo from "@/components/seo/RouteSeo";
 import SplashScreen from "@/components/mobile/SplashScreen";
 import OnboardingCarousel, { ONBOARDING_STORAGE_KEY } from "@/components/mobile/OnboardingCarousel";
 import BottomNav from "@/components/mobile/BottomNav";
+import { useBottomNavHidden } from "@/lib/bottomNav";
 import GuidedWalkthrough from "@/components/walkthrough/GuidedWalkthrough";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import { ReportProvider } from "@/components/reports/ReportContext";
@@ -39,8 +40,8 @@ import EditSitterProfile from "./pages/EditSitterProfile";
 import EditOwnerProfile from "./pages/EditOwnerProfile";
 import SitterDetail from "./pages/SitterDetail";
 import OwnerDetail from "./pages/OwnerDetail";
-import OwnerReviewsCarousel from "./pages/OwnerReviewsCarousel";
-import SitterReviewsCarousel from "./pages/SitterReviewsCarousel";
+import OwnerReviews from "./pages/OwnerReviews";
+import SitterReviews from "./pages/SitterReviews";
 import Inbox from "./pages/Inbox";
 import Applications from "./pages/Applications";
 import SavedListings from "./pages/SavedListings";
@@ -119,8 +120,9 @@ const AppShell = () => {
   const showSplash = !splashDone && isHome;
   const introFinished = (splashDone || !isHome) && (onboardingDone || !isHome);
 
+  const bottomNavHiddenByPage = useBottomNavHidden();
   const showBottomNav =
-    user !== null && !NO_BOTTOM_NAV_PATHS.includes(location.pathname) && !isSharedStory;
+    user !== null && !NO_BOTTOM_NAV_PATHS.includes(location.pathname) && !isSharedStory && !bottomNavHiddenByPage;
 
   return (
     <>
@@ -161,9 +163,9 @@ const AppShell = () => {
         <Route path="/edit-sitter-profile" element={<ProtectedRoute><EditSitterProfile /></ProtectedRoute>} />
         <Route path="/edit-owner-profile" element={<ProtectedRoute><EditOwnerProfile /></ProtectedRoute>} />
         <Route path="/sitter/:userId" element={<SitterDetail />} />
-        <Route path="/sitter/:userId/reviews" element={<SitterReviewsCarousel />} />
+        <Route path="/sitter/:userId/reviews" element={<SitterReviews />} />
         <Route path="/owner/:userId" element={<OwnerDetail />} />
-        <Route path="/owner/:userId/reviews" element={<OwnerReviewsCarousel />} />
+        <Route path="/owner/:userId/reviews" element={<OwnerReviews />} />
         <Route path="/inbox" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
         <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
         <Route path="/saved" element={<ProtectedRoute><SavedListings /></ProtectedRoute>} />

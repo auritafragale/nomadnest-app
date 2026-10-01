@@ -27,10 +27,12 @@ export default {
         "brand-coral": {
           DEFAULT: "hsl(var(--brand-coral) / <alpha-value>)",
           text: "hsl(var(--brand-coral-text) / <alpha-value>)",
+          light: "hsl(var(--brand-coral-light) / <alpha-value>)",
         },
         "brand-teal": {
           DEFAULT: "hsl(var(--brand-teal) / <alpha-value>)",
           text: "hsl(var(--brand-teal-text) / <alpha-value>)",
+          light: "hsl(var(--brand-teal-light) / <alpha-value>)",
         },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

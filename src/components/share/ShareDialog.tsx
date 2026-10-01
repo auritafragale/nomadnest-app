@@ -16,9 +16,11 @@ interface ShareDialogProps {
   url?: string;
   description?: string;
   triggerClassName?: string;
+  /** Show a text label next to the icon ("Share"). */
+  label?: string;
 }
 
-export const ShareDialog = ({ title, url, description, triggerClassName }: ShareDialogProps) => {
+export const ShareDialog = ({ title, url, description, triggerClassName, label }: ShareDialogProps) => {
   const [copied, setCopied] = useState(false);
   const shareUrl = url || window.location.href;
   const shareText = description || title;
@@ -72,8 +74,14 @@ export const ShareDialog = ({ title, url, description, triggerClassName }: Share
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" aria-label="Share" className={cn("h-11 w-11", triggerClassName)}>
+        <Button
+          variant="outline"
+          size={label ? "default" : "icon"}
+          aria-label={label ? undefined : "Share"}
+          className={cn(label ? "h-11 gap-2 rounded-full px-4 font-bold text-foreground hover:text-foreground" : "h-11 w-11", triggerClassName)}
+        >
           <Share2 className="h-4 w-4" aria-hidden="true" />
+          {label}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

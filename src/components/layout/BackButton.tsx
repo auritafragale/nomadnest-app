@@ -13,10 +13,13 @@ export const BackButton = ({
   fallback,
   label = "Back",
   className,
+  iconOnly = false,
 }: {
   fallback: string;
   label?: string;
   className?: string;
+  /** Arrow only (the label becomes the accessible name). */
+  iconOnly?: boolean;
 }) => {
   const navigate = useNavigate();
   const goBack = () => {
@@ -26,9 +29,9 @@ export const BackButton = ({
     else navigate(fallback, { replace: true });
   };
   return (
-    <Button variant="ghost" onClick={goBack} className={cn("-ml-2", className)}>
-      <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
-      {label}
+    <Button variant="ghost" onClick={goBack} aria-label={iconOnly ? label : undefined} className={cn(!iconOnly && "-ml-2", className)}>
+      <ArrowLeft className={cn("h-4 w-4", !iconOnly && "mr-2")} aria-hidden="true" />
+      {!iconOnly && label}
     </Button>
   );
 };

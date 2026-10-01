@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 
 interface NomadVisibilityBannerProps {
@@ -90,51 +91,20 @@ const NomadVisibilityBanner = ({ transparent = false, bare = false }: NomadVisib
     });
   };
 
-  const borderClass = isVisible ? "border-primary/30" : "border-border";
-  const fillClass = transparent
-    ? "bg-background/70 backdrop-blur-sm"
-    : isVisible
-      ? "bg-primary/5"
-      : "bg-surface";
-
-  const pill = (
-    <div
-      className={`flex items-start justify-between gap-4 px-4 py-3 ${
-        bare
-          ? `rounded-t-2xl border-b ${borderClass} ${fillClass}`
-          : `mt-3 rounded-2xl border ${borderClass} ${fillClass}`
-      }`}
-    >
-      <p className="text-sm md:text-base">
-        {isVisible ? (
-          <>✅ You're visible to Nomads Near You</>
-        ) : (
-          <>
-            👁️ You're hidden. Turn on visibility to appear on the map and connect with nomads nearby
-          </>
-        )}
-      </p>
-      <div className="flex items-center gap-2 shrink-0 pt-0.5">
-        <span
-          className={`text-xs font-semibold ${
-            isVisible ? "text-primary" : "text-muted-foreground"
-          }`}
-        >
-          {isVisible ? "Visible" : "Hidden"}
-        </span>
-        <Switch
-          checked={isVisible}
-          onCheckedChange={handleToggle}
-          disabled={updating}
-          aria-label="Toggle nomad visibility"
-        />
-      </div>
+  // One slim row: a status dot, the state in words, and the switch.
+  const row = (
+    <div className={cn("flex min-h-[56px] items-center gap-3 rounded-[18px] border border-border px-4 py-2", transparent ? "bg-background/80 backdrop-blur-sm" : "bg-card")}>
+      <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", isVisible ? "bg-brand-teal" : "bg-muted-foreground")} aria-hidden="true" />
+      <label htmlFor="nomad-visibility" className="min-w-0 flex-1 cursor-pointer text-[15px] font-semibold">
+        {isVisible ? "You are visible on the map" : "You are hidden from the map"}
+      </label>
+      <Switch id="nomad-visibility" checked={isVisible} onCheckedChange={handleToggle} disabled={updating} />
     </div>
   );
 
-  if (bare) return pill;
+  if (bare) return row;
 
-  return <div className="container pt-4">{pill}</div>;
+  return <div className="container pt-4">{row}</div>;
 };
 
 export default NomadVisibilityBanner;
