@@ -143,8 +143,8 @@ const Membership = () => {
     try {
       const plan = MEMBERSHIP_PLANS[planKey as keyof typeof MEMBERSHIP_PLANS];
       await startCheckout(plan.priceId);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Something went wrong", variant: "destructive" });
     } finally {
       setCheckoutLoading(null);
     }
@@ -185,8 +185,8 @@ const Membership = () => {
           variant: "destructive",
         });
       }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Something went wrong", variant: "destructive" });
     } finally {
       setFoundingLoading(false);
     }
