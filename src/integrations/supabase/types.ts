@@ -2805,7 +2805,6 @@ export type Database = {
         Returns: boolean
       }
       arrival_photo_is_evidence: { Args: { p_path: string }; Returns: boolean }
-      arrival_photo_sit_is_mine: { Args: { p_sit_id: string }; Returns: boolean }
       attach_report_evidence: {
         Args: { p_paths: string[]; p_report_id: string }
         Returns: string[]
