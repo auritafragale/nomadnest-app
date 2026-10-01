@@ -1,221 +1,118 @@
 import { Link } from "react-router-dom";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Calendar, Cat, Dog, Heart, Loader2, CheckCircle } from "lucide-react";
+import { differenceInDays, parseISO } from "date-fns";
+import { BadgeCheck, Calendar, Heart, Loader2, MapPin, PawPrint, Star } from "lucide-react";
 import { ListingWithDetails } from "@/hooks/useListings";
-import { format, differenceInDays } from "date-fns";
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { useAuth } from "@/contexts/AuthContext";
+import { shortRange } from "@/components/nn/ui";
 import { cn } from "@/lib/utils";
 
 interface ListingCardProps {
   listing: ListingWithDetails;
-  viewMode: "grid" | "list";
+  /** Signed out: the heart asks them to create an account instead. */
+  onSignUpPrompt?: () => void;
 }
 
-const petIcon = (type: string) =>
-  type.toLowerCase() === "cat" ? <Cat className="w-3 h-3" /> : <Dog className="w-3 h-3" />;
+const petLine = (pets: ListingWithDetails["pets"]) => {
+  const counts = new Map<string, number>();
+  for (const p of pets) {
+    const t = p.type.toLowerCase();
+    counts.set(t, (counts.get(t) ?? 0) + 1);
+  }
+  return [...counts.entries()].map(([t, n]) => `${n} ${n === 1 ? t : t.endsWith("s") ? t : `${t}s`}`).join(", ");
+};
 
-const ListingCard = ({ listing, viewMode }: ListingCardProps) => {
+/** One sit (design: BrowsePhone cards). */
+const ListingCard = ({ listing, onSignUpPrompt }: ListingCardProps) => {
   const { user } = useAuth();
   const { data: favoriteIds = [] } = useFavorites();
   const toggleFavorite = useToggleFavorite();
 
   const isFavorited = favoriteIds.includes(listing.id);
-  const openSitDate = listing.sit_dates.find((d) => d.status === "open");
-  // Set automatically when a sit falls through within 7 days of the start date.
-  const isUrgent = listing.sit_dates.some((d) => d.status === "open" && d.is_urgent);
-  const dateRange = openSitDate
-    ? `${format(new Date(openSitDate.start_date), "MMM d")} - ${format(new Date(openSitDate.end_date), "MMM d, yyyy")}`
-    : "Dates TBD";
+  const today = new Date().toISOString().slice(0, 10);
+  const openDate = [...listing.sit_dates]
+    .filter((d) => d.status === "open" && d.end_date >= today)
+    .sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
+  const shortNotice = !!openDate && differenceInDays(parseISO(openDate.start_date), new Date()) <= 14;
+  const place = [listing.city, listing.country].filter(Boolean).join(", ") || "Location to be confirmed";
+  const host = listing.owner_profile?.first_name || null;
+  const pets = petLine(listing.pets);
 
-  const isShortNotice =
-    openSitDate &&
-    differenceInDays(new Date(openSitDate.start_date), new Date()) <= 14;
-
-  const location = [listing.city, listing.country].filter(Boolean).join(", ") || "Location TBD";
-  const imageUrl =
-    listing.photos?.[0] ||
-    "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&h=400&fit=crop";
-
-  const ownerInitials =
-    listing.owner_profile
-      ? `${listing.owner_profile.first_name?.[0] || ""}${listing.owner_profile.last_name?.[0] || ""}`.toUpperCase() || "?"
-      : "?";
-
-  const ownerName = listing.owner_profile
-    ? `${listing.owner_profile.first_name || ""} ${listing.owner_profile.last_name || ""}`.trim()
-    : "";
-
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const onHeart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) return;
+    if (!user) {
+      onSignUpPrompt?.();
+      return;
+    }
     toggleFavorite.mutate({ listingId: listing.id, isFavorited });
   };
 
-  if (viewMode === "list") {
-    return (
-      <Link to={`/listing/${listing.id}`}>
-        <Card variant="interactive" className="overflow-hidden group flex flex-row">
-          <div className="relative overflow-hidden w-28 sm:w-48 md:w-64 flex-shrink-0">
-            <img
-              src={imageUrl}
-              alt={listing.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-            {user && (
-              <button
-                className={cn(
-                  "absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors",
-                  isFavorited
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-surface/90 hover:bg-surface text-muted-foreground hover:text-primary"
-                )}
-                onClick={handleFavoriteClick}
-                disabled={toggleFavorite.isPending}
-                aria-label={isFavorited ? "Remove from favourites" : "Add to favourites"}
-              >
-                {toggleFavorite.isPending ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Heart className={cn("w-5 h-5", isFavorited && "fill-current")} />
-                )}
-              </button>
-            )}
-            {openSitDate && (
-              <div className="absolute bottom-3 left-3 flex gap-1.5">
-                <Badge variant="published">Open</Badge>
-                {isUrgent && <Badge variant="destructive">Urgent</Badge>}
-              </div>
-            )}
-          </div>
-          <div className="p-5 flex-1">
-            <h3 className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-              {listing.title}
-            </h3>
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="w-4 h-4 flex-shrink-0" />
-                {location}
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="w-4 h-4 flex-shrink-0" />
-                {dateRange}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {listing.pets.map((pet) => (
-                <Badge key={pet.id} variant="muted" className="gap-1">
-                  {petIcon(pet.type)}
-                  {pet.name || pet.type}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </Card>
-      </Link>
-    );
-  }
-
-  // Grid mode — new mobile-first card design
   return (
-    <Link to={`/listing/${listing.id}`} className="h-full">
-      <Card variant="interactive" className="overflow-hidden group h-full flex flex-col">
-        {/* Image */}
-        <div className="relative aspect-square sm:aspect-[4/3] overflow-hidden">
-          <img
-            src={imageUrl}
-            alt={listing.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-
-          {/* Heart */}
-          {user && (
-            <button
-              className={cn(
-                "absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors shadow-sm",
-                isFavorited
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-surface/90 text-muted-foreground hover:text-primary"
-              )}
-              onClick={handleFavoriteClick}
-              disabled={toggleFavorite.isPending}
-              aria-label={isFavorited ? "Remove from favourites" : "Add to favourites"}
-            >
-              {toggleFavorite.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Heart className={cn("w-4 h-4", isFavorited && "fill-current")} />
-              )}
-            </button>
+    <article className="relative flex h-full flex-col overflow-hidden rounded-[22px] border border-border bg-card">
+      <div className="relative aspect-[4/3] overflow-hidden bg-[#CDB79E]">
+        {listing.photos?.[0] && (
+          <img src={listing.photos[0]} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+        )}
+        {shortNotice && (
+          <span className="absolute left-3 top-3 inline-flex h-7 items-center rounded-full bg-brand-coral-light px-3 text-xs font-bold text-brand-coral-text">
+            Short notice
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={onHeart}
+          disabled={toggleFavorite.isPending}
+          aria-label={isFavorited ? `Remove ${listing.title} from saved` : `Save ${listing.title}`}
+          aria-pressed={isFavorited}
+          className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-card text-foreground shadow-md"
+        >
+          {toggleFavorite.isPending ? (
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+          ) : (
+            <Heart className={cn("h-5 w-5", isFavorited && "fill-brand-coral text-brand-coral-text")} aria-hidden="true" />
           )}
-
-          {/* Short Notice badge */}
-          {isShortNotice && (
-            <div className="absolute top-3 left-3">
-              <span className="px-2 py-1 rounded-full text-white text-xs font-semibold" style={{ backgroundColor: "#D926A9" }}>
-                Short Notice
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="p-2.5 sm:p-4 flex-1 flex flex-col">
-          {/* Host row */}
-          {ownerName && (
-            <div className="hidden sm:flex items-center gap-2 mb-2">
-              <Avatar className="w-6 h-6">
-                <AvatarImage src={listing.owner_profile?.avatar_url || undefined} />
-                <AvatarFallback className="text-[10px]">{ownerInitials}</AvatarFallback>
-              </Avatar>
-              <span className="text-xs text-muted-foreground">Hosted by {ownerName}</span>
-              {listing.owner_profile?.id_verified && (
-                <CheckCircle
-                  className="w-3.5 h-3.5 text-green-600 dark:text-green-400 flex-shrink-0"
-                  aria-label="ID verified host"
-                />
-              )}
-            </div>
-          )}
-
-          {/* Title */}
-          <h3 className="font-semibold text-sm sm:text-base leading-snug mb-1.5 sm:mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-            {listing.title}
-          </h3>
-
-          {/* Location & Dates */}
-          <div className="space-y-1 mb-3">
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
-              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
-              <span className="truncate">{location}</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
-              <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
-              {dateRange}
-            </div>
-          </div>
-
-          {/* Pets row */}
-          <div className="flex flex-wrap gap-1 mt-auto pt-2">
-            {(() => {
-              const counts: Record<string, number> = {};
-              listing.pets.forEach((pet) => {
-                const key = pet.type.toLowerCase();
-                counts[key] = (counts[key] || 0) + 1;
-              });
-              return Object.entries(counts).map(([type, count]) => (
-                <Badge key={type} variant="muted" className="gap-1 text-xs px-1.5">
-                  {petIcon(type)}
-                  {count > 1 && <span className="font-medium">{count}</span>}
-                </Badge>
-              ));
-            })()}
-          </div>
-        </div>
-      </Card>
-    </Link>
+        </button>
+      </div>
+      <Link to={`/listing/${listing.id}`} className="flex flex-1 flex-col gap-1.5 p-4 after:absolute after:inset-0 after:content-['']">
+        <h3 className="line-clamp-2 text-[17px] font-bold leading-snug">{listing.title}</h3>
+        <span className="flex items-center gap-1.5 text-[15px] text-muted-foreground">
+          <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">{place}</span>
+        </span>
+        <span className="flex items-center gap-1.5 text-[15px] text-muted-foreground">
+          <Calendar className="h-4 w-4 shrink-0" aria-hidden="true" />
+          {openDate ? shortRange(openDate.start_date, openDate.end_date) : "Dates to be confirmed"}
+        </span>
+        {pets && (
+          <span className="flex items-center gap-1.5 text-[15px] text-muted-foreground">
+            <PawPrint className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {pets}
+          </span>
+        )}
+        <span className="mt-auto flex items-center gap-2 border-t border-border pt-3 text-sm">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#D8C3B0] text-xs font-bold text-[#5A4636]">
+            {listing.owner_profile?.avatar_url ? (
+              <img src={listing.owner_profile.avatar_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              (host ?? "?").slice(0, 1).toUpperCase()
+            )}
+          </span>
+          <span className="min-w-0 truncate">{host ? `Hosted by ${host}` : "Hosted by a Pet Parent"}</span>
+          {listing.owner_profile?.id_verified && <BadgeCheck className="h-4 w-4 shrink-0 text-brand-teal-text" aria-label="ID verified" />}
+          <span className="ml-auto flex shrink-0 items-center gap-1 font-semibold">
+            {listing.owner_rating && listing.owner_rating.count > 0 ? (
+              <>
+                <Star className="h-3.5 w-3.5 fill-[#E8B53E] text-[#E8B53E]" aria-hidden="true" />
+                {listing.owner_rating.average.toFixed(1)} ({listing.owner_rating.count})
+              </>
+            ) : (
+              <span className="text-muted-foreground">New host</span>
+            )}
+          </span>
+        </span>
+      </Link>
+    </article>
   );
 };
 

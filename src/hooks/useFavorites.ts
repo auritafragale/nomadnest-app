@@ -28,7 +28,7 @@ export const useToggleFavorite = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ listingId, isFavorited }: { listingId: string; isFavorited: boolean }) => {
+    mutationFn: async ({ listingId, isFavorited }: { listingId: string; isFavorited: boolean; silent?: boolean }) => {
       if (!user) throw new Error("Must be logged in to save listings");
 
       if (isFavorited) {
@@ -49,8 +49,11 @@ export const useToggleFavorite = () => {
         if (error) throw error;
       }
     },
-    onSuccess: (_, { isFavorited }) => {
+    onSuccess: (_, { isFavorited, silent }) => {
+      // Both the hearts (favorites) and the Saved page list (favorited-listings).
       queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      queryClient.invalidateQueries({ queryKey: ["favorited-listings"] });
+      if (silent) return;
       toast({
         title: isFavorited ? "Removed from saved" : "Saved!",
         description: isFavorited
@@ -58,7 +61,7 @@ export const useToggleFavorite = () => {
           : "Listing added to your saved list",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         variant: "destructive",
         title: "Error",

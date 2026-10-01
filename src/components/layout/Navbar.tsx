@@ -82,7 +82,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                   variant="ghost"
                   className={cn(
                     "h-11 px-3 text-muted-foreground hover:text-foreground",
-                    isActive(link.href) && "text-primary bg-terracotta-light"
+                    isActive(link.href) && "text-brand-coral-text bg-terracotta-light"
                   )}
                 >
                   {link.label}
@@ -96,7 +96,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                   variant="ghost"
                   className={cn(
                     "h-11 px-3 text-muted-foreground hover:text-foreground",
-                    isActive("/find-nomads") && "text-primary bg-terracotta-light"
+                    isActive("/find-nomads") && "text-brand-coral-text bg-terracotta-light"
                   )}
                 >
                   Nomads Near Me
@@ -113,7 +113,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
               <>
                 {(role === "sitter" || role === "both") && (
                   <Link to="/saved" className="hidden lg:block">
-                    <Button variant="ghost" aria-label="Saved" className={cn("h-11 px-3", isActive("/saved") && "text-primary bg-terracotta-light")}>
+                    <Button variant="ghost" aria-label="Saved" className={cn("h-11 px-3", isActive("/saved") && "text-brand-coral-text bg-terracotta-light")}>
                       <Heart className="w-4 h-4 xl:mr-2" aria-hidden="true" />
                       <span className="hidden xl:inline">Saved</span>
                     </Button>
@@ -124,7 +124,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                     <Button
                       variant="ghost"
                       aria-label={newApplicationsCount > 0 ? `Applications, ${newApplicationsCount} new` : "Applications"}
-                      className={cn("relative h-11 px-3", isActive("/applications") && "text-primary bg-terracotta-light")}
+                      className={cn("relative h-11 px-3", isActive("/applications") && "text-brand-coral-text bg-terracotta-light")}
                     >
                       <FileText className="w-4 h-4 2xl:mr-2" aria-hidden="true" />
                       <span className="hidden 2xl:inline">Applications</span>
@@ -142,7 +142,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                   aria-label={unreadCount > 0 ? `Messages, ${unreadCount} unread` : "Messages"}
                   className={cn(
                     "relative flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground lg:hidden",
-                    isActive("/inbox") && "text-primary bg-terracotta-light",
+                    isActive("/inbox") && "text-brand-coral-text bg-terracotta-light",
                   )}
                 >
                   <MessageCircle className="h-5 w-5" aria-hidden="true" />
@@ -156,7 +156,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                   <Button
                     variant="ghost"
                     aria-label={unreadCount > 0 ? `Messages, ${unreadCount} unread` : "Messages"}
-                    className={cn("relative h-11 px-3", isActive("/inbox") && "text-primary bg-terracotta-light")}
+                    className={cn("relative h-11 px-3", isActive("/inbox") && "text-brand-coral-text bg-terracotta-light")}
                   >
                     <MessageCircle className="w-4 h-4 xl:mr-2" aria-hidden="true" />
                     <span className="hidden xl:inline">Messages</span>
@@ -170,7 +170,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                 <NotificationsDropdown />
                 {isAdmin && (
                   <Link to="/admin" className="hidden lg:block">
-                    <Button variant="ghost" aria-label="Admin" className={cn("h-11 px-3", isActive("/admin") && "text-primary bg-terracotta-light")}>
+                    <Button variant="ghost" aria-label="Admin" className={cn("h-11 px-3", isActive("/admin") && "text-brand-coral-text bg-terracotta-light")}>
                       <ShieldCheck className="w-4 h-4 2xl:mr-2" aria-hidden="true" />
                       <span className="hidden 2xl:inline">Admin</span>
                     </Button>
@@ -266,7 +266,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                     variant="ghost"
                     className={cn(
                       "w-full justify-start text-muted-foreground",
-                      isActive(link.href) && "text-primary bg-terracotta-light"
+                      isActive(link.href) && "text-brand-coral-text bg-terracotta-light"
                     )}
                   >
                     <link.icon className="w-4 h-4 mr-2" />
@@ -280,7 +280,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                     variant="ghost"
                     className={cn(
                       "w-full justify-start text-muted-foreground",
-                      isActive("/find-nomads") && "text-primary bg-terracotta-light"
+                      isActive("/find-nomads") && "text-brand-coral-text bg-terracotta-light"
                     )}
                   >
                     <MapPin className="w-4 h-4 mr-2" />
@@ -293,7 +293,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                 <div className="pt-2 mt-2 border-t border-border space-y-1">
                   {isAdmin && (
                     <Link to="/admin" onClick={closeMenu}>
-                      <Button variant="ghost" className={cn("w-full justify-start", isActive("/admin") && "text-primary bg-terracotta-light")}>
+                      <Button variant="ghost" className={cn("w-full justify-start", isActive("/admin") && "text-brand-coral-text bg-terracotta-light")}>
                         <ShieldCheck className="w-4 h-4 mr-2" />
                         Admin Panel
                       </Button>
@@ -302,7 +302,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
 
                   {(role === "sitter" || role === "both") && (
                     <Link to="/saved" onClick={closeMenu}>
-                      <Button variant="ghost" className={cn("w-full justify-start", isActive("/saved") && "text-primary bg-terracotta-light")}>
+                      <Button variant="ghost" className={cn("w-full justify-start", isActive("/saved") && "text-brand-coral-text bg-terracotta-light")}>
                         <Heart className="w-4 h-4 mr-2" />
                         Saved Listings
                       </Button>
@@ -310,7 +310,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                   )}
                   {(role === "owner" || role === "both") && (
                     <Link to="/applications" onClick={closeMenu}>
-                      <Button variant="ghost" className={cn("w-full justify-start relative", isActive("/applications") && "text-primary bg-terracotta-light")}>
+                      <Button variant="ghost" className={cn("w-full justify-start relative", isActive("/applications") && "text-brand-coral-text bg-terracotta-light")}>
                         <FileText className="w-4 h-4 mr-2" />
                         Applications
                         {newApplicationsCount > 0 && (
@@ -322,7 +322,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                     </Link>
                   )}
                   <Link to="/inbox" onClick={closeMenu}>
-                    <Button variant="ghost" className={cn("w-full justify-start relative", isActive("/inbox") && "text-primary bg-terracotta-light")}>
+                    <Button variant="ghost" className={cn("w-full justify-start relative", isActive("/inbox") && "text-brand-coral-text bg-terracotta-light")}>
                       <MessageCircle className="w-4 h-4 mr-2" />
                       Messages
                       {unreadCount > 0 && (
