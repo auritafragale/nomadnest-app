@@ -1105,6 +1105,35 @@ export type Database = {
           },
         ]
       }
+      nomad_match_cache: {
+        Row: {
+          created_at: string
+          listing_id: string
+          owner_user_id: string
+          results: Json
+        }
+        Insert: {
+          created_at?: string
+          listing_id: string
+          owner_user_id: string
+          results?: Json
+        }
+        Update: {
+          created_at?: string
+          listing_id?: string
+          owner_user_id?: string
+          results?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nomad_match_cache_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -1143,35 +1172,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      nomad_match_cache: {
-        Row: {
-          created_at: string
-          listing_id: string
-          owner_user_id: string
-          results: Json
-        }
-        Insert: {
-          created_at?: string
-          listing_id: string
-          owner_user_id: string
-          results?: Json
-        }
-        Update: {
-          created_at?: string
-          listing_id?: string
-          owner_user_id?: string
-          results?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "nomad_match_cache_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: true
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       notifications: {
         Row: {
