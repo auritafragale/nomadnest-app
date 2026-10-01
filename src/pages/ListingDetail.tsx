@@ -1,41 +1,9 @@
 import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
-import { BackButton } from "@/components/layout/BackButton";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge, badgeVariants } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useQuery } from "@tanstack/react-query";
+import { Flag, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ArrowLeft,
-  MapPin,
-  Calendar,
-  Wifi,
-  Home,
-  Bed,
-  Dog,
-  Cat,
-  Bird,
-  Fish,
-  Rabbit,
-  Pill,
-  Check,
-  MessageSquare,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  User,
-  Loader2,
-  Flag,
-  Heart,
-  Building2,
-  TreePine,
-  Palmtree,
-  Mountain,
-  Bus,
-} from "lucide-react";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { publicProfiles } from "@/lib/publicProfile";
@@ -43,70 +11,53 @@ import { fetchPublicMemberCards } from "@/lib/publicMemberCards";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import { BackButton } from "@/components/layout/BackButton";
 import { ApplyDialog } from "@/components/applications/ApplyDialog";
 import { PET_PUBLIC_COLUMNS, tryFetchOwnPetPrivateDetails } from "@/lib/privateColumns";
 import CommunityWarningModal from "@/components/trust/CommunityWarningModal";
 import { useCommunityWarning } from "@/hooks/useCommunityWarning";
-import { format, parseISO, differenceInDays } from "date-fns";
+import { differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useStartConversation } from "@/hooks/useConversations";
-import OwnerReviewsSummaryCard from "@/components/reviews/OwnerReviewsSummaryCard";
-import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
-import { Star, BookOpen } from "lucide-react";
 import ReportDialog from "@/components/reports/ReportDialog";
-import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import ListingLocationMap from "@/components/maps/ListingLocationMap";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatPetType, petTypeIcon, formatPetAge } from "@/lib/petTypes";
-import VerificationBadges from "@/components/ui/VerificationBadges";
 import InlineWelcomeGuide from "@/components/listing/InlineWelcomeGuide";
 import { useAcceptedSitter } from "@/hooks/useAcceptedSitter";
 import SignUpPromptDialog from "@/components/auth/SignUpPromptDialog";
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUpdateInviteStatus } from "@/hooks/useSitterInvites";
 import { useApplicationSubmission } from "@/hooks/useApplicationSubmission";
-
-interface Pet {
-  id: string;
-  name: string;
-  type: string;
-  age: string | null;
-  personality: string | null;
-  feeding_details: string | null;
-  daily_routine: string | null;
-  walks_exercise: string | null;
-  has_medication: boolean;
-  medication_instructions: string | null;
-  vet_info: string | null;
-  photos: string[];
-  requires_medication: boolean;
-  reactive_to_animals: boolean;
-  separation_anxiety_tolerance: string | null;
-}
-
-interface SitDate {
-  id: string;
-  start_date: string;
-  end_date: string;
-  flexibility: string | null;
-  handover_preference: string | null;
-  status: string;
-}
+import { useHideBottomNav } from "@/lib/bottomNav";
+import { NN_PAGE, RoleTheme, StatusChip, nnButton, shortRange } from "@/components/nn/ui";
+import {
+  AboutText,
+  DateTiles,
+  HeartButton,
+  HomePanel,
+  HomeRows,
+  HostCard,
+  PetCards,
+  PetPanel,
+  PhoneGallery,
+  PhotoMosaic,
+  QuickFacts,
+  SectionTitle,
+  communicationLine,
+  type ListingHomeFields,
+  type ListingPet,
+  type ListingSitDate,
+} from "@/components/listing/ListingParts";
 
 interface Profile {
   first_name: string | null;
-  last_name: string | null;
   avatar_url: string | null;
-  city: string | null;
-  country: string | null;
   founding_member: boolean | null;
-  full_name: string | null;
   id_verified?: boolean | null;
 }
 
-interface Listing {
+interface Listing extends ListingHomeFields {
   id: string;
   title: string;
   description: string | null;
@@ -114,26 +65,10 @@ interface Listing {
   city: string;
   country: string;
   area: string | null;
-  home_type: string | null;
-  location_type: string | null;
-  public_transport_accessible?: boolean | null;
-  wifi_quality: string | null;
-  sleeping_arrangement: string | null;
-  amenities: string[];
   photos: string[];
-  requirements: string[];
-  requirements_other: string | null;
-  house_rules: string[];
-  house_rules_other: string | null;
-  home_care_tasks: string[];
-  home_care_tasks_other: string | null;
   ideal_sitter_description: string | null;
   communication_style: string | null;
   owner_user_id: string;
-  remote_location?: boolean | null;
-  car_needed?: boolean | null;
-  heavy_gardening?: boolean | null;
-  wheelchair_accessible?: boolean | null;
   latitude: number | null;
   longitude: number | null;
   /**
@@ -143,102 +78,14 @@ interface Listing {
    * visible to, not just the owner/accepted Nomad the RPC restricts it to.
    */
   address_private: string | null;
-  pets: Pet[];
-  sit_dates: SitDate[];
-  profiles: Profile;
+  pets: ListingPet[];
+  sit_dates: ListingSitDate[];
+  profiles: Profile | null;
 }
 
-const locationTypeMeta: Record<string, { label: string; icon: typeof Home }> = {
-  beach: { label: "Beach", icon: Palmtree },
-  city: { label: "City", icon: Building2 },
-  countryside: { label: "Countryside", icon: TreePine },
-  mountains: { label: "Mountains", icon: Mountain },
-};
+type Viewer = "out" | "owner" | "confirmed" | "parent" | "nomad";
 
-// Owner Card with Message Button
-const OwnerCard = ({
-  listing,
-  ownerName,
-  isOwner,
-  user,
-  role,
-}: {
-  listing: Listing;
-  ownerName: string;
-  isOwner: boolean;
-  user: any;
-  role: string | null;
-}) => {
-  const { averageRating, reviewCount } = useOwnerAverageRating(listing.owner_user_id);
-  const [signUpPromptOpen, setSignUpPromptOpen] = useState(false);
-
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <Link
-          to={`/owner/${listing.owner_user_id}`}
-          className="flex items-center gap-4 mb-4 group"
-          onClick={(e) => {
-            if (!user) {
-              e.preventDefault();
-              setSignUpPromptOpen(true);
-            }
-          }}
-        >
-          <Avatar className="w-14 h-14">
-            <AvatarImage src={listing.profiles?.avatar_url || ""} />
-            <AvatarFallback>
-              <User className="w-6 h-6" />
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h3 className="font-semibold group-hover:text-primary transition-colors">{ownerName}</h3>
-            <p className="text-sm text-muted-foreground">Pet Parent</p>
-            <div className="flex flex-wrap items-center gap-2 mt-1">
-              <VerificationBadges idVerified={listing.profiles?.id_verified} />
-              {listing.profiles?.founding_member && <FoundingMemberBadge compact />}
-            </div>
-            {reviewCount > 0 && (
-              <div className="flex items-center gap-1 mt-1">
-                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                <span className="text-sm font-medium">{averageRating}</span>
-                <span className="text-xs text-muted-foreground">({reviewCount} reviews)</span>
-              </div>
-            )}
-          </div>
-        </Link>
-        {listing.communication_style && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-            <MessageSquare className="w-4 h-4" />
-            Prefers {listing.communication_style.replace(/_/g, " ")} updates
-          </div>
-        )}
-        <div className="space-y-2">
-          <Button
-            variant="outline"
-            className="w-full"
-            asChild
-          >
-            <Link
-              to={`/owner/${listing.owner_user_id}`}
-              onClick={(e) => {
-                if (!user) {
-                  e.preventDefault();
-                  setSignUpPromptOpen(true);
-                }
-              }}
-            >
-              <User className="w-4 h-4 mr-2" />
-              View Profile
-            </Link>
-          </Button>
-        </div>
-      </CardContent>
-      <SignUpPromptDialog open={signUpPromptOpen} onOpenChange={setSignUpPromptOpen} />
-    </Card>
-  );
-};
-
+/** Listing page (design: ListingPhone, ListingTablet, ListingDesktop). */
 const ListingDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -253,8 +100,13 @@ const ListingDetail = () => {
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [selectedDateIds, setSelectedDateIds] = useState<string[]>([]);
   const [warningOpen, setWarningOpen] = useState(false);
+  const [promptOpen, setPromptOpen] = useState<"save" | "profile" | null>(null);
+  const [petPanelId, setPetPanelId] = useState<string | null>(null);
+  const [homeTab, setHomeTab] = useState<"home" | "rules" | null>(null);
+  const [messaging, setMessaging] = useState(false);
   const listingWarning = useCommunityWarning("listing", id);
   const updateInviteStatus = useUpdateInviteStatus();
+  const startConversation = useStartConversation();
   const {
     hasAccess,
     membershipLoading,
@@ -354,9 +206,8 @@ const ListingDetail = () => {
           return;
         }
 
-        const listingRow = listingData as any;
+        const listingRow = listingData as unknown as Omit<Listing, "pets" | "sit_dates" | "profiles" | "address_private">;
 
-        // Fetch pets and sit_dates
         const [petsResult, datesResult, profileResult] = await Promise.all([
           // Public columns only: vet info and medication instructions are
           // private, and loaded below for the owner via their RPC.
@@ -364,7 +215,7 @@ const ListingDetail = () => {
           supabase.from("sit_dates").select("*").eq("listing_id", id),
           // Signed-out visitors get the host's first name and photo only.
           user
-            ? publicProfiles("first_name, avatar_url, city, country, founding_member, id_verified")
+            ? publicProfiles("first_name, avatar_url, founding_member, id_verified")
                 .eq("id", listingRow.owner_user_id)
                 .maybeSingle()
             : fetchPublicMemberCards([listingRow.owner_user_id]).then((cards) => ({ data: cards[0] ?? null })),
@@ -373,10 +224,10 @@ const ListingDetail = () => {
         setListing({
           ...listingRow,
           address_private: null,
-          pets: petsResult.data || [],
-          sit_dates: datesResult.data || [],
-          profiles: profileResult.data || null,
-        } as unknown as Listing);
+          pets: (petsResult.data || []) as unknown as ListingPet[],
+          sit_dates: (datesResult.data || []) as ListingSitDate[],
+          profiles: (profileResult.data as unknown as Profile | null) || null,
+        });
       } catch (error) {
         console.error("Error fetching listing:", error);
         toast({
@@ -393,31 +244,15 @@ const ListingDetail = () => {
     fetchListing();
   }, [id, navigate, toast, user]);
 
-  const allPhotos = listing
-    ? [
-        ...listing.photos,
-        ...listing.pets.flatMap((pet) => pet.photos || []),
-      ]
-    : [];
+  const allPhotos = listing ? [...listing.photos, ...listing.pets.flatMap((pet) => pet.photos || [])] : [];
 
-  const nextPhoto = () => {
-    setCurrentPhotoIndex((prev) =>
-      prev === allPhotos.length - 1 ? 0 : prev + 1
-    );
-  };
-
-  const prevPhoto = () => {
-    setCurrentPhotoIndex((prev) =>
-      prev === 0 ? allPhotos.length - 1 : prev - 1
-    );
-  };
-
-  const openDates = listing?.sit_dates.filter((d) => d.status === "open") || [];
+  const today = new Date().toISOString().slice(0, 10);
+  const openDates = (listing?.sit_dates.filter((d) => d.status === "open" && d.end_date >= today) || []).sort((a, b) =>
+    a.start_date.localeCompare(b.start_date),
+  );
   const selectedSitDates = openDates.filter((d) => selectedDateIds.includes(d.id));
-  const toggleDate = (id: string) =>
-    setSelectedDateIds((prev) =>
-      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id],
-    );
+  const toggleDate = (dateId: string) =>
+    setSelectedDateIds((prev) => (prev.includes(dateId) ? prev.filter((d) => d !== dateId) : [...prev, dateId]));
 
   // The Pet Parent already reviewed and chose this Nomad by sending the
   // invite, so accepting it skips ApplyDialog's form entirely and submits
@@ -470,20 +305,17 @@ const ListingDetail = () => {
       });
 
       toast({
-        title:
-          check.applicableDates.length > 1
-            ? `${check.applicableDates.length} applications sent!`
-            : "Application sent!",
+        title: check.applicableDates.length > 1 ? `${check.applicableDates.length} applications sent!` : "Application sent!",
         description: "The Pet Parent will review your application soon.",
       });
 
       updateInviteStatus.mutate({ inviteId: invite.id, status: "applied" });
       setSelectedDateIds([]);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error accepting invitation:", error);
       toast({
         title: "Failed to apply",
-        description: error.message || "Something went wrong",
+        description: error instanceof Error ? error.message : "Something went wrong",
         variant: "destructive",
       });
     } finally {
@@ -491,22 +323,49 @@ const ListingDetail = () => {
     }
   };
 
-  const isOwner = user?.id === listing?.owner_user_id;
+  const isOwner = !!user && user.id === listing?.owner_user_id;
   const { data: acceptedSitter = false } = useAcceptedSitter(listing?.id);
-  const [petDialogId, setPetDialogId] = useState<string | null>(null);
-  const [amenitiesExpanded, setAmenitiesExpanded] = useState(false);
-  const canApply = user && !isOwner && (role === "sitter" || role === "both");
+
+  // The Nomad's own confirmed or current sit here, for "Your dates".
+  const { data: mySit = null } = useQuery({
+    queryKey: ["listing-my-sit", listing?.id, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("sits")
+        .select("id, sit_dates_id, snapshot_start_date, snapshot_end_date")
+        .eq("listing_id", listing!.id)
+        .eq("sitter_user_id", user!.id)
+        .in("status", ["confirmed", "in_progress"])
+        .limit(1);
+      return data?.[0] ?? null;
+    },
+    enabled: !!listing?.id && !!user && !isOwner && acceptedSitter,
+  });
+
+  // The owner's applicants waiting for an answer, per date range.
+  const { data: applicantCounts = {} } = useQuery({
+    queryKey: ["listing-applicant-counts", listing?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("applications")
+        .select("sit_dates_id")
+        .eq("listing_id", listing!.id)
+        .in("status", ["applied", "shortlisted"]);
+      const counts: Record<string, number> = {};
+      for (const a of data ?? []) counts[a.sit_dates_id] = (counts[a.sit_dates_id] ?? 0) + 1;
+      return counts;
+    },
+    enabled: !!listing?.id && isOwner,
+  });
 
   // The exact address is only ever shown in the Welcome Guide to the owner
   // or an accepted Nomad — fetched via the access-checked RPC rather than
   // added to the listing select, which would leak it to every visitor.
   useEffect(() => {
     if (!listing?.id || !(isOwner || acceptedSitter)) return;
-    supabase
-      .rpc("get_listing_private_address", { p_listing_id: listing.id })
-      .then(({ data }) => {
-        setListing((prev) => (prev ? { ...prev, address_private: data ?? null } : prev));
-      });
+    supabase.rpc("get_listing_private_address", { p_listing_id: listing.id }).then(({ data }) => {
+      setListing((prev) => (prev ? { ...prev, address_private: data ?? null } : prev));
+    });
   }, [listing?.id, isOwner, acceptedSitter]);
 
   // The owner also sees their pets' vet info and medication instructions,
@@ -530,45 +389,252 @@ const ListingDetail = () => {
     });
   }, [listing?.id, isOwner]);
 
+  // The page's own bar replaces the bottom nav on phones.
+  useHideBottomNav(!!listing);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="pt-16 pb-8">
-          <div className="container mx-auto px-4 max-w-5xl">
-            <Skeleton className="h-8 w-48 mb-6" />
-            <Skeleton className="aspect-video w-full rounded-xl mb-6" />
-            <Skeleton className="h-10 w-3/4 mb-4" />
-            <Skeleton className="h-6 w-1/2 mb-8" />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                <Skeleton className="h-48 w-full" />
-                <Skeleton className="h-48 w-full" />
-              </div>
-              <Skeleton className="h-64 w-full" />
-            </div>
-          </div>
+      <RoleTheme role="sitter" className="min-h-screen">
+        <Navbar wide />
+        <main className={cn(NN_PAGE, "flex flex-col gap-4 pb-12 pt-20 md:pt-24")}>
+          <Skeleton className="-mx-5 h-[290px] md:mx-0 md:h-[340px] md:rounded-[24px]" />
+          <Skeleton className="h-10 w-3/4" />
+          <Skeleton className="h-6 w-1/2" />
+          <Skeleton className="h-48 w-full rounded-[22px]" />
         </main>
-      </div>
+      </RoleTheme>
     );
   }
 
   if (!listing) return null;
 
-  const ownerName = listing.profiles?.first_name
-    ? `${listing.profiles.first_name} ${listing.profiles.last_name || ""}`.trim()
-    : "Pet Owner";
+  const hostFirst = listing.profiles?.first_name || null;
+  const hostName = hostFirst || "the Pet Parent";
+  const place = [listing.area, listing.city, listing.country].filter(Boolean).join(", ");
+  const isNomadAccount = role === "sitter" || role === "both";
+  const viewer: Viewer = !user ? "out" : isOwner ? "owner" : mySit ? "confirmed" : !isNomadAccount ? "parent" : "nomad";
+  const shortNotice = openDates.length > 0 && differenceInDays(parseISO(openDates[0].start_date), new Date()) <= 14;
+  const totalApplicants = Object.values(applicantCounts).reduce((a, b) => a + b, 0);
 
+  // Confirmed Nomads see only their own dates; everyone else the open ones.
+  const confirmedDate = mySit ? listing.sit_dates.find((d) => d.id === mySit.sit_dates_id) : undefined;
+  const shownDates: ListingSitDate[] =
+    viewer === "confirmed"
+      ? confirmedDate
+        ? [confirmedDate]
+        : mySit?.snapshot_start_date && mySit.snapshot_end_date
+          ? [{ id: mySit.id, start_date: mySit.snapshot_start_date, end_date: mySit.snapshot_end_date, flexibility: null, handover_preference: null, status: "filled" }]
+          : []
+      : openDates;
+  const dateBadges =
+    viewer === "owner"
+      ? Object.fromEntries(
+          openDates.map((d) => {
+            const n = applicantCounts[d.id] ?? 0;
+            return [d.id, { text: n === 0 ? "No applicants yet" : `${n} ${n === 1 ? "applicant" : "applicants"}`, tone: "green" as const }];
+          }),
+        )
+      : viewer === "confirmed"
+        ? Object.fromEntries(shownDates.map((d) => [d.id, { text: "Confirmed", tone: "accent" as const }]))
+        : undefined;
+  const sitRange = shownDates[0] && viewer === "confirmed" ? shortRange(shownDates[0].start_date, shownDates[0].end_date) : null;
 
   const listingUrl = `https://nomadnest.global/listing/${listing.id}`;
   const listingTitleMeta = `${listing.title} | Pet Sit in ${listing.city || listing.country || "the world"}`.slice(0, 60);
-  const listingDescriptionMeta = (listing.description || `A house and pet sit in ${[listing.city, listing.country].filter(Boolean).join(", ")} on NomadNest.`)
+  const listingDescriptionMeta = (
+    listing.description || `A house and pet sit in ${[listing.city, listing.country].filter(Boolean).join(", ")} on NomadNest.`
+  )
     .replace(/\s+/g, " ")
     .slice(0, 155);
+  const shareText = `Check out this pet sitting opportunity in ${listing.city}, ${listing.country}`;
+
+  const heart =
+    viewer === "owner"
+      ? undefined
+      : {
+          saved: isFavorited,
+          onToggle: () => (user ? toggleFavorite.mutate({ listingId: listing.id, isFavorited }) : setPromptOpen("save")),
+        };
+
+  const scrollToDates = () => {
+    const el = [document.getElementById("available-dates"), document.getElementById("available-dates-side")].find(
+      (e) => e && e.offsetParent !== null,
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const startApply = () => {
+    if (selectedDateIds.length === 0) {
+      scrollToDates();
+      return;
+    }
+    if (listingWarning.hasWarning) setWarningOpen(true);
+    else if (invite) handleAcceptInvitation();
+    else setApplyDialogOpen(true);
+  };
+
+  const messageHost = async () => {
+    setMessaging(true);
+    try {
+      const { conversationId } = await startConversation.mutateAsync({
+        otherUserId: listing.owner_user_id,
+        listingId: listing.id,
+        conversationType: "listing",
+      });
+      navigate(`/inbox?conversation=${conversationId}`);
+    } catch {
+      toast({ title: "Couldn't open the chat", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setMessaging(false);
+    }
+  };
+
+  const nSel = selectedDateIds.length;
+
+  /** The viewer's actions: the phone's fixed bar and the sidebar card share them. */
+  const actions = (where: "bar" | "side") => {
+    const btn = (variant: "primary" | "secondary", extra?: string) =>
+      nnButton(variant, cn("h-[52px] whitespace-nowrap rounded-2xl px-5 text-[15px]", where === "side" ? "w-full" : "shrink-0", extra));
+    const text = (title: string, sub?: string) => (
+      <div className={cn("flex min-w-0 flex-col", where === "side" && "items-center text-center")}>
+        <span className="text-[15px] font-bold leading-snug">{title}</span>
+        {sub && <span className="text-sm text-muted-foreground">{sub}</span>}
+      </div>
+    );
+    const wrap = (children: React.ReactNode) => (
+      <div className={cn(where === "bar" ? "flex items-center justify-between gap-3" : "flex flex-col gap-2.5")}>{children}</div>
+    );
+    switch (viewer) {
+      case "out":
+        return wrap(
+          <>
+            {where === "bar" && text("Free to browse", "Membership from £59 a year")}
+            <Link to="/auth" className={btn("primary")}>
+              Sign in to apply
+            </Link>
+            {where === "side" && <p className="text-center text-sm text-muted-foreground">Free to browse · Membership from £59 a year</p>}
+          </>,
+        );
+      case "owner":
+        return wrap(
+          <div className={cn("flex gap-2", where === "bar" ? "w-full" : "flex-col")}>
+            <Link to={`/edit-listing/${listing.id}`} className={btn("secondary", "flex-1")}>
+              Edit listing
+            </Link>
+            <Link to="/applications" className={btn("primary", "flex-1")}>
+              Applicants
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-card px-1.5 text-xs font-bold text-foreground">
+                {totalApplicants}
+              </span>
+            </Link>
+          </div>,
+        );
+      case "confirmed":
+        return wrap(
+          <div className={cn("flex gap-2", where === "bar" ? "w-full" : "flex-col")}>
+            <button type="button" onClick={messageHost} disabled={messaging} className={btn("primary", "flex-1")}>
+              {messaging && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              Message {hostFirst ?? "your host"}
+            </button>
+            <Link to="/my-sits" className={btn("secondary", "flex-1")}>
+              My sits
+            </Link>
+          </div>,
+        );
+      case "parent":
+        return wrap(
+          <>
+            {text("Only Nomad accounts can apply.", "Add a Nomad membership to sit too.")}
+            <Link to="/membership" className={btn("secondary", "shrink-0")}>
+              Membership
+            </Link>
+          </>,
+        );
+      default:
+        if (openDates.length === 0) return wrap(text("No open dates right now", "Save it and check back soon."));
+        return (
+          <div className="flex flex-col gap-2">
+            {wrap(
+              <>
+                {where === "bar" &&
+                  text(nSel > 0 ? `${nSel} date ${nSel === 1 ? "range" : "ranges"} picked` : "Pick your dates", nSel > 0 ? "No booking fees" : `${openDates.length} date ${openDates.length === 1 ? "range" : "ranges"} open`)}
+                <button
+                  type="button"
+                  onClick={startApply}
+                  disabled={acceptingInvite}
+                  className={btn(nSel > 0 ? "primary" : "secondary", "shrink-0")}
+                >
+                  {acceptingInvite && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                  {nSel === 0 ? (where === "side" ? "Pick dates above" : "Choose dates") : invite ? "Accept invitation" : nSel > 1 ? `Apply for ${nSel}` : "Apply"}
+                </button>
+                {where === "side" && <p className="text-center text-sm text-muted-foreground">No booking fees, ever.</p>}
+              </>,
+            )}
+            {invite && (
+              <button
+                type="button"
+                onClick={handleDeclineInvite}
+                disabled={updateInviteStatus.isPending || acceptingInvite}
+                className={nnButton("ghost", "self-center")}
+              >
+                Decline invitation
+              </button>
+            )}
+          </div>
+        );
+    }
+  };
+
+  const datesTitle = viewer === "confirmed" ? "Your dates" : viewer === "owner" ? "Open dates" : "Available dates";
+  const datesBlock = (sectionId: string) => (
+    <section id={sectionId} aria-labelledby={`${sectionId}-title`} className="flex scroll-mt-24 flex-col gap-3">
+      <SectionTitle id={`${sectionId}-title`}>{datesTitle}</SectionTitle>
+      {viewer === "nomad" && openDates.length > 0 && <p className="text-[15px] text-muted-foreground">Pick one or more. You can apply for them together.</p>}
+      {shownDates.length > 0 ? (
+        <DateTiles dates={shownDates} pickable={viewer === "nomad"} selected={selectedDateIds} onToggle={toggleDate} badges={dateBadges} />
+      ) : (
+        <p className="text-[15px] text-muted-foreground">No open dates right now.</p>
+      )}
+    </section>
+  );
+
+  const hostCard = viewer !== "owner" && (
+    <HostCard
+      ownerId={listing.owner_user_id}
+      firstName={hostFirst}
+      avatarUrl={listing.profiles?.avatar_url ?? null}
+      founding={!!listing.profiles?.founding_member}
+      idVerified={!!listing.profiles?.id_verified}
+      communication={communicationLine(listing.communication_style)}
+      signedIn={!!user}
+      onSignUpPrompt={() => setPromptOpen("profile")}
+    />
+  );
+
+  const titleBlock = (
+    <div className="flex flex-col gap-2">
+      {shortNotice && viewer !== "confirmed" && (
+        <span className="self-start">
+          <StatusChip tone="accent">Short notice</StatusChip>
+        </span>
+      )}
+      <h1 className="font-display text-[30px] font-normal leading-tight lg:text-[38px]">{listing.title}</h1>
+      <p className="text-[15px] text-muted-foreground">{place}</p>
+      {listing.ideal_nomad_types.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-sm font-bold">Best for</span>
+          {listing.ideal_nomad_types.map((t) => (
+            <StatusChip key={t} tone="grey">
+              {t}
+            </StatusChip>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-background">
+    <RoleTheme role="sitter" className="flex min-h-screen flex-col">
       <Helmet>
         <title>{listingTitleMeta}</title>
         <meta name="description" content={listingDescriptionMeta} />
@@ -591,733 +657,174 @@ const ListingDetail = () => {
           })}
         </script>
       </Helmet>
-      <Navbar />
+      <Navbar wide />
 
-      <main className="pt-16 pb-8 md:pb-12">
-        <div className="container mx-auto px-4 max-w-5xl">
-          {/* Back Button */}
-          <BackButton fallback="/browse-sits" className="mb-4 md:mb-6" />
+      <main className={cn(NN_PAGE, "flex flex-1 flex-col gap-5 pb-32 pt-16 md:gap-6 md:pb-16 md:pt-24")}>
+        <PhoneGallery
+          photos={allPhotos}
+          index={currentPhotoIndex}
+          onIndex={setCurrentPhotoIndex}
+          onOpen={() => setLightboxOpen(true)}
+          shareTitle={listing.title}
+          shareText={shareText}
+          heart={heart}
+        />
 
-          {/* Photo Gallery */}
-          {allPhotos.length > 0 ? (
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-muted mb-6 group">
-              <img
-                src={allPhotos[currentPhotoIndex]}
-                alt={`Photo ${currentPhotoIndex + 1}`}
-                className="w-full h-full object-cover cursor-zoom-in"
-                onClick={() => setLightboxOpen(true)}
-              />
-              {/* Share — top left, plain icon */}
-              <div className="absolute top-3 left-3">
-                <ShareDialog
-                  title={listing.title}
-                  description={`Check out this pet sitting opportunity in ${listing.city}, ${listing.country}`}
-                  triggerClassName="border-0 bg-transparent text-white shadow-none drop-shadow hover:bg-transparent hover:text-white [&_svg]:h-7 [&_svg]:w-7"
-                />
-              </div>
-              {/* Favourite — top right */}
-              {user && !isOwner && (
-                <button
-                  type="button"
-                  onClick={() => toggleFavorite.mutate({ listingId: listing.id, isFavorited })}
-                  aria-label={isFavorited ? "Remove from saved" : "Save listing"}
-                  className="absolute top-3 right-3 flex h-10 w-10 items-center justify-center bg-transparent text-primary-foreground transition-transform hover:scale-105"
-                >
-                  <Heart
-                    className={cn(
-                      "h-8 w-8 transition-colors",
-                      isFavorited ? "fill-primary text-primary" : "text-white drop-shadow",
-                    )}
-                  />
-                </button>
-              )}
-              {allPhotos.length > 1 && (
-              <>
-                  <button
-                    onClick={prevPhoto}
-                    aria-label="Previous photo"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 p-3 bg-background/80 rounded-full hover:bg-background transition-colors"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={nextPhoto}
-                    aria-label="Next photo"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-background/80 rounded-full hover:bg-background transition-colors"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
-                    {allPhotos.map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setCurrentPhotoIndex(idx)}
-                        aria-label={`Go to photo ${idx + 1} of ${allPhotos.length}`}
-                        aria-current={idx === currentPhotoIndex}
-                        className="p-1.5"
-                      >
-                        <span className={cn(
-                          "block w-2 h-2 rounded-full transition-colors",
-                          idx === currentPhotoIndex
-                            ? "bg-primary"
-                            : "bg-background/60"
-                        )} />
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="aspect-video rounded-xl bg-muted flex items-center justify-center mb-6">
-              <Home className="w-16 h-16 text-muted-foreground/50" />
-            </div>
-          )}
-
-          {/* Title & Location */}
-          <div className="mb-8">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-2">
-                  {listing.title}
-                </h1>
-                <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4 flex-shrink-0" />
-                    {listing.city}, {listing.country}
-                  </span>
-                  {listing.area && (
-                    <span className="text-sm">• {listing.area}</span>
-                  )}
-                </div>
-                {listing.ideal_nomad_types.length > 0 && (
-                  <div className="mt-3">
-                    <h4 className="font-medium mb-2">Best suited for</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {listing.ideal_nomad_types.map((type) => (
-                        <Badge key={type} variant="secondary" className="whitespace-nowrap">
-                          {type}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              {user && !isOwner && (
-                <ReportDialog
-                  targetType="listing"
-                  targetId={listing.id}
-                  targetLabel={listing.title}
-                  trigger={
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-foreground"
-                      aria-label="Report listing"
-                    >
-                      <Flag className="h-5 w-5" />
-                    </Button>
-                  }
-                />
-              )}
+        {/* Tablet and desktop: Back, title with Share and Save, then the mosaic. */}
+        <div className="hidden flex-col gap-4 md:flex">
+          <BackButton fallback="/browse-sits" label="Browse Sits" className="h-11 self-start" />
+          <div className="flex items-end justify-between gap-4">
+            {titleBlock}
+            <div className="flex shrink-0 gap-2">
+              <ShareDialog title={listing.title} description={shareText} label="Share" />
+              {heart && <HeartButton {...heart} label className="inline-flex h-11 items-center gap-2 rounded-full border border-input bg-background px-4 text-sm font-bold" />}
             </div>
           </div>
+          <PhotoMosaic
+            photos={allPhotos}
+            onOpen={(i) => {
+              setCurrentPhotoIndex(i);
+              setLightboxOpen(true);
+            }}
+          />
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Welcome Guide — shown to the owner or an accepted Nomad */}
-              {(isOwner || acceptedSitter) && (
-                <InlineWelcomeGuide
-                  listingId={listing.id}
-                  isOwner={isOwner}
-                  addressPrivate={listing.address_private}
-                />
-              )}
+        <div className="md:hidden">{titleBlock}</div>
 
-              {/* Description */}
-              {listing.description && (
-                <Card>
-                  <CardHeader>
-                  <CardTitle asChild>
-                    <h2>About this sit</h2>
-                  </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground whitespace-pre-wrap">
-                      {listing.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+        <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_300px] lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10">
+          <div className="flex min-w-0 flex-col gap-6">
+            <QuickFacts dates={viewer === "confirmed" ? shownDates : openDates} pets={listing.pets} home={listing} />
 
-              {/* Pets — one tab per pet */}
-              {listing.pets.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle asChild>
-                      <h2 className="flex items-center gap-2">
-                        <Dog className="w-5 h-5" />
-                        Meet the Pets ({listing.pets.length})
-                      </h2>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Tabs defaultValue={listing.pets[0].id}>
-                      <TabsList className="w-full flex-wrap h-auto justify-start">
-                        {listing.pets.map((pet) => {
-                          const PetIcon = petTypeIcon(pet.type);
-                          return (
-                            <TabsTrigger key={pet.id} value={pet.id} className="gap-1.5">
-                              <PetIcon className="w-3.5 h-3.5" />
-                              {pet.name || formatPetType(pet.type)}
-                            </TabsTrigger>
-                          );
-                        })}
-                      </TabsList>
+            {(isOwner || acceptedSitter) && (
+              <InlineWelcomeGuide listingId={listing.id} isOwner={isOwner} addressPrivate={listing.address_private} sitRange={sitRange} />
+            )}
 
-                      {listing.pets.map((pet) => {
-                        const PetIcon = petTypeIcon(pet.type);
-                        const age = formatPetAge(pet.age);
-                        return (
-                          <TabsContent key={pet.id} value={pet.id} className="mt-4">
-                            <button
-                              type="button"
-                              onClick={() => setPetDialogId(pet.id)}
-                              className="w-full text-left flex items-start gap-4 rounded-lg p-2 -m-2 hover:bg-muted/50 transition-colors"
-                            >
-                              {pet.photos?.[0] ? (
-                                <img
-                                  src={pet.photos[0]}
-                                  alt={pet.name || formatPetType(pet.type)}
-                                  className="w-20 h-20 rounded-lg object-cover"
-                                />
-                              ) : (
-                                <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center">
-                                  <PetIcon className="w-8 h-8 text-muted-foreground" />
-                                </div>
-                              )}
-                              <div className="flex-1">
-                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                  <h3 className="font-semibold text-lg">{pet.name}</h3>
-                                  <Badge variant="secondary">{formatPetType(pet.type)}</Badge>
-                                  {age && (
-                                    <span className="text-sm text-muted-foreground">{age}</span>
-                                  )}
-                                  {pet.has_medication && (
-                                    <Badge variant="outline" className="gap-1">
-                                      <Pill className="w-3 h-3" />
-                                      Medication
-                                    </Badge>
-                                  )}
-                                </div>
-                                {pet.personality && (
-                                  <p className="text-muted-foreground text-sm mb-2">
-                                    {pet.personality}
-                                  </p>
-                                )}
-                                <span className="text-xs text-primary font-medium">
-                                  Tap to view full profile & photos
-                                </span>
-                              </div>
-                            </button>
-                          </TabsContent>
-                        );
-                      })}
-                    </Tabs>
-                  </CardContent>
-                </Card>
-              )}
+            <div className="md:hidden">{hostCard}</div>
 
-              {/* Pet detail dialog */}
-              <Dialog open={!!petDialogId} onOpenChange={(o) => !o && setPetDialogId(null)}>
-                <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-                  {(() => {
-                    const pet = listing.pets.find((p) => p.id === petDialogId);
-                    if (!pet) return null;
-                    const PetIcon = petTypeIcon(pet.type);
-                    return (
-                      <>
-                        <DialogHeader>
-                          <DialogTitle className="flex items-center gap-2">
-                            <PetIcon className="w-5 h-5 text-primary" />
-                            {pet.name || formatPetType(pet.type)}
-                          </DialogTitle>
-                        </DialogHeader>
-                        {pet.photos?.length > 0 && (
-                          <div className="grid grid-cols-2 gap-2 mb-4">
-                            {pet.photos.map((photo, i) => (
-                              <img
-                                key={i}
-                                src={photo}
-                                alt={`${pet.name || "Pet"} ${i + 1}`}
-                                className="w-full h-32 rounded-lg object-cover"
-                              />
-                            ))}
-                          </div>
-                        )}
-                        <div className="space-y-3 text-sm">
-                          <div className="flex flex-wrap gap-2">
-                            <Badge variant="secondary">{formatPetType(pet.type)}</Badge>
-                            {pet.age && <Badge variant="outline">{pet.age}</Badge>}
-                            {pet.has_medication && (
-                              <Badge variant="outline" className="gap-1">
-                                <Pill className="w-3 h-3" /> Medication
-                              </Badge>
-                            )}
-                            {pet.reactive_to_animals && (
-                              <Badge variant="outline">Reactive to animals</Badge>
-                            )}
-                          </div>
-                          {pet.personality && (
-                            <div>
-                              <p className="font-medium mb-1">Personality</p>
-                              <p className="text-muted-foreground">{pet.personality}</p>
-                            </div>
-                          )}
-                          {pet.daily_routine && (
-                            <div>
-                              <p className="font-medium mb-1">Daily routine</p>
-                              <p className="text-muted-foreground">{pet.daily_routine}</p>
-                            </div>
-                          )}
-                          {pet.feeding_details && (
-                            <div>
-                              <p className="font-medium mb-1">Feeding details</p>
-                              <p className="text-muted-foreground">{pet.feeding_details}</p>
-                            </div>
-                          )}
-                          {pet.walks_exercise && (
-                            <div>
-                              <p className="font-medium mb-1">Walks & exercise</p>
-                              <p className="text-muted-foreground">{pet.walks_exercise}</p>
-                            </div>
-                          )}
-                          {pet.requires_medication && pet.medication_instructions && (
-                            <div>
-                              <p className="font-medium mb-1">Medication instructions</p>
-                              <p className="text-muted-foreground">{pet.medication_instructions}</p>
-                            </div>
-                          )}
-                          {pet.vet_info && (
-                            <div>
-                              <p className="font-medium mb-1">Vet info</p>
-                              <p className="text-muted-foreground">{pet.vet_info}</p>
-                            </div>
-                          )}
-                          {pet.separation_anxiety_tolerance && (
-                            <div>
-                              <p className="font-medium mb-1">Separation anxiety tolerance</p>
-                              <p className="text-muted-foreground">{pet.separation_anxiety_tolerance}</p>
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    );
-                  })()}
-                </DialogContent>
-              </Dialog>
+            {listing.description && (
+              <section aria-labelledby="about-title" className="flex flex-col gap-3">
+                <SectionTitle id="about-title">About this sit</SectionTitle>
+                <AboutText text={listing.description} />
+              </section>
+            )}
 
-              {/* Home & Requirements — tabbed */}
-              <Card>
-                <CardHeader>
-                  <CardTitle asChild className="text-lg sm:text-2xl">
-                    <h2 className="flex items-center gap-2">
-                      <Home className="w-5 h-5" />
-                      The Home &amp; What&apos;s Expected
-                    </h2>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="home">
-                    <TabsList className="w-full flex-wrap h-auto justify-start">
-                      <TabsTrigger value="home">Home details</TabsTrigger>
-                      <TabsTrigger value="requirements">Requirements &amp; rules</TabsTrigger>
-                    </TabsList>
+            {listing.pets.length > 0 && (
+              <section aria-labelledby="pets-title" className="flex flex-col gap-3">
+                <SectionTitle id="pets-title">Meet the pets</SectionTitle>
+                <PetCards pets={listing.pets} onOpen={setPetPanelId} />
+              </section>
+            )}
 
-                    <TabsContent value="home" className="mt-4 space-y-4">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {listing.home_type && (
-                          <div className="flex items-center gap-2">
-                            <Home className="w-4 h-4 text-muted-foreground" />
-                            <span className="capitalize">{listing.home_type}</span>
-                          </div>
-                        )}
-                        {listing.location_type && locationTypeMeta[listing.location_type] && (
-                          (() => {
-                            const LocationIcon = locationTypeMeta[listing.location_type].icon;
-                            return (
-                              <div className="flex items-center gap-2">
-                                <LocationIcon className="w-4 h-4 text-muted-foreground" />
-                                <span>{locationTypeMeta[listing.location_type].label}</span>
-                              </div>
-                            );
-                          })()
-                        )}
-                        {listing.wifi_quality && (
-                          <div className="flex items-center gap-2">
-                            <Wifi className="w-4 h-4 text-muted-foreground" />
-                            <span className="capitalize">
-                              {listing.wifi_quality.replace("_", " ")} WiFi
-                            </span>
-                          </div>
-                        )}
-                        {listing.sleeping_arrangement && (
-                          <div className="flex items-center gap-2">
-                            <Bed className="w-4 h-4 text-muted-foreground" />
-                            <span className="capitalize">
-                              {listing.sleeping_arrangement.replace(/_/g, " ")}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+            <section aria-labelledby="home-title" className="flex flex-col gap-3">
+              <SectionTitle id="home-title">The home and what's expected</SectionTitle>
+              <HomeRows home={listing} onOpen={setHomeTab} />
+            </section>
 
-                      {(listing.remote_location || listing.car_needed || listing.heavy_gardening || listing.wheelchair_accessible || listing.public_transport_accessible === true) && (
-                        <>
-                          <Separator />
-                          <div>
-                            <h4 className="font-medium mb-2">Good to know</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {listing.remote_location && <Badge variant="secondary">Remote location</Badge>}
-                              {listing.car_needed && <Badge variant="secondary">Car needed</Badge>}
-                              {listing.heavy_gardening && <Badge variant="secondary">Plant Care</Badge>}
-                              {listing.wheelchair_accessible && <Badge variant="secondary">Step-free Access</Badge>}
-                              {listing.public_transport_accessible === true && (
-                                <Badge variant="secondary">
-                                  <Bus className="w-3 h-3 mr-1" />
-                                  Public transport accessible
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </>
-                      )}
+            {listing.latitude && listing.longitude && (
+              <section aria-labelledby="where-title" className="flex flex-col gap-3">
+                <SectionTitle id="where-title">Where it is</SectionTitle>
+                <p className="text-[15px]">{place}</p>
+                <ListingLocationMap latitude={listing.latitude} longitude={listing.longitude} title={listing.title} />
+              </section>
+            )}
 
-                      {listing.amenities.length > 0 && (
-                        <>
-                          <Separator />
-                          <div>
-                            <h4 className="font-medium mb-2">Amenities</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {(amenitiesExpanded ? listing.amenities : listing.amenities.slice(0, 4)).map(
-                                (amenity) => (
-                                  <Badge key={amenity} variant="secondary">
-                                    {amenity}
-                                  </Badge>
-                                )
-                              )}
-                              {listing.amenities.length > 4 && (
-                                <button
-                                  type="button"
-                                  onClick={() => setAmenitiesExpanded((v) => !v)}
-                                  className={cn(badgeVariants({ variant: "outline" }), "cursor-pointer hover:bg-muted")}
-                                >
-                                  {amenitiesExpanded ? "Show less" : `+${listing.amenities.length - 4} more`}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </TabsContent>
+            <div className="md:hidden">{datesBlock("available-dates")}</div>
 
-                    <TabsContent value="requirements" className="mt-4 space-y-4">
-                      {listing.requirements.length === 0 &&
-                      listing.house_rules.length === 0 &&
-                      listing.home_care_tasks.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          No specific requirements listed.
-                        </p>
-                      ) : (
-                        <>
-                          {listing.requirements.length > 0 && (
-                            <div>
-                              <h4 className="font-medium mb-2">Nomad Requirements</h4>
-                              <ul className="space-y-1">
-                                {listing.requirements.map((req) => (
-                                  <li key={req} className="flex items-center gap-2 text-sm">
-                                    <Check className="w-4 h-4 text-primary" />
-                                    {req}
-                                  </li>
-                                ))}
-                              </ul>
-                              {listing.requirements_other && (
-                                <p className="text-sm text-muted-foreground mt-2">
-                                  {listing.requirements_other}
-                                </p>
-                              )}
-                            </div>
-                          )}
-
-                          {listing.house_rules.length > 0 && (
-                            <>
-                              <Separator />
-                              <div>
-                                <h4 className="font-medium mb-2">House Rules</h4>
-                                <ul className="space-y-1">
-                                  {listing.house_rules.map((rule) => (
-                                    <li key={rule} className="flex items-center gap-2 text-sm">
-                                      <Check className="w-4 h-4 text-primary" />
-                                      {rule}
-                                    </li>
-                                  ))}
-                                </ul>
-                                {listing.house_rules_other && (
-                                  <p className="text-sm text-muted-foreground mt-2">
-                                    {listing.house_rules_other}
-                                  </p>
-                                )}
-                              </div>
-                            </>
-                          )}
-
-                          {listing.home_care_tasks.length > 0 && (
-                            <>
-                              <Separator />
-                              <div>
-                                <h4 className="font-medium mb-2">Home Care Tasks</h4>
-                                <ul className="space-y-1">
-                                  {listing.home_care_tasks.map((task) => (
-                                    <li key={task} className="flex items-center gap-2 text-sm">
-                                      <Check className="w-4 h-4 text-secondary" />
-                                      {task}
-                                    </li>
-                                  ))}
-                                </ul>
-                                {listing.home_care_tasks_other && (
-                                  <p className="text-sm text-muted-foreground mt-2">
-                                    {listing.home_care_tasks_other}
-                                  </p>
-                                )}
-                              </div>
-                            </>
-                          )}
-                        </>
-                      )}
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-
-
-              {/* Location Map */}
-              {listing.latitude && listing.longitude && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle asChild>
-                      <h2 className="flex items-center gap-2">
-                        <MapPin className="w-5 h-5" />
-                        Location
-                      </h2>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ListingLocationMap
-                      latitude={listing.latitude}
-                      longitude={listing.longitude}
-                      title={listing.title}
-                    />
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {[listing.area, listing.city, listing.country].filter(Boolean).join(", ")}
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Owner Card */}
-              <OwnerCard 
-                listing={listing}
-                ownerName={ownerName}
-                isOwner={isOwner}
-                user={user}
-                role={role}
+            {user && !isOwner && (
+              <ReportDialog
+                targetType="listing"
+                targetId={listing.id}
+                targetLabel={listing.title}
+                trigger={
+                  <button type="button" className="inline-flex min-h-11 items-center gap-2 self-start text-[15px] font-semibold text-muted-foreground underline underline-offset-2">
+                    <Flag className="h-4 w-4" aria-hidden="true" />
+                    Report this listing
+                  </button>
+                }
               />
+            )}
+          </div>
 
-              {/* Owner Reviews */}
-              <OwnerReviewsSummaryCard ownerUserId={listing.owner_user_id} />
-              <Card id="available-dates" className="scroll-mt-24">
-                <CardHeader>
-                  <CardTitle asChild>
-                    <h2 className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5" />
-                      Available Dates
-                    </h2>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {openDates.length > 0 ? (
-                    openDates.map((sitDate) => {
-                      const days = differenceInDays(
-                        parseISO(sitDate.end_date),
-                        parseISO(sitDate.start_date)
-                      );
-                      return (
-                        <div
-                          key={sitDate.id}
-                          className={cn(
-                            "p-3 rounded-lg border cursor-pointer transition-all",
-                            selectedDateIds.includes(sitDate.id)
-                              ? "border-primary bg-primary/10"
-                              : "border-border hover:border-primary/50"
-                          )}
-                          onClick={() => toggleDate(sitDate.id)}
-                        >
-                          <div className="font-medium">
-                            {format(parseISO(sitDate.start_date), "MMM d")} -{" "}
-                            {format(parseISO(sitDate.end_date), "MMM d, yyyy")}
-                          </div>
-                          <div className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {days} {days === 1 ? "night" : "nights"}
-                          </div>
-                          {sitDate.flexibility && (
-                            <Badge variant="outline" className="mt-2 text-xs">
-                              {sitDate.flexibility.replace(/_/g, " ")}
-                            </Badge>
-                          )}
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No available dates at the moment
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+          {/* Sidebar from tablet: the dates card with the viewer's actions, then the host. */}
+          <aside className="hidden flex-col gap-4 md:flex">
+            <div className="sticky top-24 flex flex-col gap-4">
+              <div className="flex flex-col gap-4 rounded-[24px] border border-[var(--nn-border)] bg-card p-5 shadow-sm">
+                {datesBlock("available-dates-side")}
+                {actions("side")}
+              </div>
+              {hostCard}
+            </div>
+          </aside>
+        </div>
+      </main>
 
-              {/* Apply Button */}
-              {canApply && openDates.length > 0 && (
-                <>
-                  <Button
-                    className="w-full"
-                    size="lg"
-                    onClick={() => {
-                      if (listingWarning.hasWarning) {
-                        setWarningOpen(true);
-                      } else if (invite) {
-                        handleAcceptInvitation();
-                      } else {
-                        setApplyDialogOpen(true);
-                      }
-                    }}
-                    disabled={selectedDateIds.length === 0 || acceptingInvite}
-                  >
-                    {acceptingInvite ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : selectedDateIds.length === 0 ? (
-                      "Select dates to apply"
-                    ) : invite ? (
-                      "Accept Invitation"
-                    ) : selectedDateIds.length === 1 ? (
-                      "Apply for this Sit"
-                    ) : (
-                      `Apply for ${selectedDateIds.length} date ranges`
-                    )}
-                  </Button>
-                  {invite && (
-                    <Button
-                      className="w-full mt-2"
-                      size="lg"
-                      variant="destructive"
-                      onClick={handleDeclineInvite}
-                      disabled={updateInviteStatus.isPending || acceptingInvite}
-                    >
-                      Decline Invitation
-                    </Button>
-                  )}
-                  <CommunityWarningModal
-                    open={warningOpen}
-                    onOpenChange={setWarningOpen}
-                    labels={listingWarning.labels}
-                    audience="listing"
-                    continueLabel="Continue to Application"
-                    onContinue={() => {
-                      setWarningOpen(false);
-                      if (invite) {
-                        handleAcceptInvitation();
-                      } else {
-                        setApplyDialogOpen(true);
-                      }
-                    }}
-                  />
-                  <ApplyDialog
-                    open={applyDialogOpen}
-                    onOpenChange={setApplyDialogOpen}
-                    listingId={listing.id}
-                    listingTitle={listing.title}
-                    sitDates={selectedSitDates}
-                    onSuccess={() => setSelectedDateIds([])}
-                    listingPhoto={listing.photos?.[0] ?? null}
-                    listingLocation={[listing.city, listing.country].filter(Boolean).join(", ") || null}
-                    petNames={listing.pets.map((pet) => pet.name).filter(Boolean)}
-                    otherDates={openDates.filter((d) => !selectedDateIds.includes(d.id))}
-                    onChooseOtherDates={() => {
-                      setApplyDialogOpen(false);
-                      setSelectedDateIds([]);
-                      // Let the dialog close before scrolling to the date picker.
-                      setTimeout(() => {
-                        document
-                          .getElementById("available-dates")
-                          ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }, 250);
-                    }}
-                  />
-                </>
-              )}
+      {/* Phone: the fixed bar changes with who is looking. */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 md:hidden">
+        {actions("bar")}
+      </div>
 
-              {!user && (
-                <Link to="/auth">
-                  <Button className="w-full" size="lg" variant="outline">
-                    Sign in to Apply
-                  </Button>
-                </Link>
-              )}
+      <PetPanel pet={listing.pets.find((p) => p.id === petPanelId) ?? null} isOwner={isOwner} onClose={() => setPetPanelId(null)} />
+      <HomePanel tab={homeTab} onTab={setHomeTab} onClose={() => setHomeTab(null)} home={listing} hostName={hostName} />
 
-              {isOwner && (
-                <>
-                  <Button className="w-full" size="lg" variant="outline" disabled>
-                    This is your listing
-                  </Button>
-                  <Link to={`/listing/${listing.id}/welcome-guide`} state={{ from: `/listing/${listing.id}` }}>
-                    <Button className="w-full mt-2" size="lg" variant="secondary">
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Welcome Guide
-                    </Button>
-                  </Link>
-                </>
-              )}
+      {viewer === "nomad" && openDates.length > 0 && (
+        <>
+          <CommunityWarningModal
+            open={warningOpen}
+            onOpenChange={setWarningOpen}
+            labels={listingWarning.labels}
+            audience="listing"
+            continueLabel="Continue to Application"
+            onContinue={() => {
+              setWarningOpen(false);
+              if (invite) handleAcceptInvitation();
+              else setApplyDialogOpen(true);
+            }}
+          />
+          <ApplyDialog
+            open={applyDialogOpen}
+            onOpenChange={setApplyDialogOpen}
+            listingId={listing.id}
+            listingTitle={listing.title}
+            sitDates={selectedSitDates}
+            onSuccess={() => setSelectedDateIds([])}
+            listingPhoto={listing.photos?.[0] ?? null}
+            listingLocation={[listing.city, listing.country].filter(Boolean).join(", ") || null}
+            petNames={listing.pets.map((pet) => pet.name).filter(Boolean)}
+            otherDates={openDates.filter((d) => !selectedDateIds.includes(d.id))}
+            onChooseOtherDates={() => {
+              setApplyDialogOpen(false);
+              setSelectedDateIds([]);
+              // Let the dialog close before scrolling to the date picker.
+              setTimeout(scrollToDates, 250);
+            }}
+          />
+        </>
+      )}
 
-               {/* Report Button */}
-               {user && !isOwner && (
-                 <div className="flex justify-center pt-2">
-                   <ReportDialog
-                     targetType="listing"
-                     targetId={listing.id}
-                     targetLabel="listing"
-                   />
-                 </div>
-               )}
-             </div>
-           </div>
-         </div>
+      <SignUpPromptDialog
+        open={promptOpen !== null}
+        onOpenChange={(o) => !o && setPromptOpen(null)}
+        heart={promptOpen === "save"}
+        title={promptOpen === "save" ? "Save sits you love" : "Join NomadNest to see more"}
+        message={
+          promptOpen === "save"
+            ? "Create a free account to save sits and see full profiles. Membership from £59 a year when you are ready to apply."
+            : "Create a free account to see full profiles and save sits. Profiles stay members-only to keep everyone safe."
+        }
+      />
 
-         <PhotoLightbox
-           open={lightboxOpen}
-           onOpenChange={setLightboxOpen}
-           photos={allPhotos}
-           startIndex={currentPhotoIndex}
-           alt={listing.title}
-           onIndexChange={setCurrentPhotoIndex}
-         />
-       </main>
-    </div>
+      <PhotoLightbox
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+        photos={allPhotos}
+        startIndex={currentPhotoIndex}
+        alt={listing.title}
+        onIndexChange={setCurrentPhotoIndex}
+      />
+      <div className="hidden md:block">
+        <Footer />
+      </div>
+    </RoleTheme>
   );
 };
 

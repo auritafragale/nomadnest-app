@@ -40,7 +40,7 @@ const MapContent = ({ latitude, longitude }: ListingLocationMapProps) => {
   const { listingMapId } = useGoogleMapsConfig();
 
   return (
-    <div className="w-full aspect-[4/3] min-h-[220px] sm:aspect-auto sm:h-[250px] rounded-lg overflow-hidden border border-border">
+    <div className="w-full aspect-[4/3] min-h-[220px] sm:aspect-auto sm:h-[250px] rounded-2xl overflow-hidden border border-border">
       <Map
         defaultCenter={{ lat: latitude, lng: longitude }}
         defaultZoom={14}
@@ -68,7 +68,7 @@ const ListingLocationMap = ({ latitude, longitude, title }: ListingLocationMapPr
   return (
     <GoogleMapsProvider height="250px">
       <MapContent latitude={latitude} longitude={longitude} title={title} />
-      <p className="mt-2 text-xs text-muted-foreground">Approximate area. The exact address is shared once a sit is confirmed.</p>
+      <p className="mt-2 text-sm text-muted-foreground">This shows the area only. The exact address is shared in the Welcome Guide once a sit is confirmed.</p>
     </GoogleMapsProvider>
   );
 };
