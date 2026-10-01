@@ -63,6 +63,12 @@ verify_jwt = false
 [functions.draft-application]
 verify_jwt = false
 
+[functions.nomad-match]
+verify_jwt = false
+
+[functions.draft-invitation]
+verify_jwt = false
+
 [functions.welcome-guide-ai]
 verify_jwt = false
 
