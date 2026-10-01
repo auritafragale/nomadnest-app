@@ -477,10 +477,10 @@ export const ReadyToStart = () => (
         <h2 id="ready-title" className="font-display text-[34px] leading-tight text-white md:text-[42px]">Ready to start?</h2>
         <p className="max-w-md text-[16px] text-white/95">Free to browse. Membership from £59 a year. No booking fees, ever.</p>
         <div className="mt-2 flex w-full max-w-md flex-col gap-2.5 sm:flex-row">
-          <Link to="/auth?signup=true" className="flex h-[52px] flex-1 items-center justify-center rounded-2xl bg-brand-coral px-5 text-[15px] font-bold text-primary-foreground">
+          <Link to="/auth?signup=true" className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-brand-coral sm:flex-1 px-5 text-[15px] font-bold text-primary-foreground">
             Join NomadNest free
           </Link>
-          <Link to="/membership" className="flex h-[52px] flex-1 items-center justify-center rounded-2xl bg-card px-5 text-[15px] font-bold text-foreground">
+          <Link to="/membership" className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-card sm:flex-1 px-5 text-[15px] font-bold text-foreground">
             See membership plans
           </Link>
         </div>

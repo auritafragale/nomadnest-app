@@ -130,7 +130,7 @@ const Auth = () => {
 
   if (mode === "check_email") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: "#FAF7F2" }}>
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <div className="w-full max-w-sm">
           <Link to="/" className="flex items-center justify-center mb-8 hover:opacity-80 transition-opacity">
             <img src={logo} alt="NomadNest" className="h-10 w-auto" />
@@ -155,7 +155,7 @@ const Auth = () => {
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Resend confirmation email"}
               </Button>
               <button
-                className="text-sm text-primary hover:underline"
+                className="text-sm font-semibold text-brand-coral-text hover:underline"
                 onClick={() => setMode("login")}
               >
                 Back to login
@@ -168,7 +168,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: "#FAF7F2" }}>
+    <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <Link
@@ -292,7 +292,7 @@ const Auth = () => {
 
               {mode === "login" && (
                 <div className="text-right">
-                  <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                  <Link to="/forgot-password" className="text-sm font-semibold text-brand-coral-text hover:underline">
                     Forgot password?
                   </Link>
                 </div>
@@ -317,7 +317,7 @@ const Auth = () => {
                   Don't have an account?{" "}
                   <button
                     onClick={() => setMode("signup")}
-                    className="text-primary font-medium hover:underline"
+                    className="font-semibold text-brand-coral-text hover:underline"
                   >
                     Sign up
                   </button>
@@ -327,7 +327,7 @@ const Auth = () => {
                   Already have an account?{" "}
                   <button
                     onClick={() => setMode("login")}
-                    className="text-primary font-medium hover:underline"
+                    className="font-semibold text-brand-coral-text hover:underline"
                   >
                     Log in
                   </button>
