@@ -1,54 +1,31 @@
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, ChevronRight } from "lucide-react";
+import { ChevronRight, Star } from "lucide-react";
 import { useSitterAverageRating } from "@/hooks/useSitterReviews";
 
 interface SitterReviewsSummaryCardProps {
   sitterUserId: string;
 }
 
+/** Reviews summary with a link to every review. */
 const SitterReviewsSummaryCard = ({ sitterUserId }: SitterReviewsSummaryCardProps) => {
   const { data: ratingData } = useSitterAverageRating(sitterUserId);
   const average = ratingData?.average ?? 0;
   const count = ratingData?.count ?? 0;
 
   return (
-    <Link to={`/sitter/${sitterUserId}/reviews`} className="block group">
-      <Card className="transition-shadow hover:shadow-md">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Star className="w-5 h-5" />
-            Reviews
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between gap-3">
-            {count > 0 ? (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`w-4 h-4 ${
-                        star <= Math.round(average)
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-muted-foreground"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="font-semibold">{average.toFixed(1)}</span>
-                <span className="text-sm text-muted-foreground">
-                  ({count} review{count === 1 ? "" : "s"})
-                </span>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No reviews yet</p>
-            )}
-            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform shrink-0" />
-          </div>
-        </CardContent>
-      </Card>
+    <Link to={`/sitter/${sitterUserId}/reviews`} className="group flex min-h-[56px] items-center gap-3 rounded-[20px] border border-[var(--nn-border)] bg-card px-4 py-3">
+      <Star className="h-5 w-5 shrink-0 fill-[#E8B53E] text-[#E8B53E]" aria-hidden="true" />
+      {count > 0 ? (
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-[16px] font-bold">
+            {average.toFixed(1)} · {count} {count === 1 ? "review" : "reviews"}
+          </span>
+          <span className="text-sm text-muted-foreground">Read all {count === 1 ? "1 review" : `${count} reviews`}</span>
+        </span>
+      ) : (
+        <span className="flex-1 text-[15px] text-muted-foreground">No reviews yet</span>
+      )}
+      <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
     </Link>
   );
 };

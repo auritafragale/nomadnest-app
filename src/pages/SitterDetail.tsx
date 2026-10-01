@@ -5,86 +5,31 @@ import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom"
 import { HiddenProfileNotice, NeverShownNote, PreviewBar, PreviewTip } from "@/components/profile/ProfilePreview";
 import { useSitterFreeDates } from "@/hooks/useMyAvailability";
 import { useSitterPortfolio } from "@/hooks/useSitStories";
-import { shortRange } from "@/components/nn/ui";
+import { NN_PAGE, RoleTheme, SectionCard, StatusChip, nnButton, shortRange } from "@/components/nn/ui";
 import { BackButton } from "@/components/layout/BackButton";
 import { supabase } from "@/integrations/supabase/client";
-import { resolveListingConversation } from "@/lib/conversations";
-import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
+import { publicProfiles } from "@/lib/publicProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useReviewRate } from "@/hooks/useReviewRates";
 import { useCommunityWarning } from "@/hooks/useCommunityWarning";
 import CommunityWarningModal from "@/components/trust/CommunityWarningModal";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import {
-  MapPin,
-  Languages,
-  Shield,
-  CheckCircle,
-  Calendar,
-  Dog,
-  Cat,
-  Bird,
-  Rabbit,
-  Fish,
-  Heart,
-  Home,
-  MessageSquare,
-  Send,
-  ArrowLeft,
-  Mail,
-  Clock,
-  Award,
-  Loader2,
-  Star,
-  Flag,
-  Phone,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  Users,
-} from "lucide-react";
-import { format } from "date-fns";
+import { BadgeCheck, ChevronRight, Flag, Loader2, Mail, MessageCircle, Phone, Send, ShieldCheck, Star } from "lucide-react";
 import { useStartConversation } from "@/hooks/useConversations";
 import SitterReviewsSummaryCard from "@/components/reviews/SitterReviewsSummaryCard";
 import { useSitterAverageRating } from "@/hooks/useSitterReviews";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
-import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
-import SitterLocationMap from "@/components/maps/SitterLocationMap";
-import VerificationBadges from "@/components/ui/VerificationBadges";
+import ResponsiveSheet from "@/components/nn/ResponsiveSheet";
+import InvitePanel, { type InviteListing } from "@/components/sitter/InvitePanel";
+import { useHideBottomNav } from "@/lib/bottomNav";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
-import { formatPetType, petTypeIcon, dedupePetTypes } from "@/lib/petTypes";
+import { formatPetType, dedupePetTypes } from "@/lib/petTypes";
+import { cn } from "@/lib/utils";
 
 interface SitterProfile {
   id: string;
@@ -108,14 +53,10 @@ interface SitterProfile {
   id_verified: boolean;
   background_check: boolean;
   gallery: string[];
-  age_range: string | null;
-  latitude: number | null;
-  longitude: number | null;
 }
 
 interface Profile {
   first_name: string | null;
-  last_name?: string | null;
   avatar_url: string | null;
   city: string | null;
   country: string | null;
@@ -124,37 +65,49 @@ interface Profile {
   phone_verified: boolean | null;
 }
 
-interface Listing {
-  id: string;
-  title: string;
-  city: string | null;
-  country: string | null;
-  sit_dates: { id: string; start_date: string; end_date: string; status: string }[];
-}
+const MAX_PETS = 4;
 
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ");
 
+const Section = ({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) => (
+  <section aria-label={title} className={cn("flex flex-col gap-3", className)}>
+    <h2 className="font-display text-[22px] font-normal leading-tight">{title}</h2>
+    {children}
+  </section>
+);
+
+const Skeletons = () => (
+  <RoleTheme role="owner" className="flex min-h-screen flex-col">
+    <Navbar wide />
+    <main className={cn(NN_PAGE, "flex flex-1 flex-col gap-4 pb-12 pt-20 md:pt-24")}>
+      <Skeleton className="h-24 w-24 rounded-full" />
+      <Skeleton className="h-8 w-56" />
+      <Skeleton className="h-5 w-72" />
+      <Skeleton className="h-40 w-full rounded-[22px]" />
+    </main>
+  </RoleTheme>
+);
+
+/** Nomad profile (design: NomadPublicPhone, NomadPublicTablet, NomadPublicDesktopDark). */
 const SitterDetail = () => {
   const { userId } = useParams();
   const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [sitter, setSitter] = useState<SitterProfile | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [listings, setListings] = useState<InviteListing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showInviteDialog, setShowInviteDialog] = useState(false);
-  const [selectedListing, setSelectedListing] = useState<string>("");
-  const [selectedDateId, setSelectedDateId] = useState<string>("");
-  const [inviteMessage, setInviteMessage] = useState("");
-  const [sending, setSending] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [styleOpen, setStyleOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<number>(0);
   const [photoOpen, setPhotoOpen] = useState(false);
-
   const [isStartingChat, setIsStartingChat] = useState(false);
   const { rate: reviewRate } = useReviewRate(userId);
   const nomadWarning = useCommunityWarning("user", userId);
   const [warningOpen, setWarningOpen] = useState(false);
-  const isPetParentViewer =
-    !!user && user.id !== userId && (role === "owner" || role === "both");
+  const isOther = !!user && user.id !== userId;
+  const isPetParentViewer = isOther && (role === "owner" || role === "both");
 
   // Preview (your own profile, opened with the eye button): the same data
   // other members get, plus owner-only tips while "Show tips" is on.
@@ -175,12 +128,12 @@ const SitterDetail = () => {
   }, [preview, userId]);
   const hiddenFromMembers = preview && !!ownVisibility && !(ownVisibility.is_visible && ownVisibility.is_active);
 
-  // Pet Parents see the cautionary notice as soon as they open a flagged
-  // nomad's profile — once per visit.
+  // Pet Parents see the cautionary notice (strike three) as soon as they
+  // open a flagged Nomad's profile — once per visit.
   useEffect(() => {
     if (isPetParentViewer && nomadWarning.hasWarning) setWarningOpen(true);
   }, [isPetParentViewer, nomadWarning.hasWarning]);
-  
+
   const startConversation = useStartConversation();
   const { data: ratingData } = useSitterAverageRating(user ? userId : undefined);
 
@@ -190,284 +143,100 @@ const SitterDetail = () => {
         setLoading(false);
         return;
       }
-
       try {
         const [sitterResult, profileResult] = await Promise.all([
-          supabase
-            .from("sitter_profiles")
-            .select(SITTER_PROFILE_COLUMNS as "*")
-            .eq("user_id", userId)
-            .maybeSingle(),
-          publicProfiles("first_name, avatar_url, city, country, founding_member, email_verified, phone_verified")
-            .eq("id", userId)
-            .maybeSingle(),
+          supabase.from("sitter_profiles").select(SITTER_PROFILE_COLUMNS as "*").eq("user_id", userId).maybeSingle(),
+          publicProfiles("first_name, avatar_url, city, country, founding_member, email_verified, phone_verified").eq("id", userId).maybeSingle(),
         ]);
-
         if (sitterResult.error) throw sitterResult.error;
         if (profileResult.error) throw profileResult.error;
+        setSitter(sitterResult.data as unknown as SitterProfile | null);
+        setProfile(profileResult.data as unknown as Profile | null);
 
-        setSitter(sitterResult.data);
-        setProfile(profileResult.data as unknown as PublicProfile | null);
-
-        // Fetch user's listings with open sit dates if they're an owner
-        if (user) {
-          const { data: listingsData } = await supabase
-            .from("listings")
-            .select(`
-              id,
-              title,
-              city,
-              country,
-              sit_dates (id, start_date, end_date, status)
-            `)
-            .eq("owner_user_id", user.id)
-            .eq("status", "published");
-
-          if (listingsData) {
-            const listingsWithOpenDates = listingsData.filter(
-              (l) => l.sit_dates?.some((d: any) => d.status === "open")
-            );
-            setListings(listingsWithOpenDates as Listing[]);
-          }
-        }
-      } catch (error: any) {
+        // Your published listings with open dates, for the invite.
+        const today = new Date().toISOString().slice(0, 10);
+        const { data: listingsData } = await supabase
+          .from("listings")
+          .select("id, title, city, country, sit_dates (id, start_date, end_date, status)")
+          .eq("owner_user_id", user.id)
+          .eq("status", "published");
+        setListings(
+          ((listingsData ?? []) as InviteListing[]).filter((l) => l.sit_dates?.some((d) => d.status === "open" && d.end_date >= today)),
+        );
+      } catch (error) {
         console.error("Error fetching sitter:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load sitter profile",
-        });
+        toast({ variant: "destructive", title: "Error", description: "Failed to load this profile" });
       } finally {
         setLoading(false);
       }
     };
-
     fetchSitterData();
   }, [userId, user]);
 
-  const handleInvite = async () => {
-    if (!user || !userId || !selectedListing || !selectedDateId) return;
+  const showBar = !!user && !!sitter && !!profile && (isOther || preview);
+  useHideBottomNav(showBar);
 
-    setSending(true);
-    try {
-      // Check if an invite already exists for this listing/date combo
-      const { data: existingInvite } = await supabase
-        .from("sitter_invites")
-        .select("id")
-        .eq("listing_id", selectedListing)
-        .eq("sit_dates_id", selectedDateId)
-        .eq("sitter_user_id", userId)
-        .maybeSingle();
-
-      if (existingInvite) {
-        toast({
-          variant: "destructive",
-          title: "Already invited",
-          description: "You've already invited this sitter for these dates.",
-        });
-        return;
-      }
-
-      const listing = listings.find((l) => l.id === selectedListing);
-
-      // Create the sitter invite
-      const { data: invite, error: inviteError } = await supabase
-        .from("sitter_invites")
-        .insert({
-          listing_id: selectedListing,
-          sit_dates_id: selectedDateId,
-          owner_user_id: user.id,
-          sitter_user_id: userId,
-          message: inviteMessage || null,
-          status: "pending",
-        })
-        .select("id")
-        .single();
-
-      if (inviteError) throw inviteError;
-
-      // Owner display name for notification
-      const ownerName =
-        (profile?.first_name || "") ||
-        "A pet parent";
-      // Actually we need the OWNER (current user)'s name — fetch it
-      const { data: ownerProfile } = await supabase
-        .from("profiles")
-        .select("first_name")
-        .eq("id", user.id)
-        .maybeSingle();
-      const ownerDisplayName =
-        (ownerProfile?.first_name || "") ||
-        "A pet parent";
-
-      // The sitter's notification is created by a database trigger on
-      // sitter_invites — clients cannot insert notifications directly.
-
-
-
-      // Find or create the single chat thread for this home + Nomad
-      const conversationId = await resolveListingConversation({
-        listingId: selectedListing,
-        ownerUserId: user.id,
-        sitterUserId: userId,
-      });
-
-      if (conversationId) {
-        await supabase.from("messages").insert({
-          conversation_id: conversationId,
-          sender_user_id: user.id,
-          body: "Hi! I'd love to invite you to sit at my home. I've sent you a formal invitation — please check your notifications.",
-        });
-
-      }
-
-      toast({
-        title: "Invitation sent!",
-      });
-
-      setShowInviteDialog(false);
-      setSelectedListing("");
-      setSelectedDateId("");
-      setInviteMessage("");
-    } catch (error: any) {
-      console.error("Error sending invite:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to send invitation",
-      });
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const name = profile
-    ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "Sitter"
-    : "Sitter";
-
-  const initials = name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
-  const location = profile
-    ? [profile.city, profile.country].filter(Boolean).join(", ")
-    : null;
-
-  const allPhotos = [
-    profile?.avatar_url,
-    ...(sitter?.gallery || []),
-  ].filter(Boolean) as string[];
-
-  const selectedListingData = listings.find((l) => l.id === selectedListing);
-  const availableDates = selectedListingData?.sit_dates.filter(
-    (d) => d.status === "open"
-  );
+  const name = profile?.first_name || "Nomad";
+  const location = profile ? [profile.city, profile.country].filter(Boolean).join(", ") : null;
+  const allPhotos = [profile?.avatar_url, ...(sitter?.gallery || [])].filter(Boolean) as string[];
 
   // AuthContext.loading starts true and user starts null until the session
   // check resolves — check it first so a genuinely signed-in member doesn't
   // briefly see the "sign in" wall while their session is still loading in.
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 container mx-auto px-4 pt-20 pb-8">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <Skeleton className="h-10 w-48" />
-            <div className="grid md:grid-cols-3 gap-6">
-              <Skeleton className="aspect-[3/2] rounded-xl" />
-              <div className="md:col-span-2 space-y-4">
-                <Skeleton className="h-8 w-64" />
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-20 w-full" />
-              </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+  if (authLoading) return <Skeletons />;
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 container mx-auto px-4 pt-20 pb-8">
-          <div className="max-w-md mx-auto text-center py-12">
-            <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Sign in to view this profile</h2>
-            <p className="text-muted-foreground mb-6">
-              Nomad profiles are only visible to members, to protect their privacy.
-            </p>
-            <Button asChild>
-              <Link to="/auth">Log in or create a profile</Link>
-            </Button>
+      <RoleTheme role="owner" className="flex min-h-screen flex-col">
+        <Navbar wide />
+        <main className={cn(NN_PAGE, "flex flex-1 flex-col items-center pb-12 pt-24")}>
+          <div className="flex max-w-md flex-col items-center gap-3 rounded-[22px] border border-dashed border-border p-8 text-center">
+            <h1 className="text-[20px] font-bold">Sign in to view this profile</h1>
+            <p className="text-[15px] text-muted-foreground">Nomad profiles are only visible to members, to protect their privacy.</p>
+            <Link to="/auth" className={nnButton("primary")}>
+              Log in or join free
+            </Link>
           </div>
         </main>
         <Footer />
-      </div>
+      </RoleTheme>
     );
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 container mx-auto px-4 pt-20 pb-8">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <Skeleton className="h-10 w-48" />
-            <div className="grid md:grid-cols-3 gap-6">
-              <Skeleton className="aspect-[3/2] rounded-xl" />
-              <div className="md:col-span-2 space-y-4">
-                <Skeleton className="h-8 w-64" />
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-20 w-full" />
-              </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+  if (loading) return <Skeletons />;
 
   if (preview && (!profile || hiddenFromMembers)) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
+      <RoleTheme role="sitter" className="flex min-h-screen flex-col">
+        <Navbar wide />
         <main className="flex-1 pt-16">
           <PreviewBar showTips={showTips} onToggleTips={() => setShowTips((v) => !v)} accent="coral" />
           <div className="mx-auto max-w-xl px-5 py-6">
             <HiddenProfileNotice
               text="Other members can't find or open your Nomad profile right now. Turn your visibility back on to be seen and invited."
-              action={{ label: "Change visibility", to: "/browse-sitters" }}
+              action={{ label: "Change visibility", to: "/find-nomads" }}
             />
           </div>
         </main>
-      </div>
+      </RoleTheme>
     );
   }
 
   if (!sitter || !profile) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <main className="flex-1 container mx-auto px-4 pt-20 pb-8">
-          <div className="max-w-4xl mx-auto text-center py-12">
-            <h2 className="text-2xl font-bold mb-4">Sitter not found</h2>
-            <p className="text-muted-foreground mb-6">
-              This sitter profile doesn't exist or may have been removed.
-            </p>
-            <Button asChild>
-              <Link to="/browse-sitters">Browse Nomads</Link>
-            </Button>
+      <RoleTheme role="owner" className="flex min-h-screen flex-col">
+        <Navbar wide />
+        <main className={cn(NN_PAGE, "flex flex-1 flex-col items-center pb-12 pt-24")}>
+          <div className="flex max-w-md flex-col items-center gap-3 text-center">
+            <h1 className="font-display text-[28px]">Nomad not found</h1>
+            <p className="text-[15px] text-muted-foreground">This profile doesn't exist or may have been removed.</p>
+            <Link to="/browse-sitters" className={nnButton("primary")}>
+              Browse Nomads
+            </Link>
           </div>
         </main>
         <Footer />
-      </div>
+      </RoleTheme>
     );
   }
 
@@ -475,8 +244,140 @@ const SitterDetail = () => {
   const profileTitleMeta = `${name}${location ? ` in ${location}` : ""} | Nomad on NomadNest`.slice(0, 60);
   const profileDescriptionMeta = `Meet ${name}, a Nomad on NomadNest${location ? ` based in ${location}` : ""}. See their experience, reviews and availability for pet and house sits.`.slice(0, 155);
 
+  const pets = dedupePetTypes(sitter.pet_types || []);
+  const shownPets = pets.slice(0, MAX_PETS);
+  const extraPets = pets.slice(MAX_PETS);
+  const places = [...(sitter.preferred_regions ?? []), ...(sitter.preferred_countries ?? []), ...(sitter.preferred_cities ?? [])];
+  const hasStyle = !!sitter.sit_style || sitter.comfortable_with?.length > 0 || sitter.home_preferences?.length > 0 || places.length > 0;
+  const canInvite = listings.length > 0;
+
+  const messageNomad = async () => {
+    setIsStartingChat(true);
+    try {
+      const { conversationId } = await startConversation.mutateAsync({ otherUserId: userId!, conversationType: "direct" });
+      navigate(`/inbox?conversation=${conversationId}`);
+    } catch (error) {
+      toast({ variant: "destructive", title: "Couldn't open the chat", description: error instanceof Error ? error.message : "Please try again." });
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
+
+  const stat = (value: React.ReactNode, label: string) => (
+    <div className="flex flex-col items-center gap-0.5 px-2 text-center">
+      <span className="text-[17px] font-bold">{value}</span>
+      <span className="text-sm text-muted-foreground">{label}</span>
+    </div>
+  );
+
+  const badge = (Icon: typeof BadgeCheck, label: string) => (
+    <span className="inline-flex h-[26px] items-center gap-1 rounded-full bg-[var(--nn-ok-bg)] px-2.5 text-xs font-bold text-brand-teal-text">
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+      {label}
+    </span>
+  );
+
+  const actions = (where: "bar" | "side") => (
+    <div className={cn("flex gap-2", where === "side" && "flex-col")}>
+      {isOther && (
+        <button type="button" onClick={messageNomad} disabled={isStartingChat} className={nnButton(isPetParentViewer ? "secondary" : "primary", "h-[52px] flex-1 rounded-2xl text-[15px]")}>
+          {isStartingChat ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <MessageCircle className="h-4 w-4" aria-hidden="true" />}
+          Message
+        </button>
+      )}
+      {(isPetParentViewer || preview) && (
+        <button
+          type="button"
+          onClick={() => setInviteOpen(true)}
+          disabled={preview || !canInvite}
+          className={nnButton("primary", "h-[52px] flex-1 rounded-2xl text-[15px] disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100")}
+        >
+          <Send className="h-4 w-4" aria-hidden="true" />
+          Invite to a sit
+        </button>
+      )}
+    </div>
+  );
+  const actionsNote = preview ? (
+    <p className="text-sm text-muted-foreground">Pet Parents see Invite here. It's switched off in preview.</p>
+  ) : isPetParentViewer && !canInvite ? (
+    <p className="text-sm text-muted-foreground">
+      Publish a listing with open dates to invite {name}.{" "}
+      <Link to="/create-listing" className="font-bold text-[var(--nn-accent-dark)] underline underline-offset-2">
+        Create a listing
+      </Link>
+    </p>
+  ) : null;
+
+  const summary = (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-start gap-4 md:flex-col md:items-center md:text-center">
+        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-[#D8C3B0] md:h-32 md:w-32">
+          {allPhotos.length > 0 ? (
+            <button type="button" onClick={() => setPhotoOpen(true)} aria-label={`Open ${name}'s photos`} className="h-full w-full">
+              <img src={allPhotos[0]} alt="" className="h-full w-full object-cover" />
+            </button>
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-[#5A4636]">{name.slice(0, 1)}</span>
+          )}
+        </div>
+        <div className="flex min-w-0 flex-col gap-1 md:items-center">
+          <h1 className="font-display text-[30px] font-normal leading-tight lg:text-[34px]">{name}</h1>
+          {sitter.headline && <p className="text-[16px] font-semibold leading-snug">{sitter.headline}</p>}
+          <p className="text-[15px] text-muted-foreground">Nomad{location ? ` · ${location}` : ""}</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5 md:justify-center">
+        {profile.founding_member && <StatusChip tone="gold">★ Founding Member</StatusChip>}
+        {sitter.id_verified && badge(BadgeCheck, "ID verified")}
+        {profile.email_verified && badge(Mail, "Email")}
+        {profile.phone_verified && badge(Phone, "Phone")}
+        {sitter.background_check && badge(ShieldCheck, "Background check")}
+      </div>
+      <div className="grid grid-cols-3 divide-x divide-[var(--nn-line)] rounded-[20px] border border-[var(--nn-border)] bg-card py-3">
+        {ratingData && ratingData.count > 0
+          ? stat(
+              <span className="inline-flex items-center gap-1">
+                <Star className="h-4 w-4 fill-[#E8B53E] text-[#E8B53E]" aria-hidden="true" />
+                {ratingData.average.toFixed(1)}
+              </span>,
+              `${ratingData.count} ${ratingData.count === 1 ? "review" : "reviews"}`,
+            )
+          : stat("New", "No reviews yet")}
+        {stat(portfolio.length, portfolio.length === 1 ? "Sit Story" : "Sit Stories")}
+        {stat(reviewRate?.review_rate !== null && reviewRate?.review_rate !== undefined ? `${reviewRate.review_rate}%` : "—", "Review rate")}
+      </div>
+      {freeDates && freeDates.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-[20px] bg-[var(--nn-ok-bg)] p-4">
+          <p className="text-[15px] font-bold">Free to sit</p>
+          <ul className="flex flex-wrap gap-2">
+            {freeDates.map((r) => (
+              <li key={r.start} className="rounded-full bg-card px-3 py-1 text-sm font-semibold text-brand-teal-text">
+                {shortRange(r.start, r.end)} · {r.days} {r.days === 1 ? "day" : "days"}
+              </li>
+            ))}
+          </ul>
+          <p className="text-sm text-muted-foreground">Only free dates show. Where {preview ? "you're" : `${name} is`} sitting now is never shown.</p>
+        </div>
+      )}
+      {preview && showTips && freeDates && freeDates.length === 0 && (
+        <PreviewTip title="No free dates yet" text="Pet Parents plan ahead. Add the dates you're free and you'll show up for their sits." action={{ label: "Set your dates", to: "/availability" }} />
+      )}
+      {freeDates === null && (sitter.available_from || sitter.available_to) && (
+        <p className="rounded-[20px] bg-muted p-4 text-[15px]">
+          <span className="font-bold">Available: </span>
+          {sitter.available_from && sitter.available_to ? shortRange(sitter.available_from, sitter.available_to) : "Flexible dates"}
+        </p>
+      )}
+      <div className="hidden flex-col gap-2 md:flex">
+        {actions("side")}
+        {actionsNote}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <RoleTheme role="owner" className="flex min-h-screen flex-col">
       <Helmet>
         <title>{profileTitleMeta}</title>
         <meta name="description" content={profileDescriptionMeta} />
@@ -491,541 +392,198 @@ const SitterDetail = () => {
             "@context": "https://schema.org",
             "@type": "ProfilePage",
             url: profileUrl,
-            mainEntity: {
-              "@type": "Person",
-              name,
-              address: location || undefined,
-            },
+            mainEntity: { "@type": "Person", name, address: location || undefined },
           })}
         </script>
       </Helmet>
-      <Navbar />
-      <main className="flex-1 pt-16">
+      <Navbar wide />
+      <main className={cn("flex-1 pt-16", showBar ? "pb-32 md:pb-16" : "pb-16")}>
         {preview && <PreviewBar showTips={showTips} onToggleTips={() => setShowTips((v) => !v)} accent="coral" />}
-        <div className="container mx-auto px-4 pt-6 pb-8">
-          <div className="max-w-4xl mx-auto lg:max-w-6xl">
-            {/* Back button */}
-            {!preview && <BackButton fallback={user?.id === userId ? "/dashboard" : "/browse-sitters"} className="mb-6" />}
+        <div className={cn(NN_PAGE, "flex flex-col gap-5 pt-4 md:pt-8")}>
+          <div className="flex items-center justify-between gap-2">
+            {!preview ? <BackButton fallback={user.id === userId ? "/dashboard" : "/browse-sitters"} label="Browse Nomads" className="h-11" /> : <span />}
+            <ShareDialog title={`${name} - Pet Sitter`} description={sitter.headline || `Check out ${name}'s pet sitting profile`} />
+          </div>
 
-            {/* Desktop: summary column on the left, sections on the right */}
-            <div className="lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start lg:gap-8 xl:grid-cols-[340px_minmax(0,1fr)]">
-            {/* Header Section */}
-            <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-6 md:mb-8 lg:grid-cols-1 lg:gap-5 lg:mb-0 lg:rounded-2xl lg:border lg:border-border lg:p-5">
-              {/* Photo Gallery — sit-style arrows, tap to open full size */}
-              <div className="space-y-3">
-                <div className="relative aspect-[3/2] w-56 sm:w-64 md:w-auto mx-auto md:mx-0 rounded-xl overflow-hidden bg-muted">
-                  {allPhotos.length > 0 ? (
+          <div className="flex flex-col gap-6 md:grid md:grid-cols-[280px_minmax(0,1fr)] md:items-start md:gap-8 lg:grid-cols-[340px_minmax(0,1fr)]">
+            <SectionCard className="p-0 md:sticky md:top-24 md:p-5 max-md:border-0 max-md:bg-transparent">{summary}</SectionCard>
+
+            <div className="flex min-w-0 flex-col gap-7">
+              {preview && showTips && !sitter.bio && (
+                <PreviewTip title="About me is empty" text="Pet Parents skip this section right now. A few lines about the pets you've cared for makes you far more likely to be invited." action={{ label: "Add a bio", to: "/edit-sitter-profile" }} />
+              )}
+              {preview && showTips && (sitter.gallery ?? []).length < 2 && (
+                <PreviewTip title="Add a couple of photos" text="Photos of you with pets help Pet Parents picture you in their home." action={{ label: "Add photos", to: "/edit-sitter-profile" }} />
+              )}
+              {preview && showTips && portfolio.length === 0 && (
+                <PreviewTip title="Sit Stories show here" text="After a sit, ask the Pet Parent to approve your story. Approved stories appear here for future hosts." action={{ label: "Your Sit Stories", to: "/my-sit-stories" }} />
+              )}
+
+              {(sitter.bio || sitter.why_i_sit || sitter.experience_details) && (
+                <Section title={`About ${name}`}>
+                  {sitter.bio && <p className="whitespace-pre-line text-[16px] leading-relaxed">{sitter.bio}</p>}
+                  {(sitter.why_i_sit || sitter.experience_details) && (
                     <>
-                      <button
-                        type="button"
-                        onClick={() => setPhotoOpen(true)}
-                        aria-label="Open photo full size"
-                        className="block w-full h-full"
-                      >
-                        <img
-                          src={allPhotos[selectedPhoto]}
-                          alt={name}
-                          className="w-full h-full object-cover"
-                        />
+                      {moreOpen && (
+                        <div id="nomad-more" className="flex flex-col gap-4">
+                          {sitter.why_i_sit && (
+                            <div className="flex flex-col gap-1">
+                              <h3 className="text-[15px] font-bold">Why I pet sit</h3>
+                              <p className="whitespace-pre-line text-[16px] leading-relaxed">{sitter.why_i_sit}</p>
+                            </div>
+                          )}
+                          {sitter.experience_details && (
+                            <div className="flex flex-col gap-1">
+                              <h3 className="text-[15px] font-bold">Experience</h3>
+                              <p className="whitespace-pre-line text-[16px] leading-relaxed">{sitter.experience_details}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <button type="button" aria-expanded={moreOpen} aria-controls="nomad-more" onClick={() => setMoreOpen(!moreOpen)} className="min-h-11 self-start text-[15px] font-bold underline underline-offset-2">
+                        {moreOpen ? "Show less" : `Why ${name} sits and their experience`}
                       </button>
-                      {allPhotos.length > 1 && (
-                        <>
-                          <button
-                            type="button"
-                            aria-label="Previous photo"
-                            onClick={() =>
-                              setSelectedPhoto((i) => (i - 1 + allPhotos.length) % allPhotos.length)
-                            }
-                            className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur p-1.5 shadow hover:bg-background"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label="Next photo"
-                            onClick={() => setSelectedPhoto((i) => (i + 1) % allPhotos.length)}
-                            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-background/80 backdrop-blur p-1.5 shadow hover:bg-background"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                          <span className="absolute bottom-1.5 right-1.5 rounded-full bg-background/80 px-2 py-0.5 text-[11px] text-muted-foreground">
-                            {selectedPhoto + 1}/{allPhotos.length}
-                          </span>
-                        </>
-                      )}
                     </>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Avatar className="w-full h-full">
-                        <AvatarFallback className="text-2xl md:text-4xl">{initials}</AvatarFallback>
-                      </Avatar>
+                  )}
+                </Section>
+              )}
+
+              {(sitter.gallery ?? []).length > 0 && (
+                <Section title="Photos">
+                  <div className="grid grid-cols-3 gap-2">
+                    {(sitter.gallery ?? []).slice(0, 6).map((p, i) => (
+                      <button
+                        key={p + i}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPhoto(allPhotos.indexOf(p));
+                          setPhotoOpen(true);
+                        }}
+                        aria-label={`Open photo ${i + 1}`}
+                        className="aspect-square overflow-hidden rounded-2xl bg-muted"
+                      >
+                        <img src={p} alt="" loading="lazy" className="h-full w-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              <Section title="Pets and skills">
+                <div className="flex flex-wrap gap-2">
+                  {shownPets.map((p) => (
+                    <StatusChip key={p} tone="grey">
+                      {formatPetType(p)}
+                    </StatusChip>
+                  ))}
+                  {extraPets.length > 0 && (
+                    <span title={extraPets.map(formatPetType).join(", ")}>
+                      <StatusChip tone="grey">+{extraPets.length}</StatusChip>
+                    </span>
+                  )}
+                </div>
+                <dl className="grid grid-cols-2 gap-3 text-[15px]">
+                  {sitter.experience_level && (
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Experience</dt>
+                      <dd className="font-semibold">{cap(sitter.experience_level)}</dd>
                     </div>
                   )}
-                  {/* Share — top left, plain icon */}
-                  <div className="absolute top-3 left-3">
-                    <ShareDialog
-                      title={`${name} - Pet Sitter`}
-                      description={sitter.headline || `Check out ${name}'s pet sitting profile`}
-                      triggerClassName="border-0 bg-transparent text-white shadow-none drop-shadow hover:bg-transparent hover:text-white [&_svg]:h-7 [&_svg]:w-7"
-                    />
-                  </div>
-                </div>
+                  {sitter.languages?.length > 0 && (
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Languages</dt>
+                      <dd className="font-semibold">{sitter.languages.join(", ")}</dd>
+                    </div>
+                  )}
+                </dl>
+                {hasStyle && (
+                  <button type="button" onClick={() => setStyleOpen(true)} className="flex min-h-[56px] items-center gap-3 rounded-[18px] border border-[var(--nn-border)] bg-card px-4 text-left">
+                    <span className="flex-1 text-[16px] font-bold">How {name} likes to sit</span>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                  </button>
+                )}
+              </Section>
 
-                <PhotoLightbox
-                  open={photoOpen}
-                  onOpenChange={setPhotoOpen}
-                  photos={allPhotos}
-                  startIndex={selectedPhoto}
-                  alt={name}
-                  onIndexChange={setSelectedPhoto}
+              {userId && <SitterPortfolio sitterId={userId} />}
+
+              <Section title="Reviews">
+                <SitterReviewsSummaryCard sitterUserId={userId!} />
+              </Section>
+
+              {location && (
+                <Section title="Based in">
+                  <p className="text-[15px]">
+                    {location}. <span className="text-muted-foreground">City only, never an address.</span>
+                  </p>
+                </Section>
+              )}
+
+              {isOther && (
+                <ReportDialog
+                  targetType="user"
+                  targetId={userId!}
+                  targetLabel="sitter"
+                  trigger={
+                    <button type="button" className="inline-flex min-h-11 items-center gap-2 self-start text-[15px] font-semibold text-muted-foreground underline underline-offset-2">
+                      <Flag className="h-4 w-4" aria-hidden="true" />
+                      Report this profile
+                    </button>
+                  }
                 />
+              )}
 
-              </div>
-
-              {/* Profile Info */}
-              <div className="md:col-span-2 lg:col-span-1 min-w-0">
-                <div className="mb-3">
-                  {/* Name + founding badge + report flag on one line */}
-                  <div className="flex items-center gap-2 min-w-0">
-                    <h1 className="text-xl md:text-3xl font-bold truncate">{name}</h1>
-                    {profile.founding_member && <FoundingMemberBadge />}
-                    {user && user.id !== userId && (
-                      <ReportDialog
-                        targetType="user"
-                        targetId={userId!}
-                        targetLabel="sitter"
-                        trigger={
-                          <Button variant="ghost" size="icon" className="text-muted-foreground shrink-0 h-8 w-8">
-                            <Flag className="w-4 h-4" />
-                          </Button>
-                        }
-                      />
-                    )}
-                  </div>
-                  {reviewRate?.review_rate !== null && reviewRate?.review_rate !== undefined && (
-                    <p className="text-xs text-muted-foreground">
-                      Review Rate: {reviewRate.review_rate}%
-                    </p>
-                  )}
-                  {sitter.headline && (
-                    <p className="text-sm md:text-lg text-muted-foreground">
-                      {sitter.headline}
-                    </p>
-                  )}
-                  {/* All verification badges on one wrapping row */}
-                  <VerificationBadges
-                    idVerified={sitter.id_verified}
-                    emailVerified={profile?.email_verified}
-                    phoneVerified={profile?.phone_verified}
-                    backgroundCheck={sitter.background_check}
-                    className="mt-2"
-                  />
-                </div>
-
-                <div className="space-y-1.5 mb-6 text-sm text-muted-foreground">
-                  {/* Row 1: location + languages */}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                    {location && (
-                      <div className="flex items-center gap-2 min-w-0">
-                        <MapPin className="w-4 h-4 shrink-0" />
-                        <span className="truncate">{location}</span>
-                      </div>
-                    )}
-                    {sitter.languages && sitter.languages.length > 0 && (
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Languages className="w-4 h-4 shrink-0" />
-                        <span className="truncate">{sitter.languages.join(", ")}</span>
-                      </div>
-                    )}
-                  </div>
-                  {/* Row 2: reviews + experience */}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                    {ratingData && ratingData.count > 0 ? (
-                      <div className="flex items-center gap-2">
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        {ratingData.average.toFixed(1)} ({ratingData.count} review{ratingData.count !== 1 ? "s" : ""})
-                      </div>
-                    ) : ratingData ? (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Star className="w-4 h-4" />
-                        <span className="italic">No reviews yet</span>
-                      </div>
-                    ) : null}
-                    {sitter.experience_level && (
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Award className="w-4 h-4 shrink-0" />
-                        <span className="truncate">{sitter.experience_level}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {user && user.id !== userId && (
-                    <Button
-                      variant="outline"
-                      onClick={async () => {
-                        setIsStartingChat(true);
-                        try {
-                          const { conversationId } = await startConversation.mutateAsync({
-                            otherUserId: userId!,
-                            conversationType: "direct",
-                          });
-                          navigate(`/inbox?conversation=${conversationId}`);
-                        } catch (error: any) {
-                          toast({
-                            variant: "destructive",
-                            title: "Error",
-                            description: error.message || "Failed to start conversation",
-                          });
-                        } finally {
-                          setIsStartingChat(false);
-                        }
-                      }}
-                      disabled={isStartingChat}
-                    >
-                      {isStartingChat ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <MessageSquare className="w-4 h-4 mr-2" />
-                      )}
-                      Message
-                    </Button>
-                  )}
-                  {preview && (
-                    <div className="flex flex-col gap-1">
-                      <Button disabled>
-                        <Send className="w-4 h-4 mr-2" />
-                        Invite {profile.first_name || "me"} to a sit
-                      </Button>
-                      <span className="text-xs text-muted-foreground">Pet Parents see this button. It's switched off in preview.</span>
-                    </div>
-                  )}
-                  {user && user.id !== userId && (role === "owner" || role === "both") && (
-                    <Button
-                      onClick={() => setShowInviteDialog(true)}
-                      disabled={listings.length === 0}
-                      title={listings.length === 0 ? "You need a published listing with open dates to invite a sitter" : undefined}
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      Invite to Sit
-                    </Button>
-                  )}
-                </div>
-
-
-
-                {/* Pet Types */}
-                {sitter.pet_types && sitter.pet_types.length > 0 && (
-                  <div className="mb-6">
-                    <p className="font-medium mb-2">Experienced with</p>
-                    <div className="flex flex-wrap gap-2">
-                      {(() => {
-                        const pets = dedupePetTypes(sitter.pet_types);
-                        const visible = pets.slice(0, 4);
-                        const hidden = pets.slice(4);
-                        return (
-                          <>
-                            {visible.map((petType) => {
-                              const Icon = petTypeIcon(petType);
-                              return (
-                                <Badge key={petType} variant="secondary" className="gap-1 capitalize">
-                                  <Icon className="w-3 h-3" />
-                                  {formatPetType(petType)}
-                                </Badge>
-                              );
-                            })}
-                            {hidden.length > 0 && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <button type="button" className="inline-flex items-center gap-1 rounded-full bg-secondary text-secondary-foreground px-2.5 py-1 text-xs font-medium hover:bg-secondary/80">
-                                    +{hidden.length}
-                                    <ChevronDown className="w-3 h-3" />
-                                  </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start">
-                                  {hidden.map((petType) => {
-                                    const Icon = petTypeIcon(petType);
-                                    return (
-                                      <DropdownMenuItem key={petType} className="gap-2 capitalize">
-                                        <Icon className="w-3 h-3" />
-                                        {formatPetType(petType)}
-                                      </DropdownMenuItem>
-                                    );
-                                  })}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                )}
-
-                {/* Free to sit: upcoming free ranges only, never where they're sitting */}
-                {freeDates && freeDates.length > 0 && (
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <p className="flex items-center gap-2 text-sm font-medium mb-2">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      Free to sit
-                    </p>
-                    <ul className="flex flex-wrap gap-2">
-                      {freeDates.map((r) => (
-                        <li key={r.start} className="rounded-full bg-[var(--nn-ok-bg)] px-3 py-1 text-sm font-semibold text-[var(--nn-ok-text)]">
-                          {shortRange(r.start, r.end)} · {r.days} {r.days === 1 ? "day" : "days"}
-                        </li>
-                      ))}
-                    </ul>
-                    {preview && (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Only your free dates show. Where you're sitting right now is never shown.
-                      </p>
-                    )}
-                  </div>
-                )}
-                {preview && showTips && freeDates && freeDates.length === 0 && (
-                  <PreviewTip
-                    title="No free dates yet"
-                    text="Pet Parents plan ahead. Add the dates you're free and you'll show up for their sits."
-                    action={{ label: "Set your dates", to: "/availability" }}
-                  />
-                )}
-
-                {/* Availability (before free dates are available) */}
-                {freeDates === null && (sitter.available_from || sitter.available_to) && (
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      <span className="font-medium">Available:</span>
-                      {sitter.available_from && sitter.available_to ? (
-                        <span>
-                          {format(new Date(sitter.available_from), "MMM d, yyyy")} -{" "}
-                          {format(new Date(sitter.available_to), "MMM d, yyyy")}
-                        </span>
-                      ) : (
-                        <span>Flexible dates</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="min-w-0">
-            {preview && showTips && !sitter.bio && (
-              <PreviewTip
-                title="About me is empty"
-                text="Pet Parents skip this section right now. A few lines about the pets you've cared for makes you far more likely to be invited."
-                action={{ label: "Add a bio", to: "/edit-sitter-profile" }}
-              />
-            )}
-            {preview && showTips && (sitter.gallery ?? []).length < 2 && (
-              <PreviewTip
-                title="Add a couple of photos"
-                text="Photos of you with pets help Pet Parents picture you in their home."
-                action={{ label: "Add photos", to: "/edit-sitter-profile" }}
-              />
-            )}
-            {preview && showTips && portfolio.length === 0 && (
-              <PreviewTip
-                title="Sit Stories show here"
-                text="After a sit, ask the Pet Parent to approve your story. Approved stories appear here for future hosts."
-                action={{ label: "Your Sit Stories", to: "/my-sit-stories" }}
-              />
-            )}
-
-            {/* About Section */}
-            {sitter.bio && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle asChild>
-                    <h2>About {profile.first_name || "Me"}</h2>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground whitespace-pre-wrap">
-                    {sitter.bio}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Sit Stories approved by Pet Parents */}
-            {userId && <SitterPortfolio sitterId={userId} />}
-
-            {/* Why I Sit */}
-            {sitter.why_i_sit && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle asChild>
-                    <h2 className="flex items-center gap-2">
-                      <Heart className="w-5 h-5 text-primary" />
-                      Why I Pet Sit
-                    </h2>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground whitespace-pre-wrap">
-                    {sitter.why_i_sit}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Experience Details */}
-            {sitter.experience_details && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle asChild>
-                    <h2 className="flex items-center gap-2">
-                      <Award className="w-5 h-5 text-primary" />
-                      Experience
-                    </h2>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground whitespace-pre-wrap">
-                    {sitter.experience_details}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Preferences Grid */}
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              {/* Sit Style & Comfortable With */}
-              <Card>
-                <CardHeader>
-                  <CardTitle asChild>
-                    <h2 className="flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-primary" />
-                      Sitting Style
-                    </h2>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {sitter.sit_style && (
-                    <div>
-                      <h4 className="text-sm font-medium mb-1">Preferred Style</h4>
-                      <p className="text-muted-foreground">{sitter.sit_style}</p>
-                    </div>
-                  )}
-                  {sitter.comfortable_with && sitter.comfortable_with.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium mb-2">Comfortable with</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {sitter.comfortable_with.map((item) => (
-                          <Badge key={item} variant="muted">
-                            {item}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Home Preferences */}
-              <Card>
-                <CardHeader>
-                  <CardTitle asChild>
-                    <h2 className="flex items-center gap-2">
-                      <Home className="w-5 h-5 text-primary" />
-                      Home Preferences
-                    </h2>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {sitter.home_preferences && sitter.home_preferences.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {sitter.home_preferences.map((pref) => (
-                        <Badge key={pref} variant="muted">
-                          {pref}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">No specific preferences</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Preferred Locations */}
-            {(sitter.preferred_regions?.length > 0 ||
-              sitter.preferred_countries?.length > 0 ||
-              sitter.preferred_cities?.length > 0) && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle asChild>
-                    <h2 className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-primary" />
-                      Preferred Locations
-                    </h2>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {sitter.preferred_regions?.map((region) => (
-                      <Badge key={region} variant="outline">
-                        {region}
-                      </Badge>
-                    ))}
-                    {sitter.preferred_countries?.map((country) => (
-                      <Badge key={country} variant="outline">
-                        {country}
-                      </Badge>
-                    ))}
-                    {sitter.preferred_cities?.map((city) => (
-                      <Badge key={city} variant="outline">
-                        {city}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Location Map */}
-            {sitter.latitude && sitter.longitude && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle asChild>
-                    <h2 className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5" />
-                      Location
-                    </h2>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <SitterLocationMap
-                    latitude={sitter.latitude}
-                    longitude={sitter.longitude}
-                    name={profile.first_name || "Sitter"}
-                  />
-                  {location && (
-                    <p className="text-sm text-muted-foreground mt-2">{location}</p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Reviews Section */}
-            <SitterReviewsSummaryCard sitterUserId={userId!} />
-
-            {preview && (
-              <NeverShownNote>
-                your last name, email, phone number, date of birth, ID documents or exact location.
-              </NeverShownNote>
-            )}
-            </div>
+              {preview && <NeverShownNote>your last name, email, phone number, date of birth, ID documents or exact location.</NeverShownNote>}
             </div>
           </div>
         </div>
       </main>
+
+      {/* Phone: Message and Invite stay at the bottom. */}
+      {showBar && (
+        <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col gap-1.5 border-t border-border bg-card px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 md:hidden">
+          {actions("bar")}
+          {actionsNote}
+        </div>
+      )}
+
+      <PhotoLightbox open={photoOpen} onOpenChange={setPhotoOpen} photos={allPhotos} startIndex={Math.max(0, selectedPhoto)} alt={name} onIndexChange={setSelectedPhoto} />
+
+      <ResponsiveSheet open={styleOpen} onOpenChange={setStyleOpen} title={`How ${name} likes to sit`} description={`${name}'s sitting style and preferences`}>
+        <div className="flex flex-col gap-5 text-[16px]">
+          {(sitter.sit_style || sitter.comfortable_with?.length > 0) && (
+            <div className="flex flex-col gap-1">
+              <h3 className="text-[15px] font-bold">Sitting style</h3>
+              <p className="text-muted-foreground">
+                {[sitter.sit_style, sitter.comfortable_with?.length ? `Comfortable with ${sitter.comfortable_with.join(", ").toLowerCase()}.` : null].filter(Boolean).join(". ")}
+              </p>
+            </div>
+          )}
+          {sitter.home_preferences?.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <h3 className="text-[15px] font-bold">Home preferences</h3>
+              <p className="text-muted-foreground">{sitter.home_preferences.join(" · ")}</p>
+            </div>
+          )}
+          {places.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <h3 className="text-[15px] font-bold">Favourite places</h3>
+              <p className="text-muted-foreground">{places.join(" · ")}</p>
+            </div>
+          )}
+        </div>
+      </ResponsiveSheet>
+
+      {isPetParentViewer && canInvite && (
+        <InvitePanel
+          open={inviteOpen}
+          onOpenChange={setInviteOpen}
+          sitterUserId={userId!}
+          sitterName={name}
+          ownerUserId={user.id}
+          listings={listings}
+          freeDates={freeDates ?? []}
+        />
+      )}
 
       <CommunityWarningModal
         open={warningOpen}
@@ -1036,84 +594,10 @@ const SitterDetail = () => {
         onContinue={() => setWarningOpen(false)}
       />
 
-
-
-      {/* Invite Dialog */}
-      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Invite {profile.first_name} to Sit</DialogTitle>
-            <DialogDescription>
-              Select one of your listings and dates to send an invitation.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Select Listing</Label>
-              <Select value={selectedListing} onValueChange={(val) => {
-                setSelectedListing(val);
-                setSelectedDateId("");
-              }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a listing" />
-                </SelectTrigger>
-                <SelectContent>
-                  {listings.map((listing) => (
-                    <SelectItem key={listing.id} value={listing.id}>
-                      {listing.title} - {listing.city}, {listing.country}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedListing && availableDates && availableDates.length > 0 && (
-              <div className="space-y-2">
-                <Label>Select Dates</Label>
-                <Select value={selectedDateId} onValueChange={setSelectedDateId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose dates" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableDates.map((date) => (
-                      <SelectItem key={date.id} value={date.id}>
-                        {format(new Date(date.start_date), "MMM d, yyyy")} -{" "}
-                        {format(new Date(date.end_date), "MMM d, yyyy")}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Message (optional)</Label>
-              <Textarea
-                placeholder="Tell them why you think they'd be a great fit..."
-                value={inviteMessage}
-                onChange={(e) => setInviteMessage(e.target.value)}
-                rows={4}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInviteDialog(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleInvite}
-              disabled={!selectedListing || !selectedDateId || sending}
-            >
-              {sending ? "Sending..." : "Send Invitation"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Footer />
-    </div>
+      <div className={cn(showBar && "hidden md:block")}>
+        <Footer />
+      </div>
+    </RoleTheme>
   );
 };
 
