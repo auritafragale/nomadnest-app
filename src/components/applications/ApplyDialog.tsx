@@ -70,6 +70,8 @@ interface ApplyDialogProps {
   otherDates?: SitDate[];
   /** Takes the Nomad back to date selection on the listing. */
   onChooseOtherDates?: () => void;
+  /** The Pet Parent's first name, for the success screen. */
+  hostFirstName?: string | null;
 }
 
 const AI_DRAFT_STATUS_MESSAGES = [
@@ -121,6 +123,7 @@ export const ApplyDialog = ({
   petNames,
   otherDates,
   onChooseOtherDates,
+  hostFirstName,
 }: ApplyDialogProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -136,6 +139,8 @@ export const ApplyDialog = ({
   } = useApplicationSubmission();
 
   const [step, setStep] = useState<Step>(1);
+  // After sending, the dialog shows a success screen instead of closing.
+  const [sentCount, setSentCount] = useState(0);
   const [message, setMessage] = useState("");
   const [whoChoice, setWhoChoice] = useState("");
   const [whoOther, setWhoOther] = useState("");
@@ -226,7 +231,10 @@ export const ApplyDialog = ({
 
   // Every time the dialog opens, start on step 1.
   useEffect(() => {
-    if (open) setStep(1);
+    if (open) {
+      setStep(1);
+      setSentCount(0);
+    }
   }, [open]);
 
   // Move focus to the current heading when the step changes, and when the
@@ -320,13 +328,7 @@ export const ApplyDialog = ({
         highlights: selectedHighlights,
       });
 
-      toast({
-        title:
-          datesToSubmit.length > 1
-            ? `${datesToSubmit.length} applications sent!`
-            : "Application sent!",
-        description: "The Pet Parent will review your application soon.",
-      });
+      setSentCount(datesToSubmit.length);
 
       setMessage("");
       setAiNote("");
@@ -335,13 +337,12 @@ export const ApplyDialog = ({
       setWhoOther("");
       setSelectedHighlights([]);
       setStep(1);
-      onOpenChange(false);
       onSuccess?.();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error applying:", error);
       toast({
         title: "Failed to apply",
-        description: error.message || "Something went wrong",
+        description: error instanceof Error ? error.message : "Something went wrong",
         variant: "destructive",
       });
     } finally {
@@ -370,7 +371,7 @@ export const ApplyDialog = ({
       ref={headingRef}
       tabIndex={-1}
       className={cn(
-        "font-display text-xl font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm",
+        "font-display text-[24px] font-normal text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm",
         className,
       )}
     >
@@ -802,11 +803,14 @@ export const ApplyDialog = ({
           className="resize-none rounded-xl text-base leading-relaxed sm:text-sm"
         />
         {hasAiDraft && (
-          <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-            <Sparkles className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
-            AI draft. Please review and make it your own before sending.
+          <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
+            <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            AI draft. Read it and make it your own before sending.
           </p>
         )}
+        <p className="text-sm text-muted-foreground">
+          Keep phone numbers, emails and links out for now. You can share them once the sit is confirmed.
+        </p>
       </section>
     </div>
   );
@@ -823,7 +827,7 @@ export const ApplyDialog = ({
   const footer = (
     <div className="border-t bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-6">
       {footerHint && (
-        <p className="mb-2 text-center text-xs text-muted-foreground sm:text-right" aria-live="polite">
+        <p className="mb-2 text-center text-sm text-muted-foreground sm:text-right" aria-live="polite">
           {footerHint}
         </p>
       )}
@@ -877,7 +881,27 @@ export const ApplyDialog = ({
   // ─── Body ──────────────────────────────────────────────────────────────────
 
   let body: ReactNode;
-  if (showMembershipGate) {
+  if (sentCount > 0) {
+    body = gateCard({
+      icon: <CheckCircle2 className="h-6 w-6" aria-hidden="true" />,
+      title: sentCount > 1 ? `${sentCount} applications sent` : "Application sent",
+      body: `${hostFirstName || "The Pet Parent"} will read it soon. We'll let you know as soon as they reply.`,
+      action: {
+        label: "See my applications",
+        onClick: () => {
+          onOpenChange(false);
+          navigate("/my-applications");
+        },
+      },
+      secondaryAction: {
+        label: "Keep browsing",
+        onClick: () => {
+          onOpenChange(false);
+          navigate("/browse-sits");
+        },
+      },
+    });
+  } else if (showMembershipGate) {
     body = gateCard({
       icon: <Lock className="h-6 w-6" aria-hidden="true" />,
       title: "Become a Nomad member",
@@ -1002,7 +1026,7 @@ export const ApplyDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         onOpenAutoFocus={focusHeading}
-        className="flex max-h-[90vh] max-w-2xl flex-col gap-0 overflow-hidden p-0"
+        className="flex max-h-[90vh] max-w-[640px] flex-col gap-0 overflow-hidden rounded-[24px] p-0"
       >
         <DialogTitle className="sr-only">Apply for {listingTitle}</DialogTitle>
         <DialogDescription className="sr-only">

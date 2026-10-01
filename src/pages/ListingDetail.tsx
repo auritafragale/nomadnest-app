@@ -790,6 +790,7 @@ const ListingDetail = () => {
             listingPhoto={listing.photos?.[0] ?? null}
             listingLocation={[listing.city, listing.country].filter(Boolean).join(", ") || null}
             petNames={listing.pets.map((pet) => pet.name).filter(Boolean)}
+            hostFirstName={hostFirst}
             otherDates={openDates.filter((d) => !selectedDateIds.includes(d.id))}
             onChooseOtherDates={() => {
               setApplyDialogOpen(false);
