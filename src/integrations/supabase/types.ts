@@ -1105,6 +1105,35 @@ export type Database = {
           },
         ]
       }
+      nomad_match_cache: {
+        Row: {
+          created_at: string
+          listing_id: string
+          owner_user_id: string
+          results: Json
+        }
+        Insert: {
+          created_at?: string
+          listing_id: string
+          owner_user_id: string
+          results?: Json
+        }
+        Update: {
+          created_at?: string
+          listing_id?: string
+          owner_user_id?: string
+          results?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nomad_match_cache_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -3018,6 +3047,13 @@ export type Database = {
       notify_guide_unlocks: { Args: never; Returns: number }
       prepare_account_deletion: { Args: { p_user_id: string }; Returns: Json }
       profile_is_discoverable: { Args: { p_user_id: string }; Returns: boolean }
+      public_founding_spots: {
+        Args: never
+        Returns: {
+          cap: number
+          spots_left: number
+        }[]
+      }
       purge_expired_safety_records: { Args: never; Returns: Json }
       random_point_near: {
         Args: { p_lat: number; p_lng: number; p_radius_m?: number }
