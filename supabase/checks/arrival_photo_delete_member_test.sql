@@ -1,6 +1,6 @@
--- Arrival Check-In photo delete: behaviour test as members. Runs inside a
--- transaction and ROLLS BACK: nothing is changed (no files are touched; the
--- storage rule is tested through its helper).
+-- Arrival Check-In photos: behaviour test as members (delete, update, insert).
+-- Runs inside a transaction and ROLLS BACK: nothing is changed (no files are
+-- touched; the storage rule is tested through its helper).
 --
 -- Needs one sit with a Nomad, one other member, and at least one review.
 -- Result: the last query returns "PASS"; anything unexpected stops with an
@@ -17,6 +17,7 @@ DECLARE
   v_mine uuid;
   v_theirs uuid;
   v_evidence uuid;
+  v_other_sit uuid;
   v_n integer;
 BEGIN
   SELECT id, sitter_user_id INTO v_sit, v_nomad FROM public.sits WHERE sitter_user_id IS NOT NULL ORDER BY created_at DESC LIMIT 1;
@@ -25,6 +26,9 @@ BEGIN
   IF v_other IS NULL THEN RAISE EXCEPTION 'FAIL: needs a second member'; END IF;
   SELECT id INTO v_review FROM public.reviews ORDER BY created_at DESC LIMIT 1;
   IF v_review IS NULL THEN RAISE EXCEPTION 'FAIL: needs at least one review (for the evidence row)'; END IF;
+  -- A sit this Nomad isn't on; if there is none, a made-up id (the policy refuses it either way).
+  SELECT id INTO v_other_sit FROM public.sits WHERE sitter_user_id IS DISTINCT FROM v_nomad ORDER BY created_at DESC LIMIT 1;
+  v_other_sit := COALESCE(v_other_sit, gen_random_uuid());
 
   -- Fixture rows (no files): the Nomad's photo, another member's photo, and
   -- the Nomad's photo that is attached to a flag as evidence.
@@ -68,6 +72,28 @@ BEGIN
   IF public.arrival_photo_file_deletable(v_other::text || '/' || v_sit::text || '/member-test-theirs.jpg') THEN
     RAISE EXCEPTION 'FAIL: a file whose photo row still exists is deletable';
   END IF;
+
+  -- UPDATE changes nothing (members have no UPDATE privilege at all).
+  BEGIN
+    UPDATE public.arrival_vault_photos SET photo_url = photo_url WHERE id = v_evidence;
+    GET DIAGNOSTICS v_n = ROW_COUNT;
+    IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: the Nomad updated a photo row'; END IF;
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  -- A photo for a sit that isn't theirs: refused.
+  BEGIN
+    INSERT INTO public.arrival_vault_photos (sit_id, sitter_user_id, photo_url)
+    VALUES (v_other_sit, v_nomad, v_nomad::text || '/' || v_other_sit::text || '/member-test-not-mine.jpg');
+    RAISE EXCEPTION 'FAIL: the Nomad added a photo to a sit that isn''t theirs';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  -- A photo for their own sit: works.
+  INSERT INTO public.arrival_vault_photos (sit_id, sitter_user_id, photo_url, taken_at)
+  VALUES (v_sit, v_nomad, v_nomad::text || '/' || v_sit::text || '/member-test-new.jpg', now());
+  GET DIAGNOSTICS v_n = ROW_COUNT;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: the Nomad could not add a photo to their own sit'; END IF;
   RESET ROLE;
 
   -- The other photos are still there.
