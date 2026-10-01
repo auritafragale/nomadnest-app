@@ -2573,8 +2573,6 @@ export type Database = {
       }
     }
     Functions: {
-      arrival_photo_file_deletable: { Args: { p_path: string }; Returns: boolean }
-      arrival_photo_is_evidence: { Args: { p_path: string }; Returns: boolean }
       accept_application: { Args: { p_application_id: string }; Returns: Json }
       accept_invite: {
         Args: { p_invite_id: string; p_message?: string }
@@ -2802,6 +2800,11 @@ export type Database = {
         }
         Returns: Json
       }
+      arrival_photo_file_deletable: {
+        Args: { p_path: string }
+        Returns: boolean
+      }
+      arrival_photo_is_evidence: { Args: { p_path: string }; Returns: boolean }
       attach_report_evidence: {
         Args: { p_paths: string[]; p_report_id: string }
         Returns: string[]
