@@ -1,19 +1,31 @@
-import { Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import HeroSection from "@/components/landing/HeroSection";
-import HowItWorksSection from "@/components/landing/HowItWorksSection";
-import FeaturedStaysSection from "@/components/landing/FeaturedStaysSection";
-import ValuePropsSection from "@/components/landing/ValuePropsSection";
-import WhyDifferentSection from "@/components/landing/WhyDifferentSection";
-import TestimonialsSection from "@/components/landing/TestimonialsSection";
-import TrustSection from "@/components/landing/TrustSection";
-import CTASection from "@/components/landing/CTASection";
+import {
+  FoundersCard,
+  FoundingBanner,
+  HomeHero,
+  HowItWorks,
+  OpenSits,
+  ReadyToStart,
+  WhyNomadNest,
+} from "@/components/landing/HomeSections";
 
+/** The home page, signed out only (design: HomePhone, HomeTablet, HomeDesktop). */
 const Index = () => {
   const { user, loading, onboardingCompleted } = useAuth();
+  const location = useLocation();
+
+  // Links like the footer's "/#how-it-works" land on the section.
+  useEffect(() => {
+    if (loading || user || !location.hash) return;
+    const id = decodeURIComponent(location.hash.slice(1));
+    const t = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    return () => window.clearTimeout(t);
+  }, [location.hash, loading, user]);
 
   if (loading) {
     return (
@@ -32,17 +44,16 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1">
-        <HeroSection />
-        <HowItWorksSection />
-        <FeaturedStaysSection />
-        <ValuePropsSection />
-        <WhyDifferentSection />
-        <TestimonialsSection />
-        <TrustSection />
-        <CTASection />
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <Navbar wide />
+      <main className="flex flex-1 flex-col gap-12 pb-12 md:gap-16 md:pb-16">
+        <HomeHero />
+        <FoundingBanner />
+        <HowItWorks />
+        <OpenSits />
+        <WhyNomadNest />
+        <FoundersCard />
+        <ReadyToStart />
       </main>
       <Footer />
     </div>

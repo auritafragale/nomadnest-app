@@ -22,6 +22,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Loader2 } from "lucide-react";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { formatCount, useFoundingSpots } from "@/hooks/useFoundingSpots";
 
 const PERK_EXAMPLES = [
   "Travel insurance",
@@ -126,6 +127,7 @@ const Membership = () => {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [foundingLoading, setFoundingLoading] = useState(false);
   const [codeDialogOpen, setCodeDialogOpen] = useState(false);
+  const { data: founding } = useFoundingSpots();
   const [inviteCode, setInviteCode] = useState("");
   const [activeTab, setActiveTab] = useState<"sitter" | "owner" | "combined">("combined");
 
@@ -173,7 +175,7 @@ const Membership = () => {
       } else if (result === "exhausted") {
         toast({
           title: "All founding spots claimed",
-          description: "The code was valid but all 900 spots are taken. You can join with a paid plan.",
+          description: "The code was valid but all founding spots are taken. You can join with a paid plan.",
           variant: "destructive",
         });
       } else {
@@ -439,7 +441,8 @@ const Membership = () => {
           <DialogHeader>
             <DialogTitle>Redeem Founding Member Code</DialogTitle>
             <DialogDescription>
-              Enter your invite code to unlock free lifetime Combined membership. Spots are limited to 900.
+              Enter your invite code to unlock free lifetime Combined membership.
+              {founding ? ` Spots are limited: ${formatCount(founding.spotsLeft)} of ${formatCount(founding.cap)} left.` : " Spots are limited."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">

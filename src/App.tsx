@@ -15,6 +15,7 @@ import RouteSeo from "@/components/seo/RouteSeo";
 import SplashScreen from "@/components/mobile/SplashScreen";
 import OnboardingCarousel, { ONBOARDING_STORAGE_KEY } from "@/components/mobile/OnboardingCarousel";
 import BottomNav from "@/components/mobile/BottomNav";
+import { useBottomNavHidden } from "@/lib/bottomNav";
 import GuidedWalkthrough from "@/components/walkthrough/GuidedWalkthrough";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import { ReportProvider } from "@/components/reports/ReportContext";
@@ -119,8 +120,9 @@ const AppShell = () => {
   const showSplash = !splashDone && isHome;
   const introFinished = (splashDone || !isHome) && (onboardingDone || !isHome);
 
+  const bottomNavHiddenByPage = useBottomNavHidden();
   const showBottomNav =
-    user !== null && !NO_BOTTOM_NAV_PATHS.includes(location.pathname) && !isSharedStory;
+    user !== null && !NO_BOTTOM_NAV_PATHS.includes(location.pathname) && !isSharedStory && !bottomNavHiddenByPage;
 
   return (
     <>

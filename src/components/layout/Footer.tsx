@@ -42,9 +42,48 @@ const Footer = () => {
     { icon: Mail, label: "Email", href: "mailto:support@nomadnest.global" },
   ];
 
+  // Phone: one compact block of links (design: HomePhone footer).
+  const compact = [
+    { label: "About", href: "/about" },
+    { label: "How it works", href: "/#how-it-works" },
+    { label: "Safety", href: "/safety" },
+    { label: "FAQ", href: "/faq" },
+    { label: "Contact", href: "/contact" },
+    { label: "Code of conduct", href: "/code-of-conduct" },
+    { label: "Privacy", href: "/privacy" },
+    { label: "Terms", href: "/terms" },
+    { label: "Cookies", href: "/cookies" },
+  ];
+
   return (
-    <footer className="hidden md:block bg-surface border-t border-border mt-auto">
-      <div className="container py-12">
+    <footer className="mt-auto border-t border-border bg-surface">
+      <div className="px-5 py-8 md:hidden">
+        <nav aria-label="Footer" className="grid grid-cols-2 gap-x-4">
+          {compact.map((link) => (
+            <Link key={link.label} to={link.href} className="flex min-h-[44px] items-center text-[15px] text-muted-foreground hover:text-foreground">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-5">
+          <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} NomadNest</p>
+          <div className="flex items-center gap-1">
+            {socials.map((social) => (
+              <a
+                key={social.label}
+                href={social.href}
+                aria-label={social.label}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <social.icon className="h-5 w-5" aria-hidden="true" />
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="container hidden py-12 md:block">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="space-y-4 sm:col-span-2 lg:col-span-1">
