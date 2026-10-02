@@ -19,7 +19,6 @@ export interface MenuActions {
   listingId: string;
   onPause: () => void;
   onResume: () => void;
-  onTakeOffline: () => void;
   onDelete: () => void;
   busy: boolean;
 }
@@ -83,14 +82,18 @@ const ListingFormShell = ({
 
   const menuItems = menu && (
     <>
-      {menu.status === "published" && <DropdownMenuItem onSelect={menu.onPause}>Pause listing</DropdownMenuItem>}
+      {menu.status === "published" && (
+        <DropdownMenuItem onSelect={menu.onPause} className="flex-col items-start gap-0.5 py-2">
+          <span className="font-semibold">Pause listing</span>
+          <span className="max-w-[260px] text-xs text-muted-foreground">Hides your listing from Browse Sits. Your dates, applicants and confirmed sits stay as they are. Make it live again any time.</span>
+        </DropdownMenuItem>
+      )}
       {menu.status === "paused" && <DropdownMenuItem onSelect={menu.onResume}>Make listing live again</DropdownMenuItem>}
-      {menu.status !== "draft" && <DropdownMenuItem onSelect={menu.onTakeOffline}>Take offline (save as draft)</DropdownMenuItem>}
       <DropdownMenuItem asChild>
         <Link to={`/listing/${menu.listingId}`}>View listing</Link>
       </DropdownMenuItem>
       <DropdownMenuSeparator />
-      <DropdownMenuItem onSelect={menu.onDelete} className="font-semibold text-destructive focus:text-destructive">
+      <DropdownMenuItem onSelect={menu.onDelete} className="font-semibold text-[var(--nn-danger-text)] focus:text-[var(--nn-danger-text)]">
         Delete listing
       </DropdownMenuItem>
     </>

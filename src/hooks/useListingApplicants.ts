@@ -36,6 +36,9 @@ export interface Applicant {
   fit_pets_missing: string[];
   fit_meds_ok: boolean | null;
   fit_same_city: boolean;
+  /** The sit an accepted application became, and its status. */
+  sit_id: string | null;
+  sit_status: "confirmed" | "in_progress" | "completed" | "cancelled" | string | null;
 }
 
 export interface OwnerListing {
@@ -43,6 +46,8 @@ export interface OwnerListing {
   title: string;
   status: string;
   city: string | null;
+  /** The home's time zone, for "today" there. */
+  timezone: string | null;
   sit_dates: { id: string; start_date: string; end_date: string; status: string }[];
 }
 
@@ -54,7 +59,7 @@ export const useMyListings = () => {
     queryFn: async (): Promise<OwnerListing[]> => {
       const { data, error } = await supabase
         .from("listings")
-        .select("id, title, status, city, created_at, sit_dates (id, start_date, end_date, status)")
+        .select("id, title, status, city, timezone, created_at, sit_dates (id, start_date, end_date, status)")
         .eq("owner_user_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;

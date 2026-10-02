@@ -20,6 +20,7 @@ import {
   useToggleShortlist,
 } from "@/hooks/useListingApplicants";
 import ApplicantCard from "@/components/applications/ApplicantCard";
+import ResponsiveSheet from "@/components/nn/ResponsiveSheet";
 import {
   ApplicantFilterGroups,
   ApplicantFilterSheet,
@@ -41,8 +42,25 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "accepted", label: "Confirmed" },
   { id: "past", label: "Past" },
 ];
-const tabOf = (status: Applicant["status"]): Tab =>
-  status === "applied" ? "applied" : status === "shortlisted" ? "shortlisted" : status === "accepted" ? "accepted" : "past";
+// Confirmed = an accepted application whose sit is still ahead or under way.
+// A finished or cancelled sit moves to Past with the rest.
+const tabOf = (a: Pick<Applicant, "status" | "sit_status">): Tab =>
+  a.status === "applied"
+    ? "applied"
+    : a.status === "shortlisted"
+      ? "shortlisted"
+      : a.status === "accepted" && a.sit_status !== "completed" && a.sit_status !== "cancelled"
+        ? "accepted"
+        : "past";
+
+/** Today's date (YYYY-MM-DD) where the home is. */
+const todayIn = (timezone: string | null | undefined) => {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: timezone || undefined }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+};
 // Old links used ?status=declined or cancelled; both live under Past now.
 const tabFromParam = (v: string | null): Tab =>
   v === "shortlisted" || v === "accepted" || v === "past" ? v : v === "declined" || v === "cancelled" || v === "withdrawn" ? "past" : "applied";
@@ -51,7 +69,7 @@ const EMPTY: Record<Tab, [string, string]> = {
   applied: ["No new applicants", "New applications for these dates show here. Inviting Nomads you like often helps."],
   shortlisted: ["No one shortlisted yet", "Tap the star on an applicant to keep them here."],
   accepted: ["No one confirmed yet", "When you confirm a Nomad for these dates, they show here."],
-  past: ["Nothing here", "Declined, withdrawn and cancelled applications show here."],
+  past: ["Nothing here", "Finished sits and declined, withdrawn and cancelled applications show here."],
 };
 
 /** Applicants (design: ApplicantsPhone, ApplicantsTabletDark, ApplicantsDesktop). */
@@ -65,6 +83,7 @@ const Applications = () => {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [declineId, setDeclineId] = useState<string | null>(null);
   const [messagingId, setMessagingId] = useState<string | null>(null);
+  const [earlierOpen, setEarlierOpen] = useState(false);
 
   const listingsQuery = useMyListings();
   const listings = listingsQuery.data ?? [];
@@ -89,26 +108,25 @@ const Applications = () => {
   const markSeen = useMarkApplicantsSeen();
   const startConversation = useStartConversation();
 
-  const today = new Date().toISOString().slice(0, 10);
-  // One chip per date range that is still to come or has applications.
-  const ranges = useMemo(() => {
+  const today = todayIn(listing?.timezone);
+  // Every range on the listing, with how many applicants are waiting.
+  const allRanges = useMemo(() => {
     if (!listing) return [];
-    const withApps = new Set(applicants.map((a) => a.sit_dates_id));
     return [...listing.sit_dates]
-      .filter((d) => d.end_date >= today || withApps.has(d.id))
       .sort((a, b) => a.start_date.localeCompare(b.start_date))
       .map((d) => ({
         ...d,
         waiting: applicants.filter((a) => a.sit_dates_id === d.id && (a.status === "applied" || a.status === "shortlisted")).length,
       }));
-  }, [listing, applicants, today]);
+  }, [listing, applicants]);
+  // Chips: current and upcoming ranges. Past ones sit behind "Earlier dates".
+  const ranges = allRanges.filter((r) => r.end_date >= today);
+  const pastRanges = allRanges.filter((r) => r.end_date < today).reverse();
 
   const rangeParam = params.get("range");
   const range =
-    ranges.find((r) => r.id === rangeParam) ??
-    ranges.find((r) => r.waiting > 0 && r.end_date >= today) ??
-    ranges.find((r) => r.end_date >= today) ??
-    ranges[0];
+    allRanges.find((r) => r.id === rangeParam) ?? ranges.find((r) => r.waiting > 0) ?? ranges[0] ?? undefined;
+  const pickedPast = !!range && range.end_date < today;
   const tab = tabFromParam(params.get("status"));
 
   const setParam = (key: string, value: string | null) => {
@@ -119,10 +137,10 @@ const Applications = () => {
   };
 
   const inRange = applicants.filter((a) => a.sit_dates_id === range?.id);
-  const counts = Object.fromEntries(TABS.map((t) => [t.id, inRange.filter((a) => tabOf(a.status) === t.id).length])) as Record<Tab, number>;
+  const counts = Object.fromEntries(TABS.map((t) => [t.id, inRange.filter((a) => tabOf(a) === t.id).length])) as Record<Tab, number>;
 
   const visible = inRange
-    .filter((a) => tabOf(a.status) === tab)
+    .filter((a) => tabOf(a) === tab)
     .filter((a) => {
       if (filters.place === "any") return true;
       const same = !!me?.country && !!a.country && a.country.toLowerCase() === me.country.toLowerCase();
@@ -140,17 +158,17 @@ const Applications = () => {
       return a.start_date.localeCompare(b.start_date) || b.created_at.localeCompare(a.created_at);
     });
 
-  // Welcome Guide nudge: a confirmed Nomad arriving soon and a guide under 100%.
+  // Welcome Guide nudge: only for a confirmed sit that hasn't started yet.
   const upcoming = applicants
-    .filter((a) => a.status === "accepted" && a.end_date >= today)
+    .filter((a) => a.status === "accepted" && a.sit_status === "confirmed" && a.start_date >= today)
     .sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
   const showNudge = !!upcoming && !!completion && completion.percent < 100;
 
   // Keep a stale ?range= from pointing nowhere.
   useEffect(() => {
-    if (rangeParam && ranges.length > 0 && !ranges.some((r) => r.id === rangeParam)) setParam("range", null);
+    if (rangeParam && allRanges.length > 0 && !allRanges.some((r) => r.id === rangeParam)) setParam("range", null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rangeParam, ranges]);
+  }, [rangeParam, allRanges]);
 
   if (loading) {
     return (
@@ -324,17 +342,19 @@ const Applications = () => {
               <h2 id="ranges-title" className="font-sans text-[15px] font-semibold text-muted-foreground">
                 {listing.title} · pick your dates
               </h2>
-              {ranges.length === 0 ? (
+              {ranges.length === 0 && (
                 <p className="text-[15px] text-muted-foreground">
-                  No dates yet.{" "}
+                  No upcoming dates.{" "}
                   <Link to={`/edit-listing/${listing.id}?focus=dates`} className="font-bold text-[var(--nn-accent-dark)] underline underline-offset-2">
-                    Add dates
+                    Add new dates
                   </Link>
                 </p>
-              ) : (
+              )}
+              {(ranges.length > 0 || pastRanges.length > 0) && (
                 <div role="group" aria-label="Date ranges" className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 md:mx-0 md:flex-wrap md:px-0">
-                  {ranges.map((r) => {
+                  {[...ranges, ...(pickedPast && range ? [range] : [])].map((r) => {
                     const on = r.id === range?.id;
+                    const past = r.end_date < today;
                     return (
                       <button
                         key={r.id}
@@ -348,15 +368,29 @@ const Applications = () => {
                       >
                         <span className="text-[15px] font-bold">{shortRange(r.start_date, r.end_date)}</span>
                         <span className={cn("text-sm font-semibold", on ? "text-[var(--nn-accent-dark)]" : "text-muted-foreground")}>
-                          {r.waiting} waiting
+                          {past ? "Earlier" : `${r.waiting} waiting`}
                         </span>
                       </button>
                     );
                   })}
+                  {pastRanges.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setEarlierOpen(true)}
+                      aria-haspopup="dialog"
+                      className="flex min-h-[56px] shrink-0 flex-col items-start justify-center rounded-2xl border-[1.5px] border-dashed border-border bg-card px-4 py-2 text-left"
+                    >
+                      <span className="text-[15px] font-bold">Earlier dates</span>
+                      <span className="text-sm font-semibold text-muted-foreground">
+                        {pastRanges.length} {pastRanges.length === 1 ? "range" : "ranges"}
+                      </span>
+                    </button>
+                  )}
                 </div>
               )}
             </section>
 
+            {range && (
             <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start lg:gap-8">
               {/* Desktop: the filters stay open on the left. */}
               <aside className="hidden flex-col gap-5 lg:sticky lg:top-24 lg:flex" aria-label="Sort and filter">
@@ -451,10 +485,32 @@ const Applications = () => {
                 <div className="lg:hidden">{invite}</div>
               </div>
             </div>
+            )}
           </>
         )}
       </main>
 
+      <ResponsiveSheet open={earlierOpen} onOpenChange={setEarlierOpen} title="Earlier dates" description="Pick an earlier date range to see its applicants">
+        <ul className="flex flex-col gap-2">
+          {pastRanges.map((r) => (
+            <li key={r.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  setParam("range", r.id);
+                  setEarlierOpen(false);
+                }}
+                className="flex min-h-[56px] w-full items-center justify-between gap-3 rounded-2xl border-[1.5px] border-border bg-card px-4 text-left"
+              >
+                <span className="text-[16px] font-bold">{`${shortRange(r.start_date, r.end_date)} ${r.end_date.slice(0, 4)}`}</span>
+                <span className="text-sm text-muted-foreground">
+                  {applicants.filter((x) => x.sit_dates_id === r.id).length} applicants
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </ResponsiveSheet>
       <ApplicantFilterSheet open={filtersOpen} onOpenChange={setFiltersOpen} value={filters} onApply={setFilters} />
       <ConfirmApplicantSheet
         open={!!confirmTarget}

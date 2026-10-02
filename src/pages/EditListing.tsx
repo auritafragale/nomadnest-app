@@ -242,9 +242,8 @@ const EditListing = () => {
           status,
           listingId: listing.id,
           busy: setStatus.isPending,
-          onPause: () => changeStatus("paused", "Listing paused. Nomads can't apply until you make it live again."),
+          onPause: () => changeStatus("paused", "Listing paused. Hides your listing from Browse Sits. Your dates, applicants and confirmed sits stay as they are. Make it live again any time."),
           onResume: () => changeStatus("published", "Your listing is live again."),
-          onTakeOffline: () => changeStatus("draft", "Listing taken offline. It's saved as a draft."),
           onDelete: () => setAskDelete(true),
         }}
       >

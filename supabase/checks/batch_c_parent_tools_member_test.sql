@@ -4,10 +4,13 @@
 -- back and nothing it does is ever kept:
 --   PASS:  ERROR: PASS_ROLLED_BACK: every check behaved as expected
 --   FAIL:  ERROR: FAIL: <what went wrong>
--- Needs: a listing whose owner is not an admin, and a second non-admin member
--- with a Nomad profile, and a third non-admin member.
--- Test data is marked with dates in 2099 and the last names Testparent /
--- Testnomad, so the leftover check at the bottom can prove nothing stayed.
+-- Needs: a non-admin member with a Nomad profile, a non-admin member with no
+-- listing (the test gives them a temporary one), and a third non-admin member.
+-- Test data is marked with dates in 2099, the title "Test listing 2099" and the
+-- last names Testparent / Testnomad, so the leftover check can prove nothing
+-- stayed.
+-- Server-side updates of profiles clear the request claims first, or
+-- prevent_privilege_escalation (correctly) refuses them.
 
 DO $$
 DECLARE
@@ -28,23 +31,31 @@ DECLARE
   v_before integer;
 BEGIN
   -- ── Members ────────────────────────────────────────────────────────────
-  SELECT l.id, l.owner_user_id INTO v_listing, v_owner
-  FROM public.listings l JOIN public.profiles p ON p.id = l.owner_user_id
-  WHERE p.is_admin IS NOT TRUE
-  ORDER BY l.created_at DESC LIMIT 1;
+  PERFORM set_config('request.jwt.claims', '', true);
 
   SELECT sp.user_id INTO v_nomad
   FROM public.sitter_profiles sp JOIN public.profiles p ON p.id = sp.user_id
-  WHERE p.is_admin IS NOT TRUE AND sp.user_id <> v_owner
+  WHERE p.is_admin IS NOT TRUE
+  ORDER BY p.created_at LIMIT 1;
+
+  -- An owner who has no listing yet, so the temporary one fits their limit.
+  SELECT p.id INTO v_owner FROM public.profiles p
+  WHERE p.is_admin IS NOT TRUE AND p.id <> v_nomad
+    AND NOT EXISTS (SELECT 1 FROM public.listings l WHERE l.owner_user_id = p.id)
   ORDER BY p.created_at LIMIT 1;
 
   SELECT p.id INTO v_other FROM public.profiles p
   WHERE p.is_admin IS NOT TRUE AND p.id NOT IN (v_owner, v_nomad)
   ORDER BY p.created_at LIMIT 1;
 
-  IF v_listing IS NULL OR v_nomad IS NULL OR v_other IS NULL THEN
-    RAISE EXCEPTION 'FAIL: needs a non-admin owner with a listing, a non-admin Nomad and a third non-admin member';
+  IF v_nomad IS NULL OR v_owner IS NULL OR v_other IS NULL THEN
+    RAISE EXCEPTION 'FAIL: needs a non-admin Nomad, a non-admin member with no listing and a third non-admin member';
   END IF;
+
+  -- A temporary listing for the owner (as the server).
+  INSERT INTO public.listings (owner_user_id, title, status, city, country, owner_declaration_accepted_at)
+  VALUES (v_owner, 'Test listing 2099', 'published', 'Testville', 'Testland', now())
+  RETURNING id INTO v_listing;
 
   -- Known private values to look for (rolled back with everything else).
   UPDATE public.profiles SET last_name = 'Testparent', phone_number = '+447700900111' WHERE id = v_owner;
@@ -210,8 +221,10 @@ BEGIN
 
   -- ── 5. Publishing needs membership and a verified ID ───────────────────
   UPDATE public.listings SET status = 'draft' WHERE id = v_listing;
+  PERFORM set_config('request.jwt.claims', '', true);
   UPDATE public.profiles SET id_verified = false, founding_member = false, membership_status = 'inactive'
   WHERE id = v_owner;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
   BEGIN
     UPDATE public.listings SET status = 'published' WHERE id = v_listing;
@@ -222,7 +235,9 @@ BEGIN
   -- Editing the existing draft still works.
   UPDATE public.listings SET title = title WHERE id = v_listing;
   RESET ROLE;
+  PERFORM set_config('request.jwt.claims', '', true);
   UPDATE public.profiles SET id_verified = true, founding_member = true WHERE id = v_owner;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
   UPDATE public.listings SET status = 'published' WHERE id = v_listing;
   RESET ROLE;
@@ -257,13 +272,14 @@ BEGIN
   END LOOP;
 
   -- No view a member can read has a phone column.
-  SELECT string_agg(c.table_name || '.' || c.column_name, ', ') INTO v_bad
-  FROM information_schema.columns c
-  JOIN information_schema.views v ON v.table_schema = c.table_schema AND v.table_name = c.table_name
-  WHERE c.table_schema = 'public'
-    AND c.column_name ILIKE '%phone%'
-    AND c.column_name NOT IN ('phone_verified', 'phone_line_type')
-    AND has_table_privilege('authenticated', format('public.%I', c.table_name), 'SELECT');
+  SELECT string_agg(c.relname || '.' || a.attname, ', ') INTO v_bad
+  FROM pg_class c
+  JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
+  WHERE c.relnamespace = 'public'::regnamespace
+    AND c.relkind IN ('v', 'm')
+    AND a.attname ILIKE '%phone%'
+    AND a.attname NOT IN ('phone_verified', 'phone_line_type')
+    AND has_table_privilege('authenticated', c.oid, 'SELECT');
   IF v_bad IS NOT NULL THEN RAISE EXCEPTION 'FAIL: views with a phone column members can read: %', v_bad; END IF;
 
   -- No function members can run reads a phone column, except their own.
@@ -285,7 +301,7 @@ $$;
 -- SELECT
 --   (SELECT count(*) FROM public.sit_dates WHERE start_date >= '2099-01-01') AS test_dates,
 --   (SELECT count(*) FROM public.applications WHERE message = 'Test application 2099') AS test_applications,
---   (SELECT count(*) FROM public.listings WHERE title = 'Gate test 2099') AS test_listings,
+--   (SELECT count(*) FROM public.listings WHERE title IN ('Gate test 2099', 'Test listing 2099')) AS test_listings,
 --   (SELECT count(*) FROM public.profiles WHERE last_name IN ('Testparent', 'Testnomad')) AS test_names,
 --   (SELECT count(*) FROM public.profiles WHERE phone_number LIKE '+447700900%') AS test_phones,
 --   (SELECT count(*) FROM public.notifications WHERE message LIKE '%2099%') AS test_notifications;
