@@ -162,6 +162,8 @@ const AppShell = () => {
         <Route path="/sits/:id/arrival-vault" element={<ProtectedRoute><ArrivalVault /></ProtectedRoute>} />
         <Route path="/edit-sitter-profile" element={<ProtectedRoute><EditSitterProfile /></ProtectedRoute>} />
         <Route path="/edit-owner-profile" element={<ProtectedRoute><EditOwnerProfile /></ProtectedRoute>} />
+        <Route path="/edit-sitter-profile/:section" element={<ProtectedRoute><EditSitterProfile /></ProtectedRoute>} />
+        <Route path="/edit-owner-profile/:section" element={<ProtectedRoute><EditOwnerProfile /></ProtectedRoute>} />
         <Route path="/sitter/:userId" element={<SitterDetail />} />
         <Route path="/sitter/:userId/reviews" element={<SitterReviews />} />
         <Route path="/owner/:userId" element={<OwnerDetail />} />

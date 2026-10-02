@@ -363,12 +363,6 @@ const SitterDetail = () => {
       {preview && showTips && freeDates && freeDates.length === 0 && (
         <PreviewTip title="No free dates yet" text="Pet Parents plan ahead. Add the dates you're free and you'll show up for their sits." action={{ label: "Set your dates", to: "/availability" }} />
       )}
-      {freeDates === null && (sitter.available_from || sitter.available_to) && (
-        <p className="rounded-[20px] bg-muted p-4 text-[15px]">
-          <span className="font-bold">Available: </span>
-          {sitter.available_from && sitter.available_to ? shortRange(sitter.available_from, sitter.available_to) : "Flexible dates"}
-        </p>
-      )}
       <div className="hidden flex-col gap-2 md:flex">
         {actions("side")}
         {actionsNote}

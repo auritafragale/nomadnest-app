@@ -19,7 +19,7 @@ const LEVELS = [
   { value: "beginner", label: "Beginner" },
   { value: "intermediate", label: "Intermediate" },
   { value: "experienced", label: "Experienced" },
-  { value: "professional", label: "Professional" },
+  { value: "expert", label: "Expert" },
 ];
 
 const nomadTags = (f: NomadFilterState) => [

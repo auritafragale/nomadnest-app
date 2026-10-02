@@ -10,7 +10,6 @@ import type { MessageReactionSummary } from "@/hooks/useMessageReactions";
 export interface BubbleSender {
   id: string;
   first_name: string | null;
-  last_name?: string | null;
   avatar_url: string | null;
 }
 
@@ -53,10 +52,10 @@ const MessageBubble = ({
 }: MessageBubbleProps) => {
   const { openReport } = useReport();
   const initials =
-    `${message.sender?.first_name?.[0] || ""}${message.sender?.last_name?.[0] || ""}`.toUpperCase() ||
+    `${message.sender?.first_name?.[0] || ""}`.toUpperCase() ||
     "?";
   const name = message.sender
-    ? `${message.sender.first_name || ""} ${message.sender.last_name || ""}`.trim() || "Nomad"
+    ? (message.sender.first_name || "").trim() || "Nomad"
     : "Nomad";
 
   return (

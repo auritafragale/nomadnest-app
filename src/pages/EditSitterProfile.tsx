@@ -1,54 +1,71 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useEffect, useState } from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Calendar, Camera, Home as HomeIcon, Images, Languages as LanguagesIcon, Lock, MapPin, PawPrint, PenLine, X } from "lucide-react";
+import Navbar from "@/components/layout/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ArrowLeft,
-  Save,
-  Loader2,
-  User,
-  Calendar as CalendarIcon,
-  MapPin,
-  Languages,
-  Heart,
-  Home,
-  Camera,
-} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchMyProfile } from "@/lib/myProfile";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from "@/components/layout/Navbar";
-import ImageUpload from "@/components/listing/ImageUpload";
-import { format, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
+import { useMyAvailability } from "@/hooks/useMyAvailability";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
-import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
-import { useQueryClient } from "@tanstack/react-query";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
-import { PET_TYPE_OPTIONS, formatPetType, canonicalPetType } from "@/lib/petTypes";
-import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { PET_TYPE_OPTIONS, canonicalPetType, formatPetType } from "@/lib/petTypes";
+import { useHideBottomNav } from "@/lib/bottomNav";
+import ImageUpload, { deleteStoredImages } from "@/components/listing/ImageUpload";
+import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
+import { FieldLabel, PillGroup, inputClass } from "@/components/listing/form/FormBits";
+import { NN_PAGE, RoleTheme, nnButton } from "@/components/nn/ui";
+import { BioField, CouldNotLoad, EditorHub, LimitedInput, PrivateDetailsFields, SectionPage, type SectionDef } from "@/components/profile/edit/EditorParts";
+import { cn } from "@/lib/utils";
 
-interface Profile {
+// Stored values stay as they are; only the words shown change.
+const WHY = [
+  { value: "I Love Pets", label: "I love pets" },
+  { value: "I Love Travelling", label: "I love travelling" },
+  { value: "I Am A Digital Nomad", label: "I work remotely" },
+  { value: "Budget Travel", label: "Budget travel" },
+];
+const LEVELS = [
+  { value: "beginner", label: "Beginner", sub: "0–5 sits" },
+  { value: "intermediate", label: "Intermediate", sub: "5–15 sits" },
+  { value: "experienced", label: "Experienced", sub: "15–30 sits" },
+  { value: "expert", label: "Expert", sub: "30+ sits" },
+];
+const PETS = PET_TYPE_OPTIONS.map((v) => ({ value: v, label: v === "farm" ? "Farm animals" : formatPetType(v) }));
+const COMFY = [
+  { value: "Puppies/Kittens", label: "Puppies and kittens" },
+  { value: "Senior pets", label: "Senior pets" },
+  { value: "Pets with medication", label: "Pets with medication" },
+  { value: "Anxious pets", label: "Anxious pets" },
+  { value: "Multiple pets", label: "Several pets" },
+  { value: "Large dogs", label: "Large dogs" },
+  { value: "Exotic pets", label: "Exotic pets" },
+];
+const LANGUAGES = ["English", "Spanish", "French", "German", "Portuguese", "Italian", "Dutch", "Japanese", "Mandarin", "Korean", "Arabic", "Russian"].map((l) => ({ value: l, label: l }));
+const STYLES = [
+  { value: "homebody", label: "Homebody", sub: "I prefer staying in most of the time" },
+  { value: "explorer", label: "Explorer", sub: "I like to go out and explore the area" },
+  { value: "balanced", label: "Balanced", sub: "A mix of staying in and going out" },
+];
+const HOME_PREFS = ["House with garden", "Apartment", "Rural/countryside", "City center", "Near public transport", "Near nature/trails"].map((v) => ({
+  value: v,
+  label: v === "Rural/countryside" ? "Countryside" : v === "City center" ? "City centre" : v === "Near nature/trails" ? "Near nature and trails" : v,
+}));
+
+const HUB = "/edit-sitter-profile";
+const NOTE = "Never shown on your profile: your last name, email, phone number, date of birth, ID documents or exact location.";
+
+interface NomadData {
   first_name: string;
   last_name: string;
   avatar_url: string;
   city: string;
   country: string;
-}
-
-interface SitterProfile {
+  phone: string | null;
+  phone_verified: boolean;
   headline: string;
   bio: string;
   why_i_sit: string;
@@ -59,1040 +76,449 @@ interface SitterProfile {
   comfortable_with: string[];
   sit_style: string;
   home_preferences: string[];
-  house_rules_compatibility: string[];
-  availability_type: string;
-  available_from: string;
-  available_to: string;
-  preferred_regions: string[];
-  preferred_countries: string[];
   preferred_cities: string[];
-  phone: string;
+  preferred_countries: string[];
   gallery: string[];
-  age_range: string;
 }
 
-const experienceLevels = [
-  { value: "beginner", label: "Beginner (0-5 sits)" },
-  { value: "intermediate", label: "Intermediate (5-15 sits)" },
-  { value: "experienced", label: "Experienced (15-30 sits)" },
-  { value: "expert", label: "Expert (30+ sits)" },
-];
+const useNomadData = (userId: string | undefined) =>
+  useQuery({
+    queryKey: ["edit-nomad-profile", userId],
+    queryFn: async (): Promise<NomadData> => {
+      const [{ data: me }, { data: sp, error }] = await Promise.all([
+        fetchMyProfile(),
+        supabase.from("sitter_profiles").select(SITTER_PROFILE_COLUMNS as "*").eq("user_id", userId!).maybeSingle(),
+      ]);
+      if (error) throw error;
+      const s = (sp ?? {}) as Record<string, unknown>;
+      const arr = (k: string) => (Array.isArray(s[k]) ? (s[k] as string[]) : []);
+      const str = (k: string) => (typeof s[k] === "string" ? (s[k] as string) : "");
+      return {
+        first_name: me?.first_name ?? "",
+        last_name: me?.last_name ?? "",
+        avatar_url: me?.avatar_url ?? "",
+        city: me?.city ?? "",
+        country: me?.country ?? "",
+        phone: me?.phone_number ?? null,
+        phone_verified: !!me?.phone_verified,
+        headline: str("headline"),
+        bio: str("bio"),
+        why_i_sit: str("why_i_sit"),
+        experience_level: str("experience_level"),
+        experience_details: str("experience_details"),
+        languages: arr("languages"),
+        pet_types: arr("pet_types").map(canonicalPetType),
+        comfortable_with: arr("comfortable_with"),
+        sit_style: str("sit_style"),
+        home_preferences: arr("home_preferences"),
+        preferred_cities: arr("preferred_cities"),
+        preferred_countries: arr("preferred_countries"),
+        gallery: arr("gallery"),
+      };
+    },
+    enabled: !!userId,
+  });
 
-const languageOptions = [
-  "English", "Spanish", "French", "German", "Portuguese", "Italian",
-  "Dutch", "Japanese", "Mandarin", "Korean", "Arabic", "Russian",
-];
+/** Chips you can add to and take away from (preferred cities and countries). */
+const ChipInput = ({ id, label, values, onChange, placeholder }: { id: string; label: string; values: string[]; onChange: (v: string[]) => void; placeholder: string }) => {
+  const [text, setText] = useState("");
+  const add = () => {
+    const v = text.trim();
+    if (v && !values.some((x) => x.toLowerCase() === v.toLowerCase())) onChange([...values, v]);
+    setText("");
+  };
+  return (
+    <div className="flex flex-col gap-2">
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      {values.length > 0 && (
+        <ul className="flex flex-wrap gap-2">
+          {values.map((v) => (
+            <li key={v} className="inline-flex min-h-11 items-center gap-1 rounded-full border-[1.5px] border-[var(--nn-accent)] bg-[var(--nn-tint)] pl-4 text-sm font-bold">
+              {v}
+              <button type="button" onClick={() => onChange(values.filter((x) => x !== v))} aria-label={`Remove ${v}`} className="flex h-11 w-11 items-center justify-center rounded-full">
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex gap-2">
+        <input
+          id={id}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === ",") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder={placeholder}
+          className={inputClass}
+        />
+        <button type="button" onClick={add} disabled={!text.trim()} className={nnButton("secondary", "shrink-0")}>
+          Add
+        </button>
+      </div>
+    </div>
+  );
+};
 
-const petTypeOptions = PET_TYPE_OPTIONS;
+const ChoiceCards = ({ label, options, value, onChange, cols = "grid-cols-2" }: { label: string; options: { value: string; label: string; sub: string }[]; value: string; onChange: (v: string) => void; cols?: string }) => (
+  <fieldset className="flex flex-col gap-2">
+    <legend className="mb-2 text-[15px] font-bold">{label}</legend>
+    <div role="radiogroup" aria-label={label} className={cn("grid gap-2", cols)}>
+      {options.map((o) => {
+        const on = value === o.value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => onChange(o.value)}
+            className={cn("flex min-h-[60px] flex-col items-start justify-center rounded-2xl px-3 py-2 text-left", on ? "border-2 border-[var(--nn-accent)] bg-[var(--nn-tint)]" : "border-[1.5px] border-border bg-card")}
+          >
+            <span className="text-[15px] font-bold">{o.label}</span>
+            <span className="text-sm text-muted-foreground">{o.sub}</span>
+          </button>
+        );
+      })}
+    </div>
+  </fieldset>
+);
 
-const comfortableWithOptions = [
-  "Puppies/Kittens",
-  "Senior pets",
-  "Pets with medication",
-  "Anxious pets",
-  "Multiple pets",
-  "Large dogs",
-  "Exotic pets",
-];
-
-const sitStyleOptions = [
-  { value: "homebody", label: "Homebody - I prefer staying in most of the time" },
-  { value: "explorer", label: "Explorer - I like to go out and explore the area" },
-  { value: "balanced", label: "Balanced - Mix of staying in and going out" },
-];
-
-const homePreferenceOptions = [
-  "House with garden",
-  "Apartment",
-  "Rural/countryside",
-  "City center",
-  "Near public transport",
-  "Near nature/trails",
-];
-
-const ageRangeOptions = [
-  { value: "18-25", label: "18-25" },
-  { value: "26-35", label: "26-35" },
-  { value: "36-45", label: "36-45" },
-  { value: "46-55", label: "46-55" },
-  { value: "56-65", label: "56-65" },
-  { value: "65+", label: "65+" },
-];
-
+/** Edit Nomad profile (design: ProfileEditPhone, ProfileEditTablet, ProfileEditDesktopDark). */
 const EditSitterProfile = () => {
+  const { section } = useParams<{ section?: string }>();
+  const { user, role, loading } = useAuth();
   const navigate = useNavigate();
-  const { user, role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data, isLoading, isError, refetch } = useNomadData(user?.id);
+  const { data: availability } = useMyAvailability();
   const { data: mapsConfig } = useGoogleMapsKey();
-  // Coordinates captured when a city is chosen from the suggestions; saved
-  // directly so the nomad map does not depend on a later lookup.
-  const [pickedCoords, setPickedCoords] = useState<{ latitude: number; longitude: number } | null>(null);
-
-  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState<NomadData | null>(null);
+  const [aiBio, setAiBio] = useState(false);
+  const [removed, setRemoved] = useState<string[]>([]);
+  const [picked, setPicked] = useState<{ latitude: number; longitude: number } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<Profile>({
-    first_name: "",
-    last_name: "",
-    avatar_url: "",
-    city: "",
-    country: "",
-  });
-  const [sitterProfile, setSitterProfile] = useState<SitterProfile>({
-    headline: "",
-    bio: "",
-    why_i_sit: "",
-    experience_level: "",
-    experience_details: "",
-    languages: [],
-    pet_types: [],
-    comfortable_with: [],
-    sit_style: "",
-    home_preferences: [],
-    house_rules_compatibility: [],
-    availability_type: "flexible",
-    available_from: "",
-    available_to: "",
-    preferred_regions: [],
-    preferred_countries: [],
-    preferred_cities: [],
-    phone: "",
-    gallery: [],
-    age_range: "",
-  });
-  // Raw text for the comma-separated inputs, decoupled from the parsed
-  // array so a trailing comma isn't discarded mid-keystroke.
-  const [preferredCitiesText, setPreferredCitiesText] = useState("");
-  const [preferredCountriesText, setPreferredCountriesText] = useState("");
+  useHideBottomNav(!!section);
 
+  // Each section page starts from the saved values.
   useEffect(() => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
+    if (data) setForm(data);
+    setAiBio(false);
+    setRemoved([]);
+    setPicked(null);
+  }, [data, section]);
 
-    if (role !== "sitter" && role !== "both") {
-      toast({
-        title: "Access denied",
-        description: "Only sitters can access this page",
-        variant: "destructive",
-      });
-      navigate("/dashboard");
-      return;
-    }
+  const notNomad = !!user && !!role && role !== "sitter" && role !== "both";
+  useEffect(() => {
+    if (notNomad) toast({ title: "This page is for Nomads", description: "Only Nomads have a Nomad profile.", variant: "destructive" });
+  }, [notNomad, toast]);
 
-    fetchProfiles();
-  }, [user, role, navigate]);
+  if (loading) return null;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (notNomad) return <Navigate to="/dashboard" replace />;
 
-  const fetchProfiles = async () => {
-    if (!user) return;
+  const shell = (children: React.ReactNode) => (
+    <RoleTheme role="sitter" className="flex min-h-screen flex-col">
+      <Navbar wide />
+      {children}
+    </RoleTheme>
+  );
 
-    try {
-      // Fetch main profile
-      const { data: profileData } = await fetchMyProfile();
+  if (isError) return shell(<CouldNotLoad onRetry={() => refetch()} />);
+  if (isLoading || !data || !form) {
+    return shell(
+      <main className={cn(NN_PAGE, "flex flex-col gap-4 pt-20 md:pt-24")}>
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-28 w-full rounded-[22px]" />
+        <Skeleton className="h-72 w-full rounded-[22px]" />
+      </main>,
+    );
+  }
 
-      if (profileData) {
-        setProfile({
-          first_name: profileData.first_name || "",
-          last_name: profileData.last_name || "",
-          avatar_url: profileData.avatar_url || "",
-          city: profileData.city || "",
-          country: profileData.country || "",
-        });
-      }
+  const set = (patch: Partial<NomadData>) => setForm((f) => (f ? { ...f, ...patch } : f));
+  const why = form.why_i_sit.split(",").map((s) => s.trim()).filter(Boolean);
+  const ranges = availability?.ranges?.length ?? 0;
 
-      // Fetch sitter profile
-      const { data: sitterData } = await supabase
-        .from("sitter_profiles")
-        .select(SITTER_PROFILE_COLUMNS as "*")
-        .eq("user_id", user.id)
-        .maybeSingle();
+  // ── Hub ───────────────────────────────────────────────────────────────
+  if (!section) {
+    const d = data;
+    const levelLabel = LEVELS.find((l) => l.value === d.experience_level)?.label;
+    const checks: { id: string; done: boolean }[] = [
+      { id: "photo", done: !!d.avatar_url && !!d.first_name },
+      { id: "about", done: !!d.headline && !!d.bio },
+      { id: "photos", done: d.gallery.length >= 2 },
+      { id: "pets", done: !!d.experience_level && d.pet_types.length > 0 },
+      { id: "languages", done: d.languages.length > 0 },
+      { id: "city", done: !!d.city && !!d.country },
+      { id: "style", done: !!d.sit_style },
+    ];
+    const done = checks.filter((c) => c.done).length;
+    const percent = Math.round((done / checks.length) * 100);
+    const firstTodo = checks.find((c) => !c.done)?.id;
+    const missingPhotos = Math.max(0, 2 - d.gallery.length);
+    const HINTS: Record<string, string> = {
+      photo: "Add your photo and first name. Pet Parents like to see who they're inviting.",
+      about: "Add a headline and a few lines about you. Pet Parents read this first.",
+      photos: `Add ${missingPhotos} more ${missingPhotos === 1 ? "photo" : "photos"} to finish. Profiles with 2+ photos get more invitations.`,
+      pets: "Add your experience and the pets you can look after.",
+      languages: "Add the languages you speak.",
+      city: "Add your city so you show up on the Nomad map.",
+      style: "Add your sitting style so Pet Parents know what to expect.",
+    };
+    const st = (id: string, ok: boolean, todo: string): Pick<SectionDef, "status" | "kind" | "highlight"> =>
+      ok ? { status: "✓ Done", kind: "done" } : { status: todo, kind: "todo", highlight: id === firstTodo };
+    const sections: SectionDef[] = [
+      { id: "photo", title: "Photo and name", icon: Camera, to: `${HUB}/photo`, summary: d.first_name || undefined, ...st("photo", checks[0].done, "Add photo") },
+      { id: "about", title: "About you", icon: PenLine, to: `${HUB}/about`, summary: d.headline || undefined, ...st("about", checks[1].done, "Add a few lines") },
+      {
+        id: "photos",
+        title: "Your photos",
+        icon: Images,
+        to: `${HUB}/photos`,
+        summary: `${d.gallery.length} of 6 photos`,
+        ...st("photos", checks[2].done, `Add ${missingPhotos} ${missingPhotos === 1 ? "photo" : "photos"}`),
+      },
+      {
+        id: "pets",
+        title: "Pets and experience",
+        icon: PawPrint,
+        to: `${HUB}/pets`,
+        summary: [levelLabel, d.pet_types.map((t) => formatPetType(t).toLowerCase()).join(", ")].filter(Boolean).join(" · ") || undefined,
+        ...st("pets", checks[3].done, "Add experience"),
+      },
+      { id: "languages", title: "Languages", icon: LanguagesIcon, to: `${HUB}/languages`, summary: d.languages.join(", ") || undefined, ...st("languages", checks[4].done, "Add languages") },
+      {
+        id: "city",
+        title: "Your city",
+        icon: MapPin,
+        to: `${HUB}/city`,
+        summary: d.city ? `${[d.city, d.country].filter(Boolean).join(", ")} · city only on the map` : undefined,
+        ...st("city", checks[5].done, "Add your city"),
+      },
+      {
+        id: "dates",
+        title: "Your dates",
+        icon: Calendar,
+        to: "/availability",
+        summary: "Opens your calendar",
+        status: ranges > 0 ? `${ranges} ${ranges === 1 ? "range" : "ranges"} set` : "Add your dates",
+        kind: "link",
+      },
+      {
+        id: "style",
+        title: "Sitting style",
+        icon: HomeIcon,
+        to: `${HUB}/style`,
+        summary: [STYLES.find((s) => s.value === d.sit_style)?.label, [...d.preferred_countries, ...d.preferred_cities].slice(0, 2).join(", ")].filter(Boolean).join(" · ") || undefined,
+        ...st("style", checks[6].done, "Add your style"),
+      },
+      { id: "private", title: "Private details", icon: Lock, to: `${HUB}/private`, summary: "Last name and phone · only you see these", status: "🔒 Only you", kind: "private" },
+    ];
+    return shell(
+      <EditorHub
+        title="Your Nomad profile"
+        percent={percent}
+        hint={firstTodo ? HINTS[firstTodo] : "Pet Parents can see everything they need to invite you."}
+        previewTo={`/sitter/${user.id}?preview=1`}
+        sections={sections}
+        note={NOTE}
+      />,
+    );
+  }
 
-      const { data: contact } = await supabase.rpc("get_my_contact_info").maybeSingle();
-      const sitterPhone = (contact as any)?.sitter_phone || "";
-
-
-      if (sitterData) {
-        setSitterProfile({
-          headline: sitterData.headline || "",
-          bio: sitterData.bio || "",
-          why_i_sit: sitterData.why_i_sit || "",
-          experience_level: sitterData.experience_level || "",
-          experience_details: sitterData.experience_details || "",
-          languages: sitterData.languages || [],
-          pet_types: sitterData.pet_types || [],
-          comfortable_with: sitterData.comfortable_with || [],
-          sit_style: sitterData.sit_style || "",
-          home_preferences: sitterData.home_preferences || [],
-          house_rules_compatibility: sitterData.house_rules_compatibility || [],
-          availability_type: sitterData.availability_type || "flexible",
-          available_from: sitterData.available_from || "",
-          available_to: sitterData.available_to || "",
-          preferred_regions: sitterData.preferred_regions || [],
-          preferred_countries: sitterData.preferred_countries || [],
-          preferred_cities: sitterData.preferred_cities || [],
-          phone: sitterPhone,
-          gallery: sitterData.gallery || [],
-          age_range: sitterData.age_range || "",
-        });
-        setPreferredCitiesText((sitterData.preferred_cities || []).join(", "));
-        setPreferredCountriesText((sitterData.preferred_countries || []).join(", "));
-      }
-    } catch (error) {
-      console.error("Error fetching profiles:", error);
-    } finally {
-      setLoading(false);
-    }
+  // ── Sections: each saves only its own fields ───────────────────────────
+  const upsertSitter = async (fields: Record<string, unknown>) => {
+    const { error } = await supabase.from("sitter_profiles").upsert({ user_id: user.id, ...fields }, { onConflict: "user_id" });
+    if (error) throw error;
+  };
+  const updateProfile = async (fields: Record<string, unknown>) => {
+    const { error } = await supabase.from("profiles").update(fields).eq("id", user.id);
+    if (error) throw error;
   };
 
-  const handleSave = async () => {
-    if (!user) return;
+  const SECTIONS: Record<string, { title: string; intro?: string; save: () => Promise<void>; body: React.ReactNode }> = {
+    photo: {
+      title: "Photo and name",
+      save: async () => {
+        if (!form.first_name.trim()) throw new Error("Add your first name.");
+        await updateProfile({ first_name: form.first_name.trim(), avatar_url: form.avatar_url || null });
+      },
+      body: (
+        <>
+          <ImageUpload
+            images={form.avatar_url ? [form.avatar_url] : []}
+            onImagesChange={(urls) => set({ avatar_url: urls[0] ?? "" })}
+            onRemove={(u) => setRemoved((r) => [...r, u])}
+            maxImages={1}
+            folder="avatar"
+            label="Profile photo"
+          />
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel htmlFor="first-name">First name</FieldLabel>
+            <input id="first-name" value={form.first_name} onChange={(e) => set({ first_name: e.target.value })} autoComplete="given-name" className={inputClass} />
+            <p className="text-sm text-muted-foreground">Members only ever see your first name.</p>
+          </div>
+        </>
+      ),
+    },
+    about: {
+      title: "About you",
+      save: () => upsertSitter({ headline: form.headline.trim() || null, bio: form.bio.trim() || null, why_i_sit: form.why_i_sit || null }),
+      body: (
+        <>
+          <LimitedInput id="headline" label="Headline" value={form.headline} onChange={(v) => set({ headline: v })} max={100} hint="Shows on your card in Browse Nomads." />
+          <BioField
+            id="bio"
+            label="About you"
+            value={form.bio}
+            onChange={(v) => set({ bio: v })}
+            kind="nomad_bio"
+            aiUsed={aiBio}
+            onAiUsed={setAiBio}
+            aiNote="AI suggestion. Keep your own voice: change anything that isn't you."
+            helper="Tip: mention the pets you've looked after. Pet Parents read this first."
+          />
+          <PillGroup label="Why you sit" options={WHY} values={why} onChange={(v) => set({ why_i_sit: v.join(", ") })} />
+        </>
+      ),
+    },
+    photos: {
+      title: "Your photos",
+      intro: "Photos of you with pets help Pet Parents picture you in their home. Add at least 2.",
+      save: () => upsertSitter({ gallery: form.gallery }),
+      body: (
+        <ImageUpload
+          images={form.gallery}
+          onImagesChange={(gallery) => set({ gallery })}
+          onRemove={(u) => setRemoved((r) => [...r, u])}
+          maxImages={6}
+          folder="gallery"
+          label="Your photos (up to 6)"
+          sortable
+        />
+      ),
+    },
+    pets: {
+      title: "Pets and experience",
+      save: () =>
+        upsertSitter({
+          experience_level: form.experience_level || null,
+          pet_types: form.pet_types,
+          comfortable_with: form.comfortable_with,
+          experience_details: form.experience_details.trim() || null,
+        }),
+      body: (
+        <>
+          <ChoiceCards label="How experienced are you?" options={LEVELS} value={form.experience_level} onChange={(v) => set({ experience_level: v })} />
+          <PillGroup label="Pets you can look after" options={PETS} values={form.pet_types} onChange={(v) => set({ pet_types: v })} />
+          <PillGroup label="You're comfortable with" options={COMFY} values={form.comfortable_with} onChange={(v) => set({ comfortable_with: v })} />
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel htmlFor="experience">Your experience in your own words</FieldLabel>
+            <textarea id="experience" rows={5} value={form.experience_details} onChange={(e) => set({ experience_details: e.target.value })} className={cn(inputClass, "resize-y")} />
+          </div>
+        </>
+      ),
+    },
+    languages: {
+      title: "Languages",
+      save: () => upsertSitter({ languages: form.languages }),
+      body: <PillGroup label="Languages you speak" options={LANGUAGES} values={form.languages} onChange={(v) => set({ languages: v })} />,
+    },
+    city: {
+      title: "Your city",
+      save: async () => {
+        await updateProfile({ city: form.city.trim(), country: form.country.trim() });
+        // The Nomad map uses the city's coordinates, never an address.
+        const coords = picked ?? (mapsConfig?.key && form.city ? await geocodeCityCountry(mapsConfig.key, form.city, form.country).catch(() => null) : null);
+        if (coords) await upsertSitter({ latitude: coords.latitude, longitude: coords.longitude });
+      },
+      body: (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel htmlFor="city">City</FieldLabel>
+            <PlacesAutocompleteField
+              id="city"
+              value={form.city}
+              types={["(cities)"]}
+              placeholder="Start typing your city…"
+              onChange={(v) => set({ city: v })}
+              onSelect={(place) => {
+                set({ city: place.city || place.description, country: place.country || form.country });
+                if (place.latitude != null && place.longitude != null) setPicked({ latitude: place.latitude, longitude: place.longitude });
+              }}
+            />
+            <p className="text-sm text-muted-foreground">Pick your city from the suggestions so you appear on the Nomad map. Update it when you move.</p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel htmlFor="country">Country</FieldLabel>
+            <PlacesAutocompleteField
+              id="country"
+              value={form.country}
+              types={["country"]}
+              placeholder="Start typing your country…"
+              onChange={(v) => set({ country: v })}
+              onSelect={(place) => set({ country: place.country || place.description })}
+            />
+          </div>
+        </div>
+      ),
+    },
+    style: {
+      title: "Sitting style",
+      save: () =>
+        upsertSitter({
+          sit_style: form.sit_style || null,
+          home_preferences: form.home_preferences,
+          preferred_cities: form.preferred_cities,
+          preferred_countries: form.preferred_countries,
+        }),
+      body: (
+        <>
+          <ChoiceCards label="How you like to sit" options={STYLES} value={form.sit_style} onChange={(v) => set({ sit_style: v })} cols="grid-cols-1 sm:grid-cols-3" />
+          <PillGroup label="Homes you like" options={HOME_PREFS} values={form.home_preferences} onChange={(v) => set({ home_preferences: v })} />
+          <ChipInput id="pref-cities" label="Favourite cities" values={form.preferred_cities} onChange={(v) => set({ preferred_cities: v })} placeholder="e.g. Lisbon" />
+          <ChipInput id="pref-countries" label="Favourite countries" values={form.preferred_countries} onChange={(v) => set({ preferred_countries: v })} placeholder="e.g. Portugal" />
+        </>
+      ),
+    },
+    private: {
+      title: "Private details",
+      save: () => updateProfile({ last_name: form.last_name.trim() || null }),
+      body: <PrivateDetailsFields lastName={form.last_name} onLastName={(v) => set({ last_name: v })} phone={data.phone} phoneVerified={data.phone_verified} />,
+    },
+  };
 
+  if (section === "dates") return <Navigate to="/availability" replace />;
+  const s = SECTIONS[section];
+  if (!s) return <Navigate to={HUB} replace />;
+
+  const onSave = async () => {
     setSaving(true);
-
     try {
-      // Update main profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          avatar_url: profile.avatar_url,
-          city: profile.city,
-          country: profile.country,
-        })
-        .eq("id", user.id);
-
-      if (profileError) throw profileError;
-
-
-      // Geocode city/country so the nomad shows up on the Browse Nomads map.
-      const coords =
-        pickedCoords ??
-        (mapsConfig?.key
-          ? await geocodeCityCountry(mapsConfig.key, profile.city, profile.country)
-          : null);
-
-      // Parsed here (not on every keystroke) so a trailing comma while
-      // typing never gets discarded mid-entry.
-      const preferredCities = preferredCitiesText
-        .split(",")
-        .map((c) => c.trim())
-        .filter(Boolean);
-      const preferredCountries = preferredCountriesText
-        .split(",")
-        .map((c) => c.trim())
-        .filter(Boolean);
-      updateSitterProfile({ preferred_cities: preferredCities, preferred_countries: preferredCountries });
-
-      // Upsert sitter profile
-      const { error: sitterError } = await supabase
-        .from("sitter_profiles")
-        .upsert({
-          user_id: user.id,
-          headline: sitterProfile.headline || null,
-          bio: sitterProfile.bio || null,
-          why_i_sit: sitterProfile.why_i_sit || null,
-          experience_level: sitterProfile.experience_level || null,
-          experience_details: sitterProfile.experience_details || null,
-          languages: sitterProfile.languages,
-          pet_types: sitterProfile.pet_types,
-          comfortable_with: sitterProfile.comfortable_with,
-          sit_style: sitterProfile.sit_style || null,
-          home_preferences: sitterProfile.home_preferences,
-          house_rules_compatibility: sitterProfile.house_rules_compatibility,
-          availability_type: sitterProfile.availability_type || null,
-          available_from: sitterProfile.available_from || null,
-          available_to: sitterProfile.available_to || null,
-          preferred_regions: sitterProfile.preferred_regions,
-          preferred_countries: preferredCountries,
-          preferred_cities: preferredCities,
-          gallery: sitterProfile.gallery,
-          age_range: sitterProfile.age_range || null,
-          ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
-        }, { onConflict: "user_id" });
-
-      if (sitterError) throw sitterError;
-
-      // Phone numbers are write-only for members (never readable by others),
-      // so they are saved through a dedicated secure function.
-      const { error: phoneError } = await supabase.rpc("set_my_profile_phone" as any, {
-        p_target: "sitter",
-        p_phone: sitterProfile.phone || null,
-      });
-      if (phoneError) throw phoneError;
-
-      // The map and nomad list read these rows, so refresh them right away.
+      await s.save();
+      // Photos taken out are only deleted once the change is saved.
+      await deleteStoredImages(removed.filter((u) => u !== form.avatar_url && !form.gallery.includes(u)));
+      queryClient.invalidateQueries({ queryKey: ["edit-nomad-profile"] });
       queryClient.invalidateQueries({ queryKey: ["nomads-map"] });
       queryClient.invalidateQueries({ queryKey: ["sitters"] });
-
-      toast({
-        title: "Profile saved!",
-        description: "Your changes have been saved successfully",
-      });
-    } catch (error: any) {
-      console.error("Error saving profile:", error);
-      toast({
-        title: "Error saving profile",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      });
+      toast({ title: "Saved", description: "Your profile is up to date." });
+      navigate(HUB);
+    } catch (e) {
+      toast({ title: "Couldn't save", description: e instanceof Error ? e.message : "Please try again.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
-  const toggleArrayItem = (
-    array: string[],
-    item: string,
-    setter: (value: string[]) => void
-  ) => {
-    if (array.includes(item)) {
-      setter(array.filter((i) => i !== item));
-    } else {
-      setter([...array, item]);
-    }
-  };
-
-  const updateSitterProfile = (data: Partial<SitterProfile>) => {
-    setSitterProfile((prev) => ({ ...prev, ...data }));
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="pt-16 pb-8">
-          <div className="container mx-auto px-4 max-w-4xl">
-            <Skeleton className="h-8 w-48 mb-6" />
-            <Skeleton className="h-96 w-full" />
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-
-      <main className="pt-16 pb-8 md:pb-12">
-        <div className="container mx-auto px-4 max-w-4xl">
-          {/* Header */}
-          <div className="flex flex-wrap items-start justify-between gap-3 mb-6 md:mb-8 pt-4">
-            <div>
-              <Button
-                variant="ghost"
-                onClick={() => navigate("/dashboard")}
-                className="mb-2 -ml-3"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-                Edit Nomad Profile
-              </h1>
-              <p className="text-sm md:text-base text-muted-foreground mt-1">
-                Make your profile stand out to attract pet owners
-              </p>
-            </div>
-          </div>
-
-          <Tabs defaultValue="basics" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 text-xs sm:text-sm">
-              <TabsTrigger value="basics" className="px-1 sm:px-3">Basics</TabsTrigger>
-              <TabsTrigger value="experience" className="px-1 sm:px-3">Experience</TabsTrigger>
-              <TabsTrigger value="availability" className="px-1 sm:px-3">Availability</TabsTrigger>
-              <TabsTrigger value="preferences" className="px-1 sm:px-3">Prefs</TabsTrigger>
-            </TabsList>
-
-            {/* Basics Tab */}
-            <TabsContent value="basics" className="space-y-6">
-              {/* Profile Photo */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Camera className="w-5 h-5" />
-                    Profile Photo
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-6">
-                    <Avatar className="w-24 h-24">
-                      <AvatarImage src={profile.avatar_url} />
-                      <AvatarFallback>
-                        <User className="w-10 h-10" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <ImageUpload
-                        images={profile.avatar_url ? [profile.avatar_url] : []}
-                        onImagesChange={(urls) =>
-                          setProfile((prev) => ({
-                            ...prev,
-                            avatar_url: urls[0] || "",
-                          }))
-                        }
-                        maxImages={1}
-                        folder="avatar"
-                        label="Profile Photo"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Basic Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    Basic Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="first_name">First Name</Label>
-                      <Input
-                        id="first_name"
-                        value={profile.first_name}
-                        onChange={(e) =>
-                          setProfile((prev) => ({
-                            ...prev,
-                            first_name: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="last_name">Last Name</Label>
-                      <Input
-                        id="last_name"
-                        value={profile.last_name}
-                        onChange={(e) =>
-                          setProfile((prev) => ({
-                            ...prev,
-                            last_name: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="age_range">Age Range</Label>
-                    <Select
-                      value={sitterProfile.age_range}
-                      onValueChange={(value) =>
-                        updateSitterProfile({ age_range: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select age range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ageRangeOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={sitterProfile.phone}
-                      onChange={(e) =>
-                        updateSitterProfile({ phone: e.target.value })
-                      }
-                      placeholder="+1 234 567 8900"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Location */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    Current Location
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="city">City</Label>
-                      <PlacesAutocompleteField
-                        id="city"
-                        value={profile.city}
-                        types={["(cities)"]}
-                        placeholder="Start typing your city…"
-                        onChange={(value) =>
-                          setProfile((prev) => ({ ...prev, city: value }))
-                        }
-                        onSelect={(place) => {
-                          setProfile((prev) => ({
-                            ...prev,
-                            city: place.city || place.description,
-                            country: place.country || prev.country,
-                          }));
-                          if (place.latitude != null && place.longitude != null) {
-                            setPickedCoords({
-                              latitude: place.latitude,
-                              longitude: place.longitude,
-                            });
-                          }
-                        }}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Pick your city from the suggestions so you appear on the Nomad map. Update it when you move.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="country">Country</Label>
-                      <PlacesAutocompleteField
-                        id="country"
-                        value={profile.country}
-                        types={["country"]}
-                        placeholder="Start typing your country…"
-                        onChange={(value) => setProfile((prev) => ({ ...prev, country: value }))}
-                        onSelect={(place) =>
-                          setProfile((prev) => ({ ...prev, country: place.country || place.description }))
-                        }
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-
-              </Card>
-
-              {/* About */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">About You<HelpTooltip label="About this section" content="Tell Pet Parents about yourself" /></CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="headline">Headline</Label>
-                    <Input
-                      id="headline"
-                      value={sitterProfile.headline}
-                      onChange={(e) =>
-                        updateSitterProfile({ headline: e.target.value })
-                      }
-                      placeholder="e.g., Calm, reliable sitter who loves cats"
-                      maxLength={100}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      A short tagline that appears on your profile card
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="bio">Bio</Label>
-                    <Textarea
-                      id="bio"
-                      value={sitterProfile.bio}
-                      onChange={(e) =>
-                        updateSitterProfile({ bio: e.target.value })
-                      }
-                      placeholder="Tell pet owners about yourself, your lifestyle, and what makes you a great sitter..."
-                      rows={5}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Why do you sit?</Label>
-                    <p className="text-xs text-muted-foreground">Select all that apply</p>
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {["I Love Travelling", "I Love Pets", "I Am A Digital Nomad", "Budget Travel"].map((reason) => {
-                        const selected = (sitterProfile.why_i_sit || "").split(",").map(s => s.trim()).filter(Boolean).includes(reason);
-                        return (
-                          <button
-                            key={reason}
-                            type="button"
-                            onClick={() => {
-                              const current = (sitterProfile.why_i_sit || "").split(",").map(s => s.trim()).filter(Boolean);
-                              const updated = selected ? current.filter(r => r !== reason) : [...current, reason];
-                              updateSitterProfile({ why_i_sit: updated.join(", ") });
-                            }}
-                            className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors ${
-                              selected
-                                ? "bg-primary border-primary text-primary-foreground"
-                                : "border-border text-foreground"
-                            }`}
-                          >
-                            {reason}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Languages */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Languages className="w-5 h-5" />
-                    Languages
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {languageOptions.map((lang) => (
-                      <div
-                        key={lang}
-                        className={cn(
-                          "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
-                          sitterProfile.languages.includes(lang)
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary/50"
-                        )}
-                        onClick={() =>
-                          toggleArrayItem(
-                            sitterProfile.languages,
-                            lang,
-                            (langs) => updateSitterProfile({ languages: langs })
-                          )
-                        }
-                      >
-                        <Checkbox
-                          checked={sitterProfile.languages.includes(lang)}
-                          onCheckedChange={() =>
-                            toggleArrayItem(
-                              sitterProfile.languages,
-                              lang,
-                              (langs) => updateSitterProfile({ languages: langs })
-                            )
-                          }
-                        />
-                        <span className="text-sm">{lang}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Gallery */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">Photo Gallery<HelpTooltip label="About your photo gallery" content="Add photos of yourself with pets or during travels" /></CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ImageUpload
-                    images={sitterProfile.gallery}
-                    onImagesChange={(urls) =>
-                      updateSitterProfile({ gallery: urls })
-                    }
-                    maxImages={6}
-                    folder="gallery"
-                    label="Gallery Photos"
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Experience Tab */}
-            <TabsContent value="experience" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Experience Level</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>How experienced are you?</Label>
-                    <Select
-                      value={sitterProfile.experience_level}
-                      onValueChange={(value) =>
-                        updateSitterProfile({ experience_level: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select experience level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {experienceLevels.map((level) => (
-                          <SelectItem key={level.value} value={level.value}>
-                            {level.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="experience_details">
-                      Tell us about your experience
-                    </Label>
-                    <Textarea
-                      id="experience_details"
-                      value={sitterProfile.experience_details}
-                      onChange={(e) =>
-                        updateSitterProfile({ experience_details: e.target.value })
-                      }
-                      placeholder="Describe your pet sitting experience, memorable sits, and what you've learned..."
-                      rows={4}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Heart className="w-5 h-5" />
-                    Pet Types
-                    <HelpTooltip label="About pet types" content="Choose the types of pets you're comfortable caring for" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {petTypeOptions.map((type) => {
-                      const selected = sitterProfile.pet_types.map(canonicalPetType);
-                      const isSelected = selected.includes(type);
-                      const togglePetType = () =>
-                        updateSitterProfile({
-                          pet_types: isSelected
-                            ? selected.filter((t) => t !== type)
-                            : [...selected, type],
-                        });
-                      return (
-                      <div
-                        key={type}
-                        className={cn(
-                          "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
-                          isSelected
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary/50"
-                        )}
-                        onClick={togglePetType}
-                      >
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={togglePetType}
-                        />
-                        <span className="text-sm">{formatPetType(type)}</span>
-                      </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">Comfortable With<HelpTooltip label="About special care" content="Select any special situations you're comfortable handling" /></CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {comfortableWithOptions.map((option) => (
-                      <div
-                        key={option}
-                        className={cn(
-                          "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
-                          sitterProfile.comfortable_with.includes(option)
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary/50"
-                        )}
-                        onClick={() =>
-                          toggleArrayItem(
-                            sitterProfile.comfortable_with,
-                            option,
-                            (opts) =>
-                              updateSitterProfile({ comfortable_with: opts })
-                          )
-                        }
-                      >
-                        <Checkbox
-                          checked={sitterProfile.comfortable_with.includes(option)}
-                          onCheckedChange={() =>
-                            toggleArrayItem(
-                              sitterProfile.comfortable_with,
-                              option,
-                              (opts) =>
-                                updateSitterProfile({ comfortable_with: opts })
-                            )
-                          }
-                        />
-                        <span className="text-sm">{option}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Availability Tab */}
-            <TabsContent value="availability" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CalendarIcon className="w-5 h-5" />
-                    Availability
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Availability Type</Label>
-                    <Select
-                      value={sitterProfile.availability_type}
-                      onValueChange={(value) =>
-                        updateSitterProfile({ availability_type: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="flexible">
-                          Flexible - Open to opportunities anytime
-                        </SelectItem>
-                        <SelectItem value="specific_dates">
-                          Specific Dates - Available during certain periods
-                        </SelectItem>
-                        <SelectItem value="not_available">
-                          Not Available - Currently not taking sits
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {sitterProfile.availability_type === "specific_dates" && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Available From</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !sitterProfile.available_from &&
-                                  "text-muted-foreground"
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {sitterProfile.available_from
-                                ? format(
-                                    parseISO(sitterProfile.available_from),
-                                    "PPP"
-                                  )
-                                : "Select date"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={
-                                sitterProfile.available_from
-                                  ? parseISO(sitterProfile.available_from)
-                                  : undefined
-                              }
-                              onSelect={(date) =>
-                                updateSitterProfile({
-                                  available_from: date
-                                    ? format(date, "yyyy-MM-dd")
-                                    : "",
-                                })
-                              }
-                              initialFocus
-                              className="p-3 pointer-events-auto"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Available To</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !sitterProfile.available_to &&
-                                  "text-muted-foreground"
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {sitterProfile.available_to
-                                ? format(
-                                    parseISO(sitterProfile.available_to),
-                                    "PPP"
-                                  )
-                                : "Select date"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={
-                                sitterProfile.available_to
-                                  ? parseISO(sitterProfile.available_to)
-                                  : undefined
-                              }
-                              onSelect={(date) =>
-                                updateSitterProfile({
-                                  available_to: date
-                                    ? format(date, "yyyy-MM-dd")
-                                    : "",
-                                })
-                              }
-                              disabled={(date) =>
-                                sitterProfile.available_from
-                                  ? date < parseISO(sitterProfile.available_from)
-                                  : false
-                              }
-                              initialFocus
-                              className="p-3 pointer-events-auto"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">Preferred Locations<HelpTooltip label="About preferred locations" content="Add cities or countries where you'd like to sit" /></CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="preferred_cities">Preferred Cities</Label>
-                    <Input
-                      id="preferred_cities"
-                      value={preferredCitiesText}
-                      onChange={(e) => setPreferredCitiesText(e.target.value)}
-                      placeholder="e.g., Paris, Barcelona, Tokyo"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Separate cities with commas
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="preferred_countries">
-                      Preferred Countries
-                    </Label>
-                    <Input
-                      id="preferred_countries"
-                      value={preferredCountriesText}
-                      onChange={(e) => setPreferredCountriesText(e.target.value)}
-                      placeholder="e.g., France, Spain, Japan"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Preferences Tab */}
-            <TabsContent value="preferences" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sitting Style</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {sitStyleOptions.map((style) => (
-                      <div
-                        key={style.value}
-                        className={cn(
-                          "flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all",
-                          sitterProfile.sit_style === style.value
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary/50"
-                        )}
-                        onClick={() =>
-                          updateSitterProfile({ sit_style: style.value })
-                        }
-                      >
-                        <div
-                          className={cn(
-                            "w-4 h-4 rounded-full border-2",
-                            sitterProfile.sit_style === style.value
-                              ? "border-primary bg-primary"
-                              : "border-muted-foreground"
-                          )}
-                        />
-                        <span className="text-sm">{style.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Home className="w-5 h-5" />
-                    Home Preferences
-                    <HelpTooltip label="About home preferences" content="Choose the types of homes you prefer to stay in" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {homePreferenceOptions.map((pref) => (
-                      <div
-                        key={pref}
-                        className={cn(
-                          "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
-                          sitterProfile.home_preferences.includes(pref)
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary/50"
-                        )}
-                        onClick={() =>
-                          toggleArrayItem(
-                            sitterProfile.home_preferences,
-                            pref,
-                            (prefs) =>
-                              updateSitterProfile({ home_preferences: prefs })
-                          )
-                        }
-                      >
-                        <Checkbox
-                          checked={sitterProfile.home_preferences.includes(pref)}
-                          onCheckedChange={() =>
-                            toggleArrayItem(
-                              sitterProfile.home_preferences,
-                              pref,
-                              (prefs) =>
-                                updateSitterProfile({ home_preferences: prefs })
-                            )
-                          }
-                        />
-                        <span className="text-sm">{pref}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-
-          {/* Save Button (bottom) */}
-          <div className="flex justify-center mt-8">
-            <Button onClick={handleSave} disabled={saving} size="lg">
-              {saving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Save Changes
-            </Button>
-          </div>
-        </div>
-      </main>
-    </div>
+  return shell(
+    <SectionPage hubTo={HUB} hubLabel="Your Nomad profile" title={s.title} intro={s.intro} onSave={onSave} saving={saving}>
+      {s.body}
+    </SectionPage>,
   );
 };
 

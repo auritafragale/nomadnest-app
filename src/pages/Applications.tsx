@@ -1,272 +1,480 @@
-import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Navigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { BookOpen, SlidersHorizontal } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
-import Breadcrumbs from "@/components/layout/Breadcrumbs";
-import { ApplicationCard } from "@/components/applications/ApplicationCard";
-import ApplicationFilterSheet, {
-  ApplicationFilters,
-  applicationFiltersActive,
-  defaultApplicationFilters,
-} from "@/components/applications/ApplicationFilterSheet";
-import {
-  useOwnerApplications,
-  useUpdateApplicationStatus,
-  useAcceptApplication,
-} from "@/hooks/useApplications";
-import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/layout/BackButton";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ClipboardList, Inbox, SlidersHorizontal } from "lucide-react";
+import { fetchMyProfile } from "@/lib/myProfile";
+import { useStartConversation } from "@/hooks/useConversations";
+import { useGuideCompletion } from "@/hooks/useWelcomeGuide";
+import {
+  type Applicant,
+  useConfirmApplicant,
+  useDeclineApplicant,
+  useListingApplicants,
+  useMarkApplicantsSeen,
+  useMyListings,
+  useToggleShortlist,
+} from "@/hooks/useListingApplicants";
+import ApplicantCard from "@/components/applications/ApplicantCard";
+import {
+  ApplicantFilterGroups,
+  ApplicantFilterSheet,
+  ConfirmApplicantSheet,
+  DEFAULT_FILTERS,
+  DeclineApplicantSheet,
+  SORT_LABEL,
+  filtersActive,
+  type ApplicantFilters,
+} from "@/components/applications/ApplicantSheets";
+import { NN_PAGE, RoleTheme, nnButton, shortRange } from "@/components/nn/ui";
 import { canonicalPetType } from "@/lib/petTypes";
-import { publicProfiles } from "@/lib/publicProfile";
-import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import type { Database } from "@/integrations/supabase/types";
+import { cn } from "@/lib/utils";
 
-type ApplicationStatus = Database["public"]["Enums"]["application_status"];
-type FilterStatus = ApplicationStatus | "all";
-
-const statusTabs: { value: FilterStatus; label: string }[] = [
-  { value: "applied", label: "New" },
-  { value: "shortlisted", label: "Shortlisted" },
-  { value: "accepted", label: "Accepted" },
-  { value: "declined", label: "Declined" },
-  { value: "cancelled", label: "Cancelled" },
+type Tab = "applied" | "shortlisted" | "accepted" | "past";
+const TABS: { id: Tab; label: string }[] = [
+  { id: "applied", label: "New" },
+  { id: "shortlisted", label: "Shortlisted" },
+  { id: "accepted", label: "Confirmed" },
+  { id: "past", label: "Past" },
 ];
+const tabOf = (status: Applicant["status"]): Tab =>
+  status === "applied" ? "applied" : status === "shortlisted" ? "shortlisted" : status === "accepted" ? "accepted" : "past";
+// Old links used ?status=declined or cancelled; both live under Past now.
+const tabFromParam = (v: string | null): Tab =>
+  v === "shortlisted" || v === "accepted" || v === "past" ? v : v === "declined" || v === "cancelled" || v === "withdrawn" ? "past" : "applied";
 
+const EMPTY: Record<Tab, [string, string]> = {
+  applied: ["No new applicants", "New applications for these dates show here. Inviting Nomads you like often helps."],
+  shortlisted: ["No one shortlisted yet", "Tap the star on an applicant to keep them here."],
+  accepted: ["No one confirmed yet", "When you confirm a Nomad for these dates, they show here."],
+  past: ["Nothing here", "Declined, withdrawn and cancelled applications show here."],
+};
+
+/** Applicants (design: ApplicantsPhone, ApplicantsTabletDark, ApplicantsDesktop). */
 const Applications = () => {
   const { user, loading, role } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialStatus = (searchParams.get("status") || "applied") as FilterStatus;
-  const [statusFilter, setStatusFilter] = useState<FilterStatus>(
-    statusTabs.some((t) => t.value === initialStatus) ? initialStatus : "applied",
-  );
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [filters, setFilters] = useState<ApplicationFilters>(defaultApplicationFilters);
+  const [params, setParams] = useSearchParams();
+  const [filters, setFilters] = useState<ApplicantFilters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [declineId, setDeclineId] = useState<string | null>(null);
+  const [messagingId, setMessagingId] = useState<string | null>(null);
 
-  const { data: applications = [], isLoading } = useOwnerApplications(statusFilter);
+  const listingsQuery = useMyListings();
+  const listings = listingsQuery.data ?? [];
+  const listing = listings.find((l) => l.id === params.get("listing")) ?? listings.find((l) => l.status === "published") ?? listings[0];
+  const applicantsQuery = useListingApplicants(listing?.id);
+  const applicants = useMemo(() => applicantsQuery.data ?? [], [applicantsQuery.data]);
+  const { data: completion } = useGuideCompletion(listing?.id, !!listing);
 
-  const dateOptions = useMemo(() => {
-    const map = new Map<string, { label: string; start: string }>();
-    applications.forEach((app) => {
-      if (app.sit_dates?.id && !map.has(app.sit_dates.id)) {
-        map.set(
-          app.sit_dates.id,
-          {
-            label: `${format(new Date(app.sit_dates.start_date), "MMM d")} – ${format(
-              new Date(app.sit_dates.end_date),
-              "MMM d, yyyy",
-            )}`,
-            start: app.sit_dates.start_date,
-          },
-        );
-      }
-    });
-    return Array.from(map, ([id, { label, start }]) => ({ id, label, start })).sort(
-      (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
-    );
-  }, [applications]);
-
-
-  // Your own country decides what counts as a local Nomad
-  const { data: ownCountry } = useQuery({
-    queryKey: ["own-country", user?.id],
+  // Your own first name (for the decline note) and country (Near me / Abroad).
+  const { data: me } = useQuery({
+    queryKey: ["applicants-me", user?.id],
     queryFn: async () => {
-      if (!user) return null;
-      const { data } = await publicProfiles("country").eq("id", user.id).maybeSingle();
-      return ((data as unknown as { country: string | null } | null)?.country) ?? null;
+      const { data } = await fetchMyProfile();
+      return data ? { first_name: data.first_name, country: data.country } : null;
     },
     enabled: !!user,
   });
-  const updateStatus = useUpdateApplicationStatus();
-  const acceptApplication = useAcceptApplication();
+
+  const toggleShortlist = useToggleShortlist();
+  const confirm = useConfirmApplicant();
+  const decline = useDeclineApplicant();
+  const markSeen = useMarkApplicantsSeen();
+  const startConversation = useStartConversation();
+
+  const today = new Date().toISOString().slice(0, 10);
+  // One chip per date range that is still to come or has applications.
+  const ranges = useMemo(() => {
+    if (!listing) return [];
+    const withApps = new Set(applicants.map((a) => a.sit_dates_id));
+    return [...listing.sit_dates]
+      .filter((d) => d.end_date >= today || withApps.has(d.id))
+      .sort((a, b) => a.start_date.localeCompare(b.start_date))
+      .map((d) => ({
+        ...d,
+        waiting: applicants.filter((a) => a.sit_dates_id === d.id && (a.status === "applied" || a.status === "shortlisted")).length,
+      }));
+  }, [listing, applicants, today]);
+
+  const rangeParam = params.get("range");
+  const range =
+    ranges.find((r) => r.id === rangeParam) ??
+    ranges.find((r) => r.waiting > 0 && r.end_date >= today) ??
+    ranges.find((r) => r.end_date >= today) ??
+    ranges[0];
+  const tab = tabFromParam(params.get("status"));
+
+  const setParam = (key: string, value: string | null) => {
+    const next = new URLSearchParams(params);
+    if (value === null) next.delete(key);
+    else next.set(key, value);
+    setParams(next, { replace: true });
+  };
+
+  const inRange = applicants.filter((a) => a.sit_dates_id === range?.id);
+  const counts = Object.fromEntries(TABS.map((t) => [t.id, inRange.filter((a) => tabOf(a.status) === t.id).length])) as Record<Tab, number>;
+
+  const visible = inRange
+    .filter((a) => tabOf(a.status) === tab)
+    .filter((a) => {
+      if (filters.place === "any") return true;
+      const same = !!me?.country && !!a.country && a.country.toLowerCase() === me.country.toLowerCase();
+      return filters.place === "near" ? same : !same;
+    })
+    .filter((a) => {
+      if (filters.pet === "any") return true;
+      const types = a.pet_types.map(canonicalPetType);
+      return filters.pet === "other" ? types.some((t) => !["dogs", "cats", "birds", "rabbits"].includes(t)) : types.includes(filters.pet);
+    })
+    .sort((a, b) => {
+      if (filters.sort === "reviews") return b.review_count - a.review_count;
+      if (filters.sort === "rating") return (Number(b.avg_rating) || -1) - (Number(a.avg_rating) || -1);
+      if (filters.sort === "recent") return b.created_at.localeCompare(a.created_at);
+      return a.start_date.localeCompare(b.start_date) || b.created_at.localeCompare(a.created_at);
+    });
+
+  // Welcome Guide nudge: a confirmed Nomad arriving soon and a guide under 100%.
+  const upcoming = applicants
+    .filter((a) => a.status === "accepted" && a.end_date >= today)
+    .sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
+  const showNudge = !!upcoming && !!completion && completion.percent < 100;
+
+  // Keep a stale ?range= from pointing nowhere.
+  useEffect(() => {
+    if (rangeParam && ranges.length > 0 && !ranges.some((r) => r.id === rangeParam)) setParam("range", null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeParam, ranges]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
+      <RoleTheme role="owner" className="min-h-screen">
+        <Navbar wide />
+        <main className={cn(NN_PAGE, "flex flex-col gap-4 pt-20 md:pt-24")}>
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-64 w-full rounded-[22px]" />
+        </main>
+      </RoleTheme>
     );
   }
+  if (!user) return <Navigate to="/auth" replace />;
+  if (role !== "owner" && role !== "both") return <Navigate to="/dashboard" replace />;
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
+  const find = (id: string | null) => applicants.find((a) => a.application_id === id);
+  const confirmTarget = find(confirmId);
+  const declineTarget = find(declineId);
+  const nameOf = (a: Applicant | undefined) => a?.first_name || "this Nomad";
+  const seen = (a: Applicant) => {
+    if (!a.owner_seen && a.status === "applied") markSeen.mutate([a.application_id]);
+  };
+  const errorText = (e: unknown) => (e instanceof Error ? e.message : "Something went wrong. Please try again.");
 
-  // Only owners can access this page
-  if (role !== "owner" && role !== "both") {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  const visibleApplications = applications
-    .filter((app) => filters.sitDatesId === "all" || app.sit_dates?.id === filters.sitDatesId)
-    .filter((app) => {
-      if (filters.placeKey === "any") return true;
-      const sameCountry =
-        !!ownCountry &&
-        !!app.sitter_user?.country &&
-        app.sitter_user.country.toLowerCase() === ownCountry.toLowerCase();
-      return filters.placeKey === "local" ? sameCountry : !sameCountry;
-    })
-    .filter((app) => {
-      if (filters.petFilter === "any") return true;
-      return (app.sitter_profile?.pet_types || []).some(
-        (t) => canonicalPetType(t) === filters.petFilter,
-      );
-    })
-    .sort((a, b) => {
-      if (filters.sortKey === "reviews") return b.review_count - a.review_count;
-      if (filters.sortKey === "rating") return (b.avg_rating ?? -1) - (a.avg_rating ?? -1);
-      if (filters.sortKey === "recent")
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      // default: chronological — earliest sit start date first
-      const aStart = a.sit_dates?.start_date ?? "";
-      const bStart = b.sit_dates?.start_date ?? "";
-      return aStart.localeCompare(bStart);
-    });
-
-
-  const errorMessage = (error: unknown) =>
-    (error as { message?: string } | null)?.message || "Something went wrong. Please try again.";
-
-  const handleStatusChange = async (
-    application: (typeof applications)[0],
-    status: "shortlisted" | "declined"
-  ) => {
+  const onStar = async (a: Applicant) => {
+    seen(a);
+    const shortlist = a.status !== "shortlisted";
     try {
-      await updateStatus.mutateAsync({ applicationId: application.id, status });
-      toast({
-        title: status === "shortlisted" ? "Shortlisted" : "Declined",
-        description: `Application ${status}. The sitter has been notified.`,
-      });
-    } catch (error) {
-      console.error("Updating application status failed:", error);
-      toast({
-        title: "Couldn't update the application",
-        description: errorMessage(error),
-        variant: "destructive",
-      });
+      await toggleShortlist.mutateAsync({ applicationId: a.application_id, shortlist });
+      toast({ title: shortlist ? `${nameOf(a)} is on your shortlist. We let them know.` : `${nameOf(a)} is back in New.` });
+    } catch (e) {
+      toast({ title: "That didn't work", description: errorText(e), variant: "destructive" });
     }
   };
 
-  const handleAccept = async (application: (typeof applications)[0]) => {
+  const onConfirm = async () => {
+    if (!confirmTarget) return;
     try {
-      const { declinedCount } = await acceptApplication.mutateAsync(application);
+      const { declinedCount } = await confirm.mutateAsync(confirmTarget.application_id);
+      setConfirmId(null);
       toast({
-        title: "Application accepted",
-        description:
-          declinedCount > 0
-            ? `The sitter has been confirmed and notified. ${declinedCount} other applicant${declinedCount === 1 ? " has" : "s have"} been told.`
-            : "The sitter has been confirmed and notified.",
+        title: `${nameOf(confirmTarget)} is confirmed. We told ${declinedCount || "no"} other ${declinedCount === 1 ? "applicant" : "applicants"}.`,
       });
-    } catch (error) {
-      console.error("Accepting application failed:", error);
-      toast({
-        title: "Couldn't accept the application",
-        description: errorMessage(error),
-        variant: "destructive",
-      });
+      setParam("status", "accepted");
+    } catch (e) {
+      toast({ title: "Couldn't confirm", description: errorText(e), variant: "destructive" });
     }
   };
+
+  const onDecline = async (note: string) => {
+    if (!declineTarget) return;
+    try {
+      await decline.mutateAsync({ applicationId: declineTarget.application_id, note });
+      setDeclineId(null);
+      toast({ title: `We let ${nameOf(declineTarget)} know, kindly.` });
+    } catch (e) {
+      toast({ title: "Couldn't decline", description: errorText(e), variant: "destructive" });
+    }
+  };
+
+  const onMessage = async (a: Applicant) => {
+    seen(a);
+    setMessagingId(a.application_id);
+    try {
+      const { conversationId } = await startConversation.mutateAsync({ otherUserId: a.sitter_user_id, listingId: listing?.id });
+      navigate(`/inbox?conversation=${conversationId}`);
+    } catch {
+      toast({ title: "Couldn't open the chat", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setMessagingId(null);
+    }
+  };
+
+  const others = confirmTarget
+    ? applicants.filter(
+        (a) =>
+          a.sit_dates_id === confirmTarget.sit_dates_id &&
+          a.application_id !== confirmTarget.application_id &&
+          (a.status === "applied" || a.status === "shortlisted"),
+      ).length
+    : 0;
+
+  const header = (
+    <div className="flex flex-col gap-1">
+      <BackButton fallback="/dashboard" label="Dashboard" className="h-11 self-start" />
+      <h1 className="font-display text-[32px] font-normal leading-tight lg:text-[38px]">Applicants</h1>
+      <p className="text-[15px] text-muted-foreground">Nomads who would love to look after your pets.</p>
+    </div>
+  );
+
+  const failed = listingsQuery.isError || applicantsQuery.isError;
+  const loadingData = listingsQuery.isLoading || (!!listing && applicantsQuery.isLoading);
+
+  const invite = (
+    <div className="flex flex-col gap-2 rounded-[20px] border border-[var(--nn-border)] bg-card p-4">
+      <p className="text-[15px] font-semibold">Want more choice? Invite Nomads you like.</p>
+      <Link to="/browse-sitters" className={nnButton("secondary", "self-start")}>
+        Browse Nomads
+      </Link>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <RoleTheme role="owner" className="flex min-h-screen flex-col">
+      <Navbar wide />
+      <main className={cn(NN_PAGE, "flex flex-1 flex-col gap-5 pb-24 pt-20 md:pt-24")}>
+        {header}
 
-      <main className="pt-20">
-        <div className="container max-w-4xl mx-auto px-4 py-8">
-          <Breadcrumbs />
-          <div className="mb-6">
-            <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 md:h-6 md:w-6 flex-shrink-0" />
-              Applications
-            </h1>
-            <p className="text-sm md:text-base text-muted-foreground mt-1">
-              Review and manage nomad applications for your listings
-            </p>
+        {loadingData ? (
+          <div className="flex flex-col gap-3">
+            <Skeleton className="h-16 w-full rounded-[18px]" />
+            <Skeleton className="h-72 w-full rounded-[22px]" />
           </div>
-
-          {/* Status Filter Tabs */}
-          <Tabs
-            value={statusFilter}
-            onValueChange={(v) => {
-              setStatusFilter(v as FilterStatus);
-              setSearchParams(v === "applied" ? {} : { status: v }, { replace: true });
-            }}
-            className="mb-6"
-          >
-            <TabsList className="w-full justify-start flex-nowrap overflow-x-auto overflow-y-hidden">
-              {statusTabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}>
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-
-          {/* Filters */}
-          <div className="mb-6">
-            <Button
-              variant="outline"
-              className="w-full relative"
-              onClick={() => setFiltersOpen(true)}
+        ) : failed ? (
+          <div role="alert" className="flex flex-col items-center gap-3 rounded-[22px] border border-border p-8 text-center">
+            <p className="text-[17px] font-bold">We couldn't load your applicants</p>
+            <p className="text-[15px] text-muted-foreground">Check your connection and try again.</p>
+            <button
+              type="button"
+              onClick={() => {
+                listingsQuery.refetch();
+                applicantsQuery.refetch();
+              }}
+              className={nnButton("primary")}
             >
-              <SlidersHorizontal className="w-4 h-4 mr-2" />
-              Filters
-              {applicationFiltersActive(filters) && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary" />
-              )}
-            </Button>
+              Try again
+            </button>
           </div>
-
-          <ApplicationFilterSheet
-            open={filtersOpen}
-            onClose={() => setFiltersOpen(false)}
-            filters={filters}
-            dateOptions={dateOptions}
-            onApply={setFilters}
-          />
-
-
-          {/* Applications List */}
-          {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-64 w-full rounded-lg" />
-              ))}
+        ) : !listing ? (
+          <div className="flex flex-col items-center gap-3 rounded-[22px] border border-dashed border-border p-8 text-center">
+            <p className="text-[17px] font-bold">No listing yet</p>
+            <p className="max-w-md text-[15px] text-muted-foreground">
+              Create your listing and Nomads can start applying. You can also invite Nomads you like.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link to="/create-listing" className={nnButton("primary")}>
+                Create my listing
+              </Link>
+              <Link to="/browse-sitters" className={nnButton("secondary")}>
+                Browse Nomads
+              </Link>
             </div>
-          ) : visibleApplications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Inbox className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium text-foreground">No applications yet</h3>
-              <p className="text-muted-foreground mt-1 max-w-md">
-                {applications.length > 0
-                  ? "No applications match these filters yet."
-                  : statusFilter === "applied"
-                    ? "No new applications yet."
-                    : `No ${statusFilter} applications found.`}
-              </p>
+          </div>
+        ) : (
+          <>
+            {listings.length > 1 && (
+              <div role="group" aria-label="Your listings" className="flex flex-wrap gap-2">
+                {listings.map((l) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    aria-pressed={l.id === listing.id}
+                    onClick={() => {
+                      const next = new URLSearchParams(params);
+                      next.set("listing", l.id);
+                      next.delete("range");
+                      setParams(next, { replace: true });
+                    }}
+                    className={cn(
+                      "min-h-11 rounded-full border-[1.5px] px-4 text-sm",
+                      l.id === listing.id ? "border-[var(--nn-accent)] bg-[var(--nn-tint)] font-bold" : "border-border bg-card font-semibold",
+                    )}
+                  >
+                    {l.title}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <section aria-labelledby="ranges-title" className="flex flex-col gap-2">
+              <h2 id="ranges-title" className="font-sans text-[15px] font-semibold text-muted-foreground">
+                {listing.title} · pick your dates
+              </h2>
+              {ranges.length === 0 ? (
+                <p className="text-[15px] text-muted-foreground">
+                  No dates yet.{" "}
+                  <Link to={`/edit-listing/${listing.id}?focus=dates`} className="font-bold text-[var(--nn-accent-dark)] underline underline-offset-2">
+                    Add dates
+                  </Link>
+                </p>
+              ) : (
+                <div role="group" aria-label="Date ranges" className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 md:mx-0 md:flex-wrap md:px-0">
+                  {ranges.map((r) => {
+                    const on = r.id === range?.id;
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setParam("range", r.id)}
+                        className={cn(
+                          "flex min-h-[56px] shrink-0 flex-col items-start justify-center rounded-2xl px-4 py-2 text-left",
+                          on ? "border-2 border-[var(--nn-accent)] bg-[var(--nn-tint)]" : "border-[1.5px] border-border bg-card",
+                        )}
+                      >
+                        <span className="text-[15px] font-bold">{shortRange(r.start_date, r.end_date)}</span>
+                        <span className={cn("text-sm font-semibold", on ? "text-[var(--nn-accent-dark)]" : "text-muted-foreground")}>
+                          {r.waiting} waiting
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start lg:gap-8">
+              {/* Desktop: the filters stay open on the left. */}
+              <aside className="hidden flex-col gap-5 lg:sticky lg:top-24 lg:flex" aria-label="Sort and filter">
+                <ApplicantFilterGroups value={filters} onChange={setFilters} />
+                {invite}
+              </aside>
+
+              <div className="flex min-w-0 flex-col gap-4">
+                <div role="tablist" aria-label="Applicants by status" className="grid grid-cols-4 gap-1 rounded-2xl bg-muted p-1">
+                  {TABS.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={tab === t.id}
+                      onClick={() => setParam("status", t.id === "applied" ? null : t.id)}
+                      className={cn(
+                        "flex min-h-[52px] flex-col items-center justify-center rounded-xl text-[13px] sm:text-sm",
+                        tab === t.id ? "bg-card font-bold shadow-sm" : "font-semibold text-muted-foreground",
+                      )}
+                    >
+                      <span>{t.label}</span>
+                      <span>{counts[t.id]}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between gap-3 lg:hidden">
+                  <p className="text-[15px] text-muted-foreground">
+                    {visible.length} {visible.length === 1 ? "applicant" : "applicants"} · {SORT_LABEL[filters.sort].toLowerCase()}
+                  </p>
+                  <button type="button" onClick={() => setFiltersOpen(true)} className={nnButton("secondary", "relative shrink-0")}>
+                    <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                    Sort and filter
+                    {filtersActive(filters) && (
+                      <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[var(--nn-accent)]">
+                        <span className="sr-only">Filters are on</span>
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {showNudge && tab === "accepted" && (
+                  <div className="flex flex-col gap-2 rounded-[20px] border border-[var(--nn-border)] bg-[var(--nn-soft)] p-4">
+                    <p className="flex items-center gap-2 text-[16px] font-bold">
+                      <BookOpen className="h-5 w-5 text-[var(--nn-accent-dark)]" aria-hidden="true" />
+                      Get ready for {upcoming.first_name || "your Nomad"}
+                    </p>
+                    <p className="text-[15px]">
+                      Your Welcome Guide is {completion!.percent}% done. {upcoming.first_name || "Your Nomad"} sees it 48 hours before they
+                      arrive.
+                    </p>
+                    <Link to={`/listing/${listing.id}/welcome-guide`} className={nnButton("primary", "self-start")}>
+                      Finish
+                    </Link>
+                  </div>
+                )}
+
+                {visible.length === 0 ? (
+                  <div className="flex flex-col items-center gap-2 rounded-[22px] border border-dashed border-border p-8 text-center">
+                    <p className="text-[17px] font-bold">{EMPTY[tab][0]}</p>
+                    <p className="max-w-md text-[15px] text-muted-foreground">{EMPTY[tab][1]}</p>
+                    <Link to="/browse-sitters" className={nnButton("secondary", "mt-1")}>
+                      Invite Nomads
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    {visible.map((a) => (
+                      <ApplicantCard
+                        key={a.application_id}
+                        applicant={a}
+                        listingCity={listing.city}
+                        busy={toggleShortlist.isPending || confirm.isPending || decline.isPending}
+                        messaging={messagingId === a.application_id}
+                        onStar={() => onStar(a)}
+                        onConfirm={() => {
+                          seen(a);
+                          setConfirmId(a.application_id);
+                        }}
+                        onDecline={() => {
+                          seen(a);
+                          setDeclineId(a.application_id);
+                        }}
+                        onMessage={() => onMessage(a)}
+                        onSeen={() => seen(a)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                <div className="lg:hidden">{invite}</div>
+              </div>
             </div>
-          ) : (
-            <div className="grid gap-4">
-              {visibleApplications.map((application) => (
-                <ApplicationCard
-                  key={application.id}
-                  application={application}
-                  onStatusChange={(status) => handleStatusChange(application, status)}
-                  onAccept={() => handleAccept(application)}
-                  isUpdating={updateStatus.isPending || acceptApplication.isPending}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </main>
-    </div>
+
+      <ApplicantFilterSheet open={filtersOpen} onOpenChange={setFiltersOpen} value={filters} onApply={setFilters} />
+      <ConfirmApplicantSheet
+        open={!!confirmTarget}
+        onOpenChange={(o) => !o && setConfirmId(null)}
+        name={nameOf(confirmTarget)}
+        dates={confirmTarget ? shortRange(confirmTarget.start_date, confirmTarget.end_date) : ""}
+        sitterUserId={confirmTarget?.sitter_user_id}
+        others={others}
+        pending={confirm.isPending}
+        onConfirm={onConfirm}
+      />
+      <DeclineApplicantSheet
+        open={!!declineTarget}
+        onOpenChange={(o) => !o && setDeclineId(null)}
+        name={nameOf(declineTarget)}
+        ownerFirstName={me?.first_name ?? null}
+        pending={decline.isPending}
+        onDecline={onDecline}
+      />
+    </RoleTheme>
   );
 };
 

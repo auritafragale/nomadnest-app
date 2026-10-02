@@ -31,6 +31,20 @@ export const useDeleteListing = () => {
 
   return useMutation({
     mutationFn: async (listingId: string) => {
+      // A listing with a confirmed or current sit can't go: stop before
+      // anything is deleted, with a clear reason.
+      const { count, error: sitsError } = await supabase
+        .from("sits")
+        .select("id", { count: "exact", head: true })
+        .eq("listing_id", listingId)
+        .in("status", ["confirmed", "in_progress"]);
+      if (sitsError) throw sitsError;
+      if ((count ?? 0) > 0) {
+        throw new Error(
+          "This listing has a confirmed sit, so it can't be deleted. Cancel the sit first, or pause the listing instead.",
+        );
+      }
+      // One delete: pets, dates and applications go with it, all or nothing.
       const { error } = await supabase
         .from("listings")
         .delete()
@@ -47,11 +61,11 @@ export const useDeleteListing = () => {
         description: "Your listing has been permanently removed.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to delete listing",
+        title: "Couldn't delete the listing",
+        description: error.message || "Please try again.",
       });
     },
   });

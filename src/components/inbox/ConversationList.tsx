@@ -56,7 +56,7 @@ export const ConversationList = ({
           const otherUser = conversation.other_user;
           const hasUnread = conversation.unread_count > 0;
           const initials = otherUser
-            ? `${otherUser.first_name?.[0] || ""}${otherUser.last_name?.[0] || ""}`
+            ? `${otherUser.first_name?.[0] || ""}`
             : "?";
 
           return (
@@ -84,7 +84,7 @@ export const ConversationList = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <span className={cn("text-foreground truncate", hasUnread ? "font-bold" : "font-medium")}>
-                    {otherUser?.first_name} {otherUser?.last_name}
+                    {otherUser?.first_name}
                   </span>
                   {conversation.last_message && (
                     <span className="text-xs text-muted-foreground whitespace-nowrap">

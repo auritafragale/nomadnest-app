@@ -11,7 +11,7 @@ import MessageSitterButton from "@/components/browse/MessageSitterButton";
 
 const AvatarPin = ({ sitter }: { sitter: SitterWithProfile }) => {
   const name = sitter.profile
-    ? `${sitter.profile.first_name || ""} ${sitter.profile.last_name || ""}`.trim()
+    ? (sitter.profile.first_name || "").trim()
     : "?";
   const initials = name
     .split(" ")
@@ -53,8 +53,8 @@ const AvatarPin = ({ sitter }: { sitter: SitterWithProfile }) => {
 const FitBoundsInner = ({ sitters }: { sitters: SitterWithProfile[] }) => {
   const map = useMap();
   useEffect(() => {
-    if (!map || sitters.length === 0 || !(window as any).google?.maps) return;
-    const gm = (window as any).google.maps;
+    const gm = (window as unknown as { google?: typeof google }).google?.maps;
+    if (!map || sitters.length === 0 || !gm) return;
     const bounds = new gm.LatLngBounds();
     sitters.forEach((s) => {
       if (s.latitude && s.longitude) bounds.extend({ lat: s.latitude, lng: s.longitude });
@@ -139,7 +139,7 @@ const ClusteredSitterMarkers = ({
 
 const SitterInfoWindow = ({ sitter, onClose }: { sitter: SitterWithProfile; onClose: () => void }) => {
   const name = sitter.profile
-    ? `${sitter.profile.first_name || ""} ${sitter.profile.last_name || ""}`.trim() || "Nomad"
+    ? (sitter.profile.first_name || "").trim() || "Nomad"
     : "Nomad";
   const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   const location = sitter.profile

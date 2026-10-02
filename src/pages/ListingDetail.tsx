@@ -19,6 +19,7 @@ import CommunityWarningModal from "@/components/trust/CommunityWarningModal";
 import { useCommunityWarning } from "@/hooks/useCommunityWarning";
 import { differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import { optionLabel } from "@/lib/listingOptions";
 import { useStartConversation } from "@/hooks/useConversations";
 import ReportDialog from "@/components/reports/ReportDialog";
 import ListingLocationMap from "@/components/maps/ListingLocationMap";
@@ -625,7 +626,7 @@ const ListingDetail = () => {
           <span className="text-sm font-bold">Best for</span>
           {listing.ideal_nomad_types.map((t) => (
             <StatusChip key={t} tone="grey">
-              {t}
+              {optionLabel(t)}
             </StatusChip>
           ))}
         </div>

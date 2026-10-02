@@ -179,12 +179,18 @@ export const useSitters = (options: UseSittersOptions = {}) => {
           );
         }
 
+        // Free today, from the Nomad's own calendar (sitter_availability,
+        // through get_sitter_free_dates: free ranges only, never their sits).
         if (options.availableOnly) {
           const today = new Date().toISOString().split("T")[0];
-          filteredData = filteredData.filter((sitter) => {
-            if (!sitter.available_from || !sitter.available_to) return true;
-            return sitter.available_from <= today && sitter.available_to >= today;
-          });
+          const free = await Promise.all(
+            filteredData.map(async (sitter) => {
+              const { data } = await supabase.rpc("get_sitter_free_dates", { p_sitter_id: sitter.user_id });
+              const ranges = (data ?? []) as { start: string; end: string }[];
+              return ranges.some((r) => r.start <= today && r.end >= today);
+            }),
+          );
+          filteredData = filteredData.filter((_, k) => free[k]);
         }
 
         // Small nudge up the results for members who keep reviewing.

@@ -27,7 +27,7 @@ export const MembershipCardContent = ({ role, onUpgrade }: Props) => {
       <div className="space-y-3">
         <div className="flex items-center gap-3">
           <FoundingMemberBadge />
-          <Badge className="bg-primary/10 text-primary border-0">Combined</Badge>
+          <Badge className="border-0 bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]">Combined</Badge>
         </div>
         <p className="text-sm text-muted-foreground">
           Lifetime access — thank you for being an early supporter.
@@ -46,7 +46,7 @@ export const MembershipCardContent = ({ role, onUpgrade }: Props) => {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-3">
-          <Badge className="bg-primary/10 text-primary border-0">{planName}</Badge>
+          <Badge className="border-0 bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]">{planName}</Badge>
           <span className="text-sm font-medium text-muted-foreground">Active</span>
         </div>
         {renewalDate && (
