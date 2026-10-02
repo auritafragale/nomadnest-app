@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { StoryNameSharingCard } from "@/components/settings/StoryNameSharingCard";
 import { DownloadMyDataCard } from "@/components/settings/DownloadMyDataCard";
 import { UpdateLanguageCard } from "@/components/settings/UpdateLanguageCard";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,6 +103,12 @@ const Settings = () => {
   const { data: idRequest } = useIdVerificationRequest();
 
   // Phone verification state (loaded alongside profile)
+  // ?verify=phone (from the profile editors) opens the Phone tab.
+  const [searchParams] = useSearchParams();
+  const openPhone = searchParams.get("verify") === "phone";
+  useEffect(() => {
+    if (openPhone) window.setTimeout(() => document.getElementById("verification")?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
+  }, [openPhone]);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
 
@@ -386,7 +392,7 @@ const Settings = () => {
             </Card>
 
             {/* Verification */}
-            <Card>
+            <Card id="verification" className="scroll-mt-24">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5" />
@@ -395,7 +401,7 @@ const Settings = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="identity">
+                <Tabs defaultValue={openPhone ? "phone" : "identity"}>
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="identity" className="gap-2"><ShieldCheck className="h-4 w-4" />Identity</TabsTrigger>
                     <TabsTrigger value="phone" className="gap-2"><Phone className="h-4 w-4" />Phone</TabsTrigger>
@@ -449,6 +455,9 @@ const Settings = () => {
                       phoneNumber={phoneNumber}
                       onVerified={() => { setPhoneVerified(true); fetchProfile(); }}
                     />
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      Only you and the NomadNest team can see your number. It is never shared automatically. Once a sit is confirmed, you can choose to share it in your chat.
+                    </p>
                   </TabsContent>
                 </Tabs>
               </CardContent>

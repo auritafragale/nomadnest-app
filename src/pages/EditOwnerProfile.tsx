@@ -1,403 +1,277 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useEffect, useState } from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Camera, Home as HomeIcon, Lock, MapPin, PawPrint, PenLine } from "lucide-react";
+import Navbar from "@/components/layout/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ArrowLeft,
-  Save,
-  Loader2,
-  User,
-  Phone,
-  FileText,
-  Camera,
-} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchMyProfile } from "@/lib/myProfile";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from "@/components/layout/Navbar";
-import ImageUpload from "@/components/listing/ImageUpload";
-import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 import { OWNER_PROFILE_COLUMNS } from "@/lib/profileColumns";
+import { useHideBottomNav } from "@/lib/bottomNav";
+import ImageUpload, { deleteStoredImages } from "@/components/listing/ImageUpload";
+import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
+import { FieldLabel, inputClass } from "@/components/listing/form/FormBits";
+import { NN_PAGE, RoleTheme } from "@/components/nn/ui";
+import { BioField, CouldNotLoad, EditorHub, PrivateDetailsFields, SectionPage, type SectionDef } from "@/components/profile/edit/EditorParts";
+import { cn } from "@/lib/utils";
 
-interface Profile {
+const HUB = "/edit-owner-profile";
+const NOTE =
+  "Your pets and home live in your listing, so you only fill them in once. Never shown on your profile: your last name, email, phone number, ID documents or address.";
+
+interface ParentData {
   first_name: string;
   last_name: string;
   avatar_url: string;
   city: string;
   country: string;
-}
-
-interface OwnerProfile {
+  phone: string | null;
+  phone_verified: boolean;
   bio: string;
-  phone: string;
+  /** The newest listing, for Your pets and Your home. */
+  listing_id: string | null;
+  pet_names: string[];
+  home_type: string | null;
 }
 
-const EditOwnerProfile = () => {
-  const navigate = useNavigate();
-  const { user, role } = useAuth();
-  const { toast } = useToast();
+const useParentData = (userId: string | undefined) =>
+  useQuery({
+    queryKey: ["edit-parent-profile", userId],
+    queryFn: async (): Promise<ParentData> => {
+      const [{ data: me }, { data: op, error }, { data: listings, error: listingsError }] = await Promise.all([
+        fetchMyProfile(),
+        supabase.from("owner_profiles").select(OWNER_PROFILE_COLUMNS as "*").eq("user_id", userId!).maybeSingle(),
+        supabase.from("listings").select("id, home_type, created_at, pets (name)").eq("owner_user_id", userId!).order("created_at", { ascending: false }).limit(1),
+      ]);
+      if (error) throw error;
+      if (listingsError) throw listingsError;
+      const l = (listings ?? [])[0] as { id: string; home_type: string | null; pets: { name: string | null }[] } | undefined;
+      return {
+        first_name: me?.first_name ?? "",
+        last_name: me?.last_name ?? "",
+        avatar_url: me?.avatar_url ?? "",
+        city: me?.city ?? "",
+        country: me?.country ?? "",
+        phone: me?.phone_number ?? null,
+        phone_verified: !!me?.phone_verified,
+        bio: ((op as { bio?: string | null } | null)?.bio ?? "") || "",
+        listing_id: l?.id ?? null,
+        pet_names: (l?.pets ?? []).map((p) => p.name ?? "").filter(Boolean),
+        home_type: l?.home_type ?? null,
+      };
+    },
+    enabled: !!userId,
+  });
 
-  const [loading, setLoading] = useState(true);
+/** Edit Pet Parent profile (design: ParentProfileEditPhone, ParentProfileEditTablet, ParentProfileEditDesktop). */
+const EditOwnerProfile = () => {
+  const { section } = useParams<{ section?: string }>();
+  const { user, role, loading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, refetch } = useParentData(user?.id);
+  const [form, setForm] = useState<ParentData | null>(null);
+  const [aiBio, setAiBio] = useState(false);
+  const [removed, setRemoved] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<Profile>({
-    first_name: "",
-    last_name: "",
-    avatar_url: "",
-    city: "",
-    country: "",
-  });
-  const [ownerProfile, setOwnerProfile] = useState<OwnerProfile>({
-    bio: "",
-    phone: "",
-  });
+  useHideBottomNav(!!section);
 
   useEffect(() => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
+    if (data) setForm(data);
+    setAiBio(false);
+    setRemoved([]);
+  }, [data, section]);
 
-    if (role !== "owner" && role !== "both") {
-      toast({
-        title: "Access denied",
-        description: "Only owners can access this page",
-        variant: "destructive",
-      });
-      navigate("/dashboard");
-      return;
-    }
+  const notParent = !!user && !!role && role !== "owner" && role !== "both";
+  useEffect(() => {
+    if (notParent) toast({ title: "This page is for Pet Parents", description: "Only Pet Parents have a Pet Parent profile.", variant: "destructive" });
+  }, [notParent, toast]);
 
-    fetchProfiles();
-  }, [user, role, navigate]);
+  if (loading) return null;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (notParent) return <Navigate to="/dashboard" replace />;
 
-  const fetchProfiles = async () => {
-    if (!user) return;
+  const shell = (children: React.ReactNode) => (
+    <RoleTheme role="owner" className="flex min-h-screen flex-col">
+      <Navbar wide />
+      {children}
+    </RoleTheme>
+  );
 
-    try {
-      // Fetch main profile
-      const { data: profileData } = await fetchMyProfile();
+  if (isError) return shell(<CouldNotLoad onRetry={() => refetch()} />);
+  if (isLoading || !data || !form) {
+    return shell(
+      <main className={cn(NN_PAGE, "flex flex-col gap-4 pt-20 md:pt-24")}>
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-28 w-full rounded-[22px]" />
+        <Skeleton className="h-60 w-full rounded-[22px]" />
+      </main>,
+    );
+  }
 
-      if (profileData) {
-        setProfile({
-          first_name: profileData.first_name || "",
-          last_name: profileData.last_name || "",
-          avatar_url: profileData.avatar_url || "",
-          city: profileData.city || "",
-          country: profileData.country || "",
-        });
-      }
+  const set = (patch: Partial<ParentData>) => setForm((f) => (f ? { ...f, ...patch } : f));
+  const listingTo = (step: "pets" | "home") => (data.listing_id ? `/edit-listing/${data.listing_id}?step=${step}` : "/create-listing");
 
-      // Fetch owner profile
-      const { data: ownerData } = await supabase
-        .from("owner_profiles")
-        .select(OWNER_PROFILE_COLUMNS as "*")
-        .eq("user_id", user.id)
-        .maybeSingle();
+  if (!section) {
+    const checks = [
+      { id: "photo", done: !!data.avatar_url && !!data.first_name },
+      { id: "city", done: !!data.city && !!data.country },
+      { id: "about", done: !!data.bio.trim() },
+    ];
+    const done = checks.filter((c) => c.done).length;
+    const percent = Math.round((done / checks.length) * 100);
+    const firstTodo = checks.find((c) => !c.done)?.id;
+    const HINTS: Record<string, string> = {
+      photo: "Add your photo and first name. Nomads like to see who they'll be sitting for.",
+      city: "Add the city you live in.",
+      about: "Add a few words about you and your pets. Nomads feel more at ease applying.",
+    };
+    const st = (id: string, ok: boolean, todo: string): Pick<SectionDef, "status" | "kind" | "highlight"> =>
+      ok ? { status: "✓ Done", kind: "done" } : { status: todo, kind: "todo", highlight: id === firstTodo };
+    const sections: SectionDef[] = [
+      { id: "photo", title: "Photo and name", icon: Camera, to: `${HUB}/photo`, summary: data.first_name || undefined, ...st("photo", checks[0].done, "Add photo") },
+      { id: "city", title: "Your city", icon: MapPin, to: `${HUB}/city`, summary: [data.city, data.country].filter(Boolean).join(", ") || undefined, ...st("city", checks[1].done, "Add your city") },
+      { id: "about", title: "About you", icon: PenLine, to: `${HUB}/about`, summary: data.bio ? `${data.bio.slice(0, 40)}${data.bio.length > 40 ? "…" : ""}` : undefined, ...st("about", checks[2].done, "Add a few words") },
+      {
+        id: "pets",
+        title: "Your pets",
+        icon: PawPrint,
+        to: listingTo("pets"),
+        summary: data.pet_names.join(" and ") || undefined,
+        status: data.listing_id ? "In listing" : "Create your listing",
+        kind: "link",
+      },
+      { id: "home", title: "Your home", icon: HomeIcon, to: listingTo("home"), summary: data.home_type ? `${data.home_type.charAt(0).toUpperCase()}${data.home_type.slice(1)}` : undefined, status: data.listing_id ? "In listing" : "Create your listing", kind: "link" },
+      { id: "private", title: "Private details", icon: Lock, to: `${HUB}/private`, summary: "Last name and phone · only you see these", status: "🔒 Only you", kind: "private" },
+    ];
+    return shell(
+      <EditorHub
+        title="Your Pet Parent profile"
+        percent={percent}
+        hint={firstTodo ? HINTS[firstTodo] : "Photo, name, city and a few words about you. Nomads have what they need."}
+        previewTo={`/owner/${user.id}?preview=1`}
+        sections={sections}
+        note={NOTE}
+      />,
+    );
+  }
 
-      const { data: contact } = await supabase.rpc("get_my_contact_info").maybeSingle();
-
-      if (ownerData) {
-        setOwnerProfile({
-          bio: ownerData.bio || "",
-          phone: (contact as any)?.owner_phone || "",
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching profiles:", error);
-    } finally {
-      setLoading(false);
-    }
+  const updateProfile = async (fields: Record<string, unknown>) => {
+    const { error } = await supabase.from("profiles").update(fields).eq("id", user.id);
+    if (error) throw error;
   };
 
-  const handleSave = async () => {
-    if (!user) return;
+  const SECTIONS: Record<string, { title: string; save: () => Promise<void>; body: React.ReactNode }> = {
+    photo: {
+      title: "Photo and name",
+      save: async () => {
+        if (!form.first_name.trim()) throw new Error("Add your first name.");
+        await updateProfile({ first_name: form.first_name.trim(), avatar_url: form.avatar_url || null });
+      },
+      body: (
+        <>
+          <ImageUpload
+            images={form.avatar_url ? [form.avatar_url] : []}
+            onImagesChange={(urls) => set({ avatar_url: urls[0] ?? "" })}
+            onRemove={(u) => setRemoved((r) => [...r, u])}
+            maxImages={1}
+            folder="avatar"
+            label="Profile photo"
+          />
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel htmlFor="first-name">First name</FieldLabel>
+            <input id="first-name" value={form.first_name} onChange={(e) => set({ first_name: e.target.value })} autoComplete="given-name" className={inputClass} />
+            <p className="text-sm text-muted-foreground">Members only ever see your first name.</p>
+          </div>
+        </>
+      ),
+    },
+    city: {
+      title: "Your city",
+      save: () => updateProfile({ city: form.city.trim(), country: form.country.trim() }),
+      body: (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel htmlFor="city">City</FieldLabel>
+              <PlacesAutocompleteField
+                id="city"
+                value={form.city}
+                types={["(cities)"]}
+                placeholder="Start typing your city…"
+                onChange={(v) => set({ city: v })}
+                onSelect={(place) => set({ city: place.city || place.description, country: place.country || form.country })}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel htmlFor="country">Country</FieldLabel>
+              <PlacesAutocompleteField
+                id="country"
+                value={form.country}
+                types={["country"]}
+                placeholder="Start typing your country…"
+                onChange={(v) => set({ country: v })}
+                onSelect={(place) => set({ country: place.country || place.description })}
+              />
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">City and country only. Your address stays on your listing, private.</p>
+        </>
+      ),
+    },
+    about: {
+      title: "About you",
+      save: async () => {
+        const { error } = await supabase.from("owner_profiles").upsert({ user_id: user.id, bio: form.bio.trim() || null }, { onConflict: "user_id" });
+        if (error) throw error;
+      },
+      body: (
+        <BioField
+          id="bio"
+          label="About you"
+          value={form.bio}
+          onChange={(v) => set({ bio: v })}
+          kind="parent_bio"
+          aiUsed={aiBio}
+          onAiUsed={setAiBio}
+          aiNote="AI suggestion. Change anything that isn't you."
+          helper="Nomads feel more at ease applying when they know a little about you and your pets."
+        />
+      ),
+    },
+    private: {
+      title: "Private details",
+      save: () => updateProfile({ last_name: form.last_name.trim() || null }),
+      body: <PrivateDetailsFields lastName={form.last_name} onLastName={(v) => set({ last_name: v })} phone={data.phone} phoneVerified={data.phone_verified} />,
+    },
+  };
 
+  if (section === "pets" || section === "home") return <Navigate to={listingTo(section)} replace />;
+  const s = SECTIONS[section];
+  if (!s) return <Navigate to={HUB} replace />;
+
+  const onSave = async () => {
     setSaving(true);
-
     try {
-      // Update main profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          avatar_url: profile.avatar_url,
-          city: profile.city,
-          country: profile.country,
-        })
-        .eq("id", user.id);
-
-      if (profileError) throw profileError;
-
-      // Upsert owner profile
-      const { error: ownerError } = await supabase
-        .from("owner_profiles")
-        .upsert(
-          {
-            user_id: user.id,
-            bio: ownerProfile.bio || null,
-          },
-          { onConflict: "user_id" }
-        );
-
-      if (ownerError) throw ownerError;
-
-      // Phone numbers are write-only for members (never readable by others),
-      // so they are saved through a dedicated secure function.
-      const { error: phoneError } = await supabase.rpc("set_my_profile_phone" as any, {
-        p_target: "owner",
-        p_phone: ownerProfile.phone || null,
-      });
-      if (phoneError) throw phoneError;
-
-      toast({
-        title: "Profile saved!",
-        description: "Your changes have been saved successfully",
-      });
-    } catch (error: any) {
-      console.error("Error saving profile:", error);
-      toast({
-        title: "Error saving profile",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      });
+      await s.save();
+      await deleteStoredImages(removed.filter((u) => u !== form.avatar_url));
+      queryClient.invalidateQueries({ queryKey: ["edit-parent-profile"] });
+      toast({ title: "Saved", description: "Your profile is up to date." });
+      navigate(HUB);
+    } catch (e) {
+      toast({ title: "Couldn't save", description: e instanceof Error ? e.message : "Please try again.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="pt-20 pb-12">
-          <div className="container mx-auto px-4 max-w-2xl">
-            <Skeleton className="h-8 w-48 mb-6" />
-            <Skeleton className="h-96 w-full" />
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-
-      <main className="pt-20 pb-12">
-        <div className="container mx-auto px-4 max-w-2xl">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <Button
-                variant="ghost"
-                onClick={() => navigate("/dashboard")}
-                className="mb-2"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-                Edit Pet Parent Profile
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Update your profile information
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            {/* Profile Photo */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Camera className="w-5 h-5" />
-                  Profile Photo
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-6">
-                  <Avatar className="w-24 h-24">
-                    <AvatarImage src={profile.avatar_url} />
-                    <AvatarFallback>
-                      <User className="w-10 h-10" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <ImageUpload
-                      images={profile.avatar_url ? [profile.avatar_url] : []}
-                      onImagesChange={(urls) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          avatar_url: urls[0] || "",
-                        }))
-                      }
-                      maxImages={1}
-                      folder="avatar"
-                      label="Profile Photo"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Basic Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Basic Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="first_name">First Name</Label>
-                    <Input
-                      id="first_name"
-                      value={profile.first_name}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          first_name: e.target.value,
-                        }))
-                      }
-                      placeholder="Your first name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="last_name">Last Name</Label>
-                    <Input
-                      id="last_name"
-                      value={profile.last_name}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          last_name: e.target.value,
-                        }))
-                      }
-                      placeholder="Your last name"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <PlacesAutocompleteField
-                      id="city"
-                      value={profile.city}
-                      types={["(cities)"]}
-                      placeholder="Start typing your city…"
-                      onChange={(value) => setProfile((prev) => ({ ...prev, city: value }))}
-                      onSelect={(place) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          city: place.city || place.description,
-                          country: place.country || prev.country,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
-                    <PlacesAutocompleteField
-                      id="country"
-                      value={profile.country}
-                      types={["country"]}
-                      placeholder="Start typing your country…"
-                      onChange={(value) => setProfile((prev) => ({ ...prev, country: value }))}
-                      onSelect={(place) =>
-                        setProfile((prev) => ({ ...prev, country: place.country || place.description }))
-                      }
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Contact Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="w-5 h-5" />
-                  Contact Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={ownerProfile.phone}
-                    onChange={(e) =>
-                      setOwnerProfile((prev) => ({
-                        ...prev,
-                        phone: e.target.value,
-                      }))
-                    }
-                    placeholder="+1 234 567 8900"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Your phone number will only be shared with confirmed sitters
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Bio */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  About You
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Textarea
-                    id="bio"
-                    value={ownerProfile.bio}
-                    onChange={(e) =>
-                      setOwnerProfile((prev) => ({
-                        ...prev,
-                        bio: e.target.value,
-                      }))
-                    }
-                    placeholder="Tell sitters a bit about yourself, your home, and your pets..."
-                    rows={6}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    This helps sitters get to know you and feel more comfortable
-                    applying for your sits
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Bottom Save Button */}
-          <div className="mt-8 flex justify-center">
-            <Button onClick={handleSave} disabled={saving} size="lg">
-              {saving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Save Changes
-            </Button>
-          </div>
-        </div>
-      </main>
-    </div>
+  return shell(
+    <SectionPage hubTo={HUB} hubLabel="Your Pet Parent profile" title={s.title} onSave={onSave} saving={saving}>
+      {s.body}
+    </SectionPage>,
   );
 };
 
