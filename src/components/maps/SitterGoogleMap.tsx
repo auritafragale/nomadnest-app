@@ -53,8 +53,8 @@ const AvatarPin = ({ sitter }: { sitter: SitterWithProfile }) => {
 const FitBoundsInner = ({ sitters }: { sitters: SitterWithProfile[] }) => {
   const map = useMap();
   useEffect(() => {
-    if (!map || sitters.length === 0 || !(window as any).google?.maps) return;
-    const gm = (window as any).google.maps;
+    const gm = (window as unknown as { google?: typeof google }).google?.maps;
+    if (!map || sitters.length === 0 || !gm) return;
     const bounds = new gm.LatLngBounds();
     sitters.forEach((s) => {
       if (s.latitude && s.longitude) bounds.extend({ lat: s.latitude, lng: s.longitude });

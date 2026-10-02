@@ -124,10 +124,11 @@ const Settings = () => {
     if (!user) return;
 
     try {
-      const { data: contact } = await supabase.rpc("get_my_contact_info").maybeSingle();
-      setProfile({ email: (contact as any)?.email || user.email || "" });
-      setPhoneVerified(!!(contact as any)?.phone_verified);
-      setPhoneNumber((contact as any)?.phone_number ?? null);
+      const { data } = await supabase.rpc("get_my_contact_info").maybeSingle();
+      const contact = data as { email?: string | null; phone_verified?: boolean | null; phone_number?: string | null } | null;
+      setProfile({ email: contact?.email || user.email || "" });
+      setPhoneVerified(!!contact?.phone_verified);
+      setPhoneNumber(contact?.phone_number ?? null);
     } catch (error) {
       console.error("Error fetching profile:", error);
     } finally {
@@ -162,11 +163,11 @@ const Settings = () => {
         description: "Please check both your old and new email to confirm the change",
       });
       setNewEmail("");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error changing email:", error);
       toast({
         title: "Error changing email",
-        description: error.message || "Something went wrong",
+        description: (error instanceof Error && error.message) || "Something went wrong",
         variant: "destructive",
       });
     } finally {
@@ -216,11 +217,11 @@ const Settings = () => {
       });
       setNewPassword("");
       setConfirmPassword("");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error changing password:", error);
       toast({
         title: "Error changing password",
-        description: error.message || "Something went wrong",
+        description: (error instanceof Error && error.message) || "Something went wrong",
         variant: "destructive",
       });
     } finally {
