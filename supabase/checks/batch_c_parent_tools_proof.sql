@@ -98,18 +98,18 @@ FROM (VALUES ('profiles', 'phone_number'), ('sitter_profiles', 'phone'), ('owner
 
 UNION ALL
 SELECT 'no view members can read has a phone column', 'none',
-       COALESCE((SELECT string_agg(c.table_name || '.' || c.column_name, ', ')
-                 FROM information_schema.columns c
-                 JOIN information_schema.views v ON v.table_schema = c.table_schema AND v.table_name = c.table_name
-                 WHERE c.table_schema = 'public' AND c.column_name ILIKE '%phone%'
-                   AND c.column_name NOT IN ('phone_verified', 'phone_line_type')
-                   AND has_table_privilege('authenticated', format('public.%I', c.table_name), 'SELECT')), 'none'),
+       COALESCE((SELECT string_agg(c.relname || '.' || a.attname, ', ')
+                 FROM pg_class c
+                 JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
+                 WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('v', 'm')
+                   AND a.attname ILIKE '%phone%' AND a.attname NOT IN ('phone_verified', 'phone_line_type')
+                   AND has_table_privilege('authenticated', c.oid, 'SELECT')), 'none'),
        NOT EXISTS (SELECT 1
-                   FROM information_schema.columns c
-                   JOIN information_schema.views v ON v.table_schema = c.table_schema AND v.table_name = c.table_name
-                   WHERE c.table_schema = 'public' AND c.column_name ILIKE '%phone%'
-                     AND c.column_name NOT IN ('phone_verified', 'phone_line_type')
-                     AND has_table_privilege('authenticated', format('public.%I', c.table_name), 'SELECT'))
+                   FROM pg_class c
+                   JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
+                   WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('v', 'm')
+                     AND a.attname ILIKE '%phone%' AND a.attname NOT IN ('phone_verified', 'phone_line_type')
+                     AND has_table_privilege('authenticated', c.oid, 'SELECT'))
 
 UNION ALL
 -- Every function that reads a phone column. ok = only the member's own

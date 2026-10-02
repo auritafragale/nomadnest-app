@@ -90,7 +90,7 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         const userIds = sitterData.map((s) => s.user_id);
 
         const [profilesResult, ratingsResult, reviewRatesResult] = await Promise.all([
-          publicProfiles("id, first_name, avatar_url, city, country, founding_member")
+          publicProfiles("id, first_name, avatar_url, city, country, founding_member, id_verified")
             .in("id", userIds) as unknown as Promise<{ data: PublicProfile[] | null; error: { message: string } | null }>,
           supabase
             .from("reviews")
@@ -133,9 +133,12 @@ export const useSitters = (options: UseSittersOptions = {}) => {
           .filter((sitter) => sitter.is_active !== false)
           .map((sitter) => {
             const ratingData = ratingsMap.get(sitter.user_id);
+            const profile = profilesMap.get(sitter.user_id) || null;
             return {
               ...sitter,
-              profile: profilesMap.get(sitter.user_id) || null,
+              // The real ID check result lives on profiles, not the sitter copy.
+              id_verified: !!profile?.id_verified,
+              profile,
               rating: ratingData || { average: 0, count: 0 },
               review_rate: reviewRateMap.get(sitter.user_id) ?? null,
               category_ratings: aggregateCategoryRatings(

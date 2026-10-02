@@ -50,7 +50,6 @@ interface SitterProfile {
   preferred_regions: string[];
   preferred_countries: string[];
   preferred_cities: string[];
-  id_verified: boolean;
   background_check: boolean;
   gallery: string[];
 }
@@ -61,6 +60,8 @@ interface Profile {
   city: string | null;
   country: string | null;
   founding_member: boolean | null;
+  /** The real ID check result (profiles.id_verified). */
+  id_verified: boolean | null;
   email_verified: boolean | null;
   phone_verified: boolean | null;
 }
@@ -146,7 +147,7 @@ const SitterDetail = () => {
       try {
         const [sitterResult, profileResult] = await Promise.all([
           supabase.from("sitter_profiles").select(SITTER_PROFILE_COLUMNS as "*").eq("user_id", userId).maybeSingle(),
-          publicProfiles("first_name, avatar_url, city, country, founding_member, email_verified, phone_verified").eq("id", userId).maybeSingle(),
+          publicProfiles("first_name, avatar_url, city, country, founding_member, email_verified, phone_verified, id_verified").eq("id", userId).maybeSingle(),
         ]);
         if (sitterResult.error) throw sitterResult.error;
         if (profileResult.error) throw profileResult.error;
@@ -329,7 +330,7 @@ const SitterDetail = () => {
       </div>
       <div className="flex flex-wrap gap-1.5 md:justify-center">
         {profile.founding_member && <StatusChip tone="gold">★ Founding Member</StatusChip>}
-        {sitter.id_verified && badge(BadgeCheck, "ID verified")}
+        {profile.id_verified && badge(BadgeCheck, "ID verified")}
         {profile.email_verified && badge(Mail, "Email")}
         {profile.phone_verified && badge(Phone, "Phone")}
         {sitter.background_check && badge(ShieldCheck, "Background check")}

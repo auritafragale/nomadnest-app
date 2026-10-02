@@ -97,10 +97,17 @@ const ApplicantCard = ({
   const why = fitFacts(a, listingCity);
   const longMessage = (a.message ?? "").length > 180;
   const msgId = `msg-${a.application_id}`;
+  // An accepted application follows its sit: finished or cancelled sits read as such.
+  const closedLabel =
+    a.status === "accepted" && a.sit_status === "completed"
+      ? "Completed ✓"
+      : a.status === "accepted" && a.sit_status === "cancelled"
+        ? "Sit cancelled"
+        : STATUS_LABEL[a.status] ?? a.status;
 
   return (
     <article
-      aria-label={`${name}, ${live ? (starred ? "shortlisted" : "new") : STATUS_LABEL[a.status] ?? a.status}`}
+      aria-label={`${name}, ${live ? (starred ? "shortlisted" : "new") : closedLabel}`}
       className={cn("flex flex-col gap-3 rounded-[22px] border border-[var(--nn-border)] p-4", live ? "bg-card" : "bg-muted/60")}
     >
       <div className="flex items-start gap-3">
@@ -207,7 +214,12 @@ const ApplicantCard = ({
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <StatusChip tone={a.status === "accepted" ? "green" : "grey"}>{STATUS_LABEL[a.status] ?? a.status}</StatusChip>
+          <StatusChip tone={a.status === "accepted" && a.sit_status !== "cancelled" ? "green" : "grey"}>{closedLabel}</StatusChip>
+          {a.status === "accepted" && a.sit_status === "completed" && a.sit_id && (
+            <Link to={`/sits/${a.sit_id}`} className={nnButton("ghost", "h-11 text-foreground underline underline-offset-2")}>
+              See the sit
+            </Link>
+          )}
           <button type="button" onClick={onMessage} disabled={messaging} className={nnButton("secondary", "ml-auto h-11")}>
             <MessageCircle className="h-4 w-4" aria-hidden="true" />
             Message

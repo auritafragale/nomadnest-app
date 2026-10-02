@@ -163,6 +163,8 @@
     --nn-tip-bg: hsl(43 100% 95%);
     --nn-tip-border: hsl(42 78% 58%);
     --nn-tip-text: hsl(43 77% 27%);
+    /* Red text for delete actions, readable on cards in each mode. */
+    --nn-danger-text: hsl(0 72% 42%);
   }
   :root[data-active-role="owner"],
   [data-nn-role="owner"] {
@@ -209,6 +211,7 @@
     --nn-tip-bg: hsl(43 40% 13%);
     --nn-tip-border: hsl(42 60% 40%);
     --nn-tip-text: hsl(43 80% 68%);
+    --nn-danger-text: hsl(0 85% 72%);
     /* Small coral and teal text on dark surfaces: lighter shades. */
     --brand-coral-text: 11 85% 72%;
     --brand-teal-text: 168 50% 58%;
