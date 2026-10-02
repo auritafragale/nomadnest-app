@@ -2950,8 +2950,6 @@ export type Database = {
           review_count: number
           review_rate: number
           sit_dates_id: string
-          sit_id: string
-          sit_status: string
           sitter_user_id: string
           start_date: string
           status: Database["public"]["Enums"]["application_status"]
