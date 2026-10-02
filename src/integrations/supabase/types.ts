@@ -2852,12 +2852,12 @@ export type Database = {
       can_publish_listing: { Args: never; Returns: boolean }
       can_read_chat_photo: { Args: { p_name: string }; Returns: boolean }
       can_read_sit_update_photo: { Args: { p_name: string }; Returns: boolean }
-      canonical_pet_type: { Args: { p_type: string }; Returns: string }
       can_upload_chat_photo: { Args: { p_name: string }; Returns: boolean }
       can_upload_sit_update_photo: {
         Args: { p_name: string }
         Returns: boolean
       }
+      canonical_pet_type: { Args: { p_type: string }; Returns: string }
       chat_photo_conversation: { Args: { p_name: string }; Returns: string }
       city_chat_key: {
         Args: { p_city: string; p_country: string }
@@ -2922,10 +2922,6 @@ export type Database = {
         Returns: Json
       }
       get_guide_completion: { Args: { p_listing_id: string }; Returns: Json }
-      get_listing_exact_location: {
-        Args: { p_listing_id: string }
-        Returns: Json
-      }
       get_listing_applicants: {
         Args: { p_listing_id: string }
         Returns: {
@@ -2959,6 +2955,10 @@ export type Database = {
           status: Database["public"]["Enums"]["application_status"]
           who_applying: string
         }[]
+      }
+      get_listing_exact_location: {
+        Args: { p_listing_id: string }
+        Returns: Json
       }
       get_listing_private_address: {
         Args: { p_listing_id: string }
@@ -3115,8 +3115,8 @@ export type Database = {
         Returns: string
       }
       release_job_lease: { Args: { p_job_name: string }; Returns: undefined }
-      remove_listing_dates: { Args: { p_sit_dates_id: string }; Returns: Json }
       remove_guide_question: { Args: { p_question_id: string }; Returns: Json }
+      remove_listing_dates: { Args: { p_sit_dates_id: string }; Returns: Json }
       remove_sit_story_portfolio_photo: {
         Args: { p_path: string; p_story_id: string }
         Returns: string[]
@@ -3133,6 +3133,7 @@ export type Database = {
         Args: { p_accept: boolean; p_request_id: string }
         Returns: Json
       }
+      scrub_contact_details: { Args: { p_text: string }; Returns: string }
       set_guide_question_dismissed: {
         Args: { p_dismissed: boolean; p_question_id: string }
         Returns: Json
@@ -3158,7 +3159,6 @@ export type Database = {
         Args: { p_request: boolean; p_story_id: string }
         Returns: string
       }
-      scrub_contact_details: { Args: { p_text: string }; Returns: string }
       shortlist_application: {
         Args: { p_application_id: string }
         Returns: Json
