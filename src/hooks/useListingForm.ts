@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export interface Pet {
   id: string;
@@ -29,16 +29,26 @@ export interface SitDate {
 }
 
 export interface ListingFormData {
-  // Step 1: Basic Info (also renders the date-range cards inline)
+  // Basics
   title: string;
-  description: string;
+  /** The title came from Help me write it (shows the AI note; never saved). */
+  titleAi?: boolean;
   ideal_nomad_types: string[];
   sit_dates: SitDate[];
 
-  // Step 2: Pets
+  // Pets
   pets: Pet[];
 
-  // Step 4: Home Info
+  // Expectations
+  requirements: string[];
+  requirements_other: string;
+  house_rules: string[];
+  house_rules_other: string;
+  home_care_tasks: string[];
+  home_care_tasks_other: string;
+  communication_style: string;
+
+  // Home
   home_type: string;
   location_type: string;
   public_transport_accessible: boolean | null;
@@ -57,19 +67,15 @@ export interface ListingFormData {
   car_needed: boolean;
   heavy_gardening: boolean;
   wheelchair_accessible: boolean;
-
-  // Step 3: Requirements
-  requirements: string[];
-  requirements_other: string;
-  house_rules: string[];
-  house_rules_other: string;
-  home_care_tasks: string[];
-  home_care_tasks_other: string;
-  ideal_sitter_description: string;
-  communication_style: string;
+  description: string;
+  /** The description came from Polish with AI (never saved). */
+  descriptionAi?: boolean;
 }
 
-const initialPet: Pet = {
+export const STEP_NAMES = ["Basics", "Pets", "Expectations", "Home"] as const;
+export const TOTAL_STEPS = STEP_NAMES.length;
+
+export const newPet = (): Pet => ({
   id: crypto.randomUUID(),
   name: "",
   type: "dog",
@@ -84,22 +90,28 @@ const initialPet: Pet = {
   photos: [],
   separation_anxiety_tolerance: "",
   reactive_to_animals: false,
-};
+});
 
-const initialSitDate: SitDate = {
+export const newSitDate = (): SitDate => ({
   id: crypto.randomUUID(),
   start_date: "",
   end_date: "",
   flexibility: "fixed",
   handover_preference: "flexible",
-};
+});
 
-const initialFormData: ListingFormData = {
+export const emptyListingForm = (): ListingFormData => ({
   title: "",
-  description: "",
   ideal_nomad_types: [],
-  pets: [{ ...initialPet }],
-  sit_dates: [{ ...initialSitDate }],
+  pets: [newPet()],
+  sit_dates: [newSitDate()],
+  requirements: [],
+  requirements_other: "",
+  house_rules: [],
+  house_rules_other: "",
+  home_care_tasks: [],
+  home_care_tasks_other: "",
+  communication_style: "",
   home_type: "",
   location_type: "",
   public_transport_accessible: null,
@@ -118,103 +130,79 @@ const initialFormData: ListingFormData = {
   car_needed: false,
   heavy_gardening: false,
   wheelchair_accessible: false,
-  requirements: [],
-  requirements_other: "",
-  house_rules: [],
-  house_rules_other: "",
-  home_care_tasks: [],
-  home_care_tasks_other: "",
-  ideal_sitter_description: "",
-  communication_style: "",
+  description: "",
+});
+
+export type FormErrors = Record<string, string>;
+
+/**
+ * Checks one step (or all, step = 0). Keys: title, dates, date-{id},
+ * name-{petId}, vet-{petId}, meds-{petId}, home_type, location.
+ */
+export const validateListing = (f: ListingFormData, step = 0): FormErrors => {
+  const e: FormErrors = {};
+  if (step === 0 || step === 1) {
+    if (!f.title.trim()) e.title = "Add a title for your listing.";
+    if (f.sit_dates.length === 0) e.dates = "Add at least one date range.";
+    for (const d of f.sit_dates) {
+      if (!d.locked && (!d.start_date || !d.end_date)) e[`date-${d.id}`] = "Pick both a start and an end date.";
+    }
+  }
+  if (step === 0 || step === 2) {
+    for (const p of f.pets) {
+      if (!p.name.trim()) e[`name-${p.id}`] = "Add your pet's name.";
+      if (!p.vet_info.trim()) e[`vet-${p.id}`] = "Add vet details. No regular vet yet? Add the nearest clinic.";
+      if (p.has_medication && !p.medication_instructions.trim()) {
+        e[`meds-${p.id}`] = "Add the medication instructions, or turn off Needs medication.";
+      }
+    }
+  }
+  if (step === 0 || step === 4) {
+    if (!f.home_type) e.home_type = "Choose the type of home.";
+    if (!f.city.trim() && !f.country.trim()) e.location = "Search for your town or city and pick it from the list.";
+  }
+  return e;
 };
 
-export const useListingForm = () => {
-  const [formData, setFormData] = useState<ListingFormData>(initialFormData);
+/** The first step (1–4) with an error, or null. */
+export const firstErrorStep = (e: FormErrors): number | null => {
+  const keys = Object.keys(e);
+  if (keys.some((k) => k === "title" || k === "dates" || k.startsWith("date-"))) return 1;
+  if (keys.some((k) => /^(name|vet|meds)-/.test(k))) return 2;
+  if (keys.some((k) => k === "home_type" || k === "location")) return 4;
+  return null;
+};
+
+/** Form state and edits, shared by Create and Edit. */
+export const useListingForm = (initial?: ListingFormData | null) => {
+  const [formData, setFormData] = useState<ListingFormData>(initial ?? emptyListingForm());
   const [currentStep, setCurrentStep] = useState(1);
-
-  const totalSteps = 4;
-
-  const updateFormData = (data: Partial<ListingFormData>) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-  };
-
-  const addPet = () => {
-    setFormData((prev) => ({
-      ...prev,
-      pets: [...prev.pets, { ...initialPet, id: crypto.randomUUID() }],
-    }));
-  };
-
-  const updatePet = (id: string, data: Partial<Pet>) => {
-    setFormData((prev) => ({
-      ...prev,
-      pets: prev.pets.map((pet) =>
-        pet.id === id ? { ...pet, ...data } : pet
-      ),
-    }));
-  };
-
-  const removePet = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      pets: prev.pets.filter((pet) => pet.id !== id),
-    }));
-  };
-
-  const addSitDate = () => {
-    setFormData((prev) => ({
-      ...prev,
-      sit_dates: [...prev.sit_dates, { ...initialSitDate, id: crypto.randomUUID() }],
-    }));
-  };
-
-  const updateSitDate = (id: string, data: Partial<SitDate>) => {
-    setFormData((prev) => ({
-      ...prev,
-      sit_dates: prev.sit_dates.map((date) =>
-        date.id === id ? { ...date, ...data } : date
-      ),
-    }));
-  };
-
-  const removeSitDate = (id: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      sit_dates: prev.sit_dates.filter((date) => date.id !== id),
-    }));
-  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStep]);
 
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep((prev) => prev + 1);
-    }
-  };
+  const updateFormData = useCallback((data: Partial<ListingFormData>) => setFormData((prev) => ({ ...prev, ...data })), []);
 
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
-    }
+  const addPet = () => {
+    const pet = newPet();
+    setFormData((prev) => ({ ...prev, pets: [...prev.pets, pet] }));
+    return pet.id;
   };
+  const updatePet = (id: string, data: Partial<Pet>) =>
+    setFormData((prev) => ({ ...prev, pets: prev.pets.map((p) => (p.id === id ? { ...p, ...data } : p)) }));
+  const removePet = (id: string) => setFormData((prev) => ({ ...prev, pets: prev.pets.filter((p) => p.id !== id) }));
 
-  const goToStep = (step: number) => {
-    if (step >= 1 && step <= totalSteps) {
-      setCurrentStep(step);
-    }
-  };
-
-  const resetForm = () => {
-    setFormData(initialFormData);
-    setCurrentStep(1);
-  };
+  const addSitDate = () => setFormData((prev) => ({ ...prev, sit_dates: [...prev.sit_dates, newSitDate()] }));
+  const updateSitDate = (id: string, data: Partial<SitDate>) =>
+    setFormData((prev) => ({ ...prev, sit_dates: prev.sit_dates.map((d) => (d.id === id ? { ...d, ...data } : d)) }));
+  const removeSitDate = (id: string) => setFormData((prev) => ({ ...prev, sit_dates: prev.sit_dates.filter((d) => d.id !== id) }));
 
   return {
     formData,
+    setFormData,
     currentStep,
-    totalSteps,
+    setCurrentStep,
     updateFormData,
     addPet,
     updatePet,
@@ -222,9 +210,5 @@ export const useListingForm = () => {
     addSitDate,
     updateSitDate,
     removeSitDate,
-    nextStep,
-    prevStep,
-    goToStep,
-    resetForm,
   };
 };

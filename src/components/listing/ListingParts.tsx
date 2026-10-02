@@ -8,6 +8,7 @@ import { StatusChip, nightsBetween, shortRange } from "@/components/nn/ui";
 import { formatPetAge, formatPetType, petTypeIcon } from "@/lib/petTypes";
 import OwnerReviewsSummaryCard from "@/components/reviews/OwnerReviewsSummaryCard";
 import { cn } from "@/lib/utils";
+import { optionLabel } from "@/lib/listingOptions";
 
 export interface ListingPet {
   id: string;
@@ -366,7 +367,7 @@ const homeGroups = (h: ListingHomeFields) => {
   return [
     { title: "The home", text: theHome },
     { title: "Good to know", text: goodToKnow },
-    { title: "Amenities", text: h.amenities.join(" · ") },
+    { title: "Amenities", text: h.amenities.map(optionLabel).join(" · ") },
   ].filter((g) => g.text);
 };
 
@@ -481,7 +482,7 @@ export const DateTiles = ({
     {dates.map((d) => {
       const on = selected.includes(d.id);
       const nights = nightsBetween(d.start_date, d.end_date);
-      const meta = [`${nights} ${nights === 1 ? "night" : "nights"}`, words(d.flexibility)?.toLowerCase()].filter(Boolean).join(" · ");
+      const meta = [`${nights} ${nights === 1 ? "night" : "nights"}`, d.flexibility ? (d.flexibility === "fixed" ? "fixed dates" : `flexible by ${optionLabel(d.flexibility).toLowerCase()}`) : null].filter(Boolean).join(" · ");
       const badge = badges?.[d.id];
       const body = (
         <>

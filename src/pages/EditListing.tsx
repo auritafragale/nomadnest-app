@@ -1,22 +1,7 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight, Loader2, Save, Trash2 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
-import StepIndicator from "@/components/listing/StepIndicator";
-import BasicInfoStep from "@/components/listing/steps/BasicInfoStep";
-import PetsStep from "@/components/listing/steps/PetsStep";
-import HomeInfoStep from "@/components/listing/steps/HomeInfoStep";
-import RequirementsStep from "@/components/listing/steps/RequirementsStep";
-import { ListingFormData, Pet, SitDate } from "@/hooks/useListingForm";
-import { 
-  useListingDetails, 
-  useUpdateListing, 
-  convertToFormData 
-} from "@/hooks/useEditListing";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -27,575 +12,318 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { supabase } from "@/integrations/supabase/client";
-import { ListingDeclaration, DECLARATION_REQUIRED_TOAST } from "@/components/listing/ListingDeclaration";
+import { useToast } from "@/hooks/use-toast";
+import { firstErrorStep, useListingForm, validateListing, STEP_NAMES, TOTAL_STEPS, type FormErrors, type SitDate } from "@/hooks/useListingForm";
+import { convertToFormData, useListingDetails, useRemoveListingDates, useUpdateListing } from "@/hooks/useEditListing";
+import { useDeleteListing, useUpdateListingStatus } from "@/hooks/useOwnerListingActions";
+import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
+import { geocodeCityCountry } from "@/lib/geocode";
+import { useHideBottomNav } from "@/lib/bottomNav";
+import ListingFormShell from "@/components/listing/form/ListingFormShell";
+import BasicsStep from "@/components/listing/form/BasicsStep";
+import PetsStep from "@/components/listing/form/PetsStep";
+import ExpectationsStep from "@/components/listing/form/ExpectationsStep";
+import HomeStep from "@/components/listing/form/HomeStep";
+import { ListingDeclaration } from "@/components/listing/ListingDeclaration";
+import { NN_PAGE, RoleTheme, nnButton, shortRange } from "@/components/nn/ui";
+import { cn } from "@/lib/utils";
 
-const steps = [
-  { number: 1, title: "Basics" },
-  { number: 2, title: "Pets" },
-  { number: 3, title: "Requirements" },
-  { number: 4, title: "Home" },
-];
+const STEP_PARAM: Record<string, number> = { basics: 1, pets: 2, expectations: 3, home: 4 };
 
-const initialPet: Pet = {
-  id: crypto.randomUUID(),
-  name: "",
-  type: "dog",
-  age: "",
-  personality: "",
-  feeding_details: "",
-  daily_routine: "",
-  walks_exercise: "",
-  has_medication: false,
-  medication_instructions: "",
-  vet_info: "",
-  photos: [],
-  separation_anxiety_tolerance: "",
-  reactive_to_animals: false,
-};
-
-const initialSitDate: SitDate = {
-  id: crypto.randomUUID(),
-  start_date: "",
-  end_date: "",
-  flexibility: "fixed",
-  handover_preference: "flexible",
-};
-
+/** Edit a listing (design: ListingFormPhone Edit, ListingFormDesktop). */
 const EditListing = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { toast } = useToast();
-  
-  const { data: listing, isLoading, error } = useListingDetails(id);
-  const updateListing = useUpdateListing();
-  
-  const [formData, setFormData] = useState<ListingFormData | null>(null);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [params] = useSearchParams();
+  const { data: listing, isLoading, error, refetch } = useListingDetails(id);
+  const update = useUpdateListing();
+  const removeDates = useRemoveListingDates();
+  const setStatus = useUpdateListingStatus();
+  const deleteListing = useDeleteListing();
+  const { data: mapsConfig } = useGoogleMapsKey();
+  const form = useListingForm();
+  const { formData, setFormData, currentStep: step, setCurrentStep: setStep, updateFormData } = form;
+  const [ready, setReady] = useState(false);
+  const [status, setStatusLocal] = useState("draft");
   const [originalPetIds, setOriginalPetIds] = useState<string[]>([]);
-  const [originalSitDateIds, setOriginalSitDateIds] = useState<string[]>([]);
-  const [isDeleting, setIsDeleting] = useState(false);
-  // Publishing a draft needs the owner declaration (older published or
-  // paused listings don't).
-  const [declarationAccepted, setDeclarationAccepted] = useState(false);
-  const needsDeclaration = listing?.status === "draft";
-  // "Add new dates" on the dashboard card opens here with ?focus=dates.
-  const [searchParams] = useSearchParams();
-  const focusDates = searchParams.get("focus") === "dates";
-  const focusedDates = useRef(false);
+  const [originalDateIds, setOriginalDateIds] = useState<string[]>([]);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [declaration, setDeclaration] = useState(false);
+  const [removedPhotos, setRemovedPhotos] = useState<string[]>([]);
+  const [askRemove, setAskRemove] = useState<SitDate | null>(null);
+  const [askDelete, setAskDelete] = useState(false);
+  const focused = useRef(false);
+  useHideBottomNav(true);
 
-  const totalSteps = 4;
-
-  // Initialize form data from fetched listing
+  // Load once into the form. ?step=pets|home opens that step (from the Pet
+  // Parent profile); ?focus=dates adds a date range and scrolls to it.
   useEffect(() => {
-    if (listing) {
-      const converted = convertToFormData(listing);
-      setFormData(converted);
-      setOriginalPetIds(listing.pets.map((p) => p.id));
-      setOriginalSitDateIds(listing.sit_dates.map((d) => d.id));
-    }
-  }, [listing]);
-
-  // Once the form is ready: add an empty date range and scroll to the dates.
-  useEffect(() => {
-    if (!focusDates || !formData || focusedDates.current) return;
-    focusedDates.current = true;
-    setCurrentStep(1);
-    addSitDate();
-    setTimeout(() => {
-      document.getElementById("listing-dates")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
-  }, [focusDates, formData]);
-
-  const updateFormData = (data: Partial<ListingFormData>) => {
-    setFormData((prev) => (prev ? { ...prev, ...data } : null));
-  };
-
-  const addPet = () => {
-    setFormData((prev) =>
-      prev
-        ? {
-            ...prev,
-            pets: [...prev.pets, { ...initialPet, id: crypto.randomUUID() }],
-          }
-        : null
-    );
-  };
-
-  const updatePet = (petId: string, data: Partial<Pet>) => {
-    setFormData((prev) =>
-      prev
-        ? {
-            ...prev,
-            pets: prev.pets.map((pet) =>
-              pet.id === petId ? { ...pet, ...data } : pet
-            ),
-          }
-        : null
-    );
-  };
-
-  const removePet = (petId: string) => {
-    setFormData((prev) =>
-      prev
-        ? {
-            ...prev,
-            pets: prev.pets.filter((pet) => pet.id !== petId),
-          }
-        : null
-    );
-  };
-
-  const addSitDate = () => {
-    setFormData((prev) =>
-      prev
-        ? {
-            ...prev,
-            sit_dates: [
-              ...prev.sit_dates,
-              { ...initialSitDate, id: crypto.randomUUID() },
-            ],
-          }
-        : null
-    );
-  };
-
-  const updateSitDate = (dateId: string, data: Partial<SitDate>) => {
-    setFormData((prev) =>
-      prev
-        ? {
-            ...prev,
-            sit_dates: prev.sit_dates.map((date) =>
-              date.id === dateId ? { ...date, ...data } : date
-            ),
-          }
-        : null
-    );
-  };
-
-  const removeSitDate = (dateId: string) => {
-    setFormData((prev) =>
-      prev
-        ? {
-            ...prev,
-            sit_dates: prev.sit_dates.filter((date) => date.id !== dateId),
-          }
-        : null
-    );
-  };
+    if (!listing || ready) return;
+    setFormData(convertToFormData(listing));
+    setStatusLocal(listing.status);
+    setOriginalPetIds(listing.pets.map((p) => p.id));
+    setOriginalDateIds(listing.sit_dates.map((d) => d.id));
+    const s = STEP_PARAM[params.get("step") ?? ""];
+    if (s) setStep(s);
+    setReady(true);
+  }, [listing, ready, params, setFormData, setStep]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [currentStep]);
+    if (!ready || focused.current || params.get("focus") !== "dates") return;
+    focused.current = true;
+    setStep(1);
+    form.addSitDate();
+    window.setTimeout(() => document.getElementById("listing-dates")?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, params]);
 
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep((prev) => prev + 1);
+  const onPhotoRemoved = (url: string) => setRemovedPhotos((r) => [...r, url]);
+  const isDraft = status === "draft";
+
+  const save = async (publish = false) => {
+    if (!id) return;
+    const e = validateListing(formData);
+    setErrors(e);
+    const bad = firstErrorStep(e);
+    if (bad) {
+      setStep(bad);
+      toast({ title: "A few things to finish", description: `Have a look at ${STEP_NAMES[bad - 1]}.`, variant: "destructive" });
+      return;
     }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
+    if (publish && !declaration) {
+      toast({ title: "Please confirm this is your home", description: "Tick the confirmation above Publish listing.", variant: "destructive" });
+      return;
     }
-  };
-
-  const goToStep = (step: number) => {
-    if (step >= 1 && step <= totalSteps) {
-      setCurrentStep(step);
+    let data = formData;
+    if ((!data.latitude || !data.longitude) && mapsConfig?.key && (data.city || data.country)) {
+      const coords = await geocodeCityCountry(mapsConfig.key, data.city, data.country).catch(() => null);
+      if (coords) data = { ...data, latitude: coords.latitude, longitude: coords.longitude };
     }
-  };
-
-  // Every entry needs both ends picked — a range left with only a start date
-  // (e.g. the calendar popover closed early) must never reach the update.
-  const hasCompleteDates = () =>
-    !!formData &&
-    formData.sit_dates.length > 0 &&
-    formData.sit_dates.every((date) => date.start_date && date.end_date);
-
-  const validateCurrentStep = (): boolean => {
-    if (!formData) return false;
-
-    switch (currentStep) {
-      case 1:
-        if (!formData.title.trim()) {
-          toast({
-            title: "Title required",
-            description: "Please add a title for your listing",
-            variant: "destructive",
-          });
-          return false;
-        }
-        if (!hasCompleteDates()) {
-          toast({
-            title: "Dates required",
-            description: "Please finish picking dates, every date range needs both a start and end date.",
-            variant: "destructive",
-          });
-          return false;
-        }
-        return true;
-      case 2:
-        const validPets = formData.pets.every(
-          (pet) => pet.name.trim() && pet.type && pet.vet_info.trim()
-        );
-        if (!validPets) {
-          toast({
-            title: "Pet details required",
-            description: "Please add a name and vet information for each pet",
-            variant: "destructive",
-          });
-          return false;
-        }
-        return true;
-      case 4:
-        // Location is resolved in handleNext before this runs, so if it's
-        // still empty the member genuinely has no location typed.
-        if (!formData.city.trim() && !formData.country.trim()) {
-          toast({
-            title: "Location required",
-            description:
-              "Please search and pick a city, or type one like 'Dubai, United Arab Emirates'.",
-            variant: "destructive",
-          });
-          return false;
-        }
-        return true;
-      default:
-        return true;
-    }
-  };
-
-  // Resolve a typed-but-not-selected location into city/country/coords before
-  // validating. Returns true if resolved (or already was).
-  const resolveLocationIfNeeded = async (): Promise<boolean> => {
-    if (!formData || currentStep !== 4) return true;
-    const typed = (formData.locationQuery || "").trim();
-    const hasResolved = formData.city.trim() || formData.country.trim();
-    if (hasResolved) return true;
-    if (!typed) return false;
     try {
-      const geoRes = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(typed)}&format=json&limit=1`,
-      );
-      const results = await geoRes.json();
-      if (results?.[0]) {
-        const parts = typed.split(",").map((s: string) => s.trim()).filter(Boolean);
-        const city = parts.length > 1 ? parts[0] : typed;
-        const country = parts.length > 1 ? parts.slice(1).join(", ") : "";
-        updateFormData({
-          city,
-          country: country || formData.country || "",
-          latitude: parseFloat(results[0].lat),
-          longitude: parseFloat(results[0].lon),
-        });
-        return true;
-      }
-    } catch (e) {
-      console.warn("Location resolution failed", e);
-    }
-    return false;
-  };
-
-  const handleNext = async () => {
-    if (currentStep === 4) {
-      const resolved = await resolveLocationIfNeeded();
-      if (resolved) {
-        nextStep();
-        return;
-      }
-    }
-    if (validateCurrentStep()) {
-      nextStep();
-    }
-  };
-
-  const handleSubmit = async (status: "draft" | "published" | "paused") => {
-    if (!user || !formData || !id) return;
-    if (!validateCurrentStep()) return;
-
-    if (status === "published" && needsDeclaration && !declarationAccepted) {
-      toast(DECLARATION_REQUIRED_TOAST);
-      return;
-    }
-
-    // validateCurrentStep only checks the step currently on screen, but dates
-    // live on step 1 — if the member reached this final step by jumping
-    // straight there, an incomplete range would otherwise never get caught.
-    if (!hasCompleteDates()) {
-      toast({
-        title: "Dates required",
-        description: "Please finish picking dates, every date range needs both a start and end date.",
-        variant: "destructive",
-      });
-      goToStep(1);
-      return;
-    }
-
-    updateListing.mutate(
-      {
+      await update.mutateAsync({
         listingId: id,
-        formData,
-        status,
+        formData: data,
+        // Saving keeps the listing's status; only Publish changes it.
+        status: publish ? "published" : status,
         originalPetIds,
-        originalSitDateIds,
-        declarationAccepted: needsDeclaration && declarationAccepted,
-      },
+        originalSitDateIds: originalDateIds,
+        declarationAccepted: publish && declaration,
+        removedPhotos,
+      });
+      setRemovedPhotos([]);
+      toast({ title: publish ? "Your listing is live" : "Saved", description: publish ? undefined : "Your changes are saved." });
+      navigate("/dashboard");
+    } catch (err) {
+      toast({ title: "Couldn't save your changes", description: err instanceof Error ? err.message : "Please try again.", variant: "destructive" });
+    }
+  };
+
+  // Removing a range: with applicants, ask first and tell them now.
+  const onRemoveDate = (d: SitDate) => {
+    const saved = originalDateIds.includes(d.id);
+    if (saved && (listing?.applicant_counts[d.id] ?? 0) > 0) {
+      setAskRemove(d);
+      return;
+    }
+    form.removeSitDate(d.id);
+  };
+  const confirmRemove = async () => {
+    if (!askRemove) return;
+    try {
+      const { notified } = await removeDates.mutateAsync(askRemove.id);
+      form.removeSitDate(askRemove.id);
+      setOriginalDateIds((ids) => ids.filter((x) => x !== askRemove.id));
+      toast({ title: "Dates removed", description: `We told ${notified ?? 0} ${notified === 1 ? "Nomad" : "Nomads"} kindly.` });
+    } catch (err) {
+      toast({ title: "Couldn't remove those dates", description: err instanceof Error ? err.message : "Please try again.", variant: "destructive" });
+    } finally {
+      setAskRemove(null);
+    }
+  };
+
+  const changeStatus = (next: "published" | "paused" | "draft", done: string) =>
+    id &&
+    setStatus.mutate(
+      { listingId: id, status: next },
       {
         onSuccess: () => {
-          navigate("/dashboard");
+          setStatusLocal(next);
+          toast({ title: done });
         },
-      }
+        onError: (err) => toast({ title: "That didn't work", description: (err as Error).message, variant: "destructive" }),
+      },
     );
-  };
 
-  const handleDelete = async () => {
-    if (!id) return;
-
-    setIsDeleting(true);
-    try {
-      // Delete related records first
-      await supabase.from("pets").delete().eq("listing_id", id);
-      await supabase.from("sit_dates").delete().eq("listing_id", id);
-      
-      const { error } = await supabase.from("listings").delete().eq("id", id);
-      if (error) throw error;
-
-      toast({
-        title: "Listing deleted",
-        description: "Your listing has been removed",
-      });
-      navigate("/dashboard");
-    } catch (error: any) {
-      toast({
-        title: "Error deleting listing",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const renderStep = () => {
-    if (!formData) return null;
-
-    switch (currentStep) {
-      case 1:
-        return (
-          <BasicInfoStep
-            formData={formData}
-            updateFormData={updateFormData}
-            addSitDate={addSitDate}
-            updateSitDate={updateSitDate}
-            removeSitDate={removeSitDate}
-          />
-        );
-      case 2:
-        return (
-          <PetsStep
-            formData={formData}
-            addPet={addPet}
-            updatePet={updatePet}
-            removePet={removePet}
-          />
-        );
-      case 3:
-        return (
-          <RequirementsStep
-            formData={formData}
-            updateFormData={updateFormData}
-          />
-        );
-      case 4:
-        return (
-          <HomeInfoStep formData={formData} updateFormData={updateFormData} />
-        );
-      default:
-        return null;
-    }
-  };
-
-  if (isLoading) {
+  if (isLoading || (listing && !ready)) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="pt-20 pb-12">
-          <div className="container mx-auto px-4 max-w-3xl">
-            <Skeleton className="h-10 w-48 mb-4" />
-            <Skeleton className="h-6 w-64 mb-8" />
-            <Skeleton className="h-12 w-full mb-8" />
-            <Skeleton className="h-96 w-full" />
+      <RoleTheme role="owner" className="flex min-h-screen flex-col">
+        <Navbar wide />
+        <main className={cn(NN_PAGE, "flex flex-col gap-4 pt-20 md:pt-24")}>
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-12 w-full rounded-2xl" />
+          <Skeleton className="h-96 w-full rounded-[22px]" />
+        </main>
+      </RoleTheme>
+    );
+  }
+
+  if (error || !listing) {
+    return (
+      <RoleTheme role="owner" className="flex min-h-screen flex-col">
+        <Navbar wide />
+        <main className={cn(NN_PAGE, "flex flex-1 flex-col items-center pt-24")}>
+          <div role="alert" className="flex max-w-md flex-col items-center gap-3 rounded-[22px] border border-border p-8 text-center">
+            <p className="text-[17px] font-bold">We couldn't load your listing</p>
+            <p className="text-[15px] text-muted-foreground">{error instanceof Error ? error.message : "Check your connection and try again."}</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <button type="button" onClick={() => refetch()} className={nnButton("primary")}>
+                Try again
+              </button>
+              <Link to="/dashboard" className={nnButton("secondary")}>
+                Back to dashboard
+              </Link>
+            </div>
           </div>
         </main>
-      </div>
+      </RoleTheme>
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="pt-20 pb-12">
-          <div className="container mx-auto px-4 max-w-3xl text-center">
-            <h1 className="text-2xl font-bold text-destructive mb-4">
-              Error loading listing
-            </h1>
-            <p className="text-muted-foreground mb-6">{error.message}</p>
-            <Button onClick={() => navigate("/dashboard")}>
-              Back to Dashboard
-            </Button>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (!formData) {
-    return null;
-  }
+  const last = step === TOTAL_STEPS;
+  const busy = update.isPending;
+  const footer = (
+    <div className="flex items-center gap-2">
+      {step > 1 && (
+        <button type="button" onClick={() => setStep(step - 1)} className={nnButton("secondary", "h-12")}>
+          Back
+        </button>
+      )}
+      {!last && (
+        <button type="button" onClick={() => setStep(step + 1)} className={nnButton("secondary", "h-12")}>
+          Next<span className="hidden sm:inline">: {STEP_NAMES[step]}</span>
+        </button>
+      )}
+      {isDraft && last ? (
+        <>
+          <button type="button" onClick={() => save(false)} disabled={busy} className={nnButton("secondary", "h-12")}>
+            Save draft
+          </button>
+          <button
+            type="button"
+            onClick={() => save(true)}
+            disabled={busy || !declaration}
+            className={nnButton("primary", "h-12 flex-1 md:ml-auto md:flex-none md:px-8 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100")}
+          >
+            {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            Publish listing
+          </button>
+        </>
+      ) : (
+        <button type="button" onClick={() => save(false)} disabled={busy} className={nnButton("primary", "h-12 flex-1 md:ml-auto md:flex-none md:px-8")}>
+          {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          Save changes
+        </button>
+      )}
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <RoleTheme role="owner" className="flex min-h-screen flex-col">
+      <Navbar wide />
+      <ListingFormShell
+        mode="edit"
+        step={step}
+        onStep={setStep}
+        formData={formData}
+        footer={footer}
+        menu={{
+          status,
+          listingId: listing.id,
+          busy: setStatus.isPending,
+          onPause: () => changeStatus("paused", "Listing paused. Nomads can't apply until you make it live again."),
+          onResume: () => changeStatus("published", "Your listing is live again."),
+          onTakeOffline: () => changeStatus("draft", "Listing taken offline. It's saved as a draft."),
+          onDelete: () => setAskDelete(true),
+        }}
+      >
+        {step === 1 && (
+          <BasicsStep
+            formData={formData}
+            updateFormData={updateFormData}
+            addSitDate={form.addSitDate}
+            updateSitDate={form.updateSitDate}
+            onRemoveDate={onRemoveDate}
+            applicantCounts={listing.applicant_counts}
+            bookedNames={listing.booked_names}
+            errors={errors}
+          />
+        )}
+        {step === 2 && (
+          <PetsStep
+            formData={formData}
+            addPet={form.addPet}
+            updatePet={form.updatePet}
+            removePet={(petId) => {
+              setRemovedPhotos((r) => [...r, ...(formData.pets.find((p) => p.id === petId)?.photos ?? [])]);
+              form.removePet(petId);
+            }}
+            onPhotoRemoved={onPhotoRemoved}
+            errors={errors}
+          />
+        )}
+        {step === 3 && <ExpectationsStep formData={formData} updateFormData={updateFormData} />}
+        {step === 4 && (
+          <>
+            <HomeStep formData={formData} updateFormData={updateFormData} onPhotoRemoved={onPhotoRemoved} errors={errors} />
+            {isDraft && <ListingDeclaration checked={declaration} onCheckedChange={setDeclaration} />}
+          </>
+        )}
+      </ListingFormShell>
 
-      <main className="pt-20 pb-12">
-        <div className="container mx-auto px-4 max-w-3xl">
-          {/* Header */}
-          <div className="mb-8">
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/dashboard")}
-              className="mb-4"
+      <AlertDialog open={!!askRemove} onOpenChange={(o) => !o && setAskRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {askRemove ? shortRange(askRemove.start_date, askRemove.end_date) : "these dates"}?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[15px]">
+              {(() => {
+                const n = askRemove ? listing.applicant_counts[askRemove.id] ?? 0 : 0;
+                return `${n} ${n === 1 ? "Nomad" : "Nomads"} applied for these dates. If you remove them, we'll tell each one kindly and their applications will close.`;
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-h-11">Keep these dates</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemove} disabled={removeDates.isPending} className="min-h-11">
+              Remove dates and tell them
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={askDelete} onOpenChange={setAskDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this listing?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[15px]">
+              This can't be undone. Your listing, its pets, dates and applications are removed for good.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-h-11">Keep my listing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => id && deleteListing.mutate(id, { onSuccess: () => navigate("/dashboard") })}
+              disabled={deleteListing.isPending}
+              className="min-h-11 bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-                  Edit Listing
-                </h1>
-                <p className="text-muted-foreground mt-2">
-                  Update your listing details
-                </p>
-              </div>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete this listing?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete
-                      your listing, all associated pets, dates, and applications.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
-                      disabled={isDeleting}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      {isDeleting ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : null}
-                      Delete Listing
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </div>
-
-          {/* Step Indicator */}
-          <div className="mb-8">
-            <StepIndicator
-              steps={steps}
-              currentStep={currentStep}
-              onStepClick={goToStep}
-              allowJumpAhead
-            />
-          </div>
-
-          {/* Form Content */}
-          <Card className="mb-6">
-            <CardContent className="pt-6">{renderStep()}</CardContent>
-          </Card>
-
-          {currentStep === totalSteps && needsDeclaration && (
-            <ListingDeclaration checked={declarationAccepted} onCheckedChange={setDeclarationAccepted} />
-          )}
-
-          {/* Navigation */}
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              variant="outline"
-              onClick={prevStep}
-              disabled={currentStep === 1}
-              aria-label="Previous step"
-              className="px-3 sm:px-4 shrink-0"
-            >
-              <ArrowLeft className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Previous</span>
-            </Button>
-
-            <div className="flex gap-3">
-              {currentStep === totalSteps ? (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleSubmit("draft")}
-                    disabled={updateListing.isPending}
-                  >
-                    {updateListing.isPending ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4 mr-2" />
-                    )}
-                    Save as Draft
-                  </Button>
-                  {listing?.status === "published" ? (
-                    <Button
-                      onClick={() => handleSubmit("published")}
-                      disabled={updateListing.isPending}
-                    >
-                      {updateListing.isPending ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : null}
-                      Save Changes
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => handleSubmit("published")}
-                      disabled={updateListing.isPending}
-                    >
-                      {updateListing.isPending ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : null}
-                      Publish Listing
-                    </Button>
-                  )}
-                </>
-              ) : (
-                <Button onClick={handleNext}>
-                  Next
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
+              {deleteListing.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              Delete listing
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </RoleTheme>
   );
 };
 
