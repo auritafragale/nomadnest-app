@@ -60,6 +60,7 @@ export type Database = {
           id: string
           listing_id: string
           message: string | null
+          owner_seen_at: string | null
           sit_dates_id: string
           sitter_user_id: string
           status: Database["public"]["Enums"]["application_status"]
@@ -72,6 +73,7 @@ export type Database = {
           id?: string
           listing_id: string
           message?: string | null
+          owner_seen_at?: string | null
           sit_dates_id: string
           sitter_user_id: string
           status?: Database["public"]["Enums"]["application_status"]
@@ -84,6 +86,7 @@ export type Database = {
           id?: string
           listing_id?: string
           message?: string | null
+          owner_seen_at?: string | null
           sit_dates_id?: string
           sitter_user_id?: string
           status?: Database["public"]["Enums"]["application_status"]
@@ -2846,6 +2849,7 @@ export type Database = {
         Args: { p_room_id: string; p_user_id: string }
         Returns: boolean
       }
+      can_publish_listing: { Args: never; Returns: boolean }
       can_read_chat_photo: { Args: { p_name: string }; Returns: boolean }
       can_read_sit_update_photo: { Args: { p_name: string }; Returns: boolean }
       can_upload_chat_photo: { Args: { p_name: string }; Returns: boolean }
@@ -2853,6 +2857,7 @@ export type Database = {
         Args: { p_name: string }
         Returns: boolean
       }
+      canonical_pet_type: { Args: { p_type: string }; Returns: string }
       chat_photo_conversation: { Args: { p_name: string }; Returns: string }
       city_chat_key: {
         Args: { p_city: string; p_country: string }
@@ -2880,7 +2885,10 @@ export type Database = {
         }
         Returns: string
       }
-      decline_application: { Args: { p_application_id: string }; Returns: Json }
+      decline_application: {
+        Args: { p_application_id: string; p_note?: string }
+        Returns: Json
+      }
       disable_my_sit_story_share_link: {
         Args: { p_story_id: string }
         Returns: undefined
@@ -2914,6 +2922,40 @@ export type Database = {
         Returns: Json
       }
       get_guide_completion: { Args: { p_listing_id: string }; Returns: Json }
+      get_listing_applicants: {
+        Args: { p_listing_id: string }
+        Returns: {
+          application_id: string
+          avatar_url: string
+          avg_rating: number
+          city: string
+          country: string
+          created_at: string
+          end_date: string
+          first_name: string
+          fit_free_from: string
+          fit_free_nights: number
+          fit_free_to: string
+          fit_meds_ok: boolean
+          fit_pets_known: string[]
+          fit_pets_missing: string[]
+          fit_same_city: boolean
+          fit_total_nights: number
+          founding_member: boolean
+          highlights: string[]
+          id_verified: boolean
+          message: string
+          owner_seen: boolean
+          pet_types: string[]
+          review_count: number
+          review_rate: number
+          sit_dates_id: string
+          sitter_user_id: string
+          start_date: string
+          status: Database["public"]["Enums"]["application_status"]
+          who_applying: string
+        }[]
+      }
       get_listing_exact_location: {
         Args: { p_listing_id: string }
         Returns: Json
@@ -3018,6 +3060,7 @@ export type Database = {
         Args: { p_note?: string; p_sit_id: string }
         Returns: undefined
       }
+      mark_applications_seen: { Args: { p_ids: string[] }; Returns: number }
       mark_conversation_messages_read: {
         Args: { _conversation_id: string }
         Returns: undefined
@@ -3041,7 +3084,12 @@ export type Database = {
         Returns: boolean
       }
       notify_application_status: {
-        Args: { p_application_id: string; p_sit_id?: string; p_status: string }
+        Args: {
+          p_application_id: string
+          p_note?: string
+          p_sit_id?: string
+          p_status: string
+        }
         Returns: undefined
       }
       notify_guide_unlocks: { Args: never; Returns: number }
@@ -3068,6 +3116,7 @@ export type Database = {
       }
       release_job_lease: { Args: { p_job_name: string }; Returns: undefined }
       remove_guide_question: { Args: { p_question_id: string }; Returns: Json }
+      remove_listing_dates: { Args: { p_sit_dates_id: string }; Returns: Json }
       remove_sit_story_portfolio_photo: {
         Args: { p_path: string; p_story_id: string }
         Returns: string[]
@@ -3084,6 +3133,7 @@ export type Database = {
         Args: { p_accept: boolean; p_request_id: string }
         Returns: Json
       }
+      scrub_contact_details: { Args: { p_text: string }; Returns: string }
       set_guide_question_dismissed: {
         Args: { p_dismissed: boolean; p_question_id: string }
         Returns: Json
@@ -3139,6 +3189,10 @@ export type Database = {
       }
       toggle_checkin_heart: { Args: { p_checkin_id: string }; Returns: Json }
       unaccent_fallback: { Args: { p_text: string }; Returns: string }
+      unshortlist_application: {
+        Args: { p_application_id: string }
+        Returns: Json
+      }
       update_reminders_due: {
         Args: never
         Returns: {
