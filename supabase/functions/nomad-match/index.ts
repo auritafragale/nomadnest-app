@@ -125,9 +125,15 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
     const used = usedCount ?? 0;
     const remaining = Math.max(0, DAILY_LIMIT - used);
     if (cached) {
+      // Someone may have hidden their profile since the cache was written:
+      // only Nomads who still pass today's visibility rules are returned.
+      const rows = (Array.isArray(cached.results) ? cached.results : []) as MatchResult[];
+      const visible = await stillVisible(supabase, rows.map((r) => r.user_id));
+      const results = rows.filter((r) => visible.has(r.user_id));
       timings.cached = 1;
-      timings.results = Array.isArray(cached.results) ? cached.results.length : 0;
-      return json({ results: cached.results, cached: true, remaining });
+      timings.results = results.length;
+      timings.dropped = rows.length - results.length;
+      return json({ results, cached: true, remaining });
     }
     if (used >= DAILY_LIMIT) {
       return json({ error: `You've used all ${DAILY_LIMIT} best-match runs for today. Try again tomorrow.`, remaining: 0 }, 429);
@@ -288,6 +294,28 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
     console.error("nomad-match failed:", redact(err));
     return json({ error: GENERIC_ERROR }, 500);
   }
+};
+
+/** Nomads who are visible, active and discoverable right now. */
+// deno-lint-ignore no-explicit-any
+const stillVisible = async (supabase: any, ids: string[]): Promise<Set<string>> => {
+  const unique = [...new Set(ids.filter((id) => UUID_RE.test(id)))];
+  if (unique.length === 0) return new Set();
+  const { data, error } = await supabase
+    .from("sitter_profiles")
+    .select("user_id")
+    .in("user_id", unique)
+    .eq("is_visible", true)
+    .or("is_active.is.null,is_active.eq.true");
+  if (error) throw new Error(`visibility check failed: ${error.message}`);
+  const candidates = ((data ?? []) as { user_id: string }[]).map((r) => r.user_id);
+  const checks = await Promise.all(
+    candidates.map(async (id) => {
+      const { data: ok } = await supabase.rpc("profile_is_discoverable", { p_user_id: id });
+      return ok === true ? id : null;
+    }),
+  );
+  return new Set(checks.filter((id): id is string => !!id));
 };
 
 /** The model's JSON → known Nomads only, each once, with a clean short reason. */

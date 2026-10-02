@@ -34,6 +34,8 @@ const Privacy = () => {
           <li>Name, email, password (hashed), date of birth, profile photo.</li>
           <li>Bio, languages, travel preferences, sitting experience.</li>
           <li>Identity verification data (processed by our verification partner).</li>
+          <li>Your phone number is never shown on your profile or shared automatically. You decide whether to give it to another member.</li>
+          <li>AI suggestions are only saved if you choose to save them.</li>
         </ul>
         <h3>Listings &amp; pets</h3>
         <ul>
@@ -80,7 +82,8 @@ const Privacy = () => {
         <h2>6. Who we share data with</h2>
         <ul>
           <li>Other members, where you choose to share (profile, listing, messages, reviews).</li>
-          <li>Service providers: hosting and database (Supabase), payments (Stripe), email (Resend), maps (Google Maps), identity verification, push notifications, and analytics.</li>
+          <li>Service providers: hosting and database (Supabase), payments (Stripe), email (Resend), maps (Google Maps), identity verification, text messages for phone verification (Twilio), push notifications, and analytics.</li>
+          <li>AI features (Anthropic): when you use an AI button, only the text needed for that feature is sent, with contact details removed. It is not used to train AI models.</li>
           <li>Authorities where required by law or to protect the rights and safety of members.</li>
         </ul>
         <p>

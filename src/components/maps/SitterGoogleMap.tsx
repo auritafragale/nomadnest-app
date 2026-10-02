@@ -11,7 +11,7 @@ import MessageSitterButton from "@/components/browse/MessageSitterButton";
 
 const AvatarPin = ({ sitter }: { sitter: SitterWithProfile }) => {
   const name = sitter.profile
-    ? `${sitter.profile.first_name || ""} ${sitter.profile.last_name || ""}`.trim()
+    ? (sitter.profile.first_name || "").trim()
     : "?";
   const initials = name
     .split(" ")
@@ -139,7 +139,7 @@ const ClusteredSitterMarkers = ({
 
 const SitterInfoWindow = ({ sitter, onClose }: { sitter: SitterWithProfile; onClose: () => void }) => {
   const name = sitter.profile
-    ? `${sitter.profile.first_name || ""} ${sitter.profile.last_name || ""}`.trim() || "Nomad"
+    ? (sitter.profile.first_name || "").trim() || "Nomad"
     : "Nomad";
   const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   const location = sitter.profile

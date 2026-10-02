@@ -227,7 +227,8 @@ const InvitePanel = ({
             />
             {aiDrafted && <p className="text-sm text-muted-foreground">AI draft. Read it and make it your own before sending.</p>}
             <p className="text-sm text-muted-foreground">
-              Keep your address and phone number out for now. {sitterName} gets them in your Welcome Guide once the sit is confirmed.
+              Keep your address and phone number out for now. {sitterName} gets your address in your Welcome Guide once the sit is confirmed.
+              Your number is only shared if you choose to share it.
             </p>
           </div>
         </div>

@@ -93,7 +93,8 @@ export type NotificationType =
   | "listing_dates_changed"
   | "reliability_strike"
   | "community_strike_heads_up_host"
-  | "community_strike_heads_up_nomad";
+  | "community_strike_heads_up_nomad"
+  | "listing_dates_removed";
 
 export function buildNotificationEmail(type: string, data: Record<string, string>): BuiltEmail {
   return plainTextParts(buildNotificationEmailEscaped(type, escapeValues(data)));
@@ -157,7 +158,26 @@ function buildNotificationEmailEscaped(
           pushUrl: url,
         };
       }
-      // declined (manual, or automatic when another sitter is accepted)
+      // declined by the Pet Parent (decline_application), with their note
+      if (data.manual === "true") {
+        const title = "Update on your application";
+        const message = `Thank you for applying. ${owner} isn't going ahead with you for ${data.dateRange || "these dates"} this time.`;
+        const note = data.note ? `<p>${owner} says: “${data.note}”</p>` : "";
+        return {
+          subject: `Update on your application for ${listing}`,
+          preview: message,
+          heading: title,
+          body: `<p>${message}</p>${note}<p>There are plenty more sits waiting for you.</p>`,
+          ctaLabel: "View your applications",
+          ctaUrl: `${APP_URL}${url}`,
+          secondaryCtaLabel: "Browse sits",
+          secondaryCtaUrl: `${APP_URL}/browse-sits`,
+          pushTitle: title,
+          pushBody: message,
+          pushUrl: url,
+        };
+      }
+      // declined automatically when another sitter is accepted
       const title = "Update on your application";
       const message = `${owner} has chosen another Nomad for ${listing} this time. There are plenty more sits waiting for you.`;
       return {
@@ -393,6 +413,22 @@ function buildNotificationEmailEscaped(
         pushBody: `The dates for ${data.listingTitle} changed to ${data.dates}`,
         pushUrl: data.url || "/dashboard",
       };
+    case "listing_dates_removed": {
+      // Sent by remove_listing_dates; same words as the in-app row.
+      const owner = data.ownerFirstName || "The Pet Parent";
+      const message = `${owner} has removed ${data.dates} from ${data.listingTitle}, so your application for those dates has closed.`;
+      return {
+        subject: "Those dates are no longer available",
+        preview: message,
+        heading: "Those dates are no longer available",
+        body: `<p>${message}</p><p>Thank you for applying, and there are plenty more sits waiting for you.</p>`,
+        ctaLabel: "Browse sits",
+        ctaUrl: `${APP_URL}/browse-sits`,
+        pushTitle: "Those dates are no longer available",
+        pushBody: message,
+        pushUrl: "/browse-sits",
+      };
+    }
     case "reliability_strike":
       return {
         subject: "A quick heads-up about your recent cancellation",

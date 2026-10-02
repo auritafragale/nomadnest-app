@@ -5,7 +5,6 @@ import { useAuth } from "@/contexts/AuthContext";
 export interface ThreadSender {
   id: string;
   first_name: string | null;
-  last_name?: string | null;
   avatar_url: string | null;
 }
 

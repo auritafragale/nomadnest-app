@@ -249,7 +249,7 @@ export const MessageThread = ({
   }
 
   const initials = otherUser
-    ? `${otherUser.first_name?.[0] || ""}${otherUser.last_name?.[0] || ""}`
+    ? `${otherUser.first_name?.[0] || ""}`
     : "?";
 
   const profileLink = otherUser?.id
@@ -277,7 +277,7 @@ export const MessageThread = ({
             </Avatar>
             <div className="min-w-0">
               <h3 className="truncate font-medium leading-tight text-foreground hover:text-primary transition-colors">
-                {otherUser?.first_name} {otherUser?.last_name}
+                {otherUser?.first_name}
               </h3>
               {conversation.listing && (
                 <p className="truncate text-xs text-muted-foreground">{conversation.listing.title}</p>
@@ -294,7 +294,7 @@ export const MessageThread = ({
             </Avatar>
             <div className="min-w-0">
               <h3 className="truncate font-medium leading-tight text-foreground">
-                {otherUser?.first_name} {otherUser?.last_name}
+                {otherUser?.first_name}
               </h3>
               {conversation.listing && (
                 <p className="truncate text-xs text-muted-foreground">{conversation.listing.title}</p>
@@ -313,7 +313,7 @@ export const MessageThread = ({
                 targetType: "user",
                 targetId: otherUser.id,
                 targetLabel:
-                  `${otherUser.first_name || ""} ${otherUser.last_name || ""}`.trim() || undefined,
+                  (otherUser.first_name || "").trim() || undefined,
               })
             }
           >
