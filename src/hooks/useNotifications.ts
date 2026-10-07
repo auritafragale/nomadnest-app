@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,46 +15,8 @@ export interface Notification {
 
 export const useNotifications = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
-  // Subscribe to realtime notifications
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel(`notifications:${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          // Add new notification to cache
-          queryClient.setQueryData<Notification[]>(
-            ["notifications", user.id],
-            (old) => {
-              if (!old) return [payload.new as Notification];
-              // Avoid duplicates and add to beginning
-              if (old.some((n) => n.id === (payload.new as Notification).id)) {
-                return old;
-              }
-              return [payload.new as Notification, ...old];
-            }
-          );
-          // Invalidate unread count
-          queryClient.invalidateQueries({ queryKey: ["notifications-unread-count", user.id] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, queryClient]);
-
+  // Realtime inserts are handled once, in <UnreadSync />.
   return useQuery({
     queryKey: ["notifications", user?.id],
     queryFn: async () => {
@@ -95,22 +56,7 @@ export const useUnreadNotificationsCount = () => {
     enabled: !!user,
   });
 
-  // Keep the PWA app icon badge in sync with the unread count.
-  // setAppBadge/clearAppBadge are not in the standard TS lib yet.
-  useEffect(() => {
-    const nav = navigator as Navigator & {
-      setAppBadge?: (count?: number) => Promise<void>;
-      clearAppBadge?: () => Promise<void>;
-    };
-    if (!nav.setAppBadge) return;
-    const count = query.data ?? 0;
-    if (count > 0) {
-      nav.setAppBadge(count);
-    } else {
-      nav.clearAppBadge?.();
-    }
-  }, [query.data]);
-
+  // The app icon badge is owned by <UnreadSync />.
   return query;
 };
 

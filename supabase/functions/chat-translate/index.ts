@@ -91,7 +91,8 @@ serve(async (req) => {
       .maybeSingle();
     if (!m || m.translated_at || !m.sender_user_id || m.guide_question_id) return json({ skipped: "not_applicable" });
     const text = String(m.body ?? "").trim();
-    if (/^\[\[(image|checkin)\]\]/.test(text) || text.startsWith("[Photo removed]")) return json({ skipped: "special" });
+    // Photos, care cards and phone-share markers are never translated.
+    if (/^\[\[(image|checkin|phone_share)\]\]/.test(text) || text.startsWith("[Photo removed]")) return json({ skipped: "special" });
     if (letterCount(text) < 3) return json({ skipped: "too_short" });
     if (text.length > MAX_CHARS) return json({ skipped: "too_long" });
 

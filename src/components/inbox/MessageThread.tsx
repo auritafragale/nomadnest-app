@@ -1,26 +1,28 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ArrowLeft, Bone, CalendarDays, Camera, Check, CheckCheck, ChevronRight, Flag, Footprints, ImagePlus, Languages, Loader2, MoreHorizontal, Pill, Send, X } from "lucide-react";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/contexts/AuthContext";
-import { format, isToday, isYesterday } from "date-fns";
-import { Send, ArrowLeft, Camera, Check, CheckCheck, Flag, Bone, Pill, Footprints, ImagePlus, Languages, Loader2, X } from "lucide-react";
-import { languageLabel } from "@/lib/dailyUpdate";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { languageLabel } from "@/lib/dailyUpdate";
 import { buildImageMessageBody, CHAT_PHOTO_BUCKET, parseImageMessage } from "@/lib/chatImage";
 import { resizeImage } from "@/lib/imageResize";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
-import { threadConversationId, type Message, type Conversation } from "@/hooks/useConversations";
+import {
+  conversationStatus,
+  hasLiveSit,
+  threadConversationId,
+  type Message,
+  type Conversation,
+} from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
 import { useReport } from "@/components/reports/ReportContext";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
@@ -30,6 +32,13 @@ import { parseCheckinMessage, type CheckinKind } from "@/hooks/useSitCheckins";
 import { useLinkedGuideQuestions, type LinkedGuideQuestion } from "@/hooks/useAskNest";
 import { AddToGuidePrompt, GuideQuestionCard } from "@/components/inbox/GuideQuestionChat";
 import { questionFromBody } from "@/lib/askNest";
+import { ChatAvatar } from "@/components/inbox/ConversationList";
+import { PhoneShareAsk, PhoneShareMessage, PhoneShareSheet } from "@/components/inbox/PhoneShare";
+import { usePhoneShares } from "@/hooks/usePhoneShares";
+import { parsePhoneShareMessage } from "@/lib/phoneShare";
+import { petList, useThreadSit } from "@/hooks/useThreadSit";
+import { CONTACT_LABEL, MONEY_NOTE, NOT_CONFIRMED_NOTE, detectContactDetail, mentionsMoney } from "@/lib/chatSafety";
+import { shortRange, nnButton } from "@/components/nn/ui";
 
 interface MessageThreadProps {
   conversation: Conversation | null;
@@ -41,17 +50,43 @@ interface MessageThreadProps {
   otherUserRole?: "sitter" | "owner";
 }
 
-const formatMessageDate = (dateStr: string) => {
-  const date = new Date(dateStr);
-  if (isToday(date)) return format(date, "h:mm a");
-  if (isYesterday(date)) return `Yesterday ${format(date, "h:mm a")}`;
-  return format(date, "MMM d, h:mm a");
+const timeOf = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+const dayLabel = (iso: string) => {
+  const d = new Date(iso);
+  const now = new Date();
+  const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(now) - day(d)) / 86_400_000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  return d.toLocaleDateString("en-GB", { weekday: diff < 7 ? "long" : undefined, day: "numeric", month: "short", year: d.getFullYear() === now.getFullYear() ? undefined : "numeric" });
+};
+
+/** "Portuguese" for pt (English names, for "Translated from …"). */
+const englishLanguage = (code: string | null | undefined) => {
+  if (!code) return null;
+  try {
+    return new Intl.DisplayNames(["en"], { type: "language" }).of(code) ?? null;
+  } catch {
+    return null;
+  }
 };
 
 const KIND_ICON: Record<CheckinKind, typeof Bone> = {
   pets_fed: Bone,
   meds_given: Pill,
   walk_completed: Footprints,
+};
+
+const NOTE = "self-center max-w-[92%] rounded-xl px-3 py-2 text-center text-[13px] leading-snug";
+
+const dismissKey = (pair: string) => `nn_phone_ask_dismissed_${pair}`;
+const readDismissed = (pair: string) => {
+  try {
+    return localStorage.getItem(dismissKey(pair)) === "1";
+  } catch {
+    return false;
+  }
 };
 
 export const MessageThread = ({
@@ -69,20 +104,42 @@ export const MessageThread = ({
   // A photo uploaded to the private chat-photos bucket, waiting to be sent.
   const [pendingPhoto, setPendingPhoto] = useState<{ path: string; preview: string } | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [moneyDismissed, setMoneyDismissed] = useState(false);
+  const [contactDismissed, setContactDismissed] = useState(false);
+  const [shareSheetOpen, setShareSheetOpen] = useState(false);
+  const [askDismissed, setAskDismissed] = useState(false);
   const photoLibraryRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const otherUser = conversation?.other_user;
+  const otherName = otherUser?.first_name || "Member";
   // The other member closed their account: the chat stays, read-only.
-  const otherLeft = !!conversation && (!conversation.owner_user_id || !conversation.sitter_user_id);
+  const otherLeft = !!conversation && (conversation.member_left || !conversation.owner_user_id || !conversation.sitter_user_id);
   const userName = user?.user_metadata?.first_name || "User";
+  const context = conversation?.context;
+  const liveSit = !!context && hasLiveSit(context);
+  // Contact details are fine once a sit has been confirmed between you.
+  const sitConfirmedOnce = !!context && (liveSit || context.sit_status === "completed");
+  const status = context ? conversationStatus(context) : null;
+  const sitInfo = useThreadSit(conversation);
 
   const { isOtherTyping, typingUserName, sendTypingIndicator } = useTypingIndicator(
     conversation?.id || null,
     user?.id || null,
-    userName
+    userName,
   );
+
+  const phone = usePhoneShares(otherLeft ? null : otherUser?.id);
+
+  useEffect(() => {
+    setAskDismissed(conversation ? readDismissed(conversation.id) : false);
+    setNewMessage("");
+    setPendingPhoto(null);
+    setMoneyDismissed(false);
+    setContactDismissed(false);
+  }, [conversation?.id]);
 
   const { data: activeSits = [] } = useConversationActiveSits(conversation?.conversation_ids ?? []);
   // One sit for the pill: as the sitter, the sit due today (else the first
@@ -93,8 +150,6 @@ export const MessageThread = ({
     activeSits.find((s) => s.role === "owner") ??
     null;
 
-  // Current user is the sitter in this conversation?
-  const isCurrentUserSitter = !!conversation && !!user && conversation.sitter_user_id === user.id;
   const isCurrentUserOwner = !!conversation && !!user && conversation.owner_user_id === user.id;
 
   // Translated messages the reader switched back to the original.
@@ -144,6 +199,7 @@ export const MessageThread = ({
         !m.guide_question_id &&
         !parseCheckinMessage(m.body) &&
         !parseImageMessage(m.body) &&
+        !parsePhoneShareMessage(m.body) &&
         m.body.trim().length > 0;
       if (awaitingReply && isPlainOwnerReply) {
         result.set(m.id, [...askedSoFar].reverse());
@@ -153,23 +209,33 @@ export const MessageThread = ({
     return result;
   }, [messages, guideQuestionById, isCurrentUserOwner, user]);
 
+  // The newest phone-share marker from each side (only that one can show a number).
+  const latestShareId = useMemo(() => {
+    const latest: Record<string, string> = {};
+    for (const m of messages) if (parsePhoneShareMessage(m.body)) latest[m.sender_user_id] = m.id;
+    return latest;
+  }, [messages]);
+  const iEverShared = !!user && !!latestShareId[user.id];
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isOtherTyping]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const resizeInput = () => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setNewMessage(value);
-
+    resizeInput();
     if (value.length > 0) {
       sendTypingIndicator(true);
-
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-      typingTimeoutRef.current = setTimeout(() => {
-        sendTypingIndicator(false);
-      }, 2000);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => sendTypingIndicator(false), 2000);
     } else {
       sendTypingIndicator(false);
     }
@@ -182,8 +248,7 @@ export const MessageThread = ({
 
     // Camera captures can arrive with an empty/generic MIME type; the input
     // already restricts selection to images, so accept those too.
-    const looksLikeImage =
-      file.type.startsWith("image/") || !file.type || file.type === "application/octet-stream";
+    const looksLikeImage = file.type.startsWith("image/") || !file.type || file.type === "application/octet-stream";
     if (!looksLikeImage) {
       toast.error("Please select an image file");
       return;
@@ -214,21 +279,60 @@ export const MessageThread = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const send = () => {
     if ((!newMessage.trim() && !pendingPhoto) || isSending) return;
-
-    onSend(
-      pendingPhoto
-        ? buildImageMessageBody(pendingPhoto.path, newMessage)
-        : newMessage.trim()
-    );
+    onSend(pendingPhoto ? buildImageMessageBody(pendingPhoto.path, newMessage) : newMessage.trim());
     setNewMessage("");
     setPendingPhoto(null);
+    setMoneyDismissed(false);
+    setContactDismissed(false);
     sendTypingIndicator(false);
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    requestAnimationFrame(resizeInput);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    send();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter sends on a keyboard; Shift+Enter (and phones) add a new line.
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(hover: hover)").matches) {
+      e.preventDefault();
+      send();
     }
+  };
+
+  // The newest message from the other member, for "Report this chat".
+  const lastTheirs = [...messages].reverse().find((m) => m.sender_user_id !== user?.id);
+  const reportChat = () => {
+    if (lastTheirs) openReport({ targetType: "message", targetId: lastTheirs.id, targetLabel: "chat" });
+    else if (otherUser?.id) openReport({ targetType: "user", targetId: otherUser.id, targetLabel: otherName });
+  };
+
+  const doShare = () =>
+    phone.share.mutate(undefined, {
+      onSuccess: () => {
+        setShareSheetOpen(false);
+        toast.success(`Your number is shared with ${otherName}.`);
+      },
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Please try again."),
+    });
+  const doStop = () =>
+    phone.stop.mutate(undefined, {
+      onSuccess: () => toast.success("You stopped sharing your number."),
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Please try again."),
+    });
+  const notNow = () => {
+    if (!conversation) return;
+    try {
+      localStorage.setItem(dismissKey(conversation.id), "1");
+    } catch {
+      // Private mode: it shows again next time, which is fine.
+    }
+    setAskDismissed(true);
+    toast("No problem. You can share it later from the ⋯ menu.");
   };
 
   if (!conversation) {
@@ -236,348 +340,406 @@ export const MessageThread = ({
       <div className="flex h-full flex-col">
         {onBack && (
           <div className="shrink-0 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:hidden">
-            <Button variant="ghost" size="icon" onClick={onBack} aria-label="Back to messages">
+            <button type="button" onClick={onBack} aria-label="Back to Messages" className="flex h-11 w-11 items-center justify-center rounded-full">
               <ArrowLeft className="h-5 w-5" />
-            </Button>
+            </button>
           </div>
         )}
         <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
-          <p className="text-muted-foreground">Select a conversation to view messages</p>
+          <p className="font-display text-xl">Choose a chat</p>
+          <p className="mt-1 text-sm text-muted-foreground">Your messages will show here.</p>
         </div>
       </div>
     );
   }
 
-  const initials = otherUser
-    ? `${otherUser.first_name?.[0] || ""}`
-    : "?";
+  const profileLink = !otherLeft && otherUser?.id ? (otherUserRole === "sitter" ? `/sitter/${otherUser.id}` : `/owner/${otherUser.id}`) : null;
+  const dates = context?.sit_start && context.sit_end ? shortRange(context.sit_start, context.sit_end) : null;
+  const subLine = [
+    conversation.listing?.title ?? (otherLeft ? null : "Direct chat"),
+    status === "Confirmed" && dates
+      ? `Confirmed ${dates}`
+      : status === "Past sit"
+        ? "Past sit"
+        : status === "Applied"
+          ? "Applied"
+          : status === "Invited"
+            ? "Invited"
+            : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
-  const profileLink = otherUser?.id
-    ? otherUserRole === "sitter"
-      ? `/sitter/${otherUser.id}`
-      : `/owner/${otherUser.id}`
-    : null;
+  const draft = newMessage;
+  const contactKind = !sitConfirmedOnce && !contactDismissed ? detectContactDetail(draft) : null;
+  const moneyWarn = !moneyDismissed && mentionsMoney(draft);
+  const canShare = !!phone.state?.can_share;
+  const showAsk = !otherLeft && canShare && !phone.state?.i_am_sharing && !iEverShared && !askDismissed && !phone.isLoading;
+
+  const strip = liveSit && context?.sit_id && (
+    <Link
+      to={`/sits/${context.sit_id}`}
+      className="mx-3 mt-2.5 flex shrink-0 items-center justify-between gap-2.5 rounded-2xl bg-[var(--nn-ok-bg)] px-3 py-2.5 text-foreground lg:hidden"
+    >
+      <span className="flex min-w-0 items-center gap-2.5">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-card text-brand-teal-text" aria-hidden="true">
+          <CalendarDays className="h-[18px] w-[18px]" />
+        </span>
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate text-sm font-bold">
+            Your sit{sitInfo?.petNames.length ? ` with ${petList(sitInfo.petNames)}` : ""}
+          </span>
+          <span className="truncate text-xs text-muted-foreground">
+            {dates}
+            {sitInfo?.guideUnlockAt
+              ? ` · details unlock ${new Date(sitInfo.guideUnlockAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: sitInfo.guideTimezone ?? undefined })}`
+              : ""}
+          </span>
+        </span>
+      </span>
+      <span className="flex shrink-0 items-center text-sm font-bold text-brand-teal-text">
+        See sit <ChevronRight className="h-4 w-4" aria-hidden="true" />
+      </span>
+    </Link>
+  );
+
+  let lastDay = "";
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      {/* Header: compact on mobile, where the thread is full screen */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:gap-3 md:p-4">
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      {/* Header */}
+      <header className="flex shrink-0 items-center gap-2 border-b border-[var(--nn-border)] px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:gap-3 md:px-4 md:py-3">
         {onBack && (
-          <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 md:hidden" aria-label="Back to messages">
+          <button type="button" onClick={onBack} aria-label="Back to Messages" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-[var(--nn-soft)] md:hidden">
             <ArrowLeft className="h-5 w-5" />
-          </Button>
+          </button>
         )}
         {profileLink ? (
-          <Link to={profileLink} className="flex min-w-0 items-center gap-2 hover:opacity-80 transition-opacity md:gap-3">
-            <Avatar className="h-9 w-9 md:h-10 md:w-10">
-              <AvatarImage src={otherUser?.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary">
-                {initials.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <h3 className="truncate font-medium leading-tight text-foreground hover:text-primary transition-colors">
-                {otherUser?.first_name}
-              </h3>
-              {conversation.listing && (
-                <p className="truncate text-xs text-muted-foreground">{conversation.listing.title}</p>
-              )}
-            </div>
+          <Link to={profileLink} aria-label={`${otherName}'s profile`} className="flex h-11 w-11 shrink-0 items-center justify-center">
+            <ChatAvatar name={otherName} url={otherUser?.avatar_url} />
           </Link>
         ) : (
-          <>
-            <Avatar className="h-9 w-9 md:h-10 md:w-10">
-              <AvatarImage src={otherUser?.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary">
-                {initials.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <h3 className="truncate font-medium leading-tight text-foreground">
-                {otherUser?.first_name}
-              </h3>
-              {conversation.listing && (
-                <p className="truncate text-xs text-muted-foreground">{conversation.listing.title}</p>
+          <ChatAvatar name={otherName} url={otherUser?.avatar_url} />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1.5 truncate text-base font-bold leading-tight">
+            <span className="truncate">{otherName}</span>
+            {otherUser?.id_verified && !otherLeft && (
+              <span role="img" aria-label="ID verified" className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-teal">
+                <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} aria-hidden="true" />
+              </span>
+            )}
+          </p>
+          {subLine && <p className="truncate text-xs text-muted-foreground">{subLine}</p>}
+        </div>
+        {!otherLeft && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" aria-label="More options" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-[var(--nn-soft)]">
+                <MoreHorizontal className="h-5 w-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72 rounded-2xl p-1.5">
+              {profileLink && (
+                <DropdownMenuItem asChild className="flex-col items-start gap-0.5 rounded-xl py-2.5">
+                  <Link to={profileLink}>
+                    <span className="font-semibold">View {otherName}’s profile</span>
+                    <span className="text-xs text-muted-foreground">Reviews, pets they know and more</span>
+                  </Link>
+                </DropdownMenuItem>
               )}
-            </div>
-          </>
+              {liveSit && context?.sit_id ? (
+                <DropdownMenuItem asChild className="flex-col items-start gap-0.5 rounded-xl py-2.5">
+                  <Link to={`/sits/${context.sit_id}`}>
+                    <span className="font-semibold">Go to the sit</span>
+                    <span className="text-xs text-muted-foreground">{dates ? `${dates} · ` : ""}Welcome Guide and daily updates</span>
+                  </Link>
+                </DropdownMenuItem>
+              ) : conversation.listing ? (
+                <DropdownMenuItem asChild className="flex-col items-start gap-0.5 rounded-xl py-2.5">
+                  <Link to={`/listing/${conversation.listing.id}`}>
+                    <span className="font-semibold">View the listing</span>
+                    <span className="text-xs text-muted-foreground">{conversation.listing.title}</span>
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
+              {phone.state?.i_am_sharing ? (
+                <DropdownMenuItem onSelect={doStop} className="flex-col items-start gap-0.5 rounded-xl py-2.5">
+                  <span className="font-semibold">Stop sharing my number</span>
+                  <span className="text-xs text-muted-foreground">{otherName} will no longer see it</span>
+                </DropdownMenuItem>
+              ) : canShare ? (
+                <DropdownMenuItem onSelect={() => setShareSheetOpen(true)} className="flex-col items-start gap-0.5 rounded-xl py-2.5">
+                  <span className="font-semibold">Share my phone number</span>
+                  <span className="text-xs text-muted-foreground">Only {otherName} will see it</span>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem disabled aria-disabled="true" className="flex-col items-start gap-0.5 rounded-xl py-2.5 opacity-100 data-[disabled]:opacity-100">
+                  <span className="font-semibold text-muted-foreground">Share my phone number</span>
+                  <span className="text-xs text-muted-foreground">Available once a sit is confirmed</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={reportChat} className="flex-col items-start gap-0.5 rounded-xl py-2.5">
+                <span className="font-semibold text-[var(--nn-danger-text)]">Report this chat</span>
+                <span className="text-xs text-muted-foreground">Tell the NomadNest team. Screenshots are optional.</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
-        {otherUser?.id && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="ml-auto text-muted-foreground hover:text-foreground"
-            aria-label="Report user"
-            onClick={() =>
-              openReport({
-                targetType: "user",
-                targetId: otherUser.id,
-                targetLabel:
-                  (otherUser.first_name || "").trim() || undefined,
-              })
-            }
-          >
-            <Flag className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+      </header>
+
+      {strip}
 
       {/* Messages */}
-      <ScrollArea className="min-h-0 flex-1 px-3 py-3 md:p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 md:px-5" role="log" aria-label={`Messages with ${otherName}`} aria-live="polite">
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className={cn("flex", i % 2 === 0 ? "justify-end" : "justify-start")}>
-                <Skeleton className="h-16 w-48 rounded-lg" />
+                <Skeleton className="h-16 w-48 rounded-2xl" />
               </div>
             ))}
           </div>
-        ) : messages.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
-            No messages yet. Start the conversation!
-          </div>
         ) : (
-          <div className="space-y-4">
+          <div className="flex flex-col gap-3">
+            {!sitConfirmedOnce && !otherLeft && conversation.listing && (
+              <p role="note" className={cn(NOTE, "bg-[var(--nn-tip-bg)] text-[var(--nn-tip-text)]")}>
+                {NOT_CONFIRMED_NOTE}
+              </p>
+            )}
+            {messages.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted-foreground">No messages yet. Say hello!</p>
+            )}
             {messages.map((message) => {
               const isOwn = message.sender_user_id === user?.id;
               const isRead = !!message.read_at;
-              if (message.guide_question_id) {
+              const day = dayLabel(message.created_at);
+              const separator =
+                day !== lastDay ? (
+                  <p className="self-center rounded-full px-3 py-1 text-xs font-semibold text-muted-foreground">{day}</p>
+                ) : null;
+              lastDay = day;
+              const meta = (
+                <span className={cn("flex items-center gap-1 text-[11px] text-muted-foreground", isOwn && "justify-end")}>
+                  {timeOf(message.created_at)}
+                  {isOwn &&
+                    (isRead ? (
+                      <>
+                        {" · Read"}
+                        <CheckCheck className="h-3.5 w-3.5 text-brand-teal-text" aria-hidden="true" />
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span className="sr-only">Sent</span>
+                      </>
+                    ))}
+                </span>
+              );
+              const reportBtn = !isOwn && (
+                <button
+                  type="button"
+                  aria-label="Report message"
+                  onClick={() => openReport({ targetType: "message", targetId: message.id })}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center self-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+                >
+                  <Flag className="h-3.5 w-3.5" />
+                </button>
+              );
+
+              let body: React.ReactNode;
+              const share = parsePhoneShareMessage(message.body);
+
+              if (share) {
+                body = (
+                  <PhoneShareMessage
+                    action={share}
+                    isOwn={isOwn}
+                    isLatest={latestShareId[message.sender_user_id] === message.id}
+                    otherName={otherName}
+                    state={phone.state}
+                    onStop={doStop}
+                    stopping={phone.stop.isPending}
+                  />
+                );
+              } else if (message.guide_question_id) {
                 const linked = guideQuestionById.get(message.guide_question_id);
-                return (
-                  <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+                body = (
+                  <div className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
                     <GuideQuestionCard
                       question={linked?.question ?? questionFromBody(message.body)}
                       isEmergency={linked?.is_emergency ?? /^Urgent from your Welcome Guide:/i.test(message.body)}
                       isOwn={isOwn}
-                      time={formatMessageDate(message.created_at)}
+                      time={timeOf(message.created_at)}
                     />
                   </div>
                 );
-              }
-
-              const checkin = parseCheckinMessage(message.body);
-
-              if (checkin?.kind === "daily_update") {
-                return (
-                  <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
-                    <ChatUpdateCard
-                      update={checkin}
-                      sitId={activeSit?.sit_id ?? null}
-                      isOwn={isOwn}
-                      viewerIsOwner={isCurrentUserOwner}
-                      time={formatMessageDate(message.created_at)}
-                      senderName={otherUser?.first_name || "your Nomad"}
-                    />
-                  </div>
-                );
-              }
-
-              if (checkin) {
-                const Icon = KIND_ICON[checkin.kind as CheckinKind] || Bone;
-                return (
-                  <div key={message.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
-                    <div className="max-w-[80%] rounded-lg border border-primary/20 bg-primary/5 overflow-hidden">
-                      <div className="flex items-center gap-2 px-3 py-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <Icon className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-primary">{checkin.label}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatMessageDate(message.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                      {checkin.note && (
-                        <p className="text-sm px-3 pb-2 whitespace-pre-wrap break-words text-foreground">
-                          {checkin.note}
-                        </p>
-                      )}
-                      {checkin.photo && (
-                        <img
-                          src={checkin.photo}
-                          alt={`${checkin.label} check-in photo`}
-                          loading="lazy"
-                          className="w-full max-h-60 object-cover"
-                        />
-                      )}
+              } else {
+                const checkin = parseCheckinMessage(message.body);
+                if (checkin?.kind === "daily_update") {
+                  body = (
+                    <div className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+                      <ChatUpdateCard
+                        update={checkin}
+                        sitId={activeSit?.sit_id ?? context?.sit_id ?? null}
+                        isOwn={isOwn}
+                        viewerIsOwner={isCurrentUserOwner}
+                        time={timeOf(message.created_at)}
+                        senderName={otherName || "your Nomad"}
+                      />
                     </div>
-                  </div>
-              );
-              }
-
-              const imageMsg = parseImageMessage(message.body);
-              const imageSrc = imageMsg ? (imageMsg.path ? chatPhotoUrls[imageMsg.path] : imageMsg.url) : null;
-              if (imageMsg) {
-                return (
-                  <div key={message.id} className={cn("flex group", isOwn ? "justify-end" : "justify-start")}>
-                    {!isOwn && (
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center mr-1">
-                        <button
-                          type="button"
-                          aria-label="Report message"
-                          onClick={() => openReport({ targetType: "message", targetId: message.id })}
-                          className="p-1 text-muted-foreground hover:text-foreground rounded"
-                        >
-                          <Flag className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )}
-                    <div
-                      className={cn(
-                        "max-w-[80%] rounded-lg overflow-hidden",
-                        isOwn ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                      )}
-                    >
-                      {imageSrc ? (
-                      <a href={imageSrc} target="_blank" rel="noopener noreferrer">
-                        <img
-                          src={imageSrc}
-                          alt={imageMsg.caption || "Shared photo"}
-                          loading="lazy"
-                          className="w-full max-h-72 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                        />
-                      </a>
-                      ) : (
-                        <div className="flex h-40 w-56 max-w-full items-center justify-center bg-black/10">
-                          <Loader2 className="h-5 w-5 animate-spin opacity-60" aria-label="Loading photo" />
+                  );
+                } else if (checkin) {
+                  // Older care check-ins (fed, medication, walk).
+                  const Icon = KIND_ICON[checkin.kind as CheckinKind] || Bone;
+                  body = (
+                    <div className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
+                      <div className="max-w-[80%] overflow-hidden rounded-2xl border border-[var(--nn-border)] bg-[var(--nn-soft)]">
+                        <div className="flex items-center gap-2 px-3 py-2">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--nn-tint)]">
+                            <Icon className="h-4 w-4 text-[var(--nn-accent-dark)]" aria-hidden="true" />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-sm font-semibold">{checkin.label}</span>
+                            <span className="block text-xs text-muted-foreground">{timeOf(message.created_at)}</span>
+                          </span>
                         </div>
-                      )}
-                      <div className="px-4 py-2">
-                        {imageMsg.caption && (
-                          <p className="text-sm whitespace-pre-wrap break-words">{imageMsg.caption}</p>
+                        {checkin.note && <p className="whitespace-pre-wrap break-words px-3 pb-2 text-sm">{checkin.note}</p>}
+                        {checkin.photo && (
+                          <img src={checkin.photo} alt={`${checkin.label} check-in photo`} loading="lazy" className="max-h-60 w-full object-cover" />
                         )}
-                        <div
-                          className={cn(
-                            "flex items-center justify-end gap-1 mt-1",
-                            isOwn ? "text-primary-foreground/80" : "text-muted-foreground"
-                          )}
-                        >
-                          <span className="text-xs">{formatMessageDate(message.created_at)}</span>
-                          {isOwn && (
-                            isRead ? (
-                              <CheckCheck className="h-3.5 w-3.5 text-primary-foreground/90" />
-                            ) : (
-                              <Check className="h-3.5 w-3.5" />
-                            )
-                          )}
-                        </div>
                       </div>
                     </div>
-                  </div>
-                );
+                  );
+                } else {
+                  const imageMsg = parseImageMessage(message.body);
+                  if (imageMsg) {
+                    const imageSrc = imageMsg.path ? chatPhotoUrls[imageMsg.path] : imageMsg.url;
+                    body = (
+                      <div className={cn("group flex", isOwn ? "justify-end" : "justify-start")}>
+                        {reportBtn}
+                        <div className={cn("flex max-w-[80%] flex-col gap-1", isOwn && "items-end")}>
+                          <div className={cn("overflow-hidden rounded-[18px]", isOwn ? "bg-[var(--nn-accent)] text-primary-foreground" : "border border-[var(--nn-border)] bg-card")}>
+                            {imageSrc ? (
+                              <a href={imageSrc} target="_blank" rel="noopener noreferrer">
+                                <img src={imageSrc} alt={imageMsg.caption || "Shared photo"} loading="lazy" className="max-h-72 w-full cursor-pointer object-cover" />
+                              </a>
+                            ) : (
+                              <div className="flex h-40 w-56 max-w-full items-center justify-center bg-muted">
+                                <Loader2 className="h-5 w-5 animate-spin opacity-60" aria-label="Loading photo" />
+                              </div>
+                            )}
+                            {imageMsg.caption && <p className="whitespace-pre-wrap break-words px-3.5 py-2 text-[15px]">{imageMsg.caption}</p>}
+                          </div>
+                          {meta}
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    // Text (and "[Photo removed]" bodies after a photo clean-up).
+                    // The recipient reads the translation (their language); the
+                    // sender always sees what they wrote.
+                    const translated = !isOwn && !!message.translated_body;
+                    const original = !translated || showingOriginal.has(message.id);
+                    const guidePrompt = guidePromptByMessageId.get(message.id);
+                    const fromLang = englishLanguage(message.message_lang);
+                    body = (
+                      <>
+                        {!isOwn && mentionsMoney(message.body) && (
+                          <p role="note" className={cn(NOTE, "bg-[var(--nn-tip-bg)] text-[var(--nn-tip-text)]")}>
+                            {MONEY_NOTE}{" "}
+                            <button type="button" onClick={() => openReport({ targetType: "message", targetId: message.id })} className="font-bold underline underline-offset-2">
+                              Report
+                            </button>
+                          </p>
+                        )}
+                        <div className={cn("group flex", isOwn ? "justify-end" : "justify-start")}>
+                          {reportBtn}
+                          <div className={cn("flex max-w-[80%] flex-col gap-1", isOwn && "items-end")}>
+                            <div
+                              className={cn(
+                                "rounded-[18px] px-3.5 py-2.5 text-[15px] leading-normal",
+                                isOwn ? "rounded-br-md bg-[var(--nn-accent)] text-primary-foreground" : "rounded-bl-md border border-[var(--nn-border)] bg-card",
+                              )}
+                            >
+                              <p className="whitespace-pre-wrap break-words">{original ? message.body : message.translated_body}</p>
+                            </div>
+                            {translated && (
+                              <button
+                                type="button"
+                                onClick={() => toggleOriginal(message.id)}
+                                className="inline-flex min-h-[44px] items-center gap-1 self-start text-xs font-semibold text-[var(--nn-accent-dark)] hover:underline"
+                              >
+                                <Languages className="h-3.5 w-3.5" aria-hidden="true" />
+                                {original
+                                  ? `See in ${languageLabel(message.translated_lang) ?? "your language"}`
+                                  : `Translated${fromLang ? ` from ${fromLang}` : ""} · See original`}
+                              </button>
+                            )}
+                            {meta}
+                          </div>
+                        </div>
+                        {guidePrompt && <AddToGuidePrompt messageId={message.id} replyText={message.body} candidates={guidePrompt} />}
+                      </>
+                    );
+                  }
+                }
               }
 
-              const guidePrompt = guidePromptByMessageId.get(message.id);
               return (
-                <div key={message.id}>
-                <div
-                  className={cn("flex group", isOwn ? "justify-end" : "justify-start")}
-                >
-                  {/* Report button for received messages */}
-                  {!isOwn && (
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center mr-1">
-                      <button
-                        type="button"
-                        aria-label="Report message"
-                        onClick={() => openReport({ targetType: "message", targetId: message.id })}
-                        className="p-1 text-muted-foreground hover:text-foreground rounded"
-                      >
-                        <Flag className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                  <div
-                    className={cn(
-                      "max-w-[80%] rounded-lg px-4 py-2",
-                      isOwn
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground"
-                    )}
-                  >
-                    {(() => {
-                      // The recipient reads the translation (their language); the
-                      // sender always sees what they wrote.
-                      const translated = !isOwn && !!message.translated_body;
-                      const original = !translated || showingOriginal.has(message.id);
-                      return (
-                        <>
-                          <p className="text-sm whitespace-pre-wrap break-words">
-                            {original ? message.body : message.translated_body}
-                          </p>
-                          {translated && (
-                            <button
-                              type="button"
-                              onClick={() => toggleOriginal(message.id)}
-                              className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium opacity-75 hover:underline hover:opacity-100"
-                            >
-                              <Languages className="h-3 w-3" aria-hidden="true" />
-                              {original ? `See in ${languageLabel(message.translated_lang) ?? "your language"}` : "See original"}
-                            </button>
-                          )}
-                        </>
-                      );
-                    })()}
-                    <div
-                      className={cn(
-                        "flex items-center justify-end gap-1 mt-1",
-                        isOwn ? "text-primary-foreground/80" : "text-muted-foreground"
-                      )}
-                    >
-                      <span className="text-xs">
-                        {formatMessageDate(message.created_at)}
-                      </span>
-                      {isOwn && (
-                        isRead ? (
-                          <CheckCheck className="h-3.5 w-3.5 text-primary-foreground/90" />
-                        ) : (
-                          <Check className="h-3.5 w-3.5" />
-                        )
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {guidePrompt && (
-                  <AddToGuidePrompt messageId={message.id} replyText={message.body} candidates={guidePrompt} />
-                )}
-                </div>
+                <Fragment key={message.id}>
+                  {separator}
+                  {body}
+                </Fragment>
               );
             })}
+            {showAsk && (
+              <PhoneShareAsk
+                otherName={otherName}
+                verified={!!phone.state?.my_phone_verified}
+                onShare={() => setShareSheetOpen(true)}
+                onNotNow={notNow}
+              />
+            )}
+            {otherLeft && (
+              <p role="note" className={cn(NOTE, "bg-muted text-muted-foreground")}>
+                This member has left NomadNest. Their name and photo are no longer shown.
+              </p>
+            )}
           </div>
         )}
         <div ref={bottomRef} />
-      </ScrollArea>
+      </div>
 
-      {/* Typing Indicator */}
+      {/* Typing indicator */}
       {isOtherTyping && (
-        <div className="px-4 py-2 border-t border-border bg-muted/30">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="flex gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
-            </div>
-            <span>{typingUserName || otherUser?.first_name || "User"} is typing...</span>
-          </div>
+        <div className="flex shrink-0 items-center gap-2 px-4 py-1.5 text-sm text-muted-foreground" aria-live="polite">
+          <span className="flex gap-1" aria-hidden="true">
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "0ms" }} />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "150ms" }} />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "300ms" }} />
+          </span>
+          {typingUserName || otherName} is typing…
         </div>
       )}
 
       {/* Today's update: one pill for the most relevant live sit between the
           two of you (the Inbox merges a pair's chats). */}
       {activeSit && (
-        <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-2">
+        <div className="flex shrink-0 items-center gap-2 border-t border-[var(--nn-line)] px-3 py-2">
           <Link
             to={`/sits/${activeSit.sit_id}`}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              "inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 text-sm font-semibold",
               activeSit.sent_today
-                ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                ? "border-transparent bg-[var(--nn-ok-bg)] text-brand-teal-text"
                 : activeSit.role === "sitter" && activeSit.due_today
-                  ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "border-border bg-background text-muted-foreground hover:text-foreground",
+                  ? "border-transparent bg-[var(--nn-accent)] text-primary-foreground"
+                  : "border-[var(--nn-border)] bg-card text-muted-foreground",
             )}
           >
-            {activeSit.sent_today ? <Check className="h-3.5 w-3.5" /> : <Camera className="h-3.5 w-3.5" />}
+            {activeSit.sent_today ? <Check className="h-4 w-4" aria-hidden="true" /> : <Camera className="h-4 w-4" aria-hidden="true" />}
             {activeSit.role === "sitter"
               ? activeSit.sent_today
                 ? "Today's update sent"
@@ -590,90 +752,121 @@ export const MessageThread = ({
                   ? "Today's update: not yet"
                   : "No update due today"}
           </Link>
-          <Link to={`/sits/${activeSit.sit_id}`} className="ml-auto whitespace-nowrap text-xs text-primary hover:underline">
+          <Link to={`/sits/${activeSit.sit_id}`} className="ml-auto inline-flex min-h-[44px] items-center whitespace-nowrap text-sm font-semibold text-[var(--nn-accent-dark)] hover:underline">
             See updates
           </Link>
         </div>
       )}
 
-      {/* Input */}
+      {/* Composer */}
       {otherLeft ? (
-        <p className="border-t border-border p-4 text-center text-sm text-muted-foreground">
+        <p className="shrink-0 border-t border-[var(--nn-border)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center text-sm text-muted-foreground">
           This member has left NomadNest. You can still read your conversation.
         </p>
       ) : (
-      <form
-        onSubmit={handleSubmit}
-        className="shrink-0 border-t border-border bg-background px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:p-4"
-      >
-        {pendingPhoto && (
-          <div className="flex items-center gap-2 mb-2">
-            <div className="relative">
-              <img
-                src={pendingPhoto.preview}
-                alt="Photo to send"
-                className="h-16 w-16 rounded-lg object-cover border border-border"
-              />
-              <button
-                type="button"
-                onClick={() => setPendingPhoto(null)}
-                className="absolute -top-2 -right-2 p-0.5 bg-background border border-border rounded-full text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3 w-3" />
-              </button>
+        <form
+          onSubmit={handleSubmit}
+          className="shrink-0 border-t border-[var(--nn-border)] bg-background px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 md:px-4 md:pb-3"
+        >
+          {contactKind && (
+            <div role="alert" className="mb-2 rounded-2xl border border-[var(--nn-tip-border)] bg-[var(--nn-tip-bg)] p-3 text-sm text-[var(--nn-tip-text)]">
+              <p>
+                <strong>This looks like {CONTACT_LABEL[contactKind]}.</strong> For your safety, keep contact details in NomadNest until a sit is confirmed.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setContactDismissed(true);
+                    inputRef.current?.focus();
+                  }}
+                  className={nnButton("secondary", "min-h-[40px] px-4")}
+                >
+                  Edit message
+                </button>
+                <button type="button" onClick={send} className={nnButton("secondary", "min-h-[40px] px-4")}>
+                  Send anyway
+                </button>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">Add a caption or just send the photo</p>
+          )}
+          {moneyWarn && (
+            <div role="alert" className="mb-2 rounded-2xl border border-[var(--nn-tip-border)] bg-[var(--nn-tip-bg)] p-3 text-sm text-[var(--nn-tip-text)]">
+              <p>{MONEY_NOTE}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button type="button" onClick={() => setMoneyDismissed(true)} className={nnButton("secondary", "min-h-[40px] px-4")}>
+                  Got it
+                </button>
+                <button type="button" onClick={reportChat} className={nnButton("secondary", "min-h-[40px] px-4")}>
+                  Report
+                </button>
+              </div>
+            </div>
+          )}
+          {pendingPhoto && (
+            <div className="mb-2 flex items-center gap-2">
+              <div className="relative">
+                <img src={pendingPhoto.preview} alt="Photo to send" className="h-16 w-16 rounded-xl border border-[var(--nn-border)] object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setPendingPhoto(null)}
+                  aria-label="Remove photo"
+                  className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--nn-border)] bg-card text-muted-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">Add a caption or just send the photo</p>
+            </div>
+          )}
+          <div className="flex items-end gap-2">
+            <button
+              type="button"
+              onClick={() => photoLibraryRef.current?.click()}
+              disabled={isSending || photoUploading}
+              aria-label="Add a photo"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[var(--nn-border)] bg-card text-foreground disabled:opacity-50"
+            >
+              {photoUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
+            </button>
+            <input ref={photoLibraryRef} type="file" accept="image/*" onChange={handlePhotoFile} className="hidden" />
+            <label htmlFor="chat-input" className="sr-only">
+              Write a message
+            </label>
+            <textarea
+              id="chat-input"
+              ref={inputRef}
+              rows={1}
+              value={newMessage}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder={pendingPhoto ? "Add a caption…" : `Message ${otherName}…`}
+              disabled={isSending}
+              className={cn(
+                "min-h-[44px] flex-1 resize-none rounded-[22px] border-[1.5px] bg-card px-4 py-2.5 text-[15px] leading-snug outline-none placeholder:text-muted-foreground focus:border-[var(--nn-accent)]",
+                contactKind || moneyWarn ? "border-[var(--nn-tip-border)]" : "border-[var(--nn-border)]",
+              )}
+            />
+            <button
+              type="submit"
+              disabled={(!newMessage.trim() && !pendingPhoto) || isSending}
+              aria-label="Send"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--nn-accent)] text-primary-foreground disabled:opacity-50"
+            >
+              <Send className="h-5 w-5" />
+            </button>
           </div>
-        )}
-        <div className="flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                disabled={isSending || photoUploading}
-                aria-label="Add a photo"
-              >
-                {photoUploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ImagePlus className="h-4 w-4" />
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" side="top">
-              <DropdownMenuItem
-                onSelect={(event) => {
-                  event.preventDefault();
-                  photoLibraryRef.current?.click();
-                }}
-              >
-                <ImagePlus className="h-4 w-4 mr-2" />
-                Upload from Library
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <input
-            ref={photoLibraryRef}
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoFile}
-            className="hidden"
-          />
-          <Input
-            value={newMessage}
-            onChange={handleInputChange}
-            placeholder={pendingPhoto ? "Add a caption..." : "Type a message..."}
-            disabled={isSending}
-            className="flex-1"
-          />
-          <Button type="submit" disabled={(!newMessage.trim() && !pendingPhoto) || isSending}>
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-      </form>
+        </form>
       )}
+
+      <PhoneShareSheet
+        open={shareSheetOpen}
+        onOpenChange={setShareSheetOpen}
+        otherName={otherName}
+        state={phone.state}
+        onConfirm={doShare}
+        sharing={phone.share.isPending}
+      />
     </div>
   );
 };

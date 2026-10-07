@@ -21,7 +21,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 type ReportStatus = "pending" | "reviewed" | "resolved" | "dismissed";
-type ReportTargetType = "user" | "listing" | "message";
+type ReportTargetType = "user" | "listing" | "message" | "sit_story" | "city_chat_message";
 
 interface ReportRow {
   id: string;
@@ -37,6 +37,9 @@ interface ReportRow {
   target_email: string | null;
   target_profile_user_id: string | null;
   evidence_paths: string[] | null;
+  /** Message reports: the reported text and the sender's first name. */
+  reported_message?: string | null;
+  reported_sender_first_name?: string | null;
 }
 
 const statusVariant: Record<ReportStatus, "muted" | "destructive"> = {
@@ -210,6 +213,18 @@ const AdminReports = () => {
                                 </span>
                               )}
                             </div>
+
+                            {(r.target_type === "message" || r.target_type === "city_chat_message") && (
+                              <div className="rounded-lg border border-border bg-muted/40 p-2.5 text-sm">
+                                <p className="text-xs text-muted-foreground">
+                                  {r.target_type === "city_chat_message" ? "City Chat message" : "Chat message"} from{" "}
+                                  {r.reported_sender_first_name || "a member"}
+                                </p>
+                                <p className="mt-1 whitespace-pre-wrap break-words">
+                                  {r.reported_message ?? "This message has been deleted."}
+                                </p>
+                              </div>
+                            )}
 
                             {r.details && (
                               <p className="text-sm text-muted-foreground whitespace-pre-line">

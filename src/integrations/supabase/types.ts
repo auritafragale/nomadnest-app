@@ -253,6 +253,24 @@ export type Database = {
           },
         ]
       }
+      city_chat_mutes: {
+        Row: {
+          created_at: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       city_chat_messages: {
         Row: {
           content: string
@@ -297,6 +315,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      city_chat_room_reads: {
+        Row: {
+          last_read_at: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          last_read_at?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       city_chat_rooms: {
         Row: {
@@ -1404,6 +1440,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      phone_shares: {
+        Row: {
+          created_at: string
+          id: string
+          recipient_id: string
+          sharer_id: string
+          sit_id: string | null
+          stopped_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recipient_id: string
+          sharer_id: string
+          sit_id?: string | null
+          stopped_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recipient_id?: string
+          sharer_id?: string
+          sit_id?: string | null
+          stopped_at?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -2787,6 +2850,8 @@ export type Database = {
           evidence_paths: string[]
           id: string
           reason: string
+          reported_message: string
+          reported_sender_first_name: string
           reporter_email: string
           reporter_name: string
           reporter_user_id: string
@@ -2913,6 +2978,14 @@ export type Database = {
           name: string
         }[]
       }
+      get_city_chat_catchup_input: {
+        Args: { p_room_id: string; p_since: string }
+        Returns: {
+          content: string
+          created_at: string
+          sender_name: string
+        }[]
+      }
       get_community_warnings: {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: string[]
@@ -2920,6 +2993,30 @@ export type Database = {
       get_conversation_active_sits: {
         Args: { p_conversation_ids: string[] }
         Returns: Json
+      }
+      get_conversation_partners: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          conversation_id: string
+          first_name: string
+          id_verified: boolean
+          application_status: string
+          invite_status: string
+          last_at: string
+          last_body: string
+          last_sender: string
+          listing_city: string
+          listing_id: string
+          listing_title: string
+          member_left: boolean
+          other_user_id: string
+          sit_end: string
+          sit_id: string
+          sit_start: string
+          sit_status: string
+          unread_count: number
+        }[]
       }
       get_guide_completion: { Args: { p_listing_id: string }; Returns: Json }
       get_listing_applicants: {
@@ -2965,6 +3062,23 @@ export type Database = {
       get_listing_private_address: {
         Args: { p_listing_id: string }
         Returns: string
+      }
+      get_my_city_chat_rooms: {
+        Args: never
+        Returns: {
+          city: string
+          city_key: string
+          country: string
+          has_access: boolean
+          last_read_at: string
+          locked_reason: string
+          muted: boolean
+          nomad_count: number
+          room_id: string
+          sit_end: string
+          sit_start: string
+          unread_count: number
+        }[]
       }
       get_my_contact_info: {
         Args: never
@@ -3023,6 +3137,18 @@ export type Database = {
           vet_info: string
         }[]
       }
+      get_phone_shares: {
+        Args: { p_other_user: string }
+        Returns: {
+          can_share: boolean
+          i_am_sharing: boolean
+          my_number: string
+          my_phone_verified: boolean
+          their_first_name: string
+          their_number: string
+          they_are_sharing: boolean
+        }[]
+      }
       get_portfolio_story: { Args: { p_story_id: string }; Returns: Json }
       get_public_member_cards: { Args: { p_user_ids: string[] }; Returns: Json }
       get_shared_sit_story: { Args: { p_token: string }; Returns: Json }
@@ -3063,9 +3189,14 @@ export type Database = {
         Returns: undefined
       }
       mark_applications_seen: { Args: { p_ids: string[] }; Returns: number }
+      mark_city_chat_room_read: { Args: { p_room_id: string }; Returns: string }
       mark_conversation_messages_read: {
         Args: { _conversation_id: string }
         Returns: undefined
+      }
+      mark_conversation_notifications_read: {
+        Args: { p_conversation_ids: string[] }
+        Returns: number
       }
       mark_guide_question_asked: {
         Args: { p_question_id: string }
@@ -3161,6 +3292,7 @@ export type Database = {
         Args: { p_request: boolean; p_story_id: string }
         Returns: string
       }
+      share_my_phone: { Args: { p_other_user: string }; Returns: Json }
       shortlist_application: {
         Args: { p_application_id: string }
         Returns: Json
@@ -3189,6 +3321,7 @@ export type Database = {
           unlock_at: string
         }[]
       }
+      stop_sharing_my_phone: { Args: { p_other_user: string }; Returns: Json }
       toggle_checkin_heart: { Args: { p_checkin_id: string }; Returns: Json }
       unaccent_fallback: { Args: { p_text: string }; Returns: string }
       unshortlist_application: {
@@ -3226,7 +3359,12 @@ export type Database = {
       conversation_type: "listing" | "direct" | "city_chat"
       listing_status: "draft" | "published" | "paused"
       report_status: "pending" | "reviewed" | "resolved" | "dismissed"
-      report_target_type: "user" | "listing" | "message" | "sit_story"
+      report_target_type:
+        | "user"
+        | "listing"
+        | "message"
+        | "sit_story"
+        | "city_chat_message"
       sit_date_status: "open" | "closed" | "booked"
       sit_status: "confirmed" | "in_progress" | "completed" | "cancelled"
     }
@@ -3368,7 +3506,13 @@ export const Constants = {
       conversation_type: ["listing", "direct", "city_chat"],
       listing_status: ["draft", "published", "paused"],
       report_status: ["pending", "reviewed", "resolved", "dismissed"],
-      report_target_type: ["user", "listing", "message", "sit_story"],
+      report_target_type: [
+        "user",
+        "listing",
+        "message",
+        "sit_story",
+        "city_chat_message",
+      ],
       sit_date_status: ["open", "closed", "booked"],
       sit_status: ["confirmed", "in_progress", "completed", "cancelled"],
     },

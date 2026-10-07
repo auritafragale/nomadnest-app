@@ -35,6 +35,7 @@ const Privacy = () => {
           <li>Bio, languages, travel preferences, sitting experience.</li>
           <li>Identity verification data (processed by our verification partner).</li>
           <li>Your phone number is never shown on your profile or shared automatically. You decide whether to give it to another member.</li>
+          <li>Sharing your phone number in a chat happens only when you choose, only with the member you have a confirmed sit with, and you can stop any time. Only that member can see it, and it stops showing if you stop sharing or the sit is cancelled. The number is never put in messages, notifications or emails.</li>
           <li>AI suggestions are only saved if you choose to save them.</li>
         </ul>
         <h3>Listings &amp; pets</h3>
@@ -45,6 +46,7 @@ const Privacy = () => {
         <h3>Communications</h3>
         <ul>
           <li>Messages exchanged on the Platform, applications, reviews, and reports.</li>
+          <li>Voice input ("Tell me out loud" in the listing form) uses your device's or browser's own speech recognition (for example from Apple or Google), which turns your words into text. NomadNest never receives or stores the recording, only the text you choose to keep.</li>
         </ul>
         <h3>Payments</h3>
         <ul>
@@ -83,7 +85,13 @@ const Privacy = () => {
         <ul>
           <li>Other members, where you choose to share (profile, listing, messages, reviews).</li>
           <li>Service providers: hosting and database (Supabase), payments (Stripe), email (Resend), maps (Google Maps), identity verification, text messages for phone verification (Twilio), push notifications, and analytics.</li>
-          <li>AI features (Anthropic): when you use an AI button, only the text needed for that feature is sent, with contact details removed. It is not used to train AI models.</li>
+          <li>AI features (Anthropic). Nothing sent to Anthropic is used to train AI models.
+            <ul>
+              <li>AI buttons (for example Polish with AI): when you press one, only the text needed for that feature is sent, with contact details removed.</li>
+              <li>Chat translation: when it is switched on and the member reading your message has chosen a language, the text of your chat message is sent to Anthropic so it can be translated for them. It is sent as written, so it may include anything you typed.</li>
+              <li>Catch me up (City Chats): only the recent message text of that room is sent, with names replaced by "a Nomad" and contact details removed.</li>
+            </ul>
+          </li>
           <li>Authorities where required by law or to protect the rights and safety of members.</li>
         </ul>
         <p>

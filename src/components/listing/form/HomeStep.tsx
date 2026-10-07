@@ -6,7 +6,8 @@ import type { ListingFormData } from "@/hooks/useListingForm";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
 import { AMENITIES, HOME_TYPES, PRACTICAL, SETTINGS, SLEEPING, WIFI } from "@/lib/listingOptions";
-import { AI_SUGGESTION_NOTE, petContext, useWritingHelper } from "@/hooks/useWritingHelper";
+import { petContext, useWritingHelper } from "@/hooks/useWritingHelper";
+import ExtraNoteField from "./ExtraNoteField";
 import { useToast } from "@/hooks/use-toast";
 import { AiButton, FieldError, FieldLabel, PillGroup, PrivateTag, SelectField, StepTitle, TileGroup, ToggleRow, inputClass } from "./FormBits";
 import { cn } from "@/lib/utils";
@@ -212,25 +213,14 @@ const HomeStep = ({
         sortable
       />
 
-      <div className="flex flex-col gap-1.5">
-        <FieldLabel htmlFor="listing-description" extra={ai.visible && <AiButton label="Polish with AI" busy={ai.suggest.isPending} onClick={polish} disabled={!formData.description.trim()} />}>
-          Anything else a Nomad should know?
-        </FieldLabel>
-        <textarea
-          id="listing-description"
-          value={formData.description}
-          onChange={(e) => updateFormData({ description: e.target.value, descriptionAi: false })}
-          rows={6}
-          placeholder="What makes your home and your pets special, and anything a Nomad should know before saying yes."
-          aria-describedby={formData.descriptionAi ? "description-ai" : undefined}
-          className={cn(inputClass, "resize-y")}
-        />
-        {formData.descriptionAi && (
-          <p id="description-ai" className="text-sm text-muted-foreground">
-            {AI_SUGGESTION_NOTE}
-          </p>
-        )}
-      </div>
+      <ExtraNoteField
+        value={formData.description}
+        onChange={(text, fromAi) => updateFormData({ description: text, descriptionAi: !!fromAi })}
+        aiNote={formData.descriptionAi}
+        aiVisible={ai.visible}
+        aiBusy={ai.suggest.isPending}
+        onPolish={polish}
+      />
     </div>
   );
 };

@@ -1,62 +1,40 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface CityChatRoom {
-  id: string;
+  /** Null for a locked city whose room doesn't exist yet. */
+  room_id: string | null;
   city: string;
   country: string;
   city_key: string;
-  created_at: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  hasAccess: boolean;
+  has_access: boolean;
+  sit_start: string | null;
+  sit_end: string | null;
+  nomad_count: number | null;
+  unread_count: number;
+  last_read_at: string | null;
+  muted: boolean;
+  /** Locked cards: "applied" or "invited". */
+  locked_reason: "applied" | "invited" | null;
 }
 
+/**
+ * The City Chats you can open (a confirmed or in-progress sit in that city
+ * and country) and locked cities where you have an open application or
+ * invitation. One call.
+ */
 export const useCityChatRooms = () => {
   const { user } = useAuth();
-  const [rooms, setRooms] = useState<CityChatRoom[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("city_chat_rooms")
-        .select("*")
-        .order("city");
-
-      if (error || !data) {
-        if (mounted) {
-          setRooms([]);
-          setLoading(false);
-        }
-        return;
-      }
-
-      let accessMap: Record<string, boolean> = {};
-      if (user) {
-        const results = await Promise.all(
-          data.map((r) =>
-            supabase
-              .rpc("can_access_city_chat", { p_room_id: r.id, p_user_id: user.id })
-              .then(({ data }) => [r.id, !!data] as const),
-          ),
-        );
-        accessMap = Object.fromEntries(results);
-      }
-
-      if (mounted) {
-        setRooms(data.map((r) => ({ ...r, hasAccess: !!accessMap[r.id] })));
-        setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, [user]);
-
-  return { rooms, loading };
+  const query = useQuery({
+    queryKey: ["my-city-chat-rooms", user?.id],
+    queryFn: async (): Promise<CityChatRoom[]> => {
+      const { data, error } = await supabase.rpc("get_my_city_chat_rooms");
+      if (error) throw error;
+      return (data ?? []) as unknown as CityChatRoom[];
+    },
+    enabled: !!user,
+    refetchInterval: 60_000,
+  });
+  return { rooms: query.data ?? [], loading: query.isLoading, isError: query.isError, refetch: query.refetch };
 };

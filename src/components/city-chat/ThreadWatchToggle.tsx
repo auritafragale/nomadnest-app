@@ -7,28 +7,25 @@ interface ThreadWatchToggleProps {
 }
 
 /**
- * "Watch"/"Watching" toggle for a city-chat thread. Purely a subscription
- * toggle — replying to a thread auto-subscribes you server-side regardless
- * of this button's state (see notify_city_chat_thread_subscribers).
+ * Follow / 🔔 Following for a City Chat thread. Purely a subscription
+ * toggle — replying to a thread follows it server-side regardless of this
+ * button (see notify_city_chat_thread_subscribers).
  */
 const ThreadWatchToggle = ({ isSubscribed, onToggle, className }: ThreadWatchToggleProps) => (
   <button
     type="button"
-    onClick={(e) => {
-      e.stopPropagation();
-      onToggle();
-    }}
+    onClick={onToggle}
     aria-pressed={isSubscribed}
-    aria-label={isSubscribed ? "Stop watching this thread" : "Watch this thread"}
+    aria-label={isSubscribed ? "Following this thread. Stop following" : "Follow this thread"}
     className={cn(
-      "inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-1 shrink-0 transition-colors",
+      "inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-full border-[1.5px] px-4 text-sm font-bold transition-colors",
       isSubscribed
-        ? "bg-primary/10 text-primary"
-        : "text-muted-foreground hover:text-foreground hover:bg-muted",
+        ? "border-transparent bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]"
+        : "border-[var(--nn-border)] bg-card text-foreground hover:bg-[var(--nn-soft)]",
       className,
     )}
   >
-    {isSubscribed ? "🔕 Watching" : "🔔 Watch"}
+    {isSubscribed ? "🔔 Following" : "Follow"}
   </button>
 );
 

@@ -43,7 +43,10 @@ export const useSubmitReport = () => {
   return useMutation({
     mutationFn: async ({ targetType, targetId, reason, details, evidenceFiles }: ReportData) => {
       if (!user) throw new Error("Must be logged in to submit a report");
-      if ((!evidenceFiles || evidenceFiles.length === 0) && targetType !== "sit_story") {
+      // Proof is optional for chat messages, City Chat messages and Sit
+      // Stories (the team can see what was reported).
+      const proofOptional = ["sit_story", "message", "city_chat_message"].includes(targetType);
+      if ((!evidenceFiles || evidenceFiles.length === 0) && !proofOptional) {
         throw new Error("Please attach at least one proof file (image or PDF)");
       }
 

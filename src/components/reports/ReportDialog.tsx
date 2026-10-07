@@ -49,6 +49,15 @@ const REPORT_REASONS: Record<ReportTargetType, { value: string; label: string }[
     { value: "spam", label: "Spam or scam" },
     { value: "inappropriate_content", label: "Inappropriate content" },
     { value: "threats", label: "Threats or violence" },
+    { value: "asked_for_money", label: "Asked for money" },
+    { value: "other", label: "Other" },
+  ],
+  city_chat_message: [
+    { value: "harassment", label: "Harassment or abuse" },
+    { value: "spam", label: "Spam or scam" },
+    { value: "asked_for_money", label: "Asked for money" },
+    { value: "private_details", label: "Shares someone's private details" },
+    { value: "inappropriate_content", label: "Inappropriate content" },
     { value: "other", label: "Other" },
   ],
   sit_story: [
@@ -63,6 +72,7 @@ const TARGET_LABELS: Record<ReportTargetType, string> = {
   user: "user",
   listing: "listing",
   message: "message",
+  city_chat_message: "City Chat message",
   sit_story: "Sit Story",
 };
 
@@ -103,9 +113,10 @@ const ReportDialog = ({
     setFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // A Sit Story is written by the AI and already on record, so it's its own
-  // evidence; every other report needs at least one proof file.
-  const proofRequired = targetType !== "sit_story";
+  // Chat messages and City Chat messages are already on record (the team can
+  // see the reported text), and so is a Sit Story: proof is optional for
+  // those. Every other report needs at least one proof file.
+  const proofRequired = !["sit_story", "message", "city_chat_message"].includes(targetType);
 
   const handleSubmit = () => {
     if (!reason || (proofRequired && files.length === 0)) return;
@@ -192,7 +203,9 @@ const ReportDialog = ({
               )}
             </Label>
             <p className="text-xs text-muted-foreground">
-              Attach at least one screenshot or document. Images and PDFs up to 15 MB each.
+              {proofRequired
+                ? "Attach at least one screenshot or document. Images and PDFs up to 15 MB each."
+                : "The NomadNest team can see what was reported. Screenshots are optional. Images and PDFs up to 15 MB each."}
             </p>
 
             <label className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors">
