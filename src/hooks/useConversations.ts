@@ -2,13 +2,21 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import { sendNotification } from "@/lib/notifications";
 import { messagePreviewText } from "@/lib/chatImage";
 import { resolveDirectConversation, resolveListingConversation } from "@/lib/conversations";
 
 const conversationsQueryKey = (userId?: string) => ["conversations", userId] as const;
 const unreadMessagesQueryKey = (userId?: string) => ["unread-messages", userId] as const;
+
+export interface ConversationContext {
+  sit_id: string | null;
+  sit_status: "confirmed" | "in_progress" | "completed" | "cancelled" | null;
+  sit_start: string | null;
+  sit_end: string | null;
+  application_status: string | null;
+  invite_status: string | null;
+}
 
 export interface Conversation {
   id: string;
@@ -20,9 +28,13 @@ export interface Conversation {
   other_user: {
     id: string;
     first_name: string | null;
-    last_name?: string | null;
     avatar_url: string | null;
+    id_verified?: boolean;
   } | null;
+  /** The other member closed their account: the chat stays, read-only. */
+  member_left: boolean;
+  /** The most relevant sit, application and invite for the thread's listing. */
+  context: ConversationContext;
   listing?: {
     id: string;
     title: string;
@@ -54,6 +66,50 @@ export interface Message {
   message_lang?: string | null;
 }
 
+type PartnerRow = {
+  conversation_id: string;
+  other_user_id: string | null;
+  first_name: string;
+  avatar_url: string | null;
+  id_verified: boolean;
+  member_left: boolean;
+  listing_id: string | null;
+  listing_title: string | null;
+  listing_city: string | null;
+  sit_id: string | null;
+  sit_status: ConversationContext["sit_status"];
+  sit_start: string | null;
+  sit_end: string | null;
+  application_status: string | null;
+  invite_status: string | null;
+  last_body: string | null;
+  last_at: string | null;
+  last_sender: string | null;
+  unread_count: number;
+};
+
+/** Live or upcoming sit first, then a past sit, then an application or invite. */
+const contextRank = (c: ConversationContext, today: string) => {
+  if (c.sit_status === "confirmed" || c.sit_status === "in_progress") return (c.sit_end ?? "") >= today ? 4 : 3;
+  if (c.sit_status === "completed") return 2;
+  if (c.application_status || c.invite_status) return 1;
+  return 0;
+};
+
+export type ConversationStatus = "Confirmed" | "Applied" | "Invited" | "Past sit";
+
+/** The status chip on a chat row and in the header (none for direct chats). */
+export const conversationStatus = (c: ConversationContext): ConversationStatus | null => {
+  if (c.sit_status === "confirmed" || c.sit_status === "in_progress") return "Confirmed";
+  if (c.sit_status === "completed") return "Past sit";
+  if (c.application_status === "applied" || c.application_status === "shortlisted") return "Applied";
+  if (c.invite_status === "pending") return "Invited";
+  return null;
+};
+
+/** A sit between the two members is confirmed or under way. */
+export const hasLiveSit = (c: ConversationContext) => c.sit_status === "confirmed" || c.sit_status === "in_progress";
+
 export const useConversations = () => {
   const { user } = useAuth();
 
@@ -62,76 +118,69 @@ export const useConversations = () => {
     queryFn: async (): Promise<Conversation[]> => {
       if (!user) return [];
 
-      const { data: conversations, error } = await supabase
-        .from("conversations")
-        .select(`
-          *,
-          listings:listing_id (id, title, city)
-        `)
-        .or(`owner_user_id.eq.${user.id},sitter_user_id.eq.${user.id}`)
-        .order("updated_at", { ascending: false });
-
+      // One call: every conversation you're in, with the other member's first
+      // name, avatar and ID tick whatever their visibility (chats with hidden
+      // or paused members stay), the listing, sit, application and invite,
+      // the last message and your unread count.
+      const [{ data: rows, error }, { data: convRows, error: convError }] = await Promise.all([
+        supabase.rpc("get_conversation_partners"),
+        supabase
+          .from("conversations")
+          .select("id, listing_id, owner_user_id, sitter_user_id, created_at, updated_at, pair_thread_id")
+          .or(`owner_user_id.eq.${user.id},sitter_user_id.eq.${user.id}`),
+      ]);
       if (error) throw error;
+      if (convError) throw convError;
 
-      // Fetch other user profiles and last messages
-      const enrichedConversations = await Promise.all(
-        (conversations || []).map(async (conv) => {
-          const otherUserId = conv.owner_user_id === user.id 
-            ? conv.sitter_user_id 
-            : conv.owner_user_id;
+      const byId = new Map((convRows ?? []).map((c) => [c.id, c]));
+      const today = new Date().toISOString().slice(0, 10);
 
-          // Get other user's profile (safe public view — no contact details).
-          // A member who closed their account is NULL here: the chat stays,
-          // read-only, with them shown as "Former member".
-          const { data: profile } = otherUserId
-            ? ((await publicProfiles("id, first_name, avatar_url")
-                .eq("id", otherUserId)
-                .maybeSingle()) as { data: PublicProfile | null })
-            : {
-                data: { id: "", first_name: "Former member", last_name: null, avatar_url: null } as unknown as PublicProfile,
-              };
+      const enriched = ((rows ?? []) as unknown as PartnerRow[]).flatMap((r) => {
+        const conv = byId.get(r.conversation_id);
+        if (!conv) return [];
+        const context: ConversationContext = {
+          sit_id: r.sit_id,
+          sit_status: r.sit_status,
+          sit_start: r.sit_start,
+          sit_end: r.sit_end,
+          application_status: r.application_status,
+          invite_status: r.invite_status,
+        };
+        const conversation: Conversation = {
+          ...conv,
+          owner_user_id: conv.owner_user_id as string,
+          sitter_user_id: conv.sitter_user_id as string,
+          other_user: {
+            id: r.other_user_id ?? "",
+            first_name: r.first_name,
+            avatar_url: r.avatar_url,
+            id_verified: r.id_verified,
+          },
+          member_left: r.member_left,
+          context,
+          listing: r.listing_id ? { id: r.listing_id, title: r.listing_title ?? "", city: r.listing_city } : null,
+          last_message: r.last_at ? { body: r.last_body ?? "", created_at: r.last_at, sender_user_id: r.last_sender ?? "" } : null,
+          unread_count: r.unread_count ?? 0,
+          conversation_ids: [conv.id],
+          listing_contexts: [],
+        };
+        return [conversation];
+      });
 
-          // Get last message
-          const { data: messages } = await supabase
-            .from("messages")
-            .select("body, created_at, sender_user_id")
-            .eq("conversation_id", conv.id)
-            .order("created_at", { ascending: false })
-            .limit(1);
-
-          // Get unread count
-          const { count } = await supabase
-            .from("messages")
-            .select("*", { count: "exact", head: true })
-            .eq("conversation_id", conv.id)
-            .neq("sender_user_id", user.id)
-            .is("read_at", null);
-
-          return {
-            ...conv,
-            other_user: profile,
-            listing: conv.listings,
-            last_message: messages?.[0] || null,
-            unread_count: count || 0,
-          };
-        })
-      );
-
+      // The Inbox shows one thread per pair of members.
       const grouped = new Map<string, Conversation>();
-      for (const conversation of enrichedConversations) {
+      const mainRank = new Map<string, number>();
+      for (const conversation of enriched) {
         const key = conversation.pair_thread_id || [conversation.owner_user_id, conversation.sitter_user_id].sort().join(":");
         const existing = grouped.get(key);
         const context = conversation.listing
           ? [{ conversation_id: conversation.id, listing_id: conversation.listing.id, title: conversation.listing.title, city: conversation.listing.city }]
           : [];
+        const rank = contextRank(conversation.context, today);
 
         if (!existing) {
-          grouped.set(key, {
-            ...conversation,
-            id: key,
-            conversation_ids: [conversation.id],
-            listing_contexts: context,
-          });
+          grouped.set(key, { ...conversation, id: key, conversation_ids: [conversation.id], listing_contexts: context });
+          mainRank.set(key, rank);
           continue;
         }
 
@@ -141,12 +190,17 @@ export const useConversations = () => {
         if ((conversation.last_message?.created_at || conversation.updated_at) > (existing.last_message?.created_at || existing.updated_at)) {
           existing.last_message = conversation.last_message;
           existing.updated_at = conversation.updated_at;
+        }
+        // The listing shown for the pair: one with a confirmed or upcoming sit first.
+        if (rank > (mainRank.get(key) ?? 0)) {
           existing.listing = conversation.listing;
           existing.listing_id = conversation.listing_id;
+          existing.context = conversation.context;
+          mainRank.set(key, rank);
         }
       }
 
-      return [...grouped.values()].filter((conversation) => Boolean(conversation.other_user)).sort((a, b) =>
+      return [...grouped.values()].sort((a, b) =>
         (b.last_message?.created_at || b.updated_at).localeCompare(a.last_message?.created_at || a.updated_at),
       );
     },
@@ -200,6 +254,16 @@ export const useMessages = (conversationIds: string[]) => {
             await supabase.rpc("mark_conversation_messages_read", {
               _conversation_id: newMessage.conversation_id,
             });
+            // The chat is open: its bell notification is read too.
+            await supabase.rpc("mark_conversation_notifications_read", {
+              p_conversation_ids: [newMessage.conversation_id],
+            });
+            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+            queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
+          }
+          // A shared number may have changed.
+          if (newMessage.body?.startsWith("[[phone_share]]")) {
+            queryClient.invalidateQueries({ queryKey: ["phone-shares"] });
           }
           // Refresh conversations list for updated counts
           queryClient.invalidateQueries({ queryKey: ["conversations"] });
@@ -310,8 +374,8 @@ export const useSendMessage = () => {
         .single();
 
       if (conversation) {
-        const recipientId = conversation.owner_user_id === user.id 
-          ? conversation.sitter_user_id 
+        const recipientId = conversation.owner_user_id === user.id
+          ? conversation.sitter_user_id
           : conversation.owner_user_id;
 
         // Send push/email notification to recipient
@@ -329,7 +393,7 @@ export const useSendMessage = () => {
 
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["messages"] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       queryClient.invalidateQueries({ queryKey: unreadMessagesQueryKey(user?.id) });
@@ -349,6 +413,11 @@ export const useMarkAsRead = () => {
         const { error } = await supabase.rpc("mark_conversation_messages_read", { _conversation_id: conversationId });
         if (error) throw error;
       }
+      // Opening a chat also clears its new-message notifications in the bell.
+      const { error: notifError } = await supabase.rpc("mark_conversation_notifications_read", {
+        p_conversation_ids: conversationIds,
+      });
+      if (notifError) throw notifError;
     },
     onMutate: async (conversationIds) => {
       if (!user) return;
@@ -403,37 +472,13 @@ export const useMarkAsRead = () => {
       queryClient.setQueryData(unreadMessagesQueryKey(user.id), context.previousUnreadCount);
       queryClient.setQueryData(["messages", conversationIds], context.previousMessages);
     },
-    onSuccess: async () => {
-      // Fetch real unread count after the read receipt is confirmed by the server,
-      // then sync the app icon badge. Done here rather than in onMutate so the badge
-      // reflects confirmed server state, and to handle the case where the user
-      // navigated directly via a push notification URL (conversations not yet loaded,
-      // so the optimistic decrement in onMutate is skipped).
-      try {
-        const { data } = await supabase.rpc("get_unread_messages_count");
-        const count = data || 0;
-        const nav = navigator as Navigator & {
-          setAppBadge?: (n?: number) => Promise<void>;
-          clearAppBadge?: () => Promise<void>;
-        };
-        if (nav.setAppBadge) {
-          if (count > 0) {
-            nav.setAppBadge(count);
-          } else {
-            nav.clearAppBadge?.();
-          }
-        }
-        // Keep the cache in sync so the reactive effect in useUnreadMessages
-        // doesn't contradict us on the next render.
-        queryClient.setQueryData(unreadMessagesQueryKey(user?.id), count);
-      } catch {
-        // Badge sync failure is non-critical; leave badge as-is.
-      }
-    },
+    // The app badge follows the refreshed counts (UnreadSync owns it).
     onSettled: (_data, _error, conversationIds) => {
       queryClient.invalidateQueries({ queryKey: ["messages", conversationIds] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
       queryClient.invalidateQueries({ queryKey: unreadMessagesQueryKey(user?.id) });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
     },
   });
 };

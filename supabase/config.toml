@@ -125,3 +125,6 @@ verify_jwt = false
 
 [functions.strip-photo-metadata]
 verify_jwt = false
+
+[functions.city-chat-catchup]
+verify_jwt = false

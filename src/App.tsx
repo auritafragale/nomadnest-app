@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ActiveRoleProvider } from "@/contexts/ActiveRoleContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -74,7 +74,8 @@ import AdminCheckinPhotoCleanup, { AdminChatPhotoCleanup } from "./pages/AdminCh
 
 import Perks from "./pages/Perks";
 import CityChat from "./pages/CityChat";
-import CityChats from "./pages/CityChats";
+import Notifications from "./pages/Notifications";
+import UnreadSync from "@/components/notifications/UnreadSync";
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
 import Safety from "./pages/Safety";
@@ -138,6 +139,7 @@ const AppShell = () => {
 
 
       <ScrollToTop />
+      {user && <UnreadSync />}
       <RouteSeo />
 
       <Routes>
@@ -199,7 +201,9 @@ const AppShell = () => {
         <Route path="/admin/checkin-photo-cleanup" element={<AdminRoute><AdminCheckinPhotoCleanup /></AdminRoute>} />
         <Route path="/admin/chat-photo-cleanup" element={<AdminRoute><AdminChatPhotoCleanup /></AdminRoute>} />
 
-        <Route path="/city-chats" element={<ProtectedRoute><CityChats /></ProtectedRoute>} />
+        {/* City Chats live in Messages now; old links land on that tab. */}
+        <Route path="/city-chats" element={<Navigate to="/inbox?tab=city-chats" replace />} />
+        <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/city-chat/:roomId" element={<ProtectedRoute><CityChat /></ProtectedRoute>} />
         <Route path="/about" element={<About />} />
         <Route path="/how-it-works" element={<HowItWorks />} />

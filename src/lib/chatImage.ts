@@ -49,6 +49,7 @@ export const messagePreviewText = (body: string): string => {
     const img = parseImageMessage(body);
     return img?.caption ? `📷 ${img.caption}` : "📷 Photo";
   }
+  if (body.startsWith("[[phone_share]]")) return body.includes("\"shared\"") ? "📞 Shared a phone number" : "📞 Stopped sharing a phone number";
   if (body.startsWith("[[checkin]]")) return body.includes("\"daily_update\"") ? "🐾 Daily update" : "🐾 Care check-in";
   return body;
 };
