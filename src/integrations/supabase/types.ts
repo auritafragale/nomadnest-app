@@ -253,24 +253,6 @@ export type Database = {
           },
         ]
       }
-      city_chat_mutes: {
-        Row: {
-          created_at: string
-          room_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          room_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          room_id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       city_chat_messages: {
         Row: {
           content: string
@@ -316,6 +298,46 @@ export type Database = {
           },
         ]
       }
+      city_chat_mutes: {
+        Row: {
+          created_at: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "city_chat_mutes_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "city_chat_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_chat_mutes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_chat_mutes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       city_chat_room_reads: {
         Row: {
           last_read_at: string
@@ -332,7 +354,29 @@ export type Database = {
           room_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "city_chat_room_reads_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "city_chat_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_chat_room_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_chat_room_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       city_chat_rooms: {
         Row: {
@@ -1466,7 +1510,43 @@ export type Database = {
           sit_id?: string | null
           stopped_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "phone_shares_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_shares_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_shares_sharer_id_fkey"
+            columns: ["sharer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_shares_sharer_id_fkey"
+            columns: ["sharer_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_shares_sit_id_fkey"
+            columns: ["sit_id"]
+            isOneToOne: false
+            referencedRelation: "sits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -2997,11 +3077,11 @@ export type Database = {
       get_conversation_partners: {
         Args: never
         Returns: {
+          application_status: string
           avatar_url: string
           conversation_id: string
           first_name: string
           id_verified: boolean
-          application_status: string
           invite_status: string
           last_at: string
           last_body: string
@@ -3184,6 +3264,7 @@ export type Database = {
         Returns: boolean
       }
       listing_timezone: { Args: { p_listing_id: string }; Returns: string }
+      live_sit_between: { Args: { p_a: string; p_b: string }; Returns: string }
       log_sit_abandonment_flag: {
         Args: { p_note?: string; p_sit_id: string }
         Returns: undefined
@@ -3226,6 +3307,10 @@ export type Database = {
         Returns: undefined
       }
       notify_guide_unlocks: { Args: never; Returns: number }
+      phone_share_conversation: {
+        Args: { p_a: string; p_b: string; p_sit: string }
+        Returns: string
+      }
       prepare_account_deletion: { Args: { p_user_id: string }; Returns: Json }
       profile_is_discoverable: { Args: { p_user_id: string }; Returns: boolean }
       public_founding_spots: {
