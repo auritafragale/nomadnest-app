@@ -1,0 +1,28 @@
+-- Batch D1: Messages, Share my number, City Chats, Notifications.
+--
+-- 1. get_conversation_partners(): one row per conversation you are in, with
+--    the other member's first name, avatar, ID tick and member-left state
+--    (whatever their visibility), the listing, the most relevant sit,
+--    application and invite, the last message and your unread count.
+--    First names only. Replaces the per-chat public_profiles look-ups, which
+--    hid chats with hidden or paused members.
+-- 2. mark_conversation_notifications_read(ids): opening a chat also marks its
+--    new_message and phone_shared notifications read.
+-- 3. Share my number: phone_shares (no direct access for members), the RPCs
+--    share_my_phone, stop_sharing_my_phone and get_phone_shares, and a
+--    trigger that ends shares when a sit between the two is cancelled. The
+--    number is never written into a message or notification: the chat gets a
+--    marker message ([[phone_share]] with no number) and the card reads the
+--    number through get_phone_shares.
+-- 4. City Chats: access matches city AND country (the room's city_key),
+--    get_my_city_chat_rooms() (rooms you can see, locked cities, counts,
+--    unread) in one call, city_chat_mutes (own rows; muted rooms send no push
+--    for thread replies), city_chat_room_reads (own rows) with
+--    mark_city_chat_room_read, and get_city_chat_catchup_input for the
+--    "Catch me up" edge function (members with access only, text only).
+-- 5. Reports: city_chat_message target type; admin_list_reports shows the
+--    reported message text and the sender's first name for message reports.
+-- 6. Flag ai_city_catchup_enabled (off).
+-- 7. Translation queue skips phone-share markers.
+-- 8. scrub_contact_details re-stated exactly as in our Batch C file
+--    (Lovable's second copy, 20261002021257, had one character class differ).
