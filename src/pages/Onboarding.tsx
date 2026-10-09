@@ -11,6 +11,7 @@ import {
 import { AvatarUpload } from "@/components/onboarding/AvatarUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { redeemFoundingCode } from "@/lib/foundingCode";
 import { fetchMyProfile } from "@/lib/myProfile";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -107,13 +108,9 @@ const Onboarding = () => {
       // Create or update user role — this is what unlocks the app, so a
       // failure here must surface instead of dropping the user into a
       // dashboard/onboarding redirect loop.
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .upsert({
-          user_id: user.id,
-          role: roleChoice,
-          onboarding_completed: true,
-        }, { onConflict: 'user_id' });
+      // The member's own choice; their role then follows their plan
+      // (complete_onboarding, server-side).
+      const { error: roleError } = await supabase.rpc("complete_onboarding", { p_role: roleChoice });
       if (roleError) throw roleError;
 
       // Create sitter profile if applicable
@@ -154,10 +151,13 @@ const Onboarding = () => {
       const pendingCode = sessionStorage.getItem("pendingInviteCode");
       if (pendingCode) {
         sessionStorage.removeItem("pendingInviteCode");
-        const { data: codeResult, error: codeError } = await supabase.rpc(
-          "redeem_founding_member_code",
-          { p_code: pendingCode, p_user_id: user.id }
-        );
+        let codeResult: string | null = null;
+        let codeError: Error | null = null;
+        try {
+          codeResult = (await redeemFoundingCode(pendingCode)).result;
+        } catch (err) {
+          codeError = err instanceof Error ? err : new Error("redeem failed");
+        }
 
         if (codeError) {
           toast({
@@ -165,7 +165,7 @@ const Onboarding = () => {
             title: "Invite code error",
             description: "Your invite code could not be applied. Contact support if you need help.",
           });
-        } else if (codeResult === "ok") {
+        } else if (codeResult === "ok" || codeResult === "already") {
           toast({
             title: "Founding Member unlocked!",
             description: "You have free lifetime combined membership. Welcome aboard!",

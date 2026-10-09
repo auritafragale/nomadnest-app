@@ -46,15 +46,18 @@ const Privacy = () => {
         <h3>Communications</h3>
         <ul>
           <li>Messages exchanged on the Platform, applications, reviews, and reports.</li>
+          <li>Message notifications, pushes and emails never include the text of a message (emails get forwarded and messages can hold contact details). They say who wrote and about which listing. If you choose "Once a day" for message emails, you get one email a day with how many unread messages you have and who they are from, still without the text.</li>
           <li>Voice input ("Tell me out loud" in the listing form) uses your device's or browser's own speech recognition (for example from Apple or Google), which turns your words into text. NomadNest never receives or stores the recording, only the text you choose to keep.</li>
         </ul>
         <h3>Payments</h3>
         <ul>
-          <li>Membership payment data is processed by Stripe; we do not store card details.</li>
+          <li>Membership payment data is processed by Stripe; we do not store card details. We keep your Stripe customer and subscription reference, your plan, its renewal date and whether a payment failed.</li>
+          <li>If you redeem a founding code while you have a paid plan, we cancel the paid plan straight away and refund the part of your last payment you have not used yet.</li>
         </ul>
         <h3>Technical</h3>
         <ul>
           <li>IP address, device, browser, language, log data, approximate location, cookies and similar technologies.</li>
+          <li>Your time zone (for example Europe/London), taken from your device when you sign in. We use it only to send the daily message email in your morning. If we don't have it, we use London time.</li>
         </ul>
       </section>
 

@@ -1,883 +1,323 @@
-import { useState, useEffect } from "react";
-import { StoryNameSharingCard } from "@/components/settings/StoryNameSharingCard";
-import { DownloadMyDataCard } from "@/components/settings/DownloadMyDataCard";
-import { UpdateLanguageCard } from "@/components/settings/UpdateLanguageCard";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { HelpTooltip } from "@/components/ui/HelpTooltip";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { startWalkthrough } from "@/components/walkthrough/GuidedWalkthrough";
+import { useEffect, useState } from "react";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  ArrowLeft,
-  Loader2,
   Bell,
-  Shield,
-  Compass,
-  Briefcase,
-  Home,
-  MessageSquare,
-  FileText,
-  Star,
-  Trash2,
-  AlertTriangle,
-  Mail,
-  Lock,
+  ChevronRight,
+  Download,
   Eye,
-  EyeOff,
+  HelpCircle,
+  Languages,
+  Lock,
+  LogOut,
+  Moon,
+  Shield,
   ShieldCheck,
-  Phone,
-  Crown,
-  ChevronDown,
-  Clock,
+  Star,
+  type LucideIcon,
 } from "lucide-react";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
-import Breadcrumbs from "@/components/layout/Breadcrumbs";
-import { MembershipCardContent } from "@/components/settings/MembershipCardContent";
-import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useNotificationPreferences";
-import { useDeleteAccount } from "@/hooks/useDeleteAccount";
-import { useProfileVisibility, useUpdateProfileVisibility } from "@/hooks/useProfileVisibility";
-import PushNotificationSettings from "@/components/settings/PushNotificationSettings";
+import { NN_PAGE, RoleTheme } from "@/components/nn/ui";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
+import { useActiveRole } from "@/contexts/ActiveRoleContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useVerification } from "@/hooks/useVerification";
-import { useIdVerificationRequest } from "@/hooks/useIdVerificationRequest";
-import { PhoneVerification } from "@/components/settings/PhoneVerification";
+import { useProfileVisibility } from "@/hooks/useProfileVisibility";
+import { useMyPreferredLanguage } from "@/hooks/useDailyUpdates";
+import { supabase } from "@/integrations/supabase/client";
+import { UPDATE_LANGUAGES } from "@/lib/dailyUpdate";
+import NotificationsSection from "@/components/settings/NotificationsSection";
+import {
+  AppearanceSection,
+  DataSection,
+  DeleteAccountSheet,
+  HelpSection,
+  LanguageSection,
+  LoginSection,
+  PrivacySection,
+  VerificationSection,
+  useMyContact,
+} from "@/components/settings/SettingsSections";
+import { cn } from "@/lib/utils";
 
-interface Profile {
-  email: string;
-}
+type SectionId = "notifications" | "privacy" | "verification" | "login" | "language" | "appearance" | "data" | "help";
+
+const SECTIONS: Record<SectionId, { title: string; intro?: string; icon: LucideIcon }> = {
+  login: { title: "Login and security", icon: Lock },
+  verification: { title: "Verification", intro: "Verified members get more invitations and help keep NomadNest safe.", icon: ShieldCheck },
+  notifications: { title: "Notifications", intro: "Choose how we tell you about each thing. Safety and account messages always reach you.", icon: Bell },
+  privacy: {
+    title: "Privacy and visibility",
+    intro: "You decide who can find you. Members only ever see your first name, and never your contact details or exact address.",
+    icon: Eye,
+  },
+  language: {
+    title: "Language",
+    intro: "Messages and daily updates from people who write in another language can be translated for you automatically.",
+    icon: Languages,
+  },
+  appearance: { title: "Appearance", icon: Moon },
+  data: {
+    title: "Your data",
+    intro: "Download a copy of everything you have shared with NomadNest: profile, listing, messages, reviews and sit history.",
+    icon: Download,
+  },
+  help: { title: "Help and tour", icon: HelpCircle },
+};
+const ORDER: SectionId[] = ["login", "verification", "notifications", "privacy", "language", "appearance", "data", "help"];
+const isSection = (v: string | undefined): v is SectionId => !!v && v in SECTIONS;
+
+const PLAN_NAME: Record<string, string> = { sitter: "Nomad", owner: "Pet Parent", combined: "Combined" };
+
+const SectionBody = ({ id, openPhone }: { id: SectionId; openPhone: boolean }) => {
+  switch (id) {
+    case "notifications":
+      return <NotificationsSection />;
+    case "privacy":
+      return <PrivacySection />;
+    case "verification":
+      return <VerificationSection openPhone={openPhone} />;
+    case "login":
+      return <LoginSection />;
+    case "language":
+      return <LanguageSection />;
+    case "appearance":
+      return <AppearanceSection />;
+    case "data":
+      return <DataSection />;
+    case "help":
+      return <HelpSection />;
+  }
+};
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { user, role, refreshRole } = useAuth();
-  const { isAdmin } = useIsAdmin();
-  const { toast } = useToast();
-
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<Profile>({
-    email: "",
-  });
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  
-  // Email change state
-  const [newEmail, setNewEmail] = useState("");
-  const [emailChangeLoading, setEmailChangeLoading] = useState(false);
-  
-  // Password change state
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
-
-  // Use DB-based notification preferences
-  const { data: notifications, isLoading: notificationsLoading } = useNotificationPreferences();
-  const updateNotifications = useUpdateNotificationPreferences();
-  const deleteAccount = useDeleteAccount();
-  
-  // Profile visibility
-  const { data: profileVisibility, isLoading: visibilityLoading } = useProfileVisibility();
-  const updateVisibility = useUpdateProfileVisibility();
-
-  // Identity verification
-  const { data: verificationData } = useVerification();
-  const { data: idRequest } = useIdVerificationRequest();
-
-  // Phone verification state (loaded alongside profile)
-  // ?verify=phone (from the profile editors) opens the Phone tab.
+  const { section } = useParams<{ section?: string }>();
   const [searchParams] = useSearchParams();
+  const { user, role, signOut } = useAuth();
+  const { activeRole } = useActiveRole();
+  const { isAdmin } = useIsAdmin();
+  const { preference } = useTheme();
+  const { data: contact } = useMyContact();
+  const { data: verification } = useVerification();
+  const { data: vis } = useProfileVisibility();
+  const { data: language } = useMyPreferredLanguage();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [desktop, setDesktop] = useState(() => window.matchMedia("(min-width: 1024px)").matches);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const on = () => setDesktop(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+
+  const { data: me } = useQuery({
+    queryKey: ["settings-me", user?.id],
+    queryFn: async () => {
+      const [{ data: profile }, { data: membership }] = await Promise.all([
+        supabase.rpc("get_my_profile"),
+        supabase.rpc("get_my_membership"),
+      ]);
+      const p = (profile ?? {}) as { first_name?: string | null; avatar_url?: string | null };
+      const m = (Array.isArray(membership) ? membership[0] : membership) as
+        | { founding_member?: boolean; membership_status?: string | null; membership_type?: string | null }
+        | null;
+      return {
+        firstName: (p.first_name ?? "").trim(),
+        avatar: p.avatar_url ?? null,
+        founding: !!m?.founding_member,
+        plan: m?.membership_status === "active" || m?.membership_status === "past_due" ? m?.membership_type ?? null : null,
+      };
+    },
+    enabled: !!user,
+  });
+
+  if (!user) return <Navigate to="/auth?return=/settings" replace />;
+
+  // Old link from the profile editors: ?verify=phone.
   const openPhone = searchParams.get("verify") === "phone";
-  useEffect(() => {
-    if (openPhone) window.setTimeout(() => document.getElementById("verification")?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
-  }, [openPhone]);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+  if (!section && openPhone) return <Navigate to="/settings/verification?verify=phone" replace />;
+  if (section && !isSection(section)) return <Navigate to="/settings" replace />;
 
-  useEffect(() => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-    fetchProfile();
-  }, [user, navigate]);
+  const current: SectionId | null = isSection(section) ? section : desktop ? "notifications" : null;
 
-  const fetchProfile = async () => {
-    if (!user) return;
+  const roles = role === "both" ? "Nomad and Pet Parent" : role === "owner" ? "Pet Parent" : "Nomad";
+  const langLabel = UPDATE_LANGUAGES.find((l) => l.code === language)?.label ?? "Off";
+  const stats: Record<SectionId, { text: string; ok?: boolean }> = {
+    login: { text: "Email and password" },
+    verification: { text: verification?.id_verified ? `✓ ID${contact?.phoneVerified ? " and phone" : ""}` : "Not verified yet", ok: !!verification?.id_verified },
+    notifications: { text: "Email and push" },
+    privacy: { text: vis?.hasSitterProfile ? (vis.sitterProfileActive ? "Profile visible" : "Profile hidden") : vis?.ownerProfileActive === false ? "Listing paused" : "Who can find you" },
+    language: { text: langLabel },
+    appearance: { text: preference === "system" ? "Match my phone" : preference === "dark" ? "Dark" : "Light" },
+    data: { text: "Download a copy" },
+    help: { text: "Questions, tour" },
+  };
+  const membershipStat = me?.founding ? "Combined · Founding" : me?.plan ? PLAN_NAME[me.plan] ?? "Member" : "Not a member yet";
 
-    try {
-      const { data } = await supabase.rpc("get_my_contact_info").maybeSingle();
-      const contact = data as { email?: string | null; phone_verified?: boolean | null; phone_number?: string | null } | null;
-      setProfile({ email: contact?.email || user.email || "" });
-      setPhoneVerified(!!contact?.phone_verified);
-      setPhoneNumber(contact?.phone_number ?? null);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    } finally {
-      setLoading(false);
-    }
+  const logOut = async () => {
+    await signOut();
+    navigate("/");
   };
 
-  const handleNotificationChange = (key: string, value: boolean) => {
-    updateNotifications.mutate({ [key]: value });
-  };
+  const header = (
+    <section aria-label="Your account" className="flex items-center gap-3 rounded-[22px] border border-[var(--nn-border)] bg-[var(--nn-soft)] p-4">
+      <Avatar className="h-14 w-14">
+        <AvatarImage src={me?.avatar ?? undefined} alt="" />
+        <AvatarFallback className="bg-[var(--nn-chip)] text-lg font-bold text-foreground">{(me?.firstName?.[0] ?? "?").toUpperCase()}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <p className="flex flex-wrap items-center gap-2 text-[17px] font-bold">
+          {me?.firstName || "You"}
+          {me?.founding && <span className="rounded-full bg-[#E8B53E] px-2 py-0.5 text-xs font-bold text-[#3A2A06]">Founding</span>}
+        </p>
+        <p className="truncate text-sm text-muted-foreground">
+          {contact?.email || user.email} · {roles}
+        </p>
+      </div>
+    </section>
+  );
 
-  const handleEmailChange = async () => {
-    if (!newEmail) {
-      toast({
-        title: "Email required",
-        description: "Please enter a new email address",
-        variant: "destructive",
-      });
-      return;
-    }
+  const cardBase = "flex h-full min-h-[112px] flex-col items-start gap-2 rounded-[18px] bg-[var(--nn-soft)] p-3 text-left md:p-4";
+  const hubCards = (
+    <ul className="grid grid-cols-3 gap-2 md:gap-3">
+      <li>
+        <Link to="/membership" aria-label={`Membership, ${membershipStat}`} className={cardBase}>
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]">
+            <Star className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <span className="text-[15px] font-bold leading-snug">Membership</span>
+          <span className={cn("mt-auto text-xs font-bold leading-snug md:text-sm", me?.plan || me?.founding ? "text-brand-teal-text" : "text-muted-foreground")}>{membershipStat}</span>
+        </Link>
+      </li>
+      {ORDER.map((id) => {
+        const s = SECTIONS[id];
+        const Icon = s.icon;
+        return (
+          <li key={id}>
+            <Link to={`/settings/${id}`} aria-label={`${s.title}, ${stats[id].text}`} className={cardBase}>
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]">
+                <Icon className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="text-[15px] font-bold leading-snug">{s.title}</span>
+              <span className={cn("mt-auto text-xs font-bold leading-snug md:text-sm", stats[id].ok ? "text-brand-teal-text" : "text-muted-foreground")}>{stats[id].text}</span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
 
-    setEmailChangeLoading(true);
-    try {
-      const { error } = await supabase.auth.updateUser({
-        email: newEmail,
-      });
+  const bottom = (
+    <div className="flex flex-col gap-2">
+      {isAdmin && (
+        <Link to="/admin" className="flex min-h-[52px] items-center justify-between gap-3 rounded-[18px] border border-[var(--nn-border)] bg-card px-4 font-semibold">
+          <span className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-[var(--nn-accent-dark)]" aria-hidden="true" />
+            Founder admin panel
+          </span>
+          <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+        </Link>
+      )}
+      <button type="button" onClick={logOut} className="flex min-h-[52px] items-center gap-2 rounded-[18px] border border-[var(--nn-border)] bg-card px-4 text-left font-semibold">
+        <LogOut className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+        Log out
+      </button>
+      <button type="button" onClick={() => setDeleteOpen(true)} aria-haspopup="dialog" className="flex min-h-[52px] items-center rounded-[18px] px-4 text-left font-semibold text-[var(--nn-danger-text)]">
+        Delete my account
+      </button>
+    </div>
+  );
 
-      if (error) throw error;
+  const theme = activeRole === "owner" ? "owner" : "sitter";
 
-      toast({
-        title: "Verification email sent",
-        description: "Please check both your old and new email to confirm the change",
-      });
-      setNewEmail("");
-    } catch (error) {
-      console.error("Error changing email:", error);
-      toast({
-        title: "Error changing email",
-        description: (error instanceof Error && error.message) || "Something went wrong",
-        variant: "destructive",
-      });
-    } finally {
-      setEmailChangeLoading(false);
-    }
-  };
-
-  const handlePasswordChange = async () => {
-    if (!newPassword || !confirmPassword) {
-      toast({
-        title: "Password required",
-        description: "Please enter and confirm your new password",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure your passwords match",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setPasswordChangeLoading(true);
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Password updated",
-        description: "Your password has been changed successfully",
-      });
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (error) {
-      console.error("Error changing password:", error);
-      toast({
-        title: "Error changing password",
-        description: (error instanceof Error && error.message) || "Something went wrong",
-        variant: "destructive",
-      });
-    } finally {
-      setPasswordChangeLoading(false);
-    }
-  };
-
-
-
-
-  if (loading) {
+  // Desktop: side list and the open section.
+  if (desktop) {
+    const s = SECTIONS[current!];
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="pt-20 pb-12">
-          <div className="container mx-auto px-4 max-w-3xl">
-            <Skeleton className="h-8 w-48 mb-6" />
-            <div className="space-y-6">
-              <Skeleton className="h-48 w-full" />
-              <Skeleton className="h-48 w-full" />
-              <Skeleton className="h-48 w-full" />
+      <RoleTheme role={theme} className="min-h-screen">
+        <Navbar wide />
+        <main className={cn(NN_PAGE, "flex gap-8 pb-16 pt-24")}>
+          <aside aria-label="Settings sections" className="flex w-[300px] shrink-0 flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <Link to="/dashboard" className="inline-flex min-h-[44px] items-center text-sm font-semibold text-muted-foreground">← Dashboard</Link>
+              <h1 className="font-display text-[36px] font-normal leading-tight">Settings</h1>
             </div>
+            {header}
+            <nav className="flex flex-col gap-1">
+              <Link to="/membership" className="flex min-h-[48px] items-center justify-between rounded-2xl px-3 hover:bg-[var(--nn-soft)]">
+                <span className="flex items-center gap-3 font-semibold">
+                  <Star className="h-5 w-5 text-[var(--nn-accent-dark)]" aria-hidden="true" />
+                  Membership
+                </span>
+                <span className="text-xs text-muted-foreground">{membershipStat}</span>
+              </Link>
+              {ORDER.map((id) => {
+                const Icon = SECTIONS[id].icon;
+                const on = id === current;
+                return (
+                  <Link
+                    key={id}
+                    to={`/settings/${id}`}
+                    aria-current={on ? "page" : undefined}
+                    className={cn("flex min-h-[48px] items-center gap-3 rounded-2xl px-3 font-semibold", on ? "bg-[var(--nn-tint)] text-foreground" : "hover:bg-[var(--nn-soft)]")}
+                  >
+                    <Icon className="h-5 w-5 text-[var(--nn-accent-dark)]" aria-hidden="true" />
+                    {SECTIONS[id].title}
+                  </Link>
+                );
+              })}
+            </nav>
+            {bottom}
+          </aside>
+          <section aria-labelledby="section-title" className="flex min-w-0 max-w-3xl flex-1 flex-col gap-4">
+            <h2 id="section-title" className="font-display text-[30px] font-normal leading-tight">{s.title}</h2>
+            {s.intro && <p className="text-[15px] text-muted-foreground">{s.intro}</p>}
+            <SectionBody id={current!} openPhone={openPhone} />
+          </section>
+        </main>
+        <DeleteAccountSheet open={deleteOpen} onOpenChange={setDeleteOpen} />
+      </RoleTheme>
+    );
+  }
+
+  // Phone and tablet: one section on its own page.
+  if (current) {
+    const s = SECTIONS[current];
+    return (
+      <RoleTheme role={theme} className="min-h-screen">
+        <Navbar wide />
+        <main className={cn(NN_PAGE, "flex flex-col gap-4 pb-24 pt-20 md:pt-24")}>
+          <div className="flex flex-col gap-1">
+            <Link to="/settings" className="inline-flex min-h-[44px] items-center self-start text-sm font-semibold text-muted-foreground">← Settings</Link>
+            <h1 className="font-display text-[30px] font-normal leading-tight">{s.title}</h1>
+            {s.intro && <p className="text-[15px] text-muted-foreground">{s.intro}</p>}
+          </div>
+          <div className="flex max-w-2xl flex-col gap-3">
+            <SectionBody id={current} openPhone={openPhone} />
           </div>
         </main>
-      </div>
+      </RoleTheme>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-
-      <main className="pt-20 pb-12">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <Breadcrumbs />
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <Button
-                variant="ghost"
-                onClick={() => navigate("/dashboard")}
-                className="mb-2"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-                Settings
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Manage your account and preferences
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            {/* Membership */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Crown className="w-5 h-5 text-primary" />
-                  Membership
-                  <HelpTooltip label="About membership" content="Your NomadNest plan and billing" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <MembershipCardContent
-                  role={role}
-                  onUpgrade={() => refreshRole()}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Login & Security */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="w-5 h-5" />
-                  Login &amp; Security
-                  <HelpTooltip label="About login and security" content="Update your email address or account password" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="email">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="email" className="gap-2"><Mail className="h-4 w-4" />Email</TabsTrigger>
-                    <TabsTrigger value="password" className="gap-2"><Lock className="h-4 w-4" />Password</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="email" className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label>Current Email</Label>
-                  <div className="flex items-center gap-2">
-                    <Input value={profile.email} disabled className="bg-muted flex-1" />
-                    {user?.email_confirmed_at ? (
-                      <Badge className="gap-1 bg-blue-50 text-blue-600 border border-blue-300 dark:bg-blue-950 dark:text-blue-400 whitespace-nowrap">
-                        <Mail className="w-3 h-3" />
-                        Email Verified
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="gap-1 text-muted-foreground whitespace-nowrap">
-                        <Mail className="w-3 h-3" />
-                        Not Verified
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new_email">New Email</Label>
-                  <Input
-                    id="new_email"
-                    type="email"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="Enter new email address"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    You'll receive a confirmation email at both addresses
-                  </p>
-                </div>
-                <Button 
-                  onClick={handleEmailChange} 
-                  disabled={emailChangeLoading || !newEmail}
-                >
-                  {emailChangeLoading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Mail className="w-4 h-4 mr-2" />
-                  )}
-                  Update Email
-                </Button>
-                  </TabsContent>
-                  <TabsContent value="password" className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="new_password">New Password</Label>
-                  <Input
-                    id="new_password"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm_password">Confirm New Password</Label>
-                  <Input
-                    id="confirm_password"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Password must be at least 6 characters
-                  </p>
-                </div>
-                <Button 
-                  onClick={handlePasswordChange} 
-                  disabled={passwordChangeLoading || !newPassword || !confirmPassword}
-                >
-                  {passwordChangeLoading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Lock className="w-4 h-4 mr-2" />
-                  )}
-                  Update Password
-                </Button>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-
-            {/* Verification */}
-            <Card id="verification" className="scroll-mt-24">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5" />
-                  Verification
-                  <HelpTooltip label="About verification" content="Manage your identity and phone verification" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue={openPhone ? "phone" : "identity"}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="identity" className="gap-2"><ShieldCheck className="h-4 w-4" />Identity</TabsTrigger>
-                    <TabsTrigger value="phone" className="gap-2"><Phone className="h-4 w-4" />Phone</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="identity" className="pt-4">
-                    {verificationData?.id_verified || idRequest?.status === "approved" ? (
-                      <div className="flex items-center gap-3">
-                        <ShieldCheck className="w-5 h-5 text-green-500" />
-                        <div>
-                          <p className="font-medium text-green-700 dark:text-green-400">Verified</p>
-                          <p className="text-sm text-muted-foreground">Your identity has been verified successfully.</p>
-                        </div>
-                      </div>
-                    ) : idRequest?.status === "pending" ? (
-                      <div className="flex items-center gap-3">
-                        <Clock className="w-5 h-5 text-amber-500" />
-                        <div>
-                          <p className="font-medium text-amber-700 dark:text-amber-400">Under Review</p>
-                          <p className="text-sm text-muted-foreground">
-                            Submitted {new Date(idRequest.created_at).toLocaleDateString()} — we'll email you once it's reviewed.
-                          </p>
-                        </div>
-                      </div>
-                    ) : idRequest?.status === "rejected" ? (
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <p className="font-medium text-destructive">Rejected</p>
-                          <p className="text-sm text-muted-foreground">
-                            {idRequest.notes || "Your submission couldn't be approved. Please upload clearer photos and try again."}
-                          </p>
-                        </div>
-                        <Button onClick={() => navigate("/verify-identity")} className="shrink-0">
-                          <ShieldCheck className="w-4 h-4 mr-2" />Resubmit
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="font-medium">Not Verified</p>
-                          <p className="text-sm text-muted-foreground">Verify your identity to apply for sits and create listings.</p>
-                        </div>
-                        <Button onClick={() => navigate("/verify-identity")} className="shrink-0">
-                          <ShieldCheck className="w-4 h-4 mr-2" />Verify Now
-                        </Button>
-                      </div>
-                    )}
-                  </TabsContent>
-                  <TabsContent value="phone" className="pt-4">
-                    <PhoneVerification
-                      phoneVerified={phoneVerified}
-                      phoneNumber={phoneNumber}
-                      onVerified={() => { setPhoneVerified(true); fetchProfile(); }}
-                    />
-                    <p className="mt-3 text-sm text-muted-foreground">
-                      Only you and the NomadNest team can see your number. It is never shared automatically. Once a sit is confirmed, you can choose to share it in your chat.
-                    </p>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-
-            {/* Founder admin panel */}
-            {isAdmin && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-primary" />
-                    Founder Admin
-                  </CardTitle>
-                  <CardDescription>
-                    Verifications, member perks, email templates and community stats
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={() => navigate("/admin")} className="w-full sm:w-auto">
-                    Open admin panel
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Profile Visibility */}
-            <Collapsible asChild>
-              <Card className="group">
-                <CardHeader className="flex-row items-center gap-2 space-y-0">
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="h-auto min-w-0 flex-1 justify-between p-0 text-left hover:bg-transparent" aria-label="Toggle profile visibility settings">
-                      <CardTitle className="flex items-center gap-2"><Eye className="w-5 h-5" />Profile Visibility</CardTitle>
-                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
-                    </Button>
-                  </CollapsibleTrigger>
-                  <HelpTooltip label="About profile visibility" content="Control whether your profiles are visible to others. Pausing hides your profile from search and maps, but keeps your data." />
-                </CardHeader>
-                <CollapsibleContent>
-                  <CardContent className="space-y-4">
-                {visibilityLoading ? (
-                  <div className="space-y-4">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                  </div>
-                ) : (
-                  <>
-                    {profileVisibility?.hasSitterProfile && (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Briefcase className="w-5 h-5 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium">Nomad Profile</p>
-                              <p className="text-sm text-muted-foreground">
-                                {profileVisibility.sitterProfileActive
-                                  ? "Your Nomad profile is visible to Pet Parents"
-                                  : "Your Nomad profile is hidden from search results"}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {profileVisibility.sitterProfileActive ? (
-                              <Badge variant="secondary" className="gap-1">
-                                <Eye className="w-3 h-3" />
-                                Visible
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="gap-1 text-muted-foreground">
-                                <EyeOff className="w-3 h-3" />
-                                Hidden
-                              </Badge>
-                            )}
-                            <Switch
-                              checked={profileVisibility.sitterProfileActive ?? false}
-                              onCheckedChange={(checked) =>
-                                updateVisibility.mutate({ profileType: "sitter", isActive: checked })
-                              }
-                              disabled={updateVisibility.isPending}
-                            />
-                          </div>
-                        </div>
-                        {profileVisibility?.hasOwnerProfile && <Separator />}
-                      </>
-                    )}
-
-                    {profileVisibility?.hasOwnerProfile && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Home className="w-5 h-5 text-muted-foreground" />
-                          <div>
-                            <p className="font-medium">Pet Parent Profile & Listings</p>
-                            <p className="text-sm text-muted-foreground">
-                              {profileVisibility.ownerProfileActive
-                                ? "Your listings are visible to pet sitters"
-                                : "Your listings are hidden from search results"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {profileVisibility.ownerProfileActive ? (
-                            <Badge variant="secondary" className="gap-1">
-                              <Eye className="w-3 h-3" />
-                              Visible
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="gap-1 text-muted-foreground">
-                              <EyeOff className="w-3 h-3" />
-                              Hidden
-                            </Badge>
-                          )}
-                          <Switch
-                            checked={profileVisibility.ownerProfileActive ?? false}
-                            onCheckedChange={(checked) =>
-                              updateVisibility.mutate({ profileType: "owner", isActive: checked })
-                            }
-                            disabled={updateVisibility.isPending}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {!profileVisibility?.hasSitterProfile && !profileVisibility?.hasOwnerProfile && (
-                      <div className="text-center py-4 text-muted-foreground">
-                        <p>No profiles found. Complete your profile setup first.</p>
-                      </div>
-                    )}
-
-                    <div className="bg-muted/50 rounded-lg p-4 mt-4">
-                      <p className="text-sm text-muted-foreground">
-                        <strong>Note:</strong> Pausing your profile will hide it from search results and browse pages.
-                        Existing conversations and confirmed sits will not be affected.
-                      </p>
-                    </div>
-                  </>
-                )}
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-
-            {/* Language for sitters' daily updates */}
-            <UpdateLanguageCard />
-
-            {/* Sit Stories: name on share cards (sitters) */}
-            {(role === "sitter" || role === "both") && <StoryNameSharingCard />}
-
-            {/* Notification Preferences */}
-            <Collapsible asChild>
-              <Card className="group">
-                <CardHeader className="flex-row items-center gap-2 space-y-0">
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="h-auto min-w-0 flex-1 justify-between p-0 text-left hover:bg-transparent" aria-label="Toggle notification settings">
-                      <CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5" />Notifications</CardTitle>
-                      <ChevronDown className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
-                    </Button>
-                  </CollapsibleTrigger>
-                  <HelpTooltip label="About notifications" content="Choose what updates you want to receive" />
-                </CardHeader>
-                <CollapsibleContent>
-                  <CardContent className="space-y-4">
-                {/* Push Notifications */}
-                <PushNotificationSettings />
-                
-                <Separator />
-
-                {notificationsLoading ? (
-                  <div className="space-y-4">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-sm font-medium text-muted-foreground">Email Notifications</p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">New Applications</p>
-                          <p className="text-sm text-muted-foreground">
-                            When someone applies to your listing
-                          </p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications?.email_new_applications ?? true}
-                        onCheckedChange={(checked) =>
-                          handleNotificationChange("email_new_applications", checked)
-                        }
-                        disabled={updateNotifications.isPending}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <MessageSquare className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">Messages</p>
-                          <p className="text-sm text-muted-foreground">
-                            When you receive a new message
-                          </p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications?.email_messages ?? true}
-                        onCheckedChange={(checked) =>
-                          handleNotificationChange("email_messages", checked)
-                        }
-                        disabled={updateNotifications.isPending}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Home className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">Sit Updates</p>
-                          <p className="text-sm text-muted-foreground">
-                            Status changes for your sits
-                          </p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications?.email_sit_updates ?? true}
-                        onCheckedChange={(checked) =>
-                          handleNotificationChange("email_sit_updates", checked)
-                        }
-                        disabled={updateNotifications.isPending}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Star className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">Reviews</p>
-                          <p className="text-sm text-muted-foreground">
-                            When someone leaves you a review
-                          </p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications?.email_reviews ?? true}
-                        onCheckedChange={(checked) =>
-                          handleNotificationChange("email_reviews", checked)
-                        }
-                        disabled={updateNotifications.isPending}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Bell className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">Application Status</p>
-                          <p className="text-sm text-muted-foreground">
-                            When your applications are accepted or declined
-                          </p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications?.email_application_status ?? true}
-                        onCheckedChange={(checked) =>
-                          handleNotificationChange("email_application_status", checked)
-                        }
-                        disabled={updateNotifications.isPending}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Crown className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">Membership</p>
-                          <p className="text-sm text-muted-foreground">
-                            Payment confirmations, renewals and membership updates
-                          </p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={notifications?.email_membership ?? true}
-                        onCheckedChange={(checked) =>
-                          handleNotificationChange("email_membership", checked)
-                        }
-                        disabled={updateNotifications.isPending}
-                      />
-                    </div>
-                  </>
-                )}
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-
-            {/* Guided walkthrough */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Compass className="w-5 h-5" />
-                  App walkthrough
-                  <HelpTooltip label="About the app walkthrough" content="A quick 5-step tour of browsing, applying, messaging, reviews and settings" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-sm text-muted-foreground">
-                    Replay the guided walkthrough at any time
-                  </p>
-                  <Button variant="outline" onClick={startWalkthrough}>
-                    Replay tour
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Download my data */}
-            <DownloadMyDataCard />
-
-            {/* Danger Zone - Delete Account */}
-            <Card className="border-destructive/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-destructive">
-                  <AlertTriangle className="w-5 h-5" />
-                  Danger Zone
-                  <HelpTooltip label="About the danger zone" content="Irreversible and destructive actions" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium">Delete Account</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Permanently delete your account and your data. Any membership is cancelled
-                      straight away. Sits and chats you shared stay for the other member, without your
-                      name. This can't be undone.
-                    </p>
-                  </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete Account
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-                        <AlertDialogDescription className="space-y-4">
-                          <p>
-                            This will permanently delete your account and your data, including:
-                          </p>
-                          <ul className="list-disc list-inside text-sm space-y-1">
-                            <li>Your profiles, photos and ID documents</li>
-                            <li>Your listings, applications and favourites</li>
-                            <li>The photos you added to daily updates and chats</li>
-                            <li>Your notifications and settings</li>
-                          </ul>
-                          <p className="text-sm">
-                            Sits, daily updates and chats you shared with other members stay for them, with you shown as
-                            &quot;Former member&quot; and no name, photo or profile. Any sit that is still upcoming or in
-                            progress is cancelled, and the other member is told. Reviews you wrote stay visible as
-                            &quot;Former member&quot;.
-                          </p>
-                          <p className="text-sm">
-                            Reports you made stay with our safety team without your name. Safety records about your
-                            account, including reviews about you (no longer shown to members), are kept for 24 months,
-                            then deleted.
-                          </p>
-                          <p className="text-sm">
-                            Your membership is cancelled straight away, with no further payments. Our payment provider
-                            keeps past invoices, as the law requires.
-                          </p>
-                          <p className="text-sm">Want a copy first? Use &quot;Download my data&quot; above.</p>
-                          <p className="font-medium">
-                            Type "DELETE" to confirm:
-                          </p>
-                          <Input
-                            value={deleteConfirmText}
-                            onChange={(e) => setDeleteConfirmText(e.target.value)}
-                            placeholder="Type DELETE"
-                          />
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>
-                          Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteAccount.mutate()}
-                          disabled={deleteConfirmText !== "DELETE" || deleteAccount.isPending}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          {deleteAccount.isPending ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4 mr-2" />
-                          )}
-                          Delete Account
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+    <RoleTheme role={theme} className="min-h-screen">
+      <Navbar wide />
+      <main className={cn(NN_PAGE, "flex flex-col gap-5 pb-24 pt-20 md:pt-24")}>
+        <div className="flex flex-col gap-1">
+          <Link to="/dashboard" className="inline-flex min-h-[44px] items-center self-start text-sm font-semibold text-muted-foreground">← Dashboard</Link>
+          <h1 className="font-display text-[32px] font-normal leading-tight">Settings</h1>
         </div>
+        {header}
+        <nav aria-label="Settings sections">{hubCards}</nav>
+        {bottom}
       </main>
-    </div>
+      <DeleteAccountSheet open={deleteOpen} onOpenChange={setDeleteOpen} />
+    </RoleTheme>
   );
 };
 

@@ -583,7 +583,7 @@ const VerifyIdentity = () => {
                 <p className="text-muted-foreground max-w-sm mb-6">
                   Your documents are being reviewed. You'll receive a notification once the check is complete, usually within a few minutes.
                 </p>
-                <Button onClick={() => navigate("/settings")}>Back to Settings</Button>
+                <Button onClick={() => navigate("/settings/verification")}>Back to Settings</Button>
               </CardContent>
             </Card>
           )}
@@ -596,7 +596,7 @@ const VerifyIdentity = () => {
                 <p className="text-muted-foreground max-w-sm mb-6">
                   Your identity has already been verified. You have full access to all NomadNest features.
                 </p>
-                <Button onClick={() => navigate("/settings")}>Back to Settings</Button>
+                <Button onClick={() => navigate("/settings/verification")}>Back to Settings</Button>
               </CardContent>
             </Card>
           )}

@@ -76,6 +76,7 @@ import Perks from "./pages/Perks";
 import CityChat from "./pages/CityChat";
 import Notifications from "./pages/Notifications";
 import UnreadSync from "@/components/notifications/UnreadSync";
+import SignInEndedWatcher from "@/components/auth/SignInEndedWatcher";
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
 import Safety from "./pages/Safety";
@@ -140,6 +141,7 @@ const AppShell = () => {
 
       <ScrollToTop />
       {user && <UnreadSync />}
+      <SignInEndedWatcher />
       <RouteSeo />
 
       <Routes>
@@ -180,6 +182,7 @@ const AppShell = () => {
         <Route path="/my-sit-stories" element={<ProtectedRoute><MySitStories /></ProtectedRoute>} />
         <Route path="/s/:token" element={<SharedStory />} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/settings/:section" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/verify-identity" element={<ProtectedRoute><VerifyIdentity /></ProtectedRoute>} />
         <Route path="/membership" element={<Membership />} />
         <Route path="/terms" element={<Terms />} />

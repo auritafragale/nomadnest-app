@@ -120,8 +120,9 @@ export const MessageThread = ({
   const userName = user?.user_metadata?.first_name || "User";
   const context = conversation?.context;
   const liveSit = !!context && hasLiveSit(context);
-  // Contact details are fine once a sit has been confirmed between you.
-  const sitConfirmedOnce = !!context && (liveSit || context.sit_status === "completed");
+  // The contact-details reminder and the "Not confirmed yet" note show
+  // whenever there is no live sit between you (even after an earlier sit).
+  const sitConfirmedOnce = liveSit;
   const status = context ? conversationStatus(context) : null;
   const sitInfo = useThreadSit(conversation);
 

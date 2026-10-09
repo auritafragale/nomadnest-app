@@ -153,7 +153,7 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
       .from("sitter_profiles")
       .select("user_id, headline, experience_level, pet_types, comfortable_with, languages, sit_style, home_preferences, preferred_regions, preferred_countries, preferred_cities")
       .eq("is_visible", true)
-      .or("is_active.is.null,is_active.eq.true")
+      .eq("is_active", true)
       .neq("user_id", user.id)
       .order("updated_at", { ascending: false })
       .limit(MAX_CANDIDATES);
@@ -306,7 +306,7 @@ const stillVisible = async (supabase: any, ids: string[]): Promise<Set<string>> 
     .select("user_id")
     .in("user_id", unique)
     .eq("is_visible", true)
-    .or("is_active.is.null,is_active.eq.true");
+    .eq("is_active", true);
   if (error) throw new Error(`visibility check failed: ${error.message}`);
   const candidates = ((data ?? []) as { user_id: string }[]).map((r) => r.user_id);
   const checks = await Promise.all(

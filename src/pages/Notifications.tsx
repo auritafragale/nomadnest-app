@@ -111,7 +111,7 @@ const Notifications = () => {
           )}
         </div>
 
-        <Link to="/settings" className="inline-flex min-h-[44px] items-center self-start text-sm font-semibold text-[var(--nn-accent-dark)] underline underline-offset-4">
+        <Link to="/settings/notifications" className="inline-flex min-h-[44px] items-center self-start text-sm font-semibold text-[var(--nn-accent-dark)] underline underline-offset-4">
           Choose what we tell you about
         </Link>
       </main>

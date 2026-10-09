@@ -77,7 +77,7 @@ export const NotificationsDropdown = () => {
           >
             See all notifications
           </Link>
-          <Link to="/settings" onClick={() => setOpen(false)} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-muted-foreground">
+          <Link to="/settings/notifications" onClick={() => setOpen(false)} className="inline-flex min-h-[44px] items-center text-sm font-semibold text-muted-foreground">
             Settings
           </Link>
         </div>

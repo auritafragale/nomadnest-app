@@ -194,37 +194,8 @@ const MEMBER_RULES: Record<string, (ctx: Ctx) => Promise<Verdict>> = {
     };
   },
 
-  // Participant → participant: the caller messaged in this conversation just now.
-  new_message: async ({ sb, uid, recipient, data }) => {
-    const conversationId = data.conversation_id || data.conversationId;
-    if (!isUuid(conversationId)) return refuse("missing conversation_id");
-    const { data: convo } = await sb
-      .from("conversations")
-      .select("owner_user_id, sitter_user_id")
-      .eq("id", conversationId)
-      .maybeSingle();
-    if (!convo) return refuse("conversation not found");
-    const pair = [convo.owner_user_id, convo.sitter_user_id];
-    if (!pair.includes(uid) || !pair.includes(recipient) || uid === recipient) {
-      return refuse("caller and recipient aren't this conversation's participants");
-    }
-    const since = new Date(Date.now() - 5 * 60000).toISOString();
-    const { count } = await sb
-      .from("messages")
-      .select("id", { count: "exact", head: true })
-      .eq("conversation_id", conversationId)
-      .eq("sender_user_id", uid)
-      .gte("created_at", since);
-    if (!count) return refuse("no message from caller in the last 5 minutes");
-    return {
-      ok: true,
-      data: {
-        senderName: await callerName(sb, uid, "Someone"),
-        messagePreview: trimText(data.messagePreview, 150),
-        conversationId,
-      },
-    };
-  },
+  // New messages are notified by the database (notify_new_message trigger),
+  // never by the sender's browser.
 
   // Owner → sitter: an invite the caller just sent to the recipient.
   invite: async ({ sb, uid, recipient, data }) => {
@@ -476,24 +447,15 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { data: prefs } = await supabaseClient
-      .from("notification_preferences")
-      .select("*")
-      .eq("user_id", recipientUserId)
-      .maybeSingle();
-
-    // Map notification type to preference key
-    const prefMap: Record<string, string> = {
-      new_application: "email_new_applications",
-      application_status: "email_application_status",
-      new_message: "email_messages",
-      invite: "email_sit_updates",
-      sit_cancelled: "email_sit_updates",
-      sit_checkin: "email_sit_updates",
-      sit_started: "email_sit_updates",
-      review: "email_reviews",
-      review_reminder: "email_reviews",
-    };
+    // The member's email choice for this kind of notification. One rule in
+    // the database (notification_allowed): always-on types (safety, ID checks,
+    // payment problems, changes to sits) always send.
+    const { data: emailAllowed, error: allowedError } = await supabaseClient.rpc("notification_allowed", {
+      p_user_id: recipientUserId,
+      p_type: type,
+      p_channel: "email",
+    });
+    if (allowedError) console.error("notification_allowed failed:", redact(allowedError));
 
     // Plain text for the in-app row (and so the push); HTML-escaped copy for
     // the email, so text people wrote can't inject markup into it.
@@ -521,8 +483,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Push is NOT sent here: every in-app notifications row triggers exactly one
     // push via the AFTER INSERT trigger on public.notifications.
 
-    const prefKey = prefMap[type];
-    if (prefs && prefKey && !prefs[prefKey]) {
+    if (emailAllowed === false) {
       log({ skipped_email: "preference_off", type, recipient: recipientUserId });
       return json({ message: "Email notifications disabled" });
     }

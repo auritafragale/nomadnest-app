@@ -82,7 +82,7 @@ const planFeatures: Array<{
   combined: boolean;
 }> = [
   { feature: "Unlimited sit applications", nomad: true, parent: false, combined: true },
-  { feature: "Create unlimited listings", nomad: false, parent: true, combined: true },
+  { feature: "List your home, add dates any time", nomad: false, parent: true, combined: true },
   { feature: "Verified member badge", nomad: true, parent: true, combined: true },
   { feature: "Browse and invite Nomads", nomad: false, parent: true, combined: true },
   { feature: "Nomads Near Me map", nomad: true, parent: false, combined: true },

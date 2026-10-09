@@ -130,7 +130,8 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         });
 
         let filteredData: SitterWithProfile[] = sitterData
-          .filter((sitter) => sitter.is_active !== false)
+          // One rule everywhere: visible only when is_visible AND is_active.
+          .filter((sitter) => sitter.is_active === true)
           .map((sitter) => {
             const ratingData = ratingsMap.get(sitter.user_id);
             const profile = profilesMap.get(sitter.user_id) || null;

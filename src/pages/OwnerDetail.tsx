@@ -170,7 +170,7 @@ const OwnerDetail = () => {
           <div className="mx-auto max-w-xl px-5 py-6">
             <HiddenProfileNotice
               text="Your Pet Parent profile is paused, so Nomads can't open it right now. Turn it back on in Settings to be seen."
-              action={{ label: "Open Settings", to: "/settings" }}
+              action={{ label: "Open Settings", to: "/settings/privacy" }}
             />
           </div>
         </main>

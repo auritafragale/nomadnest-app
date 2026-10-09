@@ -2,8 +2,6 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { sendNotification } from "@/lib/notifications";
-import { messagePreviewText } from "@/lib/chatImage";
 import { resolveDirectConversation, resolveListingConversation } from "@/lib/conversations";
 
 const conversationsQueryKey = (userId?: string) => ["conversations", userId] as const;
@@ -358,38 +356,10 @@ export const useSendMessage = () => {
 
       if (error) throw error;
 
-      // conversations.updated_at is bumped by a database trigger on each message.
-
-      // Get conversation to find recipient and sender name
-      const { data: conversation } = await supabase
-        .from("conversations")
-        .select("owner_user_id, sitter_user_id")
-        .eq("id", conversationId)
-        .single();
-
-      const { data: senderProfile } = await supabase
-        .from("profiles")
-        .select("first_name")
-        .eq("id", user.id)
-        .single();
-
-      if (conversation) {
-        const recipientId = conversation.owner_user_id === user.id
-          ? conversation.sitter_user_id
-          : conversation.owner_user_id;
-
-        // Send push/email notification to recipient
-        sendNotification({
-          type: "new_message",
-          recipientUserId: recipientId,
-          data: {
-            senderName: (senderProfile?.first_name || "") || "Someone",
-            messagePreview: messagePreviewText(body).substring(0, 150),
-            conversationId,
-            conversation_id: conversationId,
-          },
-        });
-      }
+      // conversations.updated_at is bumped by a database trigger on each
+      // message, and the other member's bell, push and email come from the
+      // notify_new_message trigger: nothing here depends on this browser's
+      // sign-in still being valid once the message is saved.
 
       return data;
     },

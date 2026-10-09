@@ -15,14 +15,15 @@ const RESEND_COOLDOWN_SECONDS = 60;
 
 // Edge functions return their message in the response body; supabase-js only
 // surfaces a generic "non-2xx status code". Dig the real reason out.
-const readFunctionError = async (err: any, fallback: string) => {
+const readFunctionError = async (err: unknown, fallback: string) => {
+  const e = err as { context?: { json?: () => Promise<{ error?: string } | null> }; message?: string } | null;
   try {
-    const body = await err?.context?.json?.();
+    const body = await e?.context?.json?.();
     if (body?.error) return body.error as string;
   } catch {
     // ignore — fall through to the generic message
   }
-  return err?.message || fallback;
+  return e?.message || fallback;
 };
 
 interface Props {
@@ -97,7 +98,7 @@ export const PhoneVerification = ({ phoneVerified, phoneNumber, onVerified }: Pr
             ? `We couldn't reach WhatsApp, so we sent a text to ${phone.trim()} instead.`
             : `We sent a ${delivered === "whatsapp" ? "WhatsApp message" : "text"} to ${phone.trim()}.`,
       });
-    } catch (err: any) {
+    } catch (err) {
       toast({
         variant: "destructive",
         title: "Could not send code",
@@ -122,7 +123,7 @@ export const PhoneVerification = ({ phoneVerified, phoneNumber, onVerified }: Pr
       setStep("verified");
       toast({ title: "Phone verified!", description: "Your number has been confirmed." });
       onVerified();
-    } catch (err: any) {
+    } catch (err) {
       toast({
         variant: "destructive",
         title: "Invalid code",
