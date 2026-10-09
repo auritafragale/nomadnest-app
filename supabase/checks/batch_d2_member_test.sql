@@ -51,8 +51,11 @@ BEGIN
   INSERT INTO public.listings (owner_user_id, title, status, city, country, owner_declaration_accepted_at)
   VALUES (v_owner, 'D2 test listing 2099', 'published', 'Testville', 'Testland', now())
   RETURNING id INTO v_listing;
-  INSERT INTO public.owner_profiles (user_id, is_active) VALUES (v_owner, true)
-  ON CONFLICT (user_id) DO UPDATE SET is_active = true;
+  -- The first listing sets up the Pet Parent side.
+  IF NOT EXISTS (SELECT 1 FROM public.owner_profiles WHERE user_id = v_owner) THEN
+    RAISE EXCEPTION 'FAIL: a first listing did not create the owner profile';
+  END IF;
+  UPDATE public.owner_profiles SET is_active = true WHERE user_id = v_owner;
   INSERT INTO public.conversations (listing_id, owner_user_id, sitter_user_id, conversation_type)
   VALUES (v_listing, v_owner, v_nomad, 'listing') RETURNING id INTO v_conv;
 
@@ -212,8 +215,22 @@ BEGIN
   INSERT INTO public.founding_member_codes (code, max_uses, used_count, active) VALUES ('D2TEST2099B', 1, 1, true);
   v_txt := public.redeem_founding_code_for(v_other, 'D2TEST2099B');
   IF v_txt <> 'exhausted' THEN RAISE EXCEPTION 'FAIL: a used-up code gave %', v_txt; END IF;
+  -- The Nomad hid their profile in step 6. Becoming Founding (Combined)
+  -- refreshes their role, but must not create a profile or make them
+  -- discoverable.
+  v_bool := public.profile_is_discoverable(v_nomad);
+  SELECT count(*) INTO v_n FROM public.owner_profiles WHERE user_id = v_nomad;
   v_txt := public.redeem_founding_code_for(v_nomad, 'D2TEST2099A');
   IF v_txt <> 'ok' THEN RAISE EXCEPTION 'FAIL: a valid code gave %', v_txt; END IF;
+  IF public.profile_is_discoverable(v_nomad) IS DISTINCT FROM v_bool THEN
+    RAISE EXCEPTION 'FAIL: becoming Founding changed a hidden member''s discoverability';
+  END IF;
+  IF (SELECT count(*) FROM public.owner_profiles WHERE user_id = v_nomad) <> v_n THEN
+    RAISE EXCEPTION 'FAIL: the role refresh created a Pet Parent profile';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.sitter_profiles WHERE user_id = v_nomad AND (is_visible OR is_active)) THEN
+    RAISE EXCEPTION 'FAIL: the role refresh made the hidden Nomad profile visible';
+  END IF;
   v_txt := public.redeem_founding_code_for(v_nomad, 'D2TEST2099A');
   IF v_txt <> 'already' THEN RAISE EXCEPTION 'FAIL: the same member redeemed twice (%)', v_txt; END IF;
   SELECT role::text INTO v_role FROM public.user_roles WHERE user_id = v_nomad;

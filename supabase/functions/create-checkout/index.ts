@@ -23,7 +23,10 @@ import {
 //   the difference charged now). Never a second subscription.
 // * Moving down or across (Combined to one side, Nomad to Pet Parent): the
 //   change is scheduled for the renewal date.
-// Only the three known plans are accepted.
+// A live subscription is only ever changed with { action: "change" }, after
+// the member confirmed what { action: "preview" } showed them (the exact
+// amount from Stripe's invoice preview, or the date of a change at renewal).
+// "preview" never changes anything. Only the three known plans are accepted.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,6 +55,15 @@ serve(async (req) => {
     const plan: Plan | null = isPlan(body?.plan) ? body.plan : typeof body?.priceId === "string" ? planForPrice(body.priceId) : null;
     if (!plan) return json({ error: "That plan isn't available." }, 400);
     const price = PLANS[plan].price;
+    const action: "preview" | "change" | "checkout" =
+      body?.action === "preview" ? "preview" : body?.action === "change" ? "change" : "checkout";
+    // The proration time from the preview, so the charge matches what the
+    // member confirmed (accepted only if recent).
+    const nowUnix = Math.floor(Date.now() / 1000);
+    const prorationDate =
+      typeof body?.proration_date === "number" && body.proration_date <= nowUnix && body.proration_date > nowUnix - 30 * 60
+        ? Math.floor(body.proration_date)
+        : nowUnix;
 
     const { data: profile } = await supabase.from("profiles").select("founding_member").eq("id", user.id).maybeSingle();
     if (profile?.founding_member) return json({ error: "You're a Founding member: Combined is yours for life." }, 400);
@@ -66,16 +78,52 @@ serve(async (req) => {
     if (current) {
       const item = current.items.data[0];
       const currentPlan = planOf(item?.price);
+      const periodEnd = periodEndOf(current);
       if (currentPlan === plan && !current.cancel_at_period_end) {
         return json({ error: "You already have this plan." }, 400);
       }
-      if (currentPlan === plan && current.cancel_at_period_end) {
+      const upgrade = !!currentPlan && planRank(plan) > planRank(currentPlan);
+      const keep = currentPlan === plan && current.cancel_at_period_end;
+
+      if (action === "preview") {
+        if (keep) return json({ preview: "keep", plan, renewal: periodEnd });
+        if (upgrade) {
+          // Exactly what Stripe would charge today for this change.
+          const preview = await stripe.invoices.createPreview({
+            customer: customerId!,
+            subscription: current.id,
+            subscription_details: {
+              items: [{ id: item.id, price }],
+              proration_behavior: "always_invoice",
+              proration_date: prorationDate,
+            },
+          });
+          const newPrice = await stripe.prices.retrieve(price);
+          return json({
+            preview: "upgrade",
+            plan,
+            amount_due: preview.amount_due,
+            currency: preview.currency,
+            yearly_amount: newPrice.unit_amount,
+            renewal: periodEnd,
+            proration_date: prorationDate,
+          });
+        }
+        return json({ preview: "scheduled", plan, effective: periodEnd });
+      }
+
+      // Changing a live subscription needs the member's confirmation.
+      if (action !== "change") {
+        return json({ error: "Please confirm the change first.", reason: "confirm_required" }, 409);
+      }
+
+      if (keep) {
         // "Keep my membership".
         await stripe.subscriptions.update(current.id, { cancel_at_period_end: false });
         return json({ updated: true, plan });
       }
 
-      if (currentPlan && planRank(plan) > planRank(currentPlan)) {
+      if (upgrade) {
         // Upgrade now, on the same subscription, with proration.
         if (current.schedule) {
           const schedId = typeof current.schedule === "string" ? current.schedule : current.schedule.id;
@@ -84,6 +132,7 @@ serve(async (req) => {
         await stripe.subscriptions.update(current.id, {
           items: [{ id: item.id, price }],
           proration_behavior: "always_invoice",
+          proration_date: prorationDate,
           payment_behavior: "pending_if_incomplete",
           cancel_at_period_end: false,
           metadata: { ...current.metadata, user_id: user.id, plan },
@@ -93,7 +142,6 @@ serve(async (req) => {
       }
 
       // Down or across: from the renewal date.
-      const periodEnd = periodEndOf(current);
       const endUnix = periodEnd ? Math.floor(Date.parse(periodEnd) / 1000) : null;
       if (!endUnix) return json({ error: "We couldn't change your plan just now. Please try again." }, 500);
       const schedule = current.schedule
@@ -110,7 +158,8 @@ serve(async (req) => {
       return json({ scheduled: true, plan, effective: periodEnd });
     }
 
-    // New membership: Stripe Checkout.
+    // New membership: Stripe Checkout (it shows the amount itself).
+    if (action === "preview") return json({ preview: "checkout", plan });
     const origin = appOrigin(req);
     const session = await stripe.checkout.sessions.create({
       customer: customerId ?? undefined,

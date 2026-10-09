@@ -26,6 +26,26 @@
 -- 7. Founding codes: redeemed only by the redeem-founding-code edge function
 --    (service role), once per member, within the 1,000 cap.
 -- 8. Permissions tidy-up for city_chat_mutes and city_chat_room_reads.
+--
+-- Discoverability: a plan never makes anyone discoverable. Plans change
+-- roles only; a side's profile is created when the member sets that side up
+-- (its profile editor, or their first listing). Everyone's discoverability
+-- before this migration is kept in d2_discoverability_before so the proof can
+-- show what changed.
+
+-- ─── 0. Discoverability before this migration (for the proof) ─────────────
+
+CREATE TABLE IF NOT EXISTS public.d2_discoverability_before (
+  user_id uuid PRIMARY KEY,
+  discoverable boolean NOT NULL,
+  taken_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.d2_discoverability_before ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.d2_discoverability_before FROM PUBLIC, anon, authenticated;
+INSERT INTO public.d2_discoverability_before (user_id, discoverable)
+SELECT p.id, public.profile_is_discoverable(p.id) FROM public.profiles p
+ON CONFLICT (user_id) DO NOTHING;
+
 
 -- ─── 1. Notification choices ───────────────────────────────────────────────
 
@@ -468,6 +488,31 @@ USING (
 );
 
 
+-- A member's first listing sets up their Pet Parent side: the owner
+-- profile it needs is created then (by the member's own action, not a plan).
+CREATE OR REPLACE FUNCTION public.ensure_owner_profile_for_listing()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.owner_profiles (user_id) VALUES (NEW.owner_user_id) ON CONFLICT (user_id) DO NOTHING;
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'ensure_owner_profile_for_listing skipped for listing %: %', NEW.id, SQLERRM;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.ensure_owner_profile_for_listing() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS ensure_owner_profile_for_listing ON public.listings;
+CREATE TRIGGER ensure_owner_profile_for_listing
+AFTER INSERT ON public.listings
+FOR EACH ROW EXECUTE FUNCTION public.ensure_owner_profile_for_listing();
+
+
 -- ─── 5. Membership columns (server only) ───────────────────────────────────
 
 ALTER TABLE public.profiles
@@ -590,8 +635,7 @@ $$;
 REVOKE ALL ON FUNCTION public.role_for(public.app_role, text, text, boolean) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.role_for(public.app_role, text, text, boolean) TO authenticated, service_role;
 
--- Recompute a member's role from their base role and plan, and make sure
--- they have the profiles their role needs.
+-- Recompute a member's role from their base role and plan.
 CREATE OR REPLACE FUNCTION public.refresh_member_role(p_user_id uuid)
 RETURNS public.app_role
 LANGUAGE plpgsql
@@ -614,16 +658,9 @@ BEGIN
     UPDATE public.user_roles SET role = v_role WHERE user_id = p_user_id;
     PERFORM set_config('app.trusted_role_update', 'off', true);
   END IF;
-  -- The plan added a side the member did not set up at onboarding: give
-  -- them that profile (onboarding creates the ones they chose).
-  IF v_role IN ('sitter', 'both') AND COALESCE(r.base_role, r.role) NOT IN ('sitter', 'both') THEN
-    -- A new, empty Nomad profile stays hidden until the member fills it in.
-    INSERT INTO public.sitter_profiles (user_id, is_visible, is_active) VALUES (p_user_id, false, false)
-    ON CONFLICT (user_id) DO NOTHING;
-  END IF;
-  IF v_role IN ('owner', 'both') AND COALESCE(r.base_role, r.role) NOT IN ('owner', 'both') THEN
-    INSERT INTO public.owner_profiles (user_id) VALUES (p_user_id) ON CONFLICT (user_id) DO NOTHING;
-  END IF;
+  -- Roles only. A plan never creates a Nomad or Pet Parent profile, so it
+  -- can never make anyone discoverable: the member sets a side up themselves
+  -- (its profile editor, or their first listing).
   RETURN v_role;
 END;
 $$;

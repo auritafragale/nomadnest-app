@@ -6,6 +6,12 @@ import { redeemFoundingCode } from "@/lib/foundingCode";
 
 export type PlanId = "sitter" | "owner" | "combined";
 
+export type PlanPreview =
+  | { preview: "upgrade"; plan: PlanId; amount_due: number; currency: string; yearly_amount: number | null; renewal: string | null; proration_date: number }
+  | { preview: "scheduled"; plan: PlanId; effective: string | null }
+  | { preview: "keep"; plan: PlanId; renewal: string | null }
+  | { preview: "checkout"; plan: PlanId };
+
 export interface MembershipState {
   subscribed: boolean;
   /** active | past_due | none */
@@ -119,17 +125,30 @@ export const useMembership = () => {
   }, [checkSubscription]);
 
   /**
-   * Start or change a plan. A new membership opens Stripe Checkout in this
-   * tab. A member moving up is changed on the same subscription (credit for
-   * what's left); moving down or across happens at renewal.
+   * What a plan change would do, from Stripe, without changing anything:
+   * "upgrade" (the exact amount charged today), "scheduled" (a change at
+   * renewal, nothing to pay), "keep" (undo an ending membership) or
+   * "checkout" (a new membership: Stripe Checkout shows the amount).
    */
-  const startCheckout = async (plan: PlanId): Promise<{ kind: "redirect" } | { kind: "updated" } | { kind: "scheduled"; effective: string | null }> => {
-    const { data, error } = await supabase.functions.invoke("create-checkout", { body: { plan } });
+  const previewChange = async (plan: PlanId): Promise<PlanPreview> => {
+    const { data, error } = await supabase.functions.invoke("create-checkout", { body: { plan, action: "preview" } });
+    if (error) throw await readError(error, "We couldn't check the price just now. Please try again.");
+    return data as PlanPreview;
+  };
+
+  /** A new membership: Stripe Checkout, in this tab. */
+  const startCheckout = async (plan: PlanId) => {
+    const { data, error } = await supabase.functions.invoke("create-checkout", { body: { plan, action: "checkout" } });
     if (error) throw await readError(error, "We couldn't open the payment page just now. Please try again.");
-    if (data?.url) {
-      window.location.assign(data.url);
-      return { kind: "redirect" };
-    }
+    if (data?.url) window.location.assign(data.url);
+  };
+
+  /** Change a live membership, only after the member confirmed the preview. */
+  const confirmChange = async (plan: PlanId, prorationDate?: number): Promise<{ kind: "updated" } | { kind: "scheduled"; effective: string | null }> => {
+    const { data, error } = await supabase.functions.invoke("create-checkout", {
+      body: { plan, action: "change", ...(prorationDate ? { proration_date: prorationDate } : {}) },
+    });
+    if (error) throw await readError(error, "We couldn't change your plan just now. Please try again.");
     await checkSubscription();
     if (data?.scheduled) return { kind: "scheduled", effective: data.effective ?? null };
     return { kind: "updated" };
@@ -155,5 +174,5 @@ export const useMembership = () => {
     return state.membershipType === requiredType;
   };
 
-  return { ...state, checkSubscription, startCheckout, openPortal, redeemFoundingMemberCode, hasAccess };
+  return { ...state, checkSubscription, previewChange, startCheckout, confirmChange, openPortal, redeemFoundingMemberCode, hasAccess };
 };

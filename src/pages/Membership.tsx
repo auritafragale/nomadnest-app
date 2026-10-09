@@ -8,7 +8,8 @@ import { NN_PAGE, RoleTheme, nnButton } from "@/components/nn/ui";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
-import { useMembership, MEMBERSHIP_PLANS, type PlanId } from "@/hooks/useMembership";
+import { useMembership, MEMBERSHIP_PLANS, type PlanId, type PlanPreview } from "@/hooks/useMembership";
+import ResponsiveSheet from "@/components/nn/ResponsiveSheet";
 import { formatCount, useFoundingSpots } from "@/hooks/useFoundingSpots";
 import { REDEEM_MESSAGES } from "@/lib/foundingCode";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,55 @@ const PLAN_TONE: Record<PlanId, string> = {
   combined: "border-[var(--nn-tip-border)]",
 };
 
+const money = (pence: number | null | undefined, currency = "gbp") =>
+  typeof pence === "number"
+    ? new Intl.NumberFormat("en-GB", { style: "currency", currency: currency.toUpperCase(), minimumFractionDigits: pence % 100 ? 2 : 0 }).format(pence / 100)
+    : null;
+
+/** Confirm a plan change: the exact amount from Stripe, or the date it starts. */
+const PlanChangeSheet = ({
+  pending,
+  busy,
+  onConfirm,
+  onClose,
+}: {
+  pending: PlanPreview | null;
+  busy: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) => {
+  const open = !!pending && pending.preview !== "checkout" && pending.preview !== "keep";
+  const name = pending ? MEMBERSHIP_PLANS[pending.plan].short : "";
+  let title = "";
+  let body = "";
+  let cta = "Confirm";
+  if (pending?.preview === "upgrade") {
+    const today = money(pending.amount_due, pending.currency) ?? "the difference";
+    const yearly = money(pending.yearly_amount, pending.currency) ?? MEMBERSHIP_PLANS[pending.plan].price;
+    title = `Switch to ${name}?`;
+    body = `You'll pay ${today} today. Then ${yearly} a year from ${fmt(pending.renewal) ?? "your renewal date"}. We've taken off what is left of your current plan.`;
+    cta = "Confirm and pay";
+  } else if (pending?.preview === "scheduled") {
+    title = `Change to ${name}?`;
+    body = `Your plan changes to ${name} on ${fmt(pending.effective) ?? "your renewal date"}. Nothing to pay today.`;
+  }
+  return (
+    <ResponsiveSheet open={open} onOpenChange={(v) => !v && onClose()} title={title} description="Confirm your membership change.">
+      <div className="flex flex-col gap-4">
+        <p className="text-[16px]">{body}</p>
+        <button type="button" onClick={onConfirm} disabled={busy} className={nnButton("primary", "w-full")}>
+          {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          {cta}
+        </button>
+        <button type="button" onClick={onClose} disabled={busy} className={nnButton("secondary", "w-full")}>
+          Not now
+        </button>
+        <p className="text-sm text-muted-foreground">Secure payment with Stripe, using the card on your membership.</p>
+      </div>
+    </ResponsiveSheet>
+  );
+};
+
 /** /membership: one yearly membership, plans, founding codes, perks, questions. */
 const Membership = () => {
   const navigate = useNavigate();
@@ -46,6 +96,8 @@ const Membership = () => {
   const [code, setCode] = useState("");
   const [redeeming, setRedeeming] = useState(false);
   const [open, setOpen] = useState<Record<number, boolean>>({});
+  // A change waiting for the member to confirm it (from Stripe's preview).
+  const [pending, setPending] = useState<PlanPreview | null>(null);
 
   const isFounding = m.foundingMember;
   const isProblem = !isFounding && m.status === "past_due";
@@ -72,16 +124,38 @@ const Membership = () => {
     if (current && plan === current) setPlan(current === "combined" ? "sitter" : "combined");
   }, [current, plan]);
 
-  const choose = async () => {
+  /**
+   * A new member goes to Stripe Checkout (it shows the amount). A member
+   * changing plan first sees what it means, from Stripe, and confirms.
+   */
+  const choose = async (target: PlanId = plan) => {
     if (!user) {
       navigate("/auth?signup=true");
       return;
     }
     setBusy(true);
     try {
-      const res = await m.startCheckout(plan);
-      if (res.kind === "updated") toast.success(`You're now on ${MEMBERSHIP_PLANS[plan].short}. We credited what was left of your old plan.`);
-      if (res.kind === "scheduled") toast.success(`Your plan changes to ${MEMBERSHIP_PLANS[plan].short} on ${fmt(res.effective) ?? "your renewal date"}.`);
+      const preview = await m.previewChange(target);
+      if (preview.preview === "checkout") {
+        await m.startCheckout(target);
+        return;
+      }
+      setPending(preview);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirm = async () => {
+    if (!pending || pending.preview === "checkout") return;
+    setBusy(true);
+    try {
+      const res = await m.confirmChange(pending.plan, pending.preview === "upgrade" ? pending.proration_date : undefined);
+      setPending(null);
+      if (res.kind === "updated") toast.success(`You're now on ${MEMBERSHIP_PLANS[pending.plan].short}.`);
+      if (res.kind === "scheduled") toast.success(`Your plan changes to ${MEMBERSHIP_PLANS[pending.plan].short} on ${fmt(res.effective) ?? "your renewal date"}.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
@@ -93,7 +167,7 @@ const Membership = () => {
     if (!current) return;
     setBusy(true);
     try {
-      await m.startCheckout(current);
+      await m.confirmChange(current);
       toast.success("Your membership will renew as usual.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -212,7 +286,7 @@ const Membership = () => {
                     <p className="mt-1 text-sm text-muted-foreground">
                       Switch to Combined for £99 a year. We credit what is left of your {MEMBERSHIP_PLANS[current].short} plan, so you never pay twice.
                     </p>
-                    <button type="button" onClick={() => setPlan("combined")} className={nnButton("secondary", "mt-3")}>
+                    <button type="button" onClick={() => { setPlan("combined"); void choose("combined"); }} disabled={busy} className={nnButton("secondary", "mt-3")}>
                       Switch to Combined
                     </button>
                   </div>
@@ -279,7 +353,7 @@ const Membership = () => {
                     );
                   })}
                 </div>
-                <button type="button" onClick={choose} disabled={busy || (!!user && m.loading)} className={nnButton("primary", "h-12 w-full md:w-auto md:self-start md:px-10")}>
+                <button type="button" onClick={() => void choose()} disabled={busy || (!!user && m.loading)} className={nnButton("primary", "h-12 w-full md:w-auto md:self-start md:px-10")}>
                   {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                   {ctaLabel}
                 </button>
@@ -348,6 +422,7 @@ const Membership = () => {
           </div>
         </div>
       </main>
+      <PlanChangeSheet pending={pending} busy={busy} onConfirm={confirm} onClose={() => setPending(null)} />
       <Footer />
     </RoleTheme>
   );

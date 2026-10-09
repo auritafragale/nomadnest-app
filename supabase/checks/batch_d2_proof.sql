@@ -67,7 +67,8 @@ SELECT format('trigger %s on %s', t.name, t.rel), 'enabled',
        EXISTS (SELECT 1 FROM pg_trigger tg WHERE tg.tgrelid = to_regclass(t.rel) AND tg.tgname = t.name AND tg.tgenabled = 'O')
 FROM (VALUES ('notify_new_message', 'public.messages'), ('roles_follow_plan', 'public.profiles'),
              ('guard_user_roles', 'public.user_roles'), ('sync_sitter_visibility', 'public.sitter_profiles'),
-             ('push_on_notification_insert', 'public.notifications')) AS t(name, rel)
+             ('push_on_notification_insert', 'public.notifications'),
+             ('ensure_owner_profile_for_listing', 'public.listings')) AS t(name, rel)
 
 UNION ALL
 SELECT 'push respects the member''s choice', 'push_on_notification_insert calls notification_allowed',
@@ -119,7 +120,7 @@ SELECT format('table %s: RLS on, no member access', t.name), 'rls on, no privile
        c.oid IS NOT NULL AND c.relrowsecurity
          AND NOT has_table_privilege('authenticated', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
          AND NOT has_table_privilege('anon', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
-FROM (VALUES ('stripe_events'), ('founding_redemptions')) AS t(name)
+FROM (VALUES ('stripe_events'), ('founding_redemptions'), ('d2_discoverability_before')) AS t(name)
 LEFT JOIN pg_class c ON c.oid = to_regclass('public.' || t.name)
 
 UNION ALL
@@ -165,6 +166,34 @@ UNION ALL
 SELECT 'founding spots respect the 1,000 cap', 'cap 1000, spots_left between 0 and 1000',
        (SELECT spots_left::text || ' left of ' || cap::text FROM public.public_founding_spots()),
        (SELECT cap = 1000 AND spots_left BETWEEN 0 AND 1000 FROM public.public_founding_spots())
+
+UNION ALL
+SELECT 'plans never create profiles', 'refresh_member_role inserts nothing',
+       CASE WHEN p.oid IS NULL THEN 'missing' ELSE (p.prosrc ~* 'INSERT INTO')::text END,
+       p.oid IS NOT NULL AND p.prosrc !~* 'INSERT INTO'
+FROM (SELECT 1) one LEFT JOIN pg_proc p ON p.oid = to_regprocedure('public.refresh_member_role(uuid)')
+
+UNION ALL
+SELECT 'nobody became discoverable through this migration (plans never make anyone discoverable)', '0',
+       (SELECT count(*) FROM public.d2_discoverability_before b
+        WHERE NOT b.discoverable AND public.profile_is_discoverable(b.user_id))::text,
+       NOT EXISTS (SELECT 1 FROM public.d2_discoverability_before b
+                   WHERE NOT b.discoverable AND public.profile_is_discoverable(b.user_id))
+
+UNION ALL
+SELECT 'members whose discoverability changed', '0 changed, except members who hid or paused themselves',
+       (SELECT count(*) FROM public.d2_discoverability_before b WHERE b.discoverable IS DISTINCT FROM public.profile_is_discoverable(b.user_id))::text
+         || ' changed, of which '
+         || (SELECT count(*) FROM public.d2_discoverability_before b
+             WHERE b.discoverable AND NOT public.profile_is_discoverable(b.user_id)
+               AND (EXISTS (SELECT 1 FROM public.sitter_profiles sp WHERE sp.user_id = b.user_id AND sp.is_visible IS NOT TRUE)
+                    OR EXISTS (SELECT 1 FROM public.owner_profiles op WHERE op.user_id = b.user_id AND op.is_active IS NOT TRUE)))::text
+         || ' had hidden their Nomad profile or paused their listing',
+       NOT EXISTS (SELECT 1 FROM public.d2_discoverability_before b
+                   WHERE b.discoverable IS DISTINCT FROM public.profile_is_discoverable(b.user_id)
+                     AND NOT (b.discoverable AND NOT public.profile_is_discoverable(b.user_id)
+                              AND (EXISTS (SELECT 1 FROM public.sitter_profiles sp WHERE sp.user_id = b.user_id AND sp.is_visible IS NOT TRUE)
+                                   OR EXISTS (SELECT 1 FROM public.owner_profiles op WHERE op.user_id = b.user_id AND op.is_active IS NOT TRUE))))
 
 UNION ALL
 SELECT 'founding members redeemed at most once', '0 members with two redemptions (one row per member by key)',
