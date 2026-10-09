@@ -1,478 +1,355 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Check, Crown, Star, Sparkles, Shield, Gift, ChevronDown, ExternalLink, CreditCard, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
-import { usePerks } from "@/hooks/usePerks";
+import { Check, ChevronRight, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { Loader2 } from "lucide-react";
-import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { NN_PAGE, RoleTheme, nnButton } from "@/components/nn/ui";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
+import { useActiveRole } from "@/contexts/ActiveRoleContext";
+import { useMembership, MEMBERSHIP_PLANS, type PlanId } from "@/hooks/useMembership";
 import { formatCount, useFoundingSpots } from "@/hooks/useFoundingSpots";
+import { REDEEM_MESSAGES } from "@/lib/foundingCode";
+import { cn } from "@/lib/utils";
 
-const PERK_EXAMPLES = [
-  "Travel insurance",
-  "eSIMs & connectivity",
-  "Luggage storage",
-  "Airport lounges",
-  "Pet insurance & care",
-  "Gear & tech",
-  "Coworking & wellness",
+const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null);
+
+const FAQS: [string, string][] = [
+  ["Is there a booking fee?", "No. Your yearly membership is the only cost. Nomads stay for free and Pet Parents get free pet care."],
+  [
+    "Why is there a membership?",
+    "No money ever changes hands between members: free stays for free pet care. The membership pays for running NomadNest, ID checks and support, not for the sit itself.",
+  ],
+  ["Can I cancel?", "Yes, any time from Manage billing and receipts. You keep your membership until the end of the year you paid for."],
+  ["Why do I need an ID check?", "Everyone who sits or lists a home checks their ID once. Your documents are only used to confirm it is you, and nobody else ever sees them."],
+  ["What happens to my reviews if I stop?", "They stay on your profile, so you can pick up where you left off."],
 ];
 
-const FEATURE_DESCRIPTIONS: Record<string, string> = {
-  "Unlimited sit applications":
-    "Apply to as many house-sits as you like, anywhere in the world. No caps, no per-application fees.",
-  "Profile with reviews":
-    "A public Nomad profile showing your verified badges, reviews from Pet Parents, and bio so families can trust you.",
-  "Find Nomads map":
-    "See other Nomads on an interactive map and connect with the community wherever you travel.",
-  "Community access":
-    "Join city chat rooms and talk to local Nomads and Pet Parents before you arrive.",
-  "Unlimited listing posts":
-    "List every home and pet you need sat. Manage multiple listings with no per-listing charge.",
-  "Manage applications":
-    "Review Nomad applicants, message them, and choose who stays — all in one place.",
-  "Map listing visibility":
-    "Your listings appear on the browse map with coral pins so Nomads can discover them.",
-  "Zero-cost sits, no commissions":
-    "Members trade free accommodation for free pet care. You never pay a booking fee — the only cost is your annual membership.",
-  "Everything in Nomad plan":
-    "All Nomad benefits: unlimited applications, profile with reviews, Find Nomads map and community access.",
-  "Everything in Pet Parent plan":
-    "All Pet Parent benefits: unlimited listings, application management, map visibility and community access.",
-  "Member Perks & partner discounts": "__PERKS__",
+const PLAN_ORDER: PlanId[] = ["sitter", "owner", "combined"];
+const PLAN_TONE: Record<PlanId, string> = {
+  sitter: "border-brand-coral",
+  owner: "border-brand-teal",
+  combined: "border-[var(--nn-tip-border)]",
 };
 
-function FeatureRow({ feature, perksLive }: { feature: string; perksLive: boolean }) {
-  const [open, setOpen] = useState(false);
-  const isPerks = feature === "Member Perks & partner discounts";
-  const desc = FEATURE_DESCRIPTIONS[feature] ?? "Included with your NomadNest membership.";
-
-  return (
-    <li className="border-b border-border/60 last:border-0">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="w-full flex items-start gap-2 py-2.5 text-left group"
-      >
-        <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-        <span className="flex-1 text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-          {feature}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-muted-foreground shrink-0 mt-1 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && (
-        <div className="pl-7 pb-3 -mt-1">
-          {isPerks ? (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {perksLive
-                  ? "Exclusive partner deals negotiated for members — some links earn NomadNest a small commission to keep fees low."
-                  : "Partner perks are rolling out now. The first deals go live shortly and every membership gets them automatically — some links earn NomadNest a small commission to keep fees low."}
-              </p>
-              <ul className="flex flex-wrap gap-1.5">
-                {PERK_EXAMPLES.map((ex) => (
-                  <li
-                    key={ex}
-                    className="text-[11px] rounded-full bg-primary/10 text-primary px-2 py-0.5"
-                  >
-                    {ex}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to="/perks"
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline mt-1"
-              >
-                Browse all perks <ExternalLink className="w-3 h-3" />
-              </Link>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground leading-relaxed pr-6">{desc}</p>
-          )}
-        </div>
-      )}
-    </li>
-  );
-}
-
+/** /membership: one yearly membership, plans, founding codes, perks, questions. */
 const Membership = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { toast } = useToast();
-  const { subscribed, membershipType, foundingMember, subscriptionEnd, cardBrand, cardLast4, loading, startCheckout, openPortal, redeemFoundingMemberCode } = useMembership();
-  // Don't promise a stocked perks hub until there are enough partners live.
-  const { perks } = usePerks();
-  const perksLive = perks.length >= 3;
-
-  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-  const [foundingLoading, setFoundingLoading] = useState(false);
-  const [codeDialogOpen, setCodeDialogOpen] = useState(false);
+  const { activeRole } = useActiveRole();
+  const m = useMembership();
   const { data: founding } = useFoundingSpots();
-  const [inviteCode, setInviteCode] = useState("");
-  const [activeTab, setActiveTab] = useState<"sitter" | "owner" | "combined">("combined");
+  const [plan, setPlan] = useState<PlanId>("combined");
+  const [busy, setBusy] = useState(false);
+  const [code, setCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
+  const [open, setOpen] = useState<Record<number, boolean>>({});
 
-  const cancelled = searchParams.get("cancelled");
-  const upgradeBoth = searchParams.get("upgrade") === "both";
+  const isFounding = m.foundingMember;
+  const isProblem = !isFounding && m.status === "past_due";
+  const isMember = !isFounding && !isProblem && m.subscribed;
+  const isEnding = isMember && m.cancelAtPeriodEnd;
+  const current = isMember ? m.membershipType : null;
 
-  const handleCheckout = async (planKey: string) => {
+  // Back from Stripe (same tab).
+  useEffect(() => {
+    const checkout = searchParams.get("checkout");
+    const portal = searchParams.get("portal");
+    const legacyCancelled = searchParams.get("cancelled");
+    if (!checkout && !portal && !legacyCancelled) return;
+    if (checkout === "success") toast.success("Thank you! Your membership is active. It can take a minute to show here.");
+    if (checkout === "cancelled" || legacyCancelled) toast("Payment cancelled. Nothing was charged. You can try again whenever you're ready.");
+    if (portal) m.checkSubscription();
+    if (checkout === "success") setTimeout(() => m.checkSubscription(), 4000);
+    setSearchParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Default choice: Combined, or (for a one-side member) Combined as the upgrade.
+  useEffect(() => {
+    if (current && plan === current) setPlan(current === "combined" ? "sitter" : "combined");
+  }, [current, plan]);
+
+  const choose = async () => {
     if (!user) {
-      navigate("/auth");
-      return;
-    }
-    setCheckoutLoading(planKey);
-    try {
-      const plan = MEMBERSHIP_PLANS[planKey as keyof typeof MEMBERSHIP_PLANS];
-      await startCheckout(plan.priceId);
-    } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Something went wrong", variant: "destructive" });
-    } finally {
-      setCheckoutLoading(null);
-    }
-  };
-
-  const openFoundingDialog = () => {
-    if (!user) {
-      // Send to the registration page where the invite code field is shown.
       navigate("/auth?signup=true");
       return;
     }
-    setInviteCode("");
-    setCodeDialogOpen(true);
+    setBusy(true);
+    try {
+      const res = await m.startCheckout(plan);
+      if (res.kind === "updated") toast.success(`You're now on ${MEMBERSHIP_PLANS[plan].short}. We credited what was left of your old plan.`);
+      if (res.kind === "scheduled") toast.success(`Your plan changes to ${MEMBERSHIP_PLANS[plan].short} on ${fmt(res.effective) ?? "your renewal date"}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handleRedeemCode = async () => {
-    if (!inviteCode.trim()) {
-      toast({ title: "Enter a code", description: "Please paste your Founding Member invite code.", variant: "destructive" });
+  const keepMembership = async () => {
+    if (!current) return;
+    setBusy(true);
+    try {
+      await m.startCheckout(current);
+      toast.success("Your membership will renew as usual.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const portal = async (updateCard = false) => {
+    try {
+      await m.openPortal(updateCard);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "We couldn't open billing just now.");
+    }
+  };
+
+  const redeem = async () => {
+    if (!user) {
+      navigate("/auth?signup=true");
       return;
     }
-    setFoundingLoading(true);
+    if (!code.trim()) return toast.error("Enter your code first.");
+    setRedeeming(true);
     try {
-      const result = await redeemFoundingMemberCode(inviteCode);
-      if (result === "ok") {
-        toast({ title: "Welcome, Founding Member! 🎉", description: "You have free lifetime Combined access." });
-        setCodeDialogOpen(false);
-        navigate("/dashboard");
-      } else if (result === "exhausted") {
-        toast({
-          title: "All founding spots claimed",
-          description: "The code was valid but all founding spots are taken. You can join with a paid plan.",
-          variant: "destructive",
-        });
+      const res = await m.redeemFoundingMemberCode(code);
+      if (res.result === "ok") {
+        setCode("");
+        toast.success(
+          res.refundedPence
+            ? `Welcome, Founding member! Combined is yours for life. We cancelled your paid plan and refunded £${(res.refundedPence / 100).toFixed(2)}.`
+            : res.refundPending
+              ? "Welcome, Founding member! Combined is yours for life. We cancelled your paid plan and will refund what was left within a few days."
+              : "Welcome, Founding member! Combined is yours for life.",
+        );
       } else {
-        toast({
-          title: "Invalid invite code",
-          description: "That code wasn't recognised. Please check it and try again.",
-          variant: "destructive",
-        });
+        toast.error(REDEEM_MESSAGES[res.result]);
       }
     } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Something went wrong", variant: "destructive" });
+      toast.error(err instanceof Error ? err.message : "We couldn't redeem that code just now.");
     } finally {
-      setFoundingLoading(false);
+      setRedeeming(false);
     }
   };
 
-  const tabs: { key: "sitter" | "owner" | "combined"; label: string; sublabel: string }[] = [
-    { key: "sitter", label: "Become a Nomad", sublabel: "Find free stays" },
-    { key: "owner", label: "List Your Home", sublabel: "Find a sitter" },
-    { key: "combined", label: "Go Combined", sublabel: "Best value" },
-  ];
-
-  const isCurrentPlan = (planKey: string) => {
-    if (foundingMember && planKey === "combined") return true;
-    return subscribed && membershipType === planKey;
-  };
-
-  const activePlan = MEMBERSHIP_PLANS[activeTab];
-  const activeMeta = tabs.find((t) => t.key === activeTab)!;
-  const activeIcon =
-    activeTab === "sitter" ? <Star className="w-6 h-6" /> : activeTab === "owner" ? <Shield className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />;
-  const activeBadge = activeTab === "combined" ? "Best Value" : null;
+  const plans = PLAN_ORDER.filter((p) => p !== current);
+  const showPlans = !isFounding && !isProblem;
+  const ctaLabel = !user ? "Create my account" : current ? `Switch to ${MEMBERSHIP_PLANS[plan].short}` : `Continue with ${MEMBERSHIP_PLANS[plan].short}`;
+  const card = m.cardBrand && m.cardLast4 ? `${m.cardBrand.charAt(0).toUpperCase()}${m.cardBrand.slice(1)} ending ${m.cardLast4}` : null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="max-w-6xl mx-auto px-4 pt-20 pb-12">
-        {/* No Booking Fees Banner */}
-        <div className="bg-primary text-primary-foreground rounded-2xl p-6 mb-12 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold">No booking fees. Ever.</h2>
-          <p className="mt-2 text-primary-foreground/80">
-            One simple annual membership. That's it. No commissions, no hidden costs.
+    <RoleTheme role={activeRole === "owner" ? "owner" : "sitter"} className="flex min-h-screen flex-col">
+      <Navbar wide />
+      <main className={cn(NN_PAGE, "flex flex-1 flex-col gap-5 pb-24 pt-20 md:pt-24")}>
+        <div className="flex flex-col gap-1">
+          <Link to={user ? "/dashboard" : "/"} className="inline-flex min-h-[44px] items-center self-start text-sm font-semibold text-muted-foreground">
+            ← {user ? "Dashboard" : "Home"}
+          </Link>
+          <h1 className="font-display text-[32px] font-normal leading-tight lg:text-[38px]">Membership</h1>
+          <p className="max-w-2xl text-[15px] text-muted-foreground">
+            One yearly membership. No booking fees, ever. Free stays for Nomads, free pet care for Pet Parents.
           </p>
         </div>
 
-        {user && !loading && (subscribed || foundingMember) && (
-          <Card className="mb-12 max-w-2xl mx-auto border-2 border-primary/30">
-            <CardHeader>
-              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <Crown className="w-5 h-5 text-primary" />
-                Your Membership
-              </h2>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Badge className="bg-primary/10 text-primary border-0">
-                  {foundingMember
-                    ? "Founding Member"
-                    : MEMBERSHIP_PLANS[membershipType as keyof typeof MEMBERSHIP_PLANS]?.name ?? membershipType}
-                </Badge>
-                <span className="text-sm font-medium text-muted-foreground">
-                  {foundingMember ? "Lifetime access" : "Active"}
-                </span>
-              </div>
-              {foundingMember ? (
-                <p className="text-sm text-muted-foreground">
-                  You have full Combined access to NomadNest — forever. Thank you for being an early supporter.
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+          <div className="flex min-w-0 flex-col gap-5">
+            {user && m.loading && <Skeleton className="h-32 rounded-[22px]" />}
+
+            {isFounding && (
+              <section aria-label="Your membership" className="rounded-[22px] border-[1.5px] border-[var(--nn-tip-border)] bg-card p-5">
+                <span className="inline-flex rounded-full bg-[#E8B53E] px-2.5 py-1 text-xs font-bold text-[#3A2A06]">★ Founding member</span>
+                <p className="mt-3 font-display text-2xl">Combined, for life</p>
+                <p className="mt-1 text-[15px] text-muted-foreground">
+                  You are one of the first 1,000 members. Nomad and Pet Parent, no renewals, nothing to pay. Thank you for building NomadNest with us.
                 </p>
-              ) : (
-                <>
-                  {subscriptionEnd && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="w-4 h-4" />
-                      Renews on {new Date(subscriptionEnd).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
-                    </div>
-                  )}
-                  {cardBrand && cardLast4 && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CreditCard className="w-4 h-4" />
-                      {cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1)} ending {cardLast4}
-                    </div>
-                  )}
-                  <div className="pt-1">
-                    <Button variant="outline" size="sm" onClick={() => openPortal()}>
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Manage Subscription
-                    </Button>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        )}
+              </section>
+            )}
 
-        {cancelled && (
-          <div className="bg-warning/10 border border-warning text-warning-foreground rounded-lg p-4 mb-8 text-center">
-            Payment was cancelled. You can try again whenever you're ready.
-          </div>
-        )}
-
-        {upgradeBoth && (
-          <div className="bg-primary/10 border border-primary text-foreground rounded-lg p-4 mb-8 text-center">
-            Upgrade to the <strong>Combined Membership</strong> to use NomadNest as both a Nomad and Pet Parent.
-          </div>
-        )}
-
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-1.5">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">Choose Your Membership</h1>
-            <HelpTooltip
-              align="center"
-              label="Why a membership"
-              content="NomadNest is a barter — free accommodation for free pet sitting. No money changes hands for sits, so this membership covers running the platform, not the sit itself."
-            />
-          </div>
-          <p className="mt-3 text-muted-foreground text-lg max-w-2xl mx-auto">
-            Join the NomadNest community and start connecting with trusted pet lovers around the world.
-          </p>
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <>
-            {/* CTA toggle buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 max-w-3xl mx-auto">
-              {tabs.map((tab) => {
-                const isActive = activeTab === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-4 py-3 text-center transition-all border-2 ${
-                      isActive
-                        ? "border-primary bg-primary text-primary-foreground shadow-md"
-                        : "border-border bg-card text-foreground hover:border-primary/50"
-                    }`}
-                  >
-                    <span className="text-sm font-bold leading-tight">{tab.label}</span>
-                    <span className={`text-xs ${isActive ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                      {tab.sublabel}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Active plan card */}
-            <div className="max-w-md mx-auto mb-16">
-              <Card
-                className={`relative overflow-hidden transition-all ${
-                  activeTab === "combined"
-                    ? "border-2 border-primary shadow-xl"
-                    : "border-border shadow-md"
-                } ${isCurrentPlan(activeTab) ? "ring-2 ring-accent" : ""} ${
-                  upgradeBoth && activeTab === "combined" ? "ring-4 ring-primary ring-offset-2" : ""
-                }`}
-              >
-                {activeBadge && (
-                  <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-4 py-1 text-xs font-bold rounded-bl-lg">
-                    {activeBadge}
-                  </div>
-                )}
-                {isCurrentPlan(activeTab) && (
-                  <div className="absolute top-0 left-0 bg-accent text-accent-foreground px-4 py-1 text-xs font-bold rounded-br-lg">
-                    Your Plan
-                  </div>
-                )}
-                <CardHeader className="text-center pt-8">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
-                    {activeIcon}
-                  </div>
-                  <h3 className="text-xl font-bold text-foreground">{activePlan.name}</h3>
-                  <div className="mt-2">
-                    <span className="text-4xl font-bold text-foreground">{activePlan.price}</span>
-                    <span className="text-muted-foreground">/{activePlan.interval}</span>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ul className="divide-y divide-border/60">
-                    {activePlan.features.map((feature) => (
-                      <FeatureRow key={feature} feature={feature} perksLive={perksLive} />
-                    ))}
-                  </ul>
-                </CardContent>
-                <CardFooter className="pb-8">
-                  {isCurrentPlan(activeTab) ? (
-                    <Button className="w-full" variant="outline" disabled>
-                      Current Plan
-                    </Button>
+            {isMember && current && (
+              <section aria-label="Your membership" className="flex flex-col gap-3 rounded-[22px] border border-[var(--nn-border)] bg-card p-5">
+                <p className="flex flex-wrap items-center gap-2 text-[17px] font-bold">
+                  {MEMBERSHIP_PLANS[current].short} membership
+                  {isEnding ? (
+                    <span className="rounded-full bg-[var(--nn-tip-bg)] px-2.5 py-1 text-xs font-bold text-[var(--nn-tip-text)]">Ending</span>
                   ) : (
-                    <Button
-                      className="w-full"
-                      variant={activeTab === "combined" ? "default" : "outline"}
-                      onClick={() => handleCheckout(activeTab)}
-                      disabled={!!checkoutLoading}
-                    >
-                      {checkoutLoading === activeTab ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      Get Started
-                    </Button>
+                    <span className="rounded-full bg-[var(--nn-ok-bg)] px-2.5 py-1 text-xs font-bold text-brand-teal-text">✓ Active</span>
                   )}
-                </CardFooter>
-              </Card>
-            </div>
-
-            {/* Founding Member Section */}
-            {!subscribed && !foundingMember && (
-              <div className="bg-accent/10 border-2 border-accent rounded-2xl p-8 text-center max-w-xl mx-auto">
-                <Crown className="w-10 h-10 text-accent mx-auto mb-4" />
-                <div className="flex items-center justify-center gap-1.5 mb-2">
-                  <h3 className="text-xl font-bold text-foreground">Join as a Founding Member</h3>
-                  <HelpTooltip
-                    align="center"
-                    label="About founding member codes"
-                    content="A Founding Member code is an invite granted to early supporters. Redeeming one unlocks free lifetime Combined membership — no annual fee."
-                  />
+                </p>
+                {isEnding ? (
+                  <p className="text-[15px]">
+                    Your membership ends on {fmt(m.subscriptionEnd) ?? "the end of your year"}. Your profile, reviews and listing stay, so you can come back any time.
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {[`${MEMBERSHIP_PLANS[current].price} a year`, m.subscriptionEnd && `renews on ${fmt(m.subscriptionEnd)}`, card].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+                {m.pendingPlan && !isEnding && (
+                  <p className="rounded-2xl bg-muted p-3 text-sm">
+                    Your plan changes to {MEMBERSHIP_PLANS[m.pendingPlan].short} on {fmt(m.subscriptionEnd) ?? "your renewal date"}.
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {isEnding && (
+                    <button type="button" onClick={keepMembership} disabled={busy} className={nnButton("primary")}>
+                      {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                      Keep my membership
+                    </button>
+                  )}
+                  <button type="button" onClick={() => portal()} className={nnButton("secondary")}>
+                    Manage billing and receipts
+                  </button>
                 </div>
-                <p className="text-muted-foreground mb-6">
-                  Be one of the first to shape NomadNest. Founding Member spots are limited and require an invite code.
-                </p>
-                <Button
-                  size="lg"
-                  className="bg-accent text-accent-foreground hover:bg-accent/90"
-                  onClick={openFoundingDialog}
-                >
-                  <Crown className="w-4 h-4 mr-2" />
-                  Redeem Invite Code
-                </Button>
-              </div>
+                {current !== "combined" && !isEnding && (
+                  <div className="rounded-2xl bg-[var(--nn-soft)] p-4">
+                    <p className="text-[15px] font-bold">{current === "sitter" ? "Want to list your home too?" : "Want to go sitting too?"}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Switch to Combined for £99 a year. We credit what is left of your {MEMBERSHIP_PLANS[current].short} plan, so you never pay twice.
+                    </p>
+                    <button type="button" onClick={() => setPlan("combined")} className={nnButton("secondary", "mt-3")}>
+                      Switch to Combined
+                    </button>
+                  </div>
+                )}
+              </section>
             )}
 
-            {foundingMember && (
-              <div className="bg-accent/10 border-2 border-accent rounded-2xl p-8 text-center max-w-xl mx-auto">
-                <Crown className="w-10 h-10 text-accent mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-foreground mb-2">You're a Founding Member! 🎉</h3>
-                <p className="text-muted-foreground">
-                  You have full Combined access to NomadNest — forever. Thank you for being an early supporter.
+            {isProblem && (
+              <section role="alert" className="flex flex-col gap-2 rounded-[22px] border-[1.5px] border-[var(--nn-tip-border)] bg-[var(--nn-tip-bg)] p-5 text-[var(--nn-tip-text)]">
+                <p className="text-[17px] font-bold">Your last payment didn't go through</p>
+                <p className="text-[15px]">
+                  {m.paymentFailedAt ? `We tried on ${fmt(m.paymentFailedAt)}. ` : ""}Please update your card to keep your{" "}
+                  {m.membershipType ? MEMBERSHIP_PLANS[m.membershipType].short : ""} membership. Your listing and confirmed sits stay as they are until then.
                 </p>
-              </div>
+                <button type="button" onClick={() => portal(true)} className={nnButton("primary", "self-start")}>
+                  Update my card
+                </button>
+              </section>
             )}
 
-            <div className="text-center mt-10">
-              <p className="text-sm text-muted-foreground mb-3">
-                {perksLive
-                  ? "Every membership also unlocks exclusive partner deals on travel, insurance, pet care and gear."
-                  : "Partner perks on travel, insurance, pet care and gear are rolling out — included with every membership."}
-              </p>
-              <Button variant="outline" asChild>
-                <Link to="/perks">
-                  <Gift className="w-4 h-4 mr-2" />
-                  See Member Perks
-                </Link>
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
-
-      <Dialog open={codeDialogOpen} onOpenChange={setCodeDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Redeem Founding Member Code</DialogTitle>
-            <DialogDescription>
-              Enter your invite code to unlock free lifetime Combined membership.
-              {founding ? ` Spots are limited: ${formatCount(founding.spotsLeft)} of ${formatCount(founding.cap)} left.` : " Spots are limited."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Label htmlFor="invite-code">Invite code</Label>
-            <Input
-              id="invite-code"
-              value={inviteCode}
-              onChange={(e) => setInviteCode(e.target.value)}
-              placeholder="Enter your code"
-              autoFocus
-              disabled={foundingLoading}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !foundingLoading) handleRedeemCode();
-              }}
-            />
+            {showPlans && (
+              <section aria-labelledby="plans-title" className="flex flex-col gap-3">
+                <h2 id="plans-title" className="font-display text-2xl font-normal">
+                  {current ? "Change your plan" : "Choose your membership"}
+                </h2>
+                <div role="radiogroup" aria-labelledby="plans-title" className="grid gap-3 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                  {plans.map((id) => {
+                    const p = MEMBERSHIP_PLANS[id];
+                    const on = plan === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => setPlan(id)}
+                        className={cn(
+                          "flex flex-col gap-2 rounded-[22px] border-[1.5px] bg-card p-4 text-left transition-colors",
+                          on ? PLAN_TONE[id] : "border-[var(--nn-border)]",
+                        )}
+                      >
+                        <span className="flex items-start justify-between gap-2">
+                          <span>
+                            <span className="block text-[17px] font-bold">{p.short}</span>
+                            <span className="block text-sm text-muted-foreground">{p.who}</span>
+                          </span>
+                          <span className="text-right">
+                            <span className="block text-xl font-bold">{p.price}</span>
+                            <span className="block text-xs text-muted-foreground">a year</span>
+                          </span>
+                        </span>
+                        {id === "combined" && (
+                          <span className="self-start rounded-full bg-[#E8B53E] px-2.5 py-1 text-xs font-bold text-[#3A2A06]">Best value · save £19</span>
+                        )}
+                        <ul className="flex flex-col gap-1.5">
+                          {p.features.map((f) => (
+                            <li key={f} className="flex items-start gap-2 text-sm">
+                              <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-teal-text" aria-hidden="true" />
+                              {f}
+                            </li>
+                          ))}
+                        </ul>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button type="button" onClick={choose} disabled={busy || (!!user && m.loading)} className={nnButton("primary", "h-12 w-full md:w-auto md:self-start md:px-10")}>
+                  {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                  {ctaLabel}
+                </button>
+                <p className="text-sm text-muted-foreground">Secure payment with Stripe. Cancel any time in a couple of taps.</p>
+              </section>
+            )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCodeDialogOpen(false)} disabled={foundingLoading}>
-              Cancel
-            </Button>
-            <Button onClick={handleRedeemCode} disabled={foundingLoading}>
-              {foundingLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Crown className="w-4 h-4 mr-2" />}
-              Redeem
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
+          <div className="flex flex-col gap-5">
+            {!isFounding && !isProblem && (
+              <section aria-labelledby="founding-title" className="flex flex-col gap-2 rounded-[22px] border border-[var(--nn-border)] bg-[var(--nn-soft)] p-5">
+                <p id="founding-title" className="flex flex-wrap items-center justify-between gap-2 text-[15px] font-bold">
+                  Have a founding invite code?
+                  {founding && <span className="rounded-full bg-[#E8B53E] px-2.5 py-1 text-xs font-bold text-[#3A2A06]">{formatCount(founding.spotsLeft)} of 1,000 left</span>}
+                </p>
+                <p className="text-sm text-muted-foreground">Founding members get Combined membership for life. Codes are shared by the founders and early members.</p>
+                <label htmlFor="founding-code" className="text-sm font-semibold">Enter your code</label>
+                <div className="flex gap-2">
+                  <input
+                    id="founding-code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    autoComplete="off"
+                    className="min-h-[44px] min-w-0 flex-1 rounded-xl border-[1.5px] border-[var(--nn-border)] bg-card px-3 text-[16px] uppercase outline-none focus:border-[var(--nn-accent)]"
+                  />
+                  <button type="button" onClick={redeem} disabled={redeeming} className={nnButton("secondary")}>
+                    {redeeming && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                    Redeem
+                  </button>
+                </div>
+                {isMember && <p className="text-sm text-muted-foreground">If you redeem a code, we cancel your paid plan and refund what is left.</p>}
+              </section>
+            )}
+
+            <Link to="/perks" className="flex min-h-[64px] items-center gap-3 rounded-[22px] border border-[var(--nn-border)] bg-card p-4">
+              <span className="text-2xl" aria-hidden="true">🎁</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-bold">Member perks</span>
+                <span className="block text-sm text-muted-foreground">Travel insurance, eSIMs, pet care and more</span>
+              </span>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+            </Link>
+
+            <section aria-labelledby="faq-title" className="flex flex-col gap-2">
+              <h2 id="faq-title" className="font-display text-2xl font-normal">Good to know</h2>
+              {FAQS.map(([q, a], i) => (
+                <div key={q} className="rounded-[18px] border border-[var(--nn-border)] bg-card">
+                  <button
+                    type="button"
+                    onClick={() => setOpen((o) => ({ ...o, [i]: !o[i] }))}
+                    aria-expanded={!!open[i]}
+                    aria-controls={`faq-${i}`}
+                    className="flex min-h-[52px] w-full items-center justify-between gap-3 px-4 text-left text-[15px] font-semibold"
+                  >
+                    {q}
+                    <span aria-hidden="true" className="text-lg">{open[i] ? "−" : "+"}</span>
+                  </button>
+                  {open[i] && (
+                    <p id={`faq-${i}`} className="px-4 pb-4 text-[15px] text-muted-foreground">
+                      {a}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </section>
+          </div>
+        </div>
+      </main>
       <Footer />
-    </div>
+    </RoleTheme>
   );
 };
 

@@ -1,153 +1,107 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { redact } from "../_shared/safe-log.ts";
+import { customerIdFor, liveSubscription, periodEndOf, planOf, syncSubscription } from "../_shared/stripe-plans.ts";
+
+// The member's membership for the Membership page and Settings. Reads Stripe
+// and brings the profile in line (the webhook normally does that already).
+// Card brand and last 4 digits only.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+const json = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-const MEMBERSHIP_TIERS: Record<string, string> = {
-  "prod_UJcVggxhZfowro": "sitter",
-  "prod_UJcVTj7SmQp8V8": "owner",
-  "prod_UJcVUVxwZ9yA2F": "combined",
-};
+const NONE = { subscribed: false, membership_type: null, founding_member: false, subscription_end: null, status: "none" };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
-  );
+  const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", {
+    auth: { persistSession: false },
+  });
 
   try {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
 
-    const unauthenticated = () =>
-      new Response(JSON.stringify({ subscribed: false, membership_type: null, founding_member: false, subscription_end: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+    const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
+    if (!token) return json(NONE);
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    const user = userData?.user;
+    if (userError || !user?.email) return json({ ...NONE, reason: "auth_get_user_failed" }, 401);
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return unauthenticated();
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) return unauthenticated();
-    const user = userData.user;
-    if (!user?.email) return unauthenticated();
-
-    // Check if founding member first
-    const { data: profile } = await supabaseClient
+    const { data: profile } = await supabase
       .from("profiles")
-      .select("founding_member, membership_status, membership_type")
+      .select("founding_member, membership_payment_failed_at")
       .eq("id", user.id)
       .single();
 
     if (profile?.founding_member) {
-      // Ensure founding member profile is up to date
-      if (profile.membership_status !== "active") {
-        await supabaseClient
-          .from("profiles")
-          .update({ membership_status: "active", membership_type: "combined" })
-          .eq("id", user.id);
-      }
-      return new Response(JSON.stringify({
-        subscribed: true,
-        membership_type: "combined",
-        founding_member: true,
-        subscription_end: null,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ subscribed: true, membership_type: "combined", founding_member: true, subscription_end: null, status: "active" });
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customerId = await customerIdFor(supabase, stripe, user.id, user.email);
+    const sub = customerId ? await liveSubscription(stripe, customerId) : null;
 
-    if (customers.data.length === 0) {
-      await supabaseClient.from("profiles").update({
-        membership_status: "none",
-        membership_type: null,
-      }).eq("id", user.id);
-
-      return new Response(JSON.stringify({ subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!sub) {
+      await supabase
+        .from("profiles")
+        .update({ membership_status: "none", membership_type: null, membership_expiry: null, membership_cancel_at_period_end: false })
+        .eq("id", user.id);
+      return json(NONE);
     }
 
-    const customerId = customers.data[0].id;
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
+    const { status } = await syncSubscription(supabase, user.id, sub, false);
 
-    if (subscriptions.data.length === 0) {
-      await supabaseClient.from("profiles").update({
-        membership_status: "none",
-        membership_type: null,
-      }).eq("id", user.id);
-
-      return new Response(JSON.stringify({ subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const subscription = subscriptions.data[0];
-    const productId = subscription.items.data[0].price.product as string;
-    const membershipType = MEMBERSHIP_TIERS[productId] || "sitter";
-    // In API version 2025-08-27.basil the period fields live on the subscription
-    // item, not the subscription. Fall back to the legacy top-level field.
-    const periodEnd =
-      (subscription.items.data[0] as { current_period_end?: number })?.current_period_end ??
-      (subscription as unknown as { current_period_end?: number }).current_period_end;
-    const subscriptionEnd =
-      typeof periodEnd === "number" && Number.isFinite(periodEnd)
-        ? new Date(periodEnd * 1000).toISOString()
-        : null;
-
-    // Fetch card summary from the default payment method (safe, non-sensitive)
-    let cardSummary: { brand: string | null; last4: string | null } = { brand: null, last4: null };
+    // Card summary from the default payment method (brand and last 4 only).
+    let card: { brand: string | null; last4: string | null } = { brand: null, last4: null };
     try {
-      const customer = customers.data[0];
-      const pmId = customer.invoice_settings?.default_payment_method as string | undefined;
-      if (pmId && typeof pmId === "string" && pmId.startsWith("pm_")) {
-        const pm = await stripe.paymentMethods.retrieve(pmId);
-        if (pm.card) {
-          cardSummary = { brand: pm.card.brand, last4: pm.card.last4 };
-        }
+      const pmId = (sub.default_payment_method as string | null) ?? null;
+      const customer = await stripe.customers.retrieve(customerId!);
+      const fallback = !customer.deleted ? ((customer as Stripe.Customer).invoice_settings?.default_payment_method as string | null) : null;
+      const id = pmId ?? fallback;
+      if (id && typeof id === "string" && id.startsWith("pm_")) {
+        const pm = await stripe.paymentMethods.retrieve(id);
+        if (pm.card) card = { brand: pm.card.brand, last4: pm.card.last4 };
       }
     } catch {
-      // Non-critical — card summary stays null
+      // Not critical.
     }
 
-    await supabaseClient.from("profiles").update({
-      membership_status: "active",
-      membership_type: membershipType,
-      membership_expiry: subscriptionEnd,
-    }).eq("id", user.id);
+    // A change already booked for the renewal date (a move down or across).
+    let pending: string | null = null;
+    try {
+      if (sub.schedule) {
+        const sched = await stripe.subscriptionSchedules.retrieve(typeof sub.schedule === "string" ? sub.schedule : sub.schedule.id, {
+          expand: ["phases.items.price"],
+        });
+        const next = sched.phases[1]?.items[0]?.price;
+        pending = planOf(typeof next === "string" ? null : (next as Stripe.Price)) ?? null;
+      }
+    } catch {
+      // Not critical.
+    }
 
-    return new Response(JSON.stringify({
-      subscribed: true,
-      membership_type: membershipType,
-      subscription_end: subscriptionEnd,
+    return json({
+      subscribed: status === "active" || status === "past_due",
+      status,
+      membership_type: planOf(sub.items.data[0]?.price),
+      subscription_end: periodEndOf(sub),
+      cancel_at_period_end: !!sub.cancel_at_period_end,
+      payment_failed_at: profile?.membership_payment_failed_at ?? null,
+      pending_plan: pending,
       founding_member: false,
-      card_brand: cardSummary.brand,
-      card_last4: cardSummary.last4,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      card_brand: card.brand,
+      card_last4: card.last4,
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    console.error("check-subscription failed:", redact(error));
+    return json({ error: "We couldn't check your membership just now." }, 500);
   }
 });

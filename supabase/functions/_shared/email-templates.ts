@@ -194,21 +194,44 @@ function buildNotificationEmailEscaped(
         pushUrl: url,
       };
     }
-    case "new_message":
+    case "new_message": {
+      // Never the message text: emails get forwarded and can hold contact
+      // details. Who wrote, and about which listing.
+      const about = data.listingTitle ? ` about ${data.listingTitle}` : "";
       return {
-        subject: `New message from ${data.senderName}`,
-        preview: data.messagePreview?.substring(0, 90),
+        subject: `New message from ${data.senderName}${about}`,
+        preview: "Open NomadNest to read and reply.",
         heading: "You have a new message",
         body: `
-          <p><strong>${data.senderName}</strong> sent you a message:</p>
-          ${quote(data.messagePreview)}
+          <p><strong>${data.senderName}</strong> sent you a message${about}.</p>
+          <p>Open NomadNest to read it and reply.</p>
         `,
-        ctaLabel: "Reply now",
+        ctaLabel: "Read and reply",
         ctaUrl: `${APP_URL}/inbox?conversation=${data.conversationId}`,
-        pushTitle: `Message from ${data.senderName}`,
-        pushBody: data.messagePreview?.substring(0, 100),
+        pushTitle: `New message from ${data.senderName}${about}`,
+        pushBody: "Open your chat to read it.",
         pushUrl: `/inbox?conversation=${data.conversationId}`,
       };
+    }
+    case "message_digest": {
+      // One email a day for members who chose it. Counts and first names only.
+      const n = Number(data.messageCount) || 0;
+      const words = n === 1 ? "1 new message" : `${n} new messages`;
+      return {
+        subject: `You have ${words} from ${data.senderNames}`,
+        preview: "Open NomadNest to read and reply.",
+        heading: `You have ${words}`,
+        body: `
+          <p>From <strong>${data.senderNames}</strong>.</p>
+          <p>Open NomadNest to read them and reply. You chose to get message emails once a day. You can change this in Settings, Notifications.</p>
+        `,
+        ctaLabel: "Open my messages",
+        ctaUrl: `${APP_URL}/inbox`,
+        pushTitle: `You have ${words}`,
+        pushBody: `From ${data.senderNames}`,
+        pushUrl: "/inbox",
+      };
+    }
     case "invite":
       return {
         subject: `You've been invited to sit at ${data.listingTitle}`,

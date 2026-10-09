@@ -41,13 +41,17 @@ const Auth = () => {
     if (loading) return; // Wait for auth state to be determined
     
     if (user) {
+      // Back to where the member was when their sign-in ended (our own
+      // pages only).
+      const back = searchParams.get("return");
+      const safeBack = back && /^\/(?!\/)[^\s]*$/.test(back) && !back.startsWith("/auth") ? back : null;
       if (onboardingCompleted) {
-        navigate("/dashboard");
+        navigate(safeBack ?? "/dashboard");
       } else {
         navigate("/onboarding");
       }
     }
-  }, [user, onboardingCompleted, loading, navigate]);
+  }, [user, onboardingCompleted, loading, navigate, searchParams]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};

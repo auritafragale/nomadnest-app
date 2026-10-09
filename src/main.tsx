@@ -4,10 +4,14 @@ import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 import { purgeGuideCaches } from "./lib/guideCache";
+import { installSignInWatcher } from "./lib/signInEnded";
 
 // Welcome Guide offline copies never outlive the sit's access window, and old
 // guide caches (which could hold Wi-Fi details) are removed.
 purgeGuideCaches();
+
+// "Your sign-in has ended": one friendly message instead of failed calls.
+installSignInWatcher(import.meta.env.VITE_SUPABASE_URL);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

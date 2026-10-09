@@ -3,6 +3,7 @@ import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { markIntentionalSignOut } from "@/lib/signInEnded";
 
 export const useDeleteAccount = () => {
   const { user } = useAuth();
@@ -34,6 +35,7 @@ export const useDeleteAccount = () => {
         title: "Account deleted",
         description: "Your account and your data have been deleted.",
       });
+      markIntentionalSignOut();
       await supabase.auth.signOut();
       window.location.href = "/";
     },

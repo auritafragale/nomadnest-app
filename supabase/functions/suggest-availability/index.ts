@@ -134,7 +134,14 @@ serve(async (req) => {
       .neq("listing.owner_user_id", user.id)
       .order("start_date")
       .limit(MAX_OPEN_SITS);
-    const openSits = ((open ?? []) as { start_date: string; end_date: string; listing: { city: string | null } | null }[])
+    // Paused Pet Parents' listings don't count (the same rule as Browse Sits).
+    const owners = [...new Set(((open ?? []) as unknown as { listing: { owner_user_id: string } | null }[]).map((d) => d.listing?.owner_user_id).filter(Boolean))] as string[];
+    const { data: activeOwners } = owners.length
+      ? await admin.from("owner_profiles").select("user_id").in("user_id", owners).eq("is_active", true)
+      : { data: [] };
+    const active = new Set((activeOwners ?? []).map((o) => o.user_id as string));
+    const openSits = ((open ?? []) as unknown as { start_date: string; end_date: string; listing: { city: string | null; owner_user_id: string } | null }[])
+      .filter((d) => !!d.listing && active.has(d.listing.owner_user_id))
       .map((d) => ({ start: d.start_date, end: d.end_date, city: d.listing?.city ?? "unknown" }));
     if (openSits.length === 0) return json({ suggestions: [] });
 

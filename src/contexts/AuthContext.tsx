@@ -3,7 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { clearAllGuideCaches } from "@/lib/guideCache";
 import { browserLanguage } from "@/lib/dailyUpdate";
-import { useNavigate } from "react-router-dom";
+import { markIntentionalSignOut, resetSignInEnded } from "@/lib/signInEnded";
 
 type AppRole = "sitter" | "owner" | "both" | null;
 
@@ -68,6 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (event === "SIGNED_IN") resetSignInEnded();
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -133,6 +134,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [userId]);
 
 
+  // The member's time zone (IANA name, e.g. "Europe/Lisbon"), so a daily
+  // message email arrives in their morning. Saved once per device and
+  // whenever it changes.
+  useEffect(() => {
+    if (!userId) return;
+    let tz = "";
+    try {
+      tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    } catch {
+      return;
+    }
+    if (!tz) return;
+    const key = `nn_tz_${userId}`;
+    try {
+      if (localStorage.getItem(key) === tz) return;
+    } catch {
+      /* storage unavailable: save anyway */
+    }
+    supabase.rpc("set_my_timezone", { p_timezone: tz }).then(({ error }) => {
+      if (error) return;
+      try {
+        localStorage.setItem(key, tz);
+      } catch {
+        /* ignore */
+      }
+    });
+  }, [userId]);
+
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
@@ -184,6 +213,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('Error cleaning up push subscription on sign out:', err);
       }
     }
+    markIntentionalSignOut();
     await supabase.auth.signOut();
     clearAllGuideCaches();
     setRole(null);

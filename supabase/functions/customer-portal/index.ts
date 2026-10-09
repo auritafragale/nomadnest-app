@@ -2,104 +2,52 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
+import { appOrigin, customerIdFor } from "../_shared/stripe-plans.ts";
+
+// The Stripe billing portal (receipts, card, cancel). Opens in the same tab
+// and comes back to /membership. { flow: "update_card" } goes straight to
+// updating the card (the "Payment problem" state).
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-const logStep = (step: string, details?: any) => {
-  // Ids and statuses only; redact() masks anything personal that slips in.
-  console.log(`[CUSTOMER-PORTAL] ${step}${details ? ` - ${redact(JSON.stringify(details))}` : ""}`);
-};
+const json = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    logStep("Function started");
-
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
+    const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", {
+      auth: { persistSession: false },
+    });
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
+    const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
+    if (!token) return json({ error: "Please sign in first.", reason: "auth_missing_token" }, 401);
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    const user = userData?.user;
+    if (userError || !user?.email) return json({ error: "Your sign-in has ended. Please sign in again.", reason: "auth_get_user_failed" }, 401);
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
-    logStep("Authorization header found");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) {
-      return new Response(JSON.stringify({ error: "Authentication failed" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
-    const user = userData.user;
-    if (!user?.email) {
-      return new Response(JSON.stringify({ error: "Authentication required" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
-    logStep("User authenticated", { userId: user.id });
-
-    // Check if founding member — they don't need a Stripe portal
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("founding_member")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.founding_member) {
-      return new Response(JSON.stringify({ error: "Founding members have lifetime access — no billing to manage." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
+    const { data: profile } = await supabase.from("profiles").select("founding_member").eq("id", user.id).maybeSingle();
+    if (profile?.founding_member) return json({ error: "Founding members have nothing to pay, so there is no billing to manage." }, 400);
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customerId = await customerIdFor(supabase, stripe, user.id, user.email);
+    if (!customerId) return json({ error: "No billing account found. Choose a plan to get started." }, 400);
 
-    if (customers.data.length === 0) {
-      return new Response(JSON.stringify({ error: "No billing account found. Choose a plan to get started." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
-
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
-
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const body = await req.json().catch(() => ({}));
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${origin}/membership`,
+      return_url: `${appOrigin(req)}/membership?portal=done`,
+      ...(body?.flow === "update_card" ? { flow_data: { type: "payment_method_update" as const } } : {}),
     });
-    logStep("Customer portal session created", { sessionId: portalSession.id });
-
-    return new Response(JSON.stringify({ url: portalSession.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ url: portalSession.url });
   } catch (error) {
-    const errorMessage = redact(error);
-    logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    console.error("customer-portal failed:", redact(error));
+    return json({ error: "We couldn't open billing just now. Please try again." }, 500);
   }
 });

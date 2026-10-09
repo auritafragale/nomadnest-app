@@ -1,56 +1,26 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
-import {
-  renderBrandedEmail,
-  sendBrandedEmail,
-} from "../_shared/branded-email.ts";
-import {
-  buildMembershipEmail,
-  type MembershipEmailKind,
-} from "../_shared/email-templates.ts";
+import { renderBrandedEmail, sendBrandedEmail } from "../_shared/branded-email.ts";
+import { buildMembershipEmail, type MembershipEmailKind } from "../_shared/email-templates.ts";
 import { maskEmail, redact } from "../_shared/safe-log.ts";
+import { PLANS, findMember, syncSubscription } from "../_shared/stripe-plans.ts";
 
-const MEMBERSHIP_TIERS: Record<string, string> = {
-  "prod_UJcVggxhZfowro": "sitter",
-  "prod_UJcVTj7SmQp8V8": "owner",
-  "prod_UJcVUVxwZ9yA2F": "combined",
-};
+// Stripe → membership. Every request must carry a valid Stripe signature.
+// Each event is handled once (public.stripe_events). The member's profile is
+// written here with the service role only; their roles follow the plan
+// through the roles_follow_plan trigger. Members can never write any of it.
+//
+// Events: checkout.session.completed, customer.subscription.created /
+// updated / deleted, invoice.paid, invoice.payment_failed, invoice.upcoming.
 
-const PLAN_NAMES: Record<string, string> = {
-  sitter: "Nomad Membership",
-  owner: "Pet Parent Membership",
-  combined: "Combined Membership",
-};
+// deno-lint-ignore no-explicit-any
+type Supa = any;
 
-const sendEmail = async (to: string, subject: string, html: string) => {
-  try {
-    await sendBrandedEmail(to, subject, html);
-    console.log(`Membership email sent to ${maskEmail(to)}`);
-  } catch (err) {
-    console.error(String(redact(err)));
-  }
-};
-
-// Look up the member's profile (id + name) by email for notifications.
-const getProfileByEmail = async (supabase: any, email: string) => {
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, first_name")
-    .eq("email", email)
-    .maybeSingle();
-  return data as { id: string; first_name: string | null } | null;
-};
-
-const insertNotification = async (
-  supabase: any,
-  userId: string,
-  title: string,
-  message: string
-) => {
+const notify = async (supabase: Supa, userId: string, type: "membership" | "membership_payment_failed", title: string, message: string) => {
   const { error } = await supabase.from("notifications").insert({
     user_id: userId,
-    type: "membership",
+    type,
     title,
     message,
     data: { url: "/membership" },
@@ -58,220 +28,148 @@ const insertNotification = async (
   if (error) console.error("Could not create in-app notification:", redact(error));
 };
 
-const membershipEmailEnabled = async (supabase: any, userId: string) => {
-  const { data } = await supabase
-    .from("notification_preferences")
-    .select("email_membership")
-    .eq("user_id", userId)
-    .maybeSingle();
-  // Default to sending when the column/row doesn't exist.
-  return data?.email_membership !== false;
-};
-
-const sendMembershipEmail = async (
-  supabase: any,
-  email: string,
+/** In-app row plus email. Payment problems always email; others follow the member's choice. */
+const membershipMessage = async (
+  supabase: Supa,
+  member: { id: string; email: string | null },
   kind: MembershipEmailKind,
-  details: { planName?: string; endDate?: string | null; amount?: string | null }
+  details: { planName?: string; endDate?: string | null; amount?: string | null },
 ) => {
-  const profile = await getProfileByEmail(supabase, email);
-
-  const content = buildMembershipEmail(kind, {
-    ...details,
-    name: profile?.first_name,
-  });
-
-  if (profile) {
-    await insertNotification(
-      supabase,
-      profile.id,
-      content.pushTitle ?? content.subject,
-      content.pushBody ?? ""
-    );
-    // Billing-critical emails (payment failed) always send; others respect prefs.
-    if (kind !== "payment_failed") {
-      const enabled = await membershipEmailEnabled(supabase, profile.id);
-      if (!enabled) {
-        console.log(`Membership emails disabled for user ${profile.id}, skipping ${kind}`);
-        return;
-      }
-    }
+  const { data: profile } = await supabase.from("profiles").select("first_name").eq("id", member.id).maybeSingle();
+  const content = buildMembershipEmail(kind, { ...details, name: profile?.first_name });
+  const type = kind === "payment_failed" ? "membership_payment_failed" : "membership";
+  await notify(supabase, member.id, type, content.pushTitle ?? content.subject, content.pushBody ?? "");
+  if (!member.email) return;
+  const { data: allowed } = await supabase.rpc("notification_allowed", { p_user_id: member.id, p_type: type, p_channel: "email" });
+  if (allowed === false) return;
+  try {
+    await sendBrandedEmail(member.email, content.subject, renderBrandedEmail(content, { preview: content.preview, footerReason: content.footerReason }));
+    console.log(`Membership email (${kind}) sent to ${maskEmail(member.email)}`);
+  } catch (err) {
+    console.error(String(redact(err)));
   }
-
-  await sendEmail(
-    email,
-    content.subject,
-    renderBrandedEmail(content, {
-      preview: content.preview,
-      footerReason: content.footerReason,
-    })
-  );
 };
 
 serve(async (req) => {
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-
-  if (!stripeKey || !webhookSecret) {
-    return new Response("Server misconfiguration", { status: 500 });
-  }
+  if (!stripeKey || !webhookSecret) return new Response("Server misconfiguration", { status: 500 });
 
   const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-  // Verify Stripe signature — reject anything that doesn't match.
+  // Verify the Stripe signature: reject anything that doesn't match.
   const signature = req.headers.get("stripe-signature");
-  if (!signature) {
-    return new Response("Missing stripe-signature header", { status: 400 });
-  }
-
+  if (!signature) return new Response("Missing stripe-signature header", { status: 400 });
   const body = await req.text();
   let event: Stripe.Event;
-
   try {
     event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
-  } catch (err) {
-    return new Response(`Webhook signature verification failed: ${(err as Error).message}`, {
-      status: 400,
-    });
+  } catch {
+    return new Response("Webhook signature verification failed", { status: 400 });
   }
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
-  );
+  const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", {
+    auth: { persistSession: false },
+  });
+
+  // Already handled? Stripe retries and sometimes sends an event twice.
+  const { data: seen } = await supabase.from("stripe_events").select("id").eq("id", event.id).maybeSingle();
+  if (seen) return new Response(JSON.stringify({ received: true, duplicate: true }), { headers: { "Content-Type": "application/json" } });
 
   try {
     switch (event.type) {
-      case "customer.subscription.updated": {
-        const sub = event.data.object as Stripe.Subscription;
-        await syncSubscription(supabase, stripe, sub);
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.mode !== "subscription" || !session.subscription) break;
+        const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+        if (!sub.metadata?.user_id && session.client_reference_id) sub.metadata = { ...sub.metadata, user_id: session.client_reference_id };
+        await handleSubscription(supabase, stripe, sub);
         break;
       }
 
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+        await handleSubscription(supabase, stripe, event.data.object as Stripe.Subscription);
+        break;
+
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
-        const customer = await stripe.customers.retrieve(sub.customer as string);
-        if (customer.deleted) break;
-        const email = (customer as Stripe.Customer).email;
-
+        const member = await findMember(supabase, stripe, sub);
+        if (!member) break;
+        // Only the member's current subscription ends their membership (an
+        // old one ending, for example after an upgrade, changes nothing).
+        if (member.founding_member || (member.stripe_subscription_id && member.stripe_subscription_id !== sub.id)) break;
         await supabase
           .from("profiles")
           .update({
             membership_status: "none",
             membership_type: null,
             membership_expiry: null,
+            membership_cancel_at_period_end: false,
+            membership_payment_failed_at: null,
+            stripe_subscription_id: null,
           })
-          .eq("email", email);
-
-        if (email) {
-          await sendMembershipEmail(supabase, email, "cancelled", {});
-        }
+          .eq("id", member.id);
+        await membershipMessage(supabase, member, "cancelled", {});
         break;
       }
 
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        const customerId = invoice.customer as string;
-        const customer = await stripe.customers.retrieve(customerId);
-        if (customer.deleted) break;
-        const email = (customer as Stripe.Customer).email;
-
-        // Mark as past_due but keep membership_type so the user sees what lapsed.
+        const member = await findMember(supabase, stripe, { customer: invoice.customer as string, metadata: invoice.parent?.subscription_details?.metadata ?? null });
+        if (!member || member.founding_member) break;
         await supabase
           .from("profiles")
-          .update({ membership_status: "past_due" })
-          .eq("email", email);
+          .update({ membership_status: "past_due", membership_payment_failed_at: new Date().toISOString() })
+          .eq("id", member.id);
+        const amount = typeof invoice.amount_due === "number" ? `£${(invoice.amount_due / 100).toFixed(2)}` : null;
+        await membershipMessage(supabase, member, "payment_failed", { amount });
+        break;
+      }
 
-        if (email) {
-          const amount = typeof invoice.amount_due === "number"
-            ? `£${(invoice.amount_due / 100).toFixed(2)}`
-            : null;
-          await sendMembershipEmail(supabase, email, "payment_failed", { amount });
-        }
+      case "invoice.paid": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const member = await findMember(supabase, stripe, { customer: invoice.customer as string, metadata: invoice.parent?.subscription_details?.metadata ?? null });
+        if (!member || member.founding_member) break;
+        const subId = invoice.parent?.subscription_details?.subscription;
+        if (subId) await handleSubscription(supabase, stripe, await stripe.subscriptions.retrieve(typeof subId === "string" ? subId : subId.id));
         break;
       }
 
       case "invoice.upcoming": {
         const invoice = event.data.object as Stripe.Invoice;
-        const customerId = invoice.customer as string;
-        if (!customerId) break;
-        const customer = await stripe.customers.retrieve(customerId);
-        if (customer.deleted) break;
-        const email = (customer as Stripe.Customer).email;
-
-        if (email) {
-          const periodEnd = (invoice as unknown as { period_end?: number }).period_end;
-          const endDate = typeof periodEnd === "number"
-            ? new Date(periodEnd * 1000).toISOString()
-            : null;
-          await sendMembershipEmail(supabase, email, "renewal_reminder", { endDate });
-        }
+        const member = await findMember(supabase, stripe, { customer: invoice.customer as string, metadata: invoice.parent?.subscription_details?.metadata ?? null });
+        if (!member || member.founding_member) break;
+        const periodEnd = (invoice as unknown as { period_end?: number }).period_end;
+        await membershipMessage(supabase, member, "renewal_reminder", {
+          endDate: typeof periodEnd === "number" ? new Date(periodEnd * 1000).toISOString() : null,
+        });
         break;
       }
 
       default:
-        // Unhandled event type — acknowledge receipt so Stripe doesn't retry.
+        // Acknowledge so Stripe doesn't retry.
         break;
     }
   } catch (err) {
     console.error("Webhook handler error:", redact(err));
-    return new Response(`Handler error: ${(err as Error).message}`, { status: 500 });
+    // Not recorded: Stripe will retry it.
+    return new Response("Handler error", { status: 500 });
   }
 
-  return new Response(JSON.stringify({ received: true }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  await supabase.from("stripe_events").insert({ id: event.id, type: event.type });
+  return new Response(JSON.stringify({ received: true }), { headers: { "Content-Type": "application/json" } });
 });
 
-async function syncSubscription(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-  stripe: Stripe,
-  sub: Stripe.Subscription
-) {
-  const customer = await stripe.customers.retrieve(sub.customer as string);
-  if (customer.deleted) return;
-
-  const email = (customer as Stripe.Customer).email;
-  if (!email) return;
-
-  const productId = sub.items.data[0]?.price?.product as string;
-  const membershipType = MEMBERSHIP_TIERS[productId] || "sitter";
-  // In API version 2025-08-27.basil the period fields live on the subscription
-  // item, not the subscription. Fall back to the legacy top-level field.
-  const periodEnd =
-    (sub.items.data[0] as { current_period_end?: number })?.current_period_end ??
-    (sub as unknown as { current_period_end?: number }).current_period_end;
-  const expiry =
-    typeof periodEnd === "number" && Number.isFinite(periodEnd)
-      ? new Date(periodEnd * 1000).toISOString()
-      : null;
-  const isActive = sub.status === "active" || sub.status === "trialing";
-
-  // Only send the "welcome" email when transitioning INTO an active state,
-  // not on every subscription.updated event (e.g. renewals, metadata changes).
-  const { data: existing } = await supabase
-    .from("profiles")
-    .select("membership_status")
-    .eq("email", email)
-    .maybeSingle();
-  const wasActive =
-    existing?.membership_status === "active" || existing?.membership_status === "trialing";
-
-  await supabase
-    .from("profiles")
-    .update({
-      membership_status: isActive ? "active" : sub.status,
-      membership_type: isActive ? membershipType : null,
-      membership_expiry: isActive ? expiry : null,
-    })
-    .eq("email", email);
-
-  if (isActive && !wasActive) {
-    await sendMembershipEmail(supabase, email, "activated", {
-      planName: PLAN_NAMES[membershipType],
-      endDate: expiry,
-    });
+async function handleSubscription(supabase: Supa, stripe: Stripe, sub: Stripe.Subscription) {
+  const member = await findMember(supabase, stripe, sub);
+  if (!member) {
+    console.log(JSON.stringify({ fn: "stripe-webhook", skipped: "member_not_found", subscription: sub.id }));
+    return;
+  }
+  const wasActive = member.membership_status === "active" || member.membership_status === "trialing";
+  const { status, plan } = await syncSubscription(supabase, member.id, sub, member.founding_member);
+  if (status === "active" && !wasActive && !member.founding_member) {
+    await membershipMessage(supabase, member, "activated", { planName: plan ? PLANS[plan].name : undefined });
   }
 }

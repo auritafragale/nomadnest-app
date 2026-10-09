@@ -1,41 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { Mic } from "lucide-react";
 import { AI_SUGGESTION_NOTE } from "@/hooks/useWritingHelper";
+import { speechRecognitionCtor, transcriptFrom, type SpeechRecognitionLike } from "@/lib/speech";
 import { AiButton, inputClass } from "./FormBits";
 import { cn } from "@/lib/utils";
 
-export const STARTERS = [
-  "What we love about our area…",
-  "Close by…",
-  "Getting here…",
-  "Working from here…",
-  "Little quirks of our home…",
-  "Free to use…",
-  "A perfect sit for us…",
-  "Our favourite local spot…",
+/** Sentence starters: the card (icon and short label) and the text it inserts. */
+export const STARTERS: { icon: string; label: string; text: string }[] = [
+  { icon: "🌳", label: "Our area", text: "What we love about our area…" },
+  { icon: "📍", label: "Close by", text: "Close by…" },
+  { icon: "🚆", label: "Getting here", text: "Getting here…" },
+  { icon: "💻", label: "Working from here", text: "Working from here…" },
+  { icon: "🏠", label: "Home quirks", text: "Little quirks of our home…" },
+  { icon: "🎁", label: "Free to use", text: "Free to use…" },
+  { icon: "⭐", label: "A perfect sit", text: "A perfect sit for us…" },
+  { icon: "☕", label: "Favourite spot", text: "Our favourite local spot…" },
 ];
 
 const VOICE_NOTE = "We turned what you said into text. Read it and change anything that isn't right. We never keep a recording.";
 const MAX_SECONDS = 120;
-
-// The browser's own speech recognition (Web Speech API). Audio never reaches
-// NomadNest: the browser or the device turns it into text.
-type SpeechRecognitionLike = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-  onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null;
-  onend: (() => void) | null;
-  onerror: ((e: { error?: string }) => void) | null;
-};
-const speechCtor = (): (new () => SpeechRecognitionLike) | null => {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-};
 
 /**
  * "Anything else a Nomad should know?" on the Home step: sentence starters,
@@ -58,15 +41,16 @@ const ExtraNoteField = ({
   onPolish: () => void;
 }) => {
   const ref = useRef<HTMLTextAreaElement>(null);
-  const [used, setUsed] = useState<string[]>([]);
   const [listening, setListening] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [interim, setInterim] = useState("");
   const [voiced, setVoiced] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-  const baseRef = useRef("");
-  const finalRef = useRef("");
-  const canSpeak = !!speechCtor();
+  const spokenRef = useRef("");
+  // The box as it is right now (starters tapped or typing while listening).
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const canSpeak = !!speechRecognitionCtor();
 
   // Stop listening if the step closes.
   useEffect(() => () => recognitionRef.current?.abort(), []);
@@ -81,7 +65,8 @@ const ExtraNoteField = ({
     if (listening && seconds >= MAX_SECONDS) recognitionRef.current?.stop();
   }, [listening, seconds]);
 
-  const isUsed = (s: string) => used.includes(s) || value.includes(s);
+  // A starter is ticked only while its text is in the box.
+  const isUsed = (text: string) => value.includes(text);
 
   const addStarter = (starter: string) => {
     const el = ref.current;
@@ -90,9 +75,7 @@ const ExtraNoteField = ({
     const after = value.slice(at);
     const lead = before && !before.endsWith("\n") ? "\n" : "";
     const insert = `${lead}${starter} `;
-    const next = before + insert + after;
-    onChange(next);
-    setUsed((u) => [...u, starter]);
+    onChange(before + insert + after);
     requestAnimationFrame(() => {
       const pos = before.length + insert.length;
       ref.current?.focus();
@@ -101,30 +84,27 @@ const ExtraNoteField = ({
   };
 
   const startVoice = () => {
-    const Ctor = speechCtor();
+    const Ctor = speechRecognitionCtor();
     if (!Ctor) return;
     const rec = new Ctor();
     rec.lang = navigator.language || "en-GB";
     rec.continuous = true;
     rec.interimResults = true;
-    baseRef.current = value;
-    finalRef.current = "";
+    spokenRef.current = "";
     rec.onresult = (e) => {
-      let live = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i];
-        if (r.isFinal) finalRef.current += `${r[0].transcript.trim()} `;
-        else live += r[0].transcript;
-      }
-      setInterim(live);
+      // Rebuilt from the whole list every time, so no word appears twice.
+      const { final, interim: live } = transcriptFrom(e.results);
+      spokenRef.current = final;
+      setInterim([final, live].filter(Boolean).join(" "));
     };
     rec.onend = () => {
       setListening(false);
       setInterim("");
-      const said = finalRef.current.trim();
+      const said = spokenRef.current.trim();
       if (said) {
-        const base = baseRef.current;
-        onChange(base + (base && !base.endsWith("\n") ? "\n" : "") + said);
+        // Added to whatever is in the box now, on a new line.
+        const current = valueRef.current;
+        onChange(current + (current && !current.endsWith("\n") ? "\n" : "") + said);
         setVoiced(true);
       }
       recognitionRef.current = null;
@@ -151,22 +131,36 @@ const ExtraNoteField = ({
         Most details are already in your listing. Add anything extra that matters to you. Tap a starter, type, or just say it out loud.
       </p>
 
-      <div role="group" aria-label="Sentence starters" className="flex flex-wrap gap-2">
+      <p className="text-sm font-semibold">Need ideas? Tap one to start a sentence.</p>
+      <div role="group" aria-label="Sentence starters" className="grid grid-cols-2 gap-2">
         {STARTERS.map((s) => {
-          const on = isUsed(s);
+          const on = isUsed(s.text);
           return (
             <button
-              key={s}
+              key={s.text}
               type="button"
               aria-pressed={on}
-              onClick={() => addStarter(s)}
+              onClick={() => addStarter(s.text)}
               className={cn(
-                "inline-flex min-h-[44px] items-center rounded-full border-[1.5px] px-3.5 text-sm font-semibold",
-                on ? "border-transparent bg-[var(--nn-tint)] text-[var(--nn-accent-dark)]" : "border-[var(--nn-border)] bg-card text-foreground hover:bg-[var(--nn-soft)]",
+                "flex min-h-[56px] items-center gap-2.5 rounded-2xl border-[1.5px] px-3 py-2 text-left text-sm font-semibold",
+                on
+                  ? "border-brand-teal bg-[var(--nn-ok-bg)] text-foreground"
+                  : "border-[var(--nn-border)] bg-card text-foreground hover:bg-[var(--nn-soft)]",
               )}
             >
-              {on && <span aria-hidden="true" className="mr-1">✓</span>}
-              {s}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base",
+                  on ? "bg-brand-teal font-bold text-primary-foreground" : "bg-[var(--nn-chip)]",
+                )}
+              >
+                {on ? "✓" : s.icon}
+              </span>
+              <span className="min-w-0 leading-snug">
+                {s.label}
+                <span className="sr-only">, adds “{s.text}”</span>
+              </span>
             </button>
           );
         })}

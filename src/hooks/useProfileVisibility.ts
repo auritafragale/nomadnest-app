@@ -95,10 +95,10 @@ export const useUpdateProfileVisibility = () => {
     onSuccess: ({ profileType, isActive }) => {
       queryClient.invalidateQueries({ queryKey: ["profile-visibility"] });
       toast({
-        title: isActive ? "Profile activated" : "Profile paused",
-        description: isActive
-          ? `Your ${profileType} profile is now visible to others`
-          : `Your ${profileType} profile is now hidden from public view`,
+        title:
+          profileType === "sitter"
+            ? isActive ? "Your Nomad profile is visible" : "Your Nomad profile is hidden"
+            : isActive ? "Your listing is live again" : "Your listing is paused",
       });
     },
     onError: (error: any) => {

@@ -119,7 +119,7 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
         .maybeSingle(),
       supabase.from("profiles").select("first_name").eq("id", sitterId).maybeSingle(),
     ]);
-    if (!nomad || nomad.is_visible !== true || nomad.is_active === false) {
+    if (!nomad || nomad.is_visible !== true || nomad.is_active !== true) {
       return json({ error: "This Nomad isn't available to invite." }, 404);
     }
     if (sitDateIds.length > 0 && (dates ?? []).length !== sitDateIds.length) {

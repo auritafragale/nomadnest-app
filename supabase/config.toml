@@ -128,3 +128,9 @@ verify_jwt = false
 
 [functions.city-chat-catchup]
 verify_jwt = false
+
+[functions.message-email-digest]
+verify_jwt = false
+
+[functions.redeem-founding-code]
+verify_jwt = false

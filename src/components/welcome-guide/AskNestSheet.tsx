@@ -10,6 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useSitterGuide, useSitterGuidePhotoUrls, type SitterGuide } from "@/hooks/useSitterGuide";
 import { askTheNest, useSendGuideChatMessage } from "@/hooks/useAskNest";
 import { isEmergencyQuestion, suggestedQuestions } from "@/lib/askNest";
+import { transcriptFrom, type SpeechResultLike } from "@/lib/speech";
 
 // ─── Browser speech recognition (Web Speech API), where supported ───────────
 // Only the transcribed text is used; the app never records or uploads audio.
@@ -197,9 +198,13 @@ export const AskNestSheet = ({
     rec.lang = navigator.language || "en-GB";
     rec.interimResults = false;
     rec.maxAlternatives = 1;
+    // Android Chrome can send the same phrase more than once: the spoken
+    // text is rebuilt from the whole results list (lib/speech) and replaces
+    // what was spoken before, instead of being appended each time.
+    const before = input;
     rec.onresult = (event) => {
-      const text = event.results?.[0]?.[0]?.transcript ?? "";
-      if (text) setInput((prev) => (prev ? `${prev} ${text}` : text));
+      const { final } = transcriptFrom(event.results as unknown as ArrayLike<SpeechResultLike>);
+      if (final) setInput(before ? `${before} ${final}` : final);
     };
     rec.onerror = () => setListening(false);
     rec.onend = () => setListening(false);

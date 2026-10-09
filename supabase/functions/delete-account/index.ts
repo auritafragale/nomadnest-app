@@ -72,6 +72,18 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const dryRun = body?.dry_run === true;
 
+    // Not while a sit is confirmed or under way: the other member would be
+    // left without a Nomad or a home. They cancel the sit first.
+    const { count: liveSits } = await admin
+      .from("sits")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["confirmed", "in_progress"])
+      .or(`owner_user_id.eq.${userId},sitter_user_id.eq.${userId}`);
+    if ((liveSits ?? 0) > 0) {
+      log({ user: userId, blocked: "live_sit", count: liveSits });
+      return json({ error: "You have a confirmed sit. Please cancel it first, so no one is left without a Nomad or a home.", reason: "live_sit" }, 409);
+    }
+
     // 1) Stripe: cancel live subscriptions; keep the customer and invoices.
     let stripeCancelled = 0;
     const toCancel: { id: string; status: string }[] = [];
