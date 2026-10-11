@@ -686,6 +686,24 @@ export type Database = {
           },
         ]
       }
+      d2_discoverability_before: {
+        Row: {
+          discoverable: boolean
+          taken_at: string
+          user_id: string
+        }
+        Insert: {
+          discoverable: boolean
+          taken_at?: string
+          user_id: string
+        }
+        Update: {
+          discoverable?: boolean
+          taken_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       deleted_accounts: {
         Row: {
           billing_records_retained: boolean
@@ -780,6 +798,46 @@ export type Database = {
           used_count?: number
         }
         Relationships: []
+      }
+      founding_redemptions: {
+        Row: {
+          code_id: string | null
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          code_id?: string | null
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          code_id?: string | null
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "founding_redemptions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "founding_member_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "founding_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "founding_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       guide_qa: {
         Row: {
@@ -1227,6 +1285,13 @@ export type Database = {
           email_reviews: boolean
           email_sit_updates: boolean
           id: string
+          message_digest_sent_at: string | null
+          message_email_frequency: string
+          push_applications: boolean
+          push_city_chat: boolean
+          push_messages: boolean
+          push_reviews: boolean
+          push_sits: boolean
           updated_at: string
           user_id: string
         }
@@ -1239,6 +1304,13 @@ export type Database = {
           email_reviews?: boolean
           email_sit_updates?: boolean
           id?: string
+          message_digest_sent_at?: string | null
+          message_email_frequency?: string
+          push_applications?: boolean
+          push_city_chat?: boolean
+          push_messages?: boolean
+          push_reviews?: boolean
+          push_sits?: boolean
           updated_at?: string
           user_id: string
         }
@@ -1251,6 +1323,13 @@ export type Database = {
           email_reviews?: boolean
           email_sit_updates?: boolean
           id?: string
+          message_digest_sent_at?: string | null
+          message_email_frequency?: string
+          push_applications?: boolean
+          push_city_chat?: boolean
+          push_messages?: boolean
+          push_reviews?: boolean
+          push_sits?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -1568,7 +1647,9 @@ export type Database = {
           last_name: string | null
           location: string | null
           max_listings: number
+          membership_cancel_at_period_end: boolean
           membership_expiry: string | null
+          membership_payment_failed_at: string | null
           membership_status: string | null
           membership_type: string | null
           onfido_applicant_id: string | null
@@ -1581,6 +1662,9 @@ export type Database = {
           reliability_score: number
           reliability_strike_email_sent_at: string | null
           share_name_in_stories: boolean
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          timezone: string | null
           updated_at: string
         }
         Insert: {
@@ -1602,7 +1686,9 @@ export type Database = {
           last_name?: string | null
           location?: string | null
           max_listings?: number
+          membership_cancel_at_period_end?: boolean
           membership_expiry?: string | null
+          membership_payment_failed_at?: string | null
           membership_status?: string | null
           membership_type?: string | null
           onfido_applicant_id?: string | null
@@ -1615,6 +1701,9 @@ export type Database = {
           reliability_score?: number
           reliability_strike_email_sent_at?: string | null
           share_name_in_stories?: boolean
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          timezone?: string | null
           updated_at?: string
         }
         Update: {
@@ -1636,7 +1725,9 @@ export type Database = {
           last_name?: string | null
           location?: string | null
           max_listings?: number
+          membership_cancel_at_period_end?: boolean
           membership_expiry?: string | null
+          membership_payment_failed_at?: string | null
           membership_status?: string | null
           membership_type?: string | null
           onfido_applicant_id?: string | null
@@ -1649,6 +1740,9 @@ export type Database = {
           reliability_score?: number
           reliability_strike_email_sent_at?: string | null
           share_name_in_stories?: boolean
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          timezone?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2512,8 +2606,27 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_events: {
+        Row: {
+          id: string
+          received_at: string
+          type: string
+        }
+        Insert: {
+          id: string
+          received_at?: string
+          type: string
+        }
+        Update: {
+          id?: string
+          received_at?: string
+          type?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
+          base_role: Database["public"]["Enums"]["app_role"] | null
           created_at: string
           id: string
           onboarding_completed: boolean | null
@@ -2522,6 +2635,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          base_role?: Database["public"]["Enums"]["app_role"] | null
           created_at?: string
           id?: string
           onboarding_completed?: boolean | null
@@ -2530,6 +2644,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          base_role?: Database["public"]["Enums"]["app_role"] | null
           created_at?: string
           id?: string
           onboarding_completed?: boolean | null
@@ -2977,6 +3092,10 @@ export type Database = {
         }
         Returns: Json
       }
+      application_is_live: {
+        Args: { p_application_id: string }
+        Returns: boolean
+      }
       arrival_photo_file_deletable: {
         Args: { p_path: string }
         Returns: boolean
@@ -3017,6 +3136,10 @@ export type Database = {
           replier_avatars: string[]
           reply_count: number
         }[]
+      }
+      complete_onboarding: {
+        Args: { p_role: Database["public"]["Enums"]["app_role"] }
+        Returns: Database["public"]["Enums"]["app_role"]
       }
       create_sit_story_share_link: {
         Args: { p_story_id: string }
@@ -3186,14 +3309,25 @@ export type Database = {
       get_my_membership: {
         Args: never
         Returns: {
+          cancel_at_period_end: boolean
           founding_member: boolean
           membership_expiry: string
           membership_status: string
           membership_type: string
+          payment_failed_at: string
         }[]
       }
       get_my_profile: { Args: never; Returns: Json }
       get_my_settings: { Args: never; Returns: Json }
+      get_my_side_access: {
+        Args: never
+        Returns: {
+          owner: boolean
+          past_due: boolean
+          retry_until: string
+          sitter: boolean
+        }[]
+      }
       get_my_sit_stories: { Args: never; Returns: Json }
       get_my_verification: {
         Args: never
@@ -3255,12 +3389,23 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_side_access: {
+        Args: { p_side: string; p_user_id: string }
+        Returns: boolean
+      }
       hit_shared_sit_story: { Args: { p_token: string }; Returns: boolean }
+      i_have_side_access: { Args: { p_side: string }; Returns: boolean }
+      invitation_is_live: { Args: { p_invite_id: string }; Returns: boolean }
       is_active_member: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       is_owner_active: { Args: { _owner_user_id: string }; Returns: boolean }
       link_guide_question: {
         Args: { p_parent_id: string; p_question_id: string }
+        Returns: boolean
+      }
+      listing_is_live: { Args: { p_listing_id: string }; Returns: boolean }
+      listing_owner_has_access: {
+        Args: { p_listing_id: string }
         Returns: boolean
       }
       listing_timezone: { Args: { p_listing_id: string }; Returns: string }
@@ -3284,6 +3429,10 @@ export type Database = {
         Returns: undefined
       }
       mark_id_documents_deleted: { Args: { p_ids: string[] }; Returns: number }
+      mark_message_digest_sent: {
+        Args: { p_user_ids: string[] }
+        Returns: number
+      }
       member_review_rates: {
         Args: { p_user_ids: string[] }
         Returns: {
@@ -3293,10 +3442,23 @@ export type Database = {
           user_id: string
         }[]
       }
+      message_digest_due: {
+        Args: { p_force?: boolean }
+        Returns: {
+          message_count: number
+          sender_names: string[]
+          user_id: string
+        }[]
+      }
       nomad_profile_shared_with_me: {
         Args: { p_sitter_id: string }
         Returns: boolean
       }
+      notification_allowed: {
+        Args: { p_channel: string; p_type: string; p_user_id: string }
+        Returns: boolean
+      }
+      notification_category: { Args: { p_type: string }; Returns: string }
       notify_application_status: {
         Args: {
           p_application_id: string
@@ -3328,9 +3490,17 @@ export type Database = {
           lng: number
         }[]
       }
+      redeem_founding_code_for: {
+        Args: { p_code: string; p_user_id: string }
+        Returns: string
+      }
       redeem_founding_member_code: {
         Args: { p_code: string; p_user_id: string }
         Returns: string
+      }
+      refresh_member_role: {
+        Args: { p_user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
       }
       release_job_lease: { Args: { p_job_name: string }; Returns: undefined }
       remove_guide_question: { Args: { p_question_id: string }; Returns: Json }
@@ -3350,6 +3520,15 @@ export type Database = {
       respond_to_sit_reschedule: {
         Args: { p_accept: boolean; p_request_id: string }
         Returns: Json
+      }
+      role_for: {
+        Args: {
+          p_base: Database["public"]["Enums"]["app_role"]
+          p_founding: boolean
+          p_status: string
+          p_type: string
+        }
+        Returns: Database["public"]["Enums"]["app_role"]
       }
       scrub_contact_details: { Args: { p_text: string }; Returns: string }
       set_guide_question_dismissed: {
@@ -3373,6 +3552,7 @@ export type Database = {
         Args: { p_allow: boolean }
         Returns: boolean
       }
+      set_my_timezone: { Args: { p_timezone: string }; Returns: undefined }
       set_sit_story_portfolio_request: {
         Args: { p_request: boolean; p_story_id: string }
         Returns: string
