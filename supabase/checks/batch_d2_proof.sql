@@ -149,11 +149,11 @@ SELECT 'discoverable rule: Nomad visible AND active; paused owners'' listings do
 FROM (SELECT 1) one LEFT JOIN pg_proc p ON p.oid = to_regprocedure('public.profile_is_discoverable(uuid)')
 
 UNION ALL
-SELECT 'paused listings hidden: listings and pets policies check the owner', 'is_owner_active in both',
+SELECT 'paused listings hidden: listings and pets policies check the owner', 'listing_is_live in both (published, owner not paused, Pet Parent access)',
        (SELECT string_agg(pp.tablename || ':' || pp.policyname, '; ') FROM pg_policies pp
         WHERE pp.schemaname = 'public' AND pp.tablename IN ('listings', 'pets') AND pp.cmd = 'SELECT' AND pp.roles @> ARRAY['anon']::name[]),
-       EXISTS (SELECT 1 FROM pg_policies pp WHERE pp.schemaname = 'public' AND pp.tablename = 'listings' AND pp.cmd = 'SELECT' AND pp.qual ~ 'is_owner_active')
-         AND EXISTS (SELECT 1 FROM pg_policies pp WHERE pp.schemaname = 'public' AND pp.tablename = 'pets' AND pp.cmd = 'SELECT' AND pp.qual ~ 'is_owner_active')
+       EXISTS (SELECT 1 FROM pg_policies pp WHERE pp.schemaname = 'public' AND pp.tablename = 'listings' AND pp.cmd = 'SELECT' AND pp.qual ~ 'listing_is_live')
+         AND EXISTS (SELECT 1 FROM pg_policies pp WHERE pp.schemaname = 'public' AND pp.tablename = 'pets' AND pp.cmd = 'SELECT' AND pp.qual ~ 'listing_is_live')
 
 UNION ALL
 SELECT 'roles follow the plan today', '0 members whose role differs from role_for(base, plan)',
@@ -200,11 +200,17 @@ SELECT format('access function %s', f.sig), f.expect,
        CASE WHEN p.oid IS NULL THEN 'missing'
             ELSE 'definer ' || p.prosecdef::text || ', member ' || has_function_privilege('authenticated', p.oid, 'EXECUTE')::text
                  || ', anon ' || has_function_privilege('anon', p.oid, 'EXECUTE')::text END,
-       p.oid IS NOT NULL AND p.prosecdef AND has_function_privilege('authenticated', p.oid, 'EXECUTE')
+       p.oid IS NOT NULL AND p.prosecdef
+         AND has_function_privilege('authenticated', p.oid, 'EXECUTE') = f.member_ok
          AND has_function_privilege('anon', p.oid, 'EXECUTE') = f.anon_ok
-FROM (VALUES ('public.has_side_access(uuid,text)', 'definer; members and visitors (used in listing policies)', true),
-             ('public.listing_owner_has_access(uuid)', 'definer; members and visitors (used in policies)', true),
-             ('public.get_my_side_access()', 'definer; members only', false)) AS f(sig, expect, anon_ok)
+FROM (VALUES ('public.has_side_access(uuid,text)', 'server only (membership is private)', false, false),
+             ('public.is_owner_active(uuid)', 'server only', false, false),
+             ('public.listing_owner_has_access(uuid)', 'server only', false, false),
+             ('public.listing_is_live(uuid)', 'members and visitors (row-keyed, listings and pets policies)', true, true),
+             ('public.application_is_live(uuid)', 'members only (row-keyed)', true, false),
+             ('public.invitation_is_live(uuid)', 'members only (row-keyed)', true, false),
+             ('public.i_have_side_access(text)', 'members only (the viewer only)', true, false),
+             ('public.get_my_side_access()', 'members only (the viewer only)', true, false)) AS f(sig, expect, member_ok, anon_ok)
 LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.sig)
 
 UNION ALL
@@ -214,14 +220,27 @@ SELECT 'has_side_access: past due only for 8 days after the failed payment', 'me
 FROM (SELECT 1) one LEFT JOIN pg_proc p ON p.oid = to_regprocedure('public.has_side_access(uuid,text)')
 
 UNION ALL
-SELECT format('policy %s on %s uses the access rule', pp.policyname, pp.tablename), 'has_side_access or listing_owner_has_access',
+SELECT format('policy %s on %s uses a row-keyed access helper', pp.policyname, pp.tablename), 'listing_is_live, application_is_live, invitation_is_live or i_have_side_access',
        COALESCE(pp.qual, pp.with_check),
-       COALESCE(pp.qual, '') || COALESCE(pp.with_check, '') ~ 'has_side_access|listing_owner_has_access'
+       COALESCE(pp.qual, '') || COALESCE(pp.with_check, '') ~ 'listing_is_live|application_is_live|invitation_is_live|i_have_side_access'
 FROM pg_policies pp
 WHERE pp.schemaname = 'public'
   AND ((pp.tablename IN ('listings', 'pets') AND pp.cmd = 'SELECT' AND pp.roles @> ARRAY['anon']::name[])
        OR (pp.tablename = 'applications' AND pp.cmd IN ('SELECT', 'INSERT'))
        OR (pp.tablename = 'sitter_invites' AND pp.cmd IN ('SELECT', 'INSERT')))
+
+UNION ALL
+SELECT 'no policy asks about a member directly', '0 policies call has_side_access or is_owner_active',
+       COALESCE((SELECT string_agg(pp.tablename || '.' || pp.policyname, ', ') FROM pg_policies pp
+                 WHERE pp.schemaname = 'public' AND COALESCE(pp.qual, '') || COALESCE(pp.with_check, '') ~ 'has_side_access|is_owner_active'), 'none'),
+       NOT EXISTS (SELECT 1 FROM pg_policies pp
+                   WHERE pp.schemaname = 'public' AND COALESCE(pp.qual, '') || COALESCE(pp.with_check, '') ~ 'has_side_access|is_owner_active')
+
+UNION ALL
+SELECT 'access triggers run as definer', 'SECURITY DEFINER with search_path=public',
+       (SELECT string_agg(p.proname || ' ' || p.prosecdef::text, ', ') FROM pg_proc p WHERE p.oid IN (to_regprocedure('public.require_nomad_access_to_apply()'), to_regprocedure('public.require_access_to_decide()'), to_regprocedure('public.require_owner_access_to_invite()'), to_regprocedure('public.require_access_to_answer_invite()'))),
+       (SELECT count(*) FROM pg_proc p WHERE p.oid IN (to_regprocedure('public.require_nomad_access_to_apply()'), to_regprocedure('public.require_access_to_decide()'), to_regprocedure('public.require_owner_access_to_invite()'), to_regprocedure('public.require_access_to_answer_invite()'))
+          AND p.prosecdef AND array_to_string(p.proconfig, ',') ~ 'search_path=public') = 4
 
 UNION ALL
 SELECT format('trigger %s', t.name), 'enabled',

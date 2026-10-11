@@ -3052,6 +3052,7 @@ export type Database = {
         }
         Returns: Json
       }
+      application_is_live: { Args: { p_application_id: string }; Returns: boolean }
       arrival_photo_file_deletable: {
         Args: { p_path: string }
         Returns: boolean
@@ -3344,6 +3345,8 @@ export type Database = {
       }
       has_side_access: { Args: { p_side: string; p_user_id: string }; Returns: boolean }
       hit_shared_sit_story: { Args: { p_token: string }; Returns: boolean }
+      i_have_side_access: { Args: { p_side: string }; Returns: boolean }
+      invitation_is_live: { Args: { p_invite_id: string }; Returns: boolean }
       is_active_member: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       is_owner_active: { Args: { _owner_user_id: string }; Returns: boolean }
@@ -3351,6 +3354,7 @@ export type Database = {
         Args: { p_parent_id: string; p_question_id: string }
         Returns: boolean
       }
+      listing_is_live: { Args: { p_listing_id: string }; Returns: boolean }
       listing_owner_has_access: { Args: { p_listing_id: string }; Returns: boolean }
       listing_timezone: { Args: { p_listing_id: string }; Returns: string }
       live_sit_between: { Args: { p_a: string; p_b: string }; Returns: string }

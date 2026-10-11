@@ -278,6 +278,36 @@ BEGIN
   INSERT INTO public.sit_dates (listing_id, start_date, end_date) VALUES (v_listing, '2099-05-01', '2099-05-10') RETURNING id INTO v_range;
   INSERT INTO public.sit_dates (listing_id, start_date, end_date) VALUES (v_listing, '2099-07-01', '2099-07-10') RETURNING id INTO v_range2;
 
+  -- Membership is private: nobody can ask about another member directly.
+  SET LOCAL ROLE anon;
+  FOREACH v_txt IN ARRAY ARRAY['has_side_access', 'is_owner_active', 'listing_owner_has_access'] LOOP
+    v_failed := false;
+    BEGIN
+      IF v_txt = 'has_side_access' THEN PERFORM public.has_side_access(v_owner, 'owner');
+      ELSIF v_txt = 'is_owner_active' THEN PERFORM public.is_owner_active(v_owner);
+      ELSE PERFORM public.listing_owner_has_access(v_listing);
+      END IF;
+    EXCEPTION WHEN insufficient_privilege THEN v_failed := true;
+    END;
+    IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a signed-out visitor could call %', v_txt; END IF;
+  END LOOP;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  FOREACH v_txt IN ARRAY ARRAY['has_side_access', 'is_owner_active', 'listing_owner_has_access'] LOOP
+    v_failed := false;
+    BEGIN
+      IF v_txt = 'has_side_access' THEN PERFORM public.has_side_access(v_owner, 'owner');
+      ELSIF v_txt = 'is_owner_active' THEN PERFORM public.is_owner_active(v_owner);
+      ELSE PERFORM public.listing_owner_has_access(v_listing);
+      END IF;
+    EXCEPTION WHEN insufficient_privilege THEN v_failed := true;
+    END;
+    IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: an unrelated member could call %', v_txt; END IF;
+  END LOOP;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', '', true);
+
   -- Founding members always have both sides (v_nomad became Founding in step 8).
   UPDATE public.profiles SET membership_status = 'none', membership_type = NULL WHERE id = v_nomad;
   IF NOT public.has_side_access(v_nomad, 'sitter') OR NOT public.has_side_access(v_nomad, 'owner') THEN

@@ -892,10 +892,11 @@ AS $$
   ), false);
 $$;
 
--- Used inside listing and application policies, which signed-out visitors
--- read too. It answers yes/no about a side only.
-REVOKE ALL ON FUNCTION public.has_side_access(uuid, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.has_side_access(uuid, text) TO anon, authenticated, service_role;
+-- Membership is private: nobody can ask about another member. Server code
+-- (service role) and the SECURITY DEFINER wrappers below call it; policies
+-- use only the row-keyed wrappers.
+REVOKE ALL ON FUNCTION public.has_side_access(uuid, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.has_side_access(uuid, text) TO service_role;
 
 -- The signed-in member's own access, for the screens.
 CREATE OR REPLACE FUNCTION public.get_my_side_access()
@@ -929,8 +930,83 @@ AS $$
   SELECT COALESCE((SELECT public.has_side_access(l.owner_user_id, 'owner') FROM public.listings l WHERE l.id = p_listing_id), false);
 $$;
 
-REVOKE ALL ON FUNCTION public.listing_owner_has_access(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.listing_owner_has_access(uuid) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.listing_owner_has_access(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.listing_owner_has_access(uuid) TO service_role;
+
+-- Policy helpers. Each answers only about a row the viewer is already
+-- looking at (or about the viewer), so they reveal nothing new.
+
+-- A listing anyone may see: published, owner not paused, owner has Pet Parent
+-- access.
+CREATE OR REPLACE FUNCTION public.listing_is_live(p_listing_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE((
+    SELECT l.status = 'published'::listing_status
+       AND public.is_owner_active(l.owner_user_id)
+       AND public.has_side_access(l.owner_user_id, 'owner')
+    FROM public.listings l WHERE l.id = p_listing_id
+  ), false);
+$$;
+
+REVOKE ALL ON FUNCTION public.listing_is_live(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.listing_is_live(uuid) TO anon, authenticated, service_role;
+
+-- An application that isn't paused: decided ones always, pending ones only
+-- while both members have their side.
+CREATE OR REPLACE FUNCTION public.application_is_live(p_application_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE((
+    SELECT a.status NOT IN ('applied', 'shortlisted')
+        OR (public.has_side_access(a.sitter_user_id, 'sitter') AND public.has_side_access(l.owner_user_id, 'owner'))
+    FROM public.applications a JOIN public.listings l ON l.id = a.listing_id
+    WHERE a.id = p_application_id
+  ), false);
+$$;
+
+REVOKE ALL ON FUNCTION public.application_is_live(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.application_is_live(uuid) TO authenticated, service_role;
+
+-- The same for an invitation.
+CREATE OR REPLACE FUNCTION public.invitation_is_live(p_invite_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE((
+    SELECT i.status NOT IN ('pending', 'viewed')
+        OR (public.has_side_access(i.sitter_user_id, 'sitter') AND public.has_side_access(i.owner_user_id, 'owner'))
+    FROM public.sitter_invites i WHERE i.id = p_invite_id
+  ), false);
+$$;
+
+REVOKE ALL ON FUNCTION public.invitation_is_live(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.invitation_is_live(uuid) TO authenticated, service_role;
+
+-- The signed-in member's own side only.
+CREATE OR REPLACE FUNCTION public.i_have_side_access(p_side text)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT auth.uid() IS NOT NULL AND public.has_side_access(auth.uid(), p_side);
+$$;
+
+REVOKE ALL ON FUNCTION public.i_have_side_access(text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.i_have_side_access(text) TO authenticated, service_role;
 
 -- Publishing: the same rule (past_due during the retry week keeps access).
 CREATE OR REPLACE FUNCTION public.can_publish_listing()
@@ -986,9 +1062,7 @@ ON public.listings
 FOR SELECT
 TO anon, authenticated
 USING (
-  (status = 'published'::listing_status
-   AND public.is_owner_active(owner_user_id)
-   AND public.has_side_access(owner_user_id, 'owner'))
+  public.listing_is_live(id)
   OR auth.uid() = owner_user_id
 );
 
@@ -997,15 +1071,7 @@ CREATE POLICY "Anyone can view pets of published listings"
 ON public.pets
 FOR SELECT
 TO anon, authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public.listings
-    WHERE listings.id = pets.listing_id
-      AND listings.status = 'published'::listing_status
-      AND public.is_owner_active(listings.owner_user_id)
-      AND public.has_side_access(listings.owner_user_id, 'owner')
-  )
-);
+USING (public.listing_is_live(listing_id));
 
 -- Applying needs Nomad access (also through accept_invite, which inserts as
 -- the Nomad). A plain message first, then the policy as the backstop.
@@ -1039,7 +1105,7 @@ TO authenticated
 WITH CHECK (
   sitter_user_id = auth.uid()
   AND status = 'applied'::public.application_status
-  AND public.has_side_access(auth.uid(), 'sitter')
+  AND public.i_have_side_access('sitter')
   -- The date range must belong to the listing being applied to.
   AND EXISTS (
     SELECT 1 FROM public.sit_dates sd
@@ -1063,8 +1129,7 @@ CREATE POLICY "Sitters can view own applications"
 ON public.applications FOR SELECT TO authenticated
 USING (
   sitter_user_id = auth.uid()
-  AND (status NOT IN ('applied'::public.application_status, 'shortlisted'::public.application_status)
-       OR public.listing_owner_has_access(listing_id))
+  AND public.application_is_live(id)
 );
 
 DROP POLICY IF EXISTS "Owners can view applications for their listings" ON public.applications;
@@ -1072,8 +1137,7 @@ CREATE POLICY "Owners can view applications for their listings"
 ON public.applications FOR SELECT TO authenticated
 USING (
   EXISTS (SELECT 1 FROM public.listings WHERE id = listing_id AND owner_user_id = auth.uid())
-  AND (status NOT IN ('applied'::public.application_status, 'shortlisted'::public.application_status)
-       OR public.has_side_access(sitter_user_id, 'sitter'))
+  AND public.application_is_live(id)
 );
 
 -- Shortlisting or accepting (any path, including accept_application and
@@ -1138,7 +1202,7 @@ WITH CHECK (
   auth.uid() = owner_user_id
   AND sitter_user_id <> auth.uid()
   AND status = 'pending'
-  AND public.has_side_access(auth.uid(), 'owner')
+  AND public.i_have_side_access('owner')
   AND EXISTS (
     SELECT 1 FROM public.listings l
     WHERE l.id = sitter_invites.listing_id AND l.owner_user_id = auth.uid() AND l.status = 'published'
@@ -1155,7 +1219,7 @@ CREATE POLICY "Owners can view sent invites"
 ON public.sitter_invites FOR SELECT TO authenticated
 USING (
   auth.uid() = owner_user_id
-  AND (status NOT IN ('pending', 'viewed') OR public.has_side_access(sitter_user_id, 'sitter'))
+  AND public.invitation_is_live(id)
 );
 
 DROP POLICY IF EXISTS "Sitters can view received invites" ON public.sitter_invites;
@@ -1163,7 +1227,7 @@ CREATE POLICY "Sitters can view received invites"
 ON public.sitter_invites FOR SELECT TO authenticated
 USING (
   auth.uid() = sitter_user_id
-  AND (status NOT IN ('pending', 'viewed') OR public.has_side_access(owner_user_id, 'owner'))
+  AND public.invitation_is_live(id)
 );
 
 -- The Nomad answering an invitation (accept, decline, mark viewed).
@@ -1194,6 +1258,25 @@ DROP TRIGGER IF EXISTS require_access_to_answer_invite ON public.sitter_invites;
 CREATE TRIGGER require_access_to_answer_invite
 BEFORE UPDATE OF status ON public.sitter_invites
 FOR EACH ROW EXECUTE FUNCTION public.require_access_to_answer_invite();
+
+-- is_owner_active can't be asked about any member either. Only listing_is_live
+-- and server code use it now; refuse to go on if another policy still does.
+DO $$
+DECLARE
+  v_bad text;
+BEGIN
+  SELECT string_agg(tablename || '.' || policyname, ', ') INTO v_bad
+  FROM pg_policies
+  WHERE schemaname = 'public'
+    AND COALESCE(qual, '') || COALESCE(with_check, '') ~ 'is_owner_active|has_side_access';
+  IF v_bad IS NOT NULL THEN
+    RAISE EXCEPTION 'Policies still call is_owner_active or has_side_access directly: %', v_bad;
+  END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.is_owner_active(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_owner_active(uuid) TO service_role;
 
 -- The Pet Parent's applicants list hides paused applications too
 -- (re-stated from 20261004090000_batch_c_fixes with one extra condition).
