@@ -3,6 +3,7 @@ import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { redeemFoundingCode } from "@/lib/foundingCode";
+import { useSideAccess } from "@/hooks/useSideAccess";
 
 export type PlanId = "sitter" | "owner" | "combined";
 
@@ -79,6 +80,8 @@ const readError = async (error: unknown, fallback: string) => {
 export const useMembership = () => {
   const { user, session } = useAuth();
   const [state, setState] = useState<MembershipState>(EMPTY);
+  // The server's rule (has_side_access): the same answer the database uses.
+  const { data: side, refetch: refetchSide } = useSideAccess();
 
   const checkSubscription = useCallback(async () => {
     if (!user || !session?.access_token) {
@@ -121,7 +124,8 @@ export const useMembership = () => {
   }, [user, session?.access_token]);
 
   useEffect(() => {
-    checkSubscription();
+    checkSubscription().then(() => refetchSide());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkSubscription]);
 
   /**
@@ -168,6 +172,7 @@ export const useMembership = () => {
   };
 
   const hasAccess = (requiredType: "sitter" | "owner") => {
+    if (side) return requiredType === "sitter" ? side.sitter : side.owner;
     if (state.foundingMember) return true;
     if (!state.subscribed) return false;
     if (state.membershipType === "combined") return true;

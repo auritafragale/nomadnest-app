@@ -266,8 +266,8 @@ const ListingDetail = () => {
 
     if (!membershipLoading && !hasAccess("sitter")) {
       toast({
-        title: "Nomad Membership Required",
-        description: "You need an active Nomad or Combined membership to apply for sits.",
+        title: "You need a Nomad membership to apply.",
+        description: "A Nomad or Combined membership lets you accept invitations. See memberships to join.",
         variant: "destructive",
       });
       navigate("/membership");

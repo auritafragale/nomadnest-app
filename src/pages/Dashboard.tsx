@@ -14,6 +14,7 @@ import { ParentDashboard } from "@/components/parent/ParentDashboard";
 import { NN_PAGE, RoleTheme } from "@/components/nn/ui";
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 import { ownerCompletion, sitterCompletion } from "@/lib/profileCompletion";
+import MembershipNotice from "@/components/membership/MembershipNotice";
 
 interface Profile {
   first_name: string | null;
@@ -199,6 +200,7 @@ const Dashboard = () => {
 
       <main className={`pb-24 md:pb-12 ${showPushBanner ? "pt-32" : "pt-20 md:pt-24"}`}>
         <div className={NN_PAGE}>
+          {viewRole === "sitter" && <MembershipNotice className="mb-4" />}
           {viewRole === "sitter" ? (
             <NomadDashboard
               header={header}

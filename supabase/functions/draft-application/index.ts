@@ -234,13 +234,10 @@ const handleDraft = async (req: Request, timings: Timings): Promise<Response> =>
       return json({ error: "The AI Co-Writer isn't available yet." }, 403);
     }
 
-    const membershipActive =
-      profile.membership_status === "active" &&
-      (!profile.membership_expiry || new Date(profile.membership_expiry) > new Date());
-    const isNomadMember =
-      profile.founding_member === true ||
-      (membershipActive && (profile.membership_type === "sitter" || profile.membership_type === "combined"));
-    if (!isNomadMember) {
+    // The one membership rule (has_side_access): Founding, Nomad or Combined,
+    // including the retry week after a failed payment.
+    const { data: isNomadMember } = await supabase.rpc("has_side_access", { p_user_id: user.id, p_side: "sitter" });
+    if (isNomadMember !== true) {
       return json(
         { error: "The AI Co-Writer is available to Nomad and Combined members." },
         403,

@@ -4,6 +4,8 @@
 -- back and nothing it does is ever kept:
 --   PASS:  ERROR: PASS_ROLLED_BACK: every check behaved as expected
 --   FAIL:  ERROR: FAIL: <what went wrong>
+-- Section 10 checks the membership access rule (has_side_access) with the
+-- same members; their membership is changed as the server and rolled back.
 -- Needs: a non-admin member with a Nomad profile who is not a Founding
 -- member, a non-admin member with no listing (the test gives them a
 -- temporary one), and a third non-admin member.
@@ -25,6 +27,12 @@ DECLARE
   v_bool boolean;
   v_failed boolean;
   v_role text;
+  v_range uuid;
+  v_range2 uuid;
+  v_invite uuid;
+  v_app uuid;
+  v_sit uuid;
+  v_conv2 uuid;
 BEGIN
   -- ── Members ────────────────────────────────────────────────────────────
   PERFORM set_config('request.jwt.claims', '', true);
@@ -256,6 +264,166 @@ BEGIN
      OR has_table_privilege('authenticated', 'public.city_chat_room_reads', 'TRUNCATE') THEN
     RAISE EXCEPTION 'FAIL: members still have UPDATE, INSERT or TRUNCATE on the City Chat tables';
   END IF;
+
+  -- ── 10. Membership access (has_side_access) ────────────────────────────
+  -- v_other is the applying Nomad, v_owner the Pet Parent (as the server).
+  PERFORM set_config('request.jwt.claims', '', true);
+  UPDATE public.profiles
+  SET founding_member = false, membership_status = 'none', membership_type = NULL, membership_expiry = NULL,
+      membership_payment_failed_at = NULL
+  WHERE id IN (v_other, v_owner);
+  UPDATE public.profiles SET id_verified = true WHERE id = v_owner;
+  UPDATE public.owner_profiles SET is_active = true WHERE user_id = v_owner;
+  UPDATE public.listings SET status = 'published' WHERE id = v_listing;
+  INSERT INTO public.sit_dates (listing_id, start_date, end_date) VALUES (v_listing, '2099-05-01', '2099-05-10') RETURNING id INTO v_range;
+  INSERT INTO public.sit_dates (listing_id, start_date, end_date) VALUES (v_listing, '2099-07-01', '2099-07-10') RETURNING id INTO v_range2;
+
+  -- Founding members always have both sides (v_nomad became Founding in step 8).
+  UPDATE public.profiles SET membership_status = 'none', membership_type = NULL WHERE id = v_nomad;
+  IF NOT public.has_side_access(v_nomad, 'sitter') OR NOT public.has_side_access(v_nomad, 'owner') THEN
+    RAISE EXCEPTION 'FAIL: a Founding member lost a side';
+  END IF;
+
+  -- a. A Pet Parent with no membership: listing hidden, can't invite or publish.
+  IF public.has_side_access(v_owner, 'owner') THEN RAISE EXCEPTION 'FAIL: no membership but Pet Parent access'; END IF;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO v_n FROM public.listings WHERE id = v_listing;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: a lapsed Pet Parent''s listing was visible to others'; END IF;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  v_failed := false;
+  BEGIN
+    INSERT INTO public.sitter_invites (listing_id, sit_dates_id, owner_user_id, sitter_user_id, status)
+    VALUES (v_listing, v_range, v_owner, v_other, 'pending');
+  EXCEPTION WHEN insufficient_privilege THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a Pet Parent with no membership sent an invitation'; END IF;
+  UPDATE public.listings SET status = 'draft' WHERE id = v_listing;
+  v_failed := false;
+  BEGIN
+    UPDATE public.listings SET status = 'published' WHERE id = v_listing;
+  EXCEPTION WHEN insufficient_privilege THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a Pet Parent with no membership published a listing'; END IF;
+  RESET ROLE;
+
+  -- b. Pet Parent membership again: publishes, listing back, can invite.
+  PERFORM set_config('request.jwt.claims', '', true);
+  UPDATE public.profiles SET membership_status = 'active', membership_type = 'owner', membership_expiry = now() + interval '1 year'
+  WHERE id = v_owner;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  UPDATE public.listings SET status = 'published' WHERE id = v_listing;
+  INSERT INTO public.sitter_invites (listing_id, sit_dates_id, owner_user_id, sitter_user_id, status)
+  VALUES (v_listing, v_range, v_owner, v_other, 'pending') RETURNING id INTO v_invite;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO v_n FROM public.listings WHERE id = v_listing;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: the listing did not come back when the membership was active again'; END IF;
+
+  -- c. A Nomad with no membership can't apply or accept the invitation.
+  v_failed := false;
+  BEGIN
+    INSERT INTO public.applications (listing_id, sit_dates_id, sitter_user_id, status, message)
+    VALUES (v_listing, v_range2, v_other, 'applied', 'D2 test 2099 no membership');
+  EXCEPTION WHEN insufficient_privilege THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a member with no membership applied'; END IF;
+  v_failed := false;
+  BEGIN
+    PERFORM public.accept_invite(v_invite, 'D2 test 2099');
+  EXCEPTION WHEN insufficient_privilege THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a member with no membership accepted an invitation'; END IF;
+  -- Their pending invitation is paused for the Pet Parent, not deleted.
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO v_n FROM public.sitter_invites WHERE id = v_invite;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: an invitation to a member with no membership stayed visible'; END IF;
+  RESET ROLE;
+  IF NOT EXISTS (SELECT 1 FROM public.sitter_invites WHERE id = v_invite AND status = 'pending') THEN
+    RAISE EXCEPTION 'FAIL: the paused invitation was changed or deleted';
+  END IF;
+
+  -- d. Past due within the retry week: still applies.
+  PERFORM set_config('request.jwt.claims', '', true);
+  UPDATE public.profiles SET membership_status = 'past_due', membership_type = 'sitter',
+         membership_expiry = now() + interval '1 year', membership_payment_failed_at = now() - interval '2 days'
+  WHERE id = v_other;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  INSERT INTO public.applications (listing_id, sit_dates_id, sitter_user_id, status, message)
+  VALUES (v_listing, v_range2, v_other, 'applied', 'D2 test 2099 retry week') RETURNING id INTO v_app;
+  RESET ROLE;
+
+  -- e. Payment failed more than 8 days ago: no access, application paused.
+  PERFORM set_config('request.jwt.claims', '', true);
+  UPDATE public.profiles SET membership_payment_failed_at = now() - interval '9 days' WHERE id = v_other;
+  IF public.has_side_access(v_other, 'sitter') THEN RAISE EXCEPTION 'FAIL: past due for 9 days still had access'; END IF;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO v_n FROM public.applications WHERE id = v_app;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: a paused application was visible to the Pet Parent'; END IF;
+  SELECT count(*) INTO v_n FROM public.get_listing_applicants(v_listing) g WHERE g.application_id = v_app;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: a paused application was in the applicants list'; END IF;
+  v_failed := false;
+  BEGIN
+    PERFORM public.accept_application(v_app);
+  EXCEPTION WHEN insufficient_privilege THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a paused application was accepted'; END IF;
+  v_failed := false;
+  BEGIN
+    PERFORM public.shortlist_application(v_app);
+  EXCEPTION WHEN insufficient_privilege THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a paused application was shortlisted'; END IF;
+  RESET ROLE;
+
+  -- ...and comes back as it was when the Nomad pays again.
+  PERFORM set_config('request.jwt.claims', '', true);
+  UPDATE public.profiles SET membership_status = 'active', membership_payment_failed_at = NULL WHERE id = v_other;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO v_n FROM public.get_listing_applicants(v_listing) g WHERE g.application_id = v_app AND g.status = 'applied';
+  IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: the application did not come back when the Nomad paid again'; END IF;
+  RESET ROLE;
+
+  -- A lapsed Pet Parent's pending applications are paused for the Nomad too.
+  PERFORM set_config('request.jwt.claims', '', true);
+  UPDATE public.profiles SET membership_status = 'none', membership_type = NULL WHERE id = v_owner;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO v_n FROM public.applications WHERE id = v_app;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: a pending application to a lapsed Pet Parent stayed visible'; END IF;
+  RESET ROLE;
+
+  -- f. A confirmed sit goes ahead after both lapse: sit and chat still work.
+  PERFORM set_config('request.jwt.claims', '', true);
+  INSERT INTO public.sits (listing_id, sit_dates_id, sitter_user_id, owner_user_id, status, confirmed_at)
+  VALUES (v_listing, v_range, v_other, v_owner, 'confirmed', now()) RETURNING id INTO v_sit;
+  INSERT INTO public.conversations (listing_id, owner_user_id, sitter_user_id, conversation_type)
+  VALUES (v_listing, v_owner, v_other, 'listing')
+  ON CONFLICT DO NOTHING;
+  SELECT id INTO v_conv2 FROM public.conversations
+  WHERE listing_id = v_listing AND owner_user_id = v_owner AND sitter_user_id = v_other;
+  UPDATE public.profiles SET membership_status = 'none', membership_type = NULL WHERE id IN (v_other, v_owner);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO v_n FROM public.sits WHERE id = v_sit;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: the Nomad lost their confirmed sit after lapsing'; END IF;
+  INSERT INTO public.messages (conversation_id, sender_user_id, body) VALUES (v_conv2, v_other, 'D2 test 2099 still here');
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO v_n FROM public.sits WHERE id = v_sit;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: the Pet Parent lost their confirmed sit after lapsing'; END IF;
+  INSERT INTO public.messages (conversation_id, sender_user_id, body) VALUES (v_conv2, v_owner, 'D2 test 2099 see you soon');
+  RESET ROLE;
 
   RAISE EXCEPTION 'PASS_ROLLED_BACK: every check behaved as expected';
 END;

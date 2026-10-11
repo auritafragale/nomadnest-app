@@ -6,6 +6,8 @@ import { StatusChip, nnButton, shortRange } from "@/components/nn/ui";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveListingConversation } from "@/lib/conversations";
 import { useInviteCowriter } from "@/hooks/useInviteCowriter";
+import { useSideAccess } from "@/hooks/useSideAccess";
+import { Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +50,9 @@ const InvitePanel = ({
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const cowriter = useInviteCowriter();
+  // Inviting needs a Pet Parent (or Combined, or Founding) membership.
+  const { data: access } = useSideAccess();
+  const noAccess = access ? !access.owner : false;
 
   const listing = listings.find((l) => l.id === listingId) ?? listings[0];
   const today = new Date().toISOString().slice(0, 10);
@@ -123,7 +128,12 @@ const InvitePanel = ({
       setAiDrafted(false);
     } catch (error) {
       console.error("Error sending invite:", error);
-      toast({ variant: "destructive", title: "Couldn't send the invitation", description: "Please try again." });
+      const msg = error instanceof Error ? error.message : (error as { message?: string } | null)?.message;
+      toast({
+        variant: "destructive",
+        title: "Couldn't send the invitation",
+        description: msg && /membership/i.test(msg) ? msg : "Please try again.",
+      });
     } finally {
       setSending(false);
     }
@@ -136,7 +146,11 @@ const InvitePanel = ({
       title={sent ? "Invitation sent" : `Invite ${sitterName} to a sit`}
       description={`Invite ${sitterName} to one of your sits`}
       footer={
-        sent ? (
+        noAccess ? (
+          <Link to="/membership" className={nnButton("primary", "h-12 w-full")}>
+            See memberships
+          </Link>
+        ) : sent ? (
           <button type="button" onClick={() => onOpenChange(false)} className={nnButton("primary", "h-12 w-full")}>
             Done
           </button>
@@ -148,7 +162,11 @@ const InvitePanel = ({
         )
       }
     >
-      {sent ? (
+      {noAccess ? (
+        <p className="py-4 text-[16px]">
+          You need a Pet Parent membership to invite Nomads. A Pet Parent or Combined membership lets you invite, publish your listing and choose your Nomad.
+        </p>
+      ) : sent ? (
         <div className="flex flex-col items-center gap-3 py-6 text-center">
           <CheckCircle2 className="h-12 w-12 text-brand-teal-text" aria-hidden="true" />
           <p className="text-[16px]">

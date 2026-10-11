@@ -21,6 +21,7 @@ import type { CurrentSit, DashboardSummary, NextSit } from "@/hooks/useDashboard
 import type { Completion } from "@/lib/profileCompletion";
 import { DashboardColumns } from "@/components/dashboard/DashboardColumns";
 import { cn } from "@/lib/utils";
+import MembershipNotice from "@/components/membership/MembershipNotice";
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
@@ -327,6 +328,7 @@ export const ParentDashboard = ({
         </>
       }
     >
+      <MembershipNotice hasPublishedListing={listings.some((l) => l.status === "published")} className="md:order-0 md:col-span-2" />
       <TodoList items={todos} className={cn("md:order-3 lg:hidden", !hasSits && "md:col-span-2")} />
       <HomeSitCard current={current} next={next} className="md:order-1 md:col-span-2" />
 

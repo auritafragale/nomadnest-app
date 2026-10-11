@@ -109,6 +109,11 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
       return json({ error: "Best match isn't available yet." }, 403);
     }
     if (listingError) throw new Error(`listing lookup failed: ${listingError.message}`);
+    // A listing is only matched while its owner has Pet Parent access.
+    const { data: ownerAccess } = await supabase.rpc("has_side_access", { p_user_id: user.id, p_side: "owner" });
+    if (ownerAccess !== true) {
+      return json({ error: "Your Pet Parent membership has ended. Your listing is hidden until you renew.", reason: "membership_needed" }, 403);
+    }
     if (!listing || listing.owner_user_id !== user.id || listing.status !== "published") {
       return json({ error: "Best match works for your own published listing." }, 403);
     }

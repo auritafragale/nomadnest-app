@@ -3272,6 +3272,15 @@ export type Database = {
       }
       get_my_profile: { Args: never; Returns: Json }
       get_my_settings: { Args: never; Returns: Json }
+      get_my_side_access: {
+        Args: never
+        Returns: {
+          owner: boolean
+          past_due: boolean
+          retry_until: string
+          sitter: boolean
+        }[]
+      }
       get_my_sit_stories: { Args: never; Returns: Json }
       get_my_verification: {
         Args: never
@@ -3333,6 +3342,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_side_access: { Args: { p_side: string; p_user_id: string }; Returns: boolean }
       hit_shared_sit_story: { Args: { p_token: string }; Returns: boolean }
       is_active_member: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
@@ -3341,6 +3351,7 @@ export type Database = {
         Args: { p_parent_id: string; p_question_id: string }
         Returns: boolean
       }
+      listing_owner_has_access: { Args: { p_listing_id: string }; Returns: boolean }
       listing_timezone: { Args: { p_listing_id: string }; Returns: string }
       live_sit_between: { Args: { p_a: string; p_b: string }; Returns: string }
       log_sit_abandonment_flag: {

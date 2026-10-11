@@ -26,6 +26,8 @@
 -- 7. Founding codes: redeemed only by the redeem-founding-code edge function
 --    (service role), once per member, within the 1,000 cap.
 -- 8. Permissions tidy-up for city_chat_mutes and city_chat_room_reads.
+-- 9. Membership access: has_side_access(user, side) is the one rule for
+--    applying, invitations, publishing and showing listings, and deciding.
 --
 -- Discoverability: a plan never makes anyone discoverable. Plans change
 -- roles only; a side's profile is created when the member sets that side up
@@ -852,3 +854,527 @@ REVOKE ALL ON public.city_chat_mutes FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, DELETE ON public.city_chat_mutes TO authenticated;
 REVOKE ALL ON public.city_chat_room_reads FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON public.city_chat_room_reads TO authenticated;
+
+
+-- ─── 9. Membership access: one rule, used everywhere ───────────────────────
+--
+-- A member has a side only while they have a membership for it:
+--   Nomad side (apply, accept invitations): Founding, or Nomad or Combined.
+--   Pet Parent side (publish and show listings, send invitations, accept or
+--   shortlist applicants): Founding, or Pet Parent or Combined.
+-- "Has a membership": Founding, or status 'active', or 'past_due' while Stripe
+-- is still retrying (at most 8 days after the first failed payment, even if no
+-- webhook arrives), and the expiry date hasn't passed.
+-- Confirmed and in-progress sits are never affected: chats, the Welcome
+-- Guide, check-ins, daily updates and reviews don't read this rule.
+-- Pending applications and invitations of a member without access are
+-- paused (hidden from the other member, can't be answered), never deleted;
+-- they come back when the member pays again. No notification is sent.
+
+CREATE OR REPLACE FUNCTION public.has_side_access(p_user_id uuid, p_side text)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE((
+    SELECT p.founding_member IS TRUE
+        OR (
+          (p.membership_status = 'active'
+           OR (p.membership_status = 'past_due'
+               AND (p.membership_payment_failed_at IS NULL OR p.membership_payment_failed_at > now() - interval '8 days')))
+          AND (p.membership_expiry IS NULL OR p.membership_expiry > now())
+          AND (p.membership_type = 'combined' OR p.membership_type = p_side)
+        )
+    FROM public.profiles p
+    WHERE p.id = p_user_id AND p_side IN ('sitter', 'owner')
+  ), false);
+$$;
+
+-- Used inside listing and application policies, which signed-out visitors
+-- read too. It answers yes/no about a side only.
+REVOKE ALL ON FUNCTION public.has_side_access(uuid, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.has_side_access(uuid, text) TO anon, authenticated, service_role;
+
+-- The signed-in member's own access, for the screens.
+CREATE OR REPLACE FUNCTION public.get_my_side_access()
+RETURNS TABLE (sitter boolean, owner boolean, past_due boolean, retry_until timestamptz)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT public.has_side_access(p.id, 'sitter'),
+         public.has_side_access(p.id, 'owner'),
+         p.founding_member IS NOT TRUE AND p.membership_status = 'past_due',
+         CASE WHEN p.founding_member IS NOT TRUE AND p.membership_status = 'past_due'
+              THEN COALESCE(p.membership_payment_failed_at, now()) + interval '7 days' END
+  FROM public.profiles p
+  WHERE p.id = auth.uid();
+$$;
+
+REVOKE ALL ON FUNCTION public.get_my_side_access() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_my_side_access() TO authenticated;
+
+-- A listing's owner has Pet Parent access (helper for policies, so they don't
+-- read listings through RLS).
+CREATE OR REPLACE FUNCTION public.listing_owner_has_access(p_listing_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE((SELECT public.has_side_access(l.owner_user_id, 'owner') FROM public.listings l WHERE l.id = p_listing_id), false);
+$$;
+
+REVOKE ALL ON FUNCTION public.listing_owner_has_access(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.listing_owner_has_access(uuid) TO anon, authenticated, service_role;
+
+-- Publishing: the same rule (past_due during the retry week keeps access).
+CREATE OR REPLACE FUNCTION public.can_publish_listing()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT auth.uid() IS NOT NULL AND (
+    COALESCE(public.is_admin_user(auth.uid()), false)
+    OR EXISTS (
+      SELECT 1 FROM public.profiles p
+      WHERE p.id = auth.uid()
+        AND p.id_verified IS TRUE
+        AND public.has_side_access(p.id, 'owner')
+    )
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.can_publish_listing() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.can_publish_listing() TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.enforce_listing_publish_gate()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'INSERT'
+     OR (NEW.status = 'published' AND OLD.status IS DISTINCT FROM 'published') THEN
+    IF NOT public.can_publish_listing() THEN
+      RAISE EXCEPTION 'To publish a listing you need a Pet Parent or Combined membership and a verified ID.'
+        USING ERRCODE = '42501', HINT = 'membership_needed';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+-- Listings (and their pets) are public only while the owner is active
+-- (not paused) and has Pet Parent access. They come back by themselves when
+-- the member pays again. The owner always sees their own.
+DROP POLICY IF EXISTS "Anyone can view published listings from active owners" ON public.listings;
+CREATE POLICY "Anyone can view published listings from active owners"
+ON public.listings
+FOR SELECT
+TO anon, authenticated
+USING (
+  (status = 'published'::listing_status
+   AND public.is_owner_active(owner_user_id)
+   AND public.has_side_access(owner_user_id, 'owner'))
+  OR auth.uid() = owner_user_id
+);
+
+DROP POLICY IF EXISTS "Anyone can view pets of published listings" ON public.pets;
+CREATE POLICY "Anyone can view pets of published listings"
+ON public.pets
+FOR SELECT
+TO anon, authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.listings
+    WHERE listings.id = pets.listing_id
+      AND listings.status = 'published'::listing_status
+      AND public.is_owner_active(listings.owner_user_id)
+      AND public.has_side_access(listings.owner_user_id, 'owner')
+  )
+);
+
+-- Applying needs Nomad access (also through accept_invite, which inserts as
+-- the Nomad). A plain message first, then the policy as the backstop.
+CREATE OR REPLACE FUNCTION public.require_nomad_access_to_apply()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF public.request_is_end_user() AND NOT public.has_side_access(NEW.sitter_user_id, 'sitter') THEN
+    RAISE EXCEPTION 'You need a Nomad membership to apply.'
+      USING ERRCODE = '42501', HINT = 'membership_needed';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.require_nomad_access_to_apply() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS require_nomad_access_to_apply ON public.applications;
+CREATE TRIGGER require_nomad_access_to_apply
+BEFORE INSERT ON public.applications
+FOR EACH ROW EXECUTE FUNCTION public.require_nomad_access_to_apply();
+
+DROP POLICY IF EXISTS "Sitters can insert applications" ON public.applications;
+CREATE POLICY "Sitters can insert applications"
+ON public.applications
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  sitter_user_id = auth.uid()
+  AND status = 'applied'::public.application_status
+  AND public.has_side_access(auth.uid(), 'sitter')
+  -- The date range must belong to the listing being applied to.
+  AND EXISTS (
+    SELECT 1 FROM public.sit_dates sd
+    WHERE sd.id = applications.sit_dates_id
+      AND sd.listing_id = applications.listing_id
+  )
+  -- The listing must be published and not the applicant's own.
+  AND EXISTS (
+    SELECT 1 FROM public.listings l
+    WHERE l.id = applications.listing_id
+      AND l.status = 'published'::public.listing_status
+      AND l.owner_user_id <> auth.uid()
+  )
+);
+
+-- Pending applications are paused (hidden from the other member) while
+-- either side has no access. Decided ones (accepted, declined, …) and the
+-- sits they led to are never hidden.
+DROP POLICY IF EXISTS "Sitters can view own applications" ON public.applications;
+CREATE POLICY "Sitters can view own applications"
+ON public.applications FOR SELECT TO authenticated
+USING (
+  sitter_user_id = auth.uid()
+  AND (status NOT IN ('applied'::public.application_status, 'shortlisted'::public.application_status)
+       OR public.listing_owner_has_access(listing_id))
+);
+
+DROP POLICY IF EXISTS "Owners can view applications for their listings" ON public.applications;
+CREATE POLICY "Owners can view applications for their listings"
+ON public.applications FOR SELECT TO authenticated
+USING (
+  EXISTS (SELECT 1 FROM public.listings WHERE id = listing_id AND owner_user_id = auth.uid())
+  AND (status NOT IN ('applied'::public.application_status, 'shortlisted'::public.application_status)
+       OR public.has_side_access(sitter_user_id, 'sitter'))
+);
+
+-- Shortlisting or accepting (any path, including accept_application and
+-- shortlist_application) needs both members to have their side.
+CREATE OR REPLACE FUNCTION public.require_access_to_decide()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF OLD.status IN ('applied', 'shortlisted') AND NEW.status IN ('shortlisted', 'accepted')
+     AND NEW.status IS DISTINCT FROM OLD.status THEN
+    IF NOT public.listing_owner_has_access(NEW.listing_id) THEN
+      RAISE EXCEPTION 'You need a Pet Parent membership to accept or shortlist Nomads.'
+        USING ERRCODE = '42501', HINT = 'membership_needed';
+    END IF;
+    IF NOT public.has_side_access(NEW.sitter_user_id, 'sitter') THEN
+      RAISE EXCEPTION 'This application is paused because the Nomad''s membership has ended.'
+        USING ERRCODE = '42501', HINT = 'application_paused';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.require_access_to_decide() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS require_access_to_decide ON public.applications;
+CREATE TRIGGER require_access_to_decide
+BEFORE UPDATE OF status ON public.applications
+FOR EACH ROW EXECUTE FUNCTION public.require_access_to_decide();
+
+-- Invitations: sending needs Pet Parent access; pending ones are paused while
+-- either side has no access; answering needs both.
+CREATE OR REPLACE FUNCTION public.require_owner_access_to_invite()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF public.request_is_end_user() AND NOT public.has_side_access(NEW.owner_user_id, 'owner') THEN
+    RAISE EXCEPTION 'You need a Pet Parent membership to invite Nomads.'
+      USING ERRCODE = '42501', HINT = 'membership_needed';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.require_owner_access_to_invite() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS require_owner_access_to_invite ON public.sitter_invites;
+CREATE TRIGGER require_owner_access_to_invite
+BEFORE INSERT ON public.sitter_invites
+FOR EACH ROW EXECUTE FUNCTION public.require_owner_access_to_invite();
+
+DROP POLICY IF EXISTS "Owners can insert invites" ON public.sitter_invites;
+CREATE POLICY "Owners can insert invites"
+ON public.sitter_invites FOR INSERT TO authenticated
+WITH CHECK (
+  auth.uid() = owner_user_id
+  AND sitter_user_id <> auth.uid()
+  AND status = 'pending'
+  AND public.has_side_access(auth.uid(), 'owner')
+  AND EXISTS (
+    SELECT 1 FROM public.listings l
+    WHERE l.id = sitter_invites.listing_id AND l.owner_user_id = auth.uid() AND l.status = 'published'
+  )
+  AND EXISTS (
+    SELECT 1 FROM public.sit_dates sd
+    WHERE sd.id = sitter_invites.sit_dates_id AND sd.listing_id = sitter_invites.listing_id
+      AND sd.status = 'open' AND sd.end_date >= current_date
+  )
+);
+
+DROP POLICY IF EXISTS "Owners can view sent invites" ON public.sitter_invites;
+CREATE POLICY "Owners can view sent invites"
+ON public.sitter_invites FOR SELECT TO authenticated
+USING (
+  auth.uid() = owner_user_id
+  AND (status NOT IN ('pending', 'viewed') OR public.has_side_access(sitter_user_id, 'sitter'))
+);
+
+DROP POLICY IF EXISTS "Sitters can view received invites" ON public.sitter_invites;
+CREATE POLICY "Sitters can view received invites"
+ON public.sitter_invites FOR SELECT TO authenticated
+USING (
+  auth.uid() = sitter_user_id
+  AND (status NOT IN ('pending', 'viewed') OR public.has_side_access(owner_user_id, 'owner'))
+);
+
+-- The Nomad answering an invitation (accept, decline, mark viewed).
+CREATE OR REPLACE FUNCTION public.require_access_to_answer_invite()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.status IS DISTINCT FROM OLD.status AND auth.uid() IS NOT NULL AND auth.uid() = NEW.sitter_user_id THEN
+    IF NOT public.has_side_access(NEW.sitter_user_id, 'sitter') THEN
+      RAISE EXCEPTION 'You need a Nomad membership to answer invitations.'
+        USING ERRCODE = '42501', HINT = 'membership_needed';
+    END IF;
+    IF NOT public.has_side_access(NEW.owner_user_id, 'owner') THEN
+      RAISE EXCEPTION 'This invitation is paused for now.'
+        USING ERRCODE = '42501', HINT = 'invite_paused';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.require_access_to_answer_invite() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS require_access_to_answer_invite ON public.sitter_invites;
+CREATE TRIGGER require_access_to_answer_invite
+BEFORE UPDATE OF status ON public.sitter_invites
+FOR EACH ROW EXECUTE FUNCTION public.require_access_to_answer_invite();
+
+-- The Pet Parent's applicants list hides paused applications too
+-- (re-stated from 20261004090000_batch_c_fixes with one extra condition).
+DROP FUNCTION IF EXISTS public.get_listing_applicants(uuid);
+
+CREATE OR REPLACE FUNCTION public.get_listing_applicants(p_listing_id uuid)
+RETURNS TABLE (
+  application_id uuid,
+  sit_dates_id uuid,
+  start_date date,
+  end_date date,
+  status public.application_status,
+  created_at timestamptz,
+  owner_seen boolean,
+  message text,
+  who_applying text,
+  highlights text[],
+  sitter_user_id uuid,
+  first_name text,
+  avatar_url text,
+  city text,
+  country text,
+  founding_member boolean,
+  id_verified boolean,
+  pet_types text[],
+  review_count integer,
+  avg_rating numeric,
+  review_rate integer,
+  fit_total_nights integer,
+  fit_free_nights integer,
+  fit_free_from date,
+  fit_free_to date,
+  fit_pets_known text[],
+  fit_pets_missing text[],
+  fit_meds_ok boolean,
+  fit_same_city boolean,
+  sit_id uuid,
+  sit_status text
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+#variable_conflict use_column
+DECLARE
+  v_uid uuid := auth.uid();
+  v_owner uuid;
+  v_city text;
+  v_pet_types text[];
+  v_meds boolean;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Please sign in again.' USING ERRCODE = '28000';
+  END IF;
+
+  SELECT l.owner_user_id, NULLIF(lower(btrim(l.city)), '') INTO v_owner, v_city
+  FROM public.listings l WHERE l.id = p_listing_id;
+  IF NOT FOUND OR v_owner <> v_uid THEN
+    RAISE EXCEPTION 'Listing not found.' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT COALESCE(array_agg(DISTINCT public.canonical_pet_type(pt.type)) FILTER (
+           WHERE public.canonical_pet_type(pt.type) NOT IN ('', 'other')), ARRAY[]::text[]),
+         COALESCE(bool_or(pt.requires_medication IS TRUE OR pt.has_medication IS TRUE), false)
+    INTO v_pet_types, v_meds
+  FROM public.pets pt WHERE pt.listing_id = p_listing_id;
+
+  RETURN QUERY
+  WITH apps AS (
+    SELECT a.*, sd.start_date AS sd_start, sd.end_date AS sd_end
+    FROM public.applications a
+    JOIN public.sit_dates sd ON sd.id = a.sit_dates_id
+    WHERE a.listing_id = p_listing_id
+      -- Paused: a pending application from a Nomad without Nomad access is
+      -- hidden until they have a membership again.
+      AND (a.status NOT IN ('applied', 'shortlisted') OR public.has_side_access(a.sitter_user_id, 'sitter'))
+  ),
+  nomads AS (
+    SELECT DISTINCT apps.sitter_user_id AS uid FROM apps
+  ),
+  rates AS (
+    SELECT r.user_id, r.review_rate
+    FROM public.member_review_rates(ARRAY(SELECT uid FROM nomads)) r
+  ),
+  revs AS (
+    SELECT rv.reviewee_user_id AS uid, COUNT(*)::integer AS n, ROUND(AVG(rv.rating)::numeric, 2) AS avg
+    FROM public.reviews rv
+    WHERE rv.reviewee_user_id IN (SELECT uid FROM nomads)
+    GROUP BY rv.reviewee_user_id
+  ),
+  -- Nights of each application's range the Nomad has marked free (and isn't
+  -- booked elsewhere), only for Nomads who keep a calendar at all.
+  nights AS (
+    SELECT apps.id AS app_id, d::date AS night,
+           EXISTS (
+             SELECT 1 FROM public.sitter_availability av
+             WHERE av.sitter_user_id = apps.sitter_user_id
+               AND d::date BETWEEN av.start_date AND av.end_date
+           )
+           AND NOT EXISTS (
+             SELECT 1 FROM public.sits s
+             LEFT JOIN public.sit_dates bsd ON bsd.id = s.sit_dates_id
+             WHERE s.sitter_user_id = apps.sitter_user_id
+               AND s.status IN ('confirmed', 'in_progress')
+               AND s.listing_id IS DISTINCT FROM p_listing_id
+               AND d::date BETWEEN COALESCE(bsd.start_date, s.snapshot_start_date)
+                               AND COALESCE(bsd.end_date, s.snapshot_end_date)
+           ) AS free
+    FROM apps
+    CROSS JOIN LATERAL generate_series(apps.sd_start, GREATEST(apps.sd_end - 1, apps.sd_start), interval '1 day') d
+    WHERE EXISTS (SELECT 1 FROM public.sitter_availability av2 WHERE av2.sitter_user_id = apps.sitter_user_id)
+  ),
+  fit AS (
+    SELECT app_id,
+           COUNT(*)::integer AS total,
+           COUNT(*) FILTER (WHERE free)::integer AS free_n,
+           MIN(night) FILTER (WHERE free) AS free_from,
+           MAX(night) FILTER (WHERE free) AS free_to
+    FROM nights GROUP BY app_id
+  )
+  SELECT
+    apps.id,
+    apps.sit_dates_id,
+    apps.sd_start,
+    apps.sd_end,
+    apps.status,
+    apps.created_at,
+    (apps.owner_seen_at IS NOT NULL),
+    apps.message,
+    apps.who_applying,
+    apps.highlights,
+    apps.sitter_user_id,
+    NULLIF(btrim(p.first_name), ''),
+    p.avatar_url,
+    p.city,
+    p.country,
+    COALESCE(p.founding_member, false),
+    -- The real result of the ID check, not the sitter_profiles copy.
+    COALESCE(p.id_verified, false),
+    COALESCE(sp.pet_types, ARRAY[]::text[]),
+    COALESCE(revs.n, 0),
+    revs.avg,
+    rates.review_rate,
+    GREATEST(apps.sd_end - apps.sd_start, 1)::integer,
+    fit.free_n,
+    fit.free_from,
+    CASE WHEN fit.free_to IS NULL THEN NULL ELSE fit.free_to + 1 END,
+    ARRAY(
+      SELECT t FROM unnest(v_pet_types) t
+      WHERE t = ANY (ARRAY(SELECT public.canonical_pet_type(x) FROM unnest(COALESCE(sp.pet_types, ARRAY[]::text[])) x))
+    ),
+    ARRAY(
+      SELECT t FROM unnest(v_pet_types) t
+      WHERE NOT (t = ANY (ARRAY(SELECT public.canonical_pet_type(x) FROM unnest(COALESCE(sp.pet_types, ARRAY[]::text[])) x)))
+    ),
+    CASE WHEN v_meds THEN 'Pets with medication' = ANY (COALESCE(sp.comfortable_with, ARRAY[]::text[])) ELSE NULL END,
+    (v_city IS NOT NULL AND lower(btrim(COALESCE(p.city, ''))) = v_city),
+    st.id,
+    st.status::text
+  FROM apps
+  LEFT JOIN public.profiles p ON p.id = apps.sitter_user_id
+  LEFT JOIN public.sitter_profiles sp ON sp.user_id = apps.sitter_user_id
+  LEFT JOIN revs ON revs.uid = apps.sitter_user_id
+  LEFT JOIN rates ON rates.user_id = apps.sitter_user_id
+  LEFT JOIN fit ON fit.app_id = apps.id
+  -- The sit this application turned into (only for accepted ones), newest first.
+  LEFT JOIN LATERAL (
+    SELECT s.id, s.status
+    FROM public.sits s
+    WHERE apps.status = 'accepted'
+      AND s.listing_id = apps.listing_id
+      AND s.sitter_user_id = apps.sitter_user_id
+      AND (s.sit_dates_id = apps.sit_dates_id
+           OR (s.sit_dates_id IS NULL AND s.snapshot_start_date = apps.sd_start AND s.snapshot_end_date = apps.sd_end))
+    ORDER BY s.created_at DESC
+    LIMIT 1
+  ) st ON true
+  ORDER BY apps.sd_start, apps.created_at DESC;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_listing_applicants(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_listing_applicants(uuid) TO authenticated;

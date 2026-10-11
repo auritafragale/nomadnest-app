@@ -139,7 +139,14 @@ serve(async (req) => {
     const { data: activeOwners } = owners.length
       ? await admin.from("owner_profiles").select("user_id").in("user_id", owners).eq("is_active", true)
       : { data: [] };
-    const active = new Set((activeOwners ?? []).map((o) => o.user_id as string));
+    // ...and only owners with Pet Parent access (the one membership rule).
+    const checks = await Promise.all(
+      (activeOwners ?? []).map(async (o) => {
+        const { data } = await admin.rpc("has_side_access", { p_user_id: o.user_id as string, p_side: "owner" });
+        return data === true ? (o.user_id as string) : null;
+      }),
+    );
+    const active = new Set(checks.filter((id): id is string => !!id));
     const openSits = ((open ?? []) as unknown as { start_date: string; end_date: string; listing: { city: string | null; owner_user_id: string } | null }[])
       .filter((d) => !!d.listing && active.has(d.listing.owner_user_id))
       .map((d) => ({ start: d.start_date, end: d.end_date, city: d.listing?.city ?? "unknown" }));

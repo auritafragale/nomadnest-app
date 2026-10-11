@@ -904,10 +904,10 @@ export const ApplyDialog = ({
   } else if (showMembershipGate) {
     body = gateCard({
       icon: <Lock className="h-6 w-6" aria-hidden="true" />,
-      title: "Become a Nomad member",
-      body: "A Nomad or Combined membership lets you apply for sits.",
+      title: "You need a Nomad membership to apply.",
+      body: "A Nomad or Combined membership lets you apply for sits and accept invitations.",
       action: {
-        label: "View membership plans",
+        label: "See memberships",
         onClick: () => { onOpenChange(false); navigate("/membership"); },
       },
     });

@@ -300,8 +300,9 @@ const Membership = () => {
               <section role="alert" className="flex flex-col gap-2 rounded-[22px] border-[1.5px] border-[var(--nn-tip-border)] bg-[var(--nn-tip-bg)] p-5 text-[var(--nn-tip-text)]">
                 <p className="text-[17px] font-bold">Your last payment didn't go through</p>
                 <p className="text-[15px]">
-                  {m.paymentFailedAt ? `We tried on ${fmt(m.paymentFailedAt)}. ` : ""}Please update your card to keep your{" "}
-                  {m.membershipType ? MEMBERSHIP_PLANS[m.membershipType].short : ""} membership. Your listing and confirmed sits stay as they are until then.
+                  Please update your card by{" "}
+                  {fmt(m.paymentFailedAt ? new Date(Date.parse(m.paymentFailedAt) + 7 * 86_400_000).toISOString() : null) ?? "the end of this week"}{" "}
+                  to keep your membership. Your listing and confirmed sits stay as they are until then.
                 </p>
                 <button type="button" onClick={() => portal(true)} className={nnButton("primary", "self-start")}>
                   Update my card

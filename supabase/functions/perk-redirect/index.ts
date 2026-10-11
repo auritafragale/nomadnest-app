@@ -48,10 +48,12 @@ serve(async (req) => {
       .eq("id", user.id)
       .maybeSingle();
 
-    const isMember =
-      profile?.founding_member === true ||
-      (profile?.membership_status === "active" &&
-        (!profile?.membership_expiry || new Date(profile.membership_expiry) > new Date()));
+    // The one membership rule (has_side_access), either side.
+    const [{ data: nomad }, { data: parent }] = await Promise.all([
+      admin.rpc("has_side_access", { p_user_id: user.id, p_side: "sitter" }),
+      admin.rpc("has_side_access", { p_user_id: user.id, p_side: "owner" }),
+    ]);
+    const isMember = profile?.founding_member === true || nomad === true || parent === true;
 
     if (!isMember) return json({ error: "Membership required" }, 403);
 

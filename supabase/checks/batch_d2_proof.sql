@@ -196,6 +196,69 @@ SELECT 'members whose discoverability changed', '0 changed, except members who h
                                    OR EXISTS (SELECT 1 FROM public.owner_profiles op WHERE op.user_id = b.user_id AND op.is_active IS NOT TRUE))))
 
 UNION ALL
+SELECT format('access function %s', f.sig), f.expect,
+       CASE WHEN p.oid IS NULL THEN 'missing'
+            ELSE 'definer ' || p.prosecdef::text || ', member ' || has_function_privilege('authenticated', p.oid, 'EXECUTE')::text
+                 || ', anon ' || has_function_privilege('anon', p.oid, 'EXECUTE')::text END,
+       p.oid IS NOT NULL AND p.prosecdef AND has_function_privilege('authenticated', p.oid, 'EXECUTE')
+         AND has_function_privilege('anon', p.oid, 'EXECUTE') = f.anon_ok
+FROM (VALUES ('public.has_side_access(uuid,text)', 'definer; members and visitors (used in listing policies)', true),
+             ('public.listing_owner_has_access(uuid)', 'definer; members and visitors (used in policies)', true),
+             ('public.get_my_side_access()', 'definer; members only', false)) AS f(sig, expect, anon_ok)
+LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.sig)
+
+UNION ALL
+SELECT 'has_side_access: past due only for 8 days after the failed payment', 'mentions 8 days and past_due',
+       CASE WHEN p.oid IS NULL THEN 'missing' ELSE (p.prosrc ~ '8 days' AND p.prosrc ~ 'past_due' AND p.prosrc ~ 'founding_member')::text END,
+       p.oid IS NOT NULL AND p.prosrc ~ '8 days' AND p.prosrc ~ 'past_due' AND p.prosrc ~ 'founding_member'
+FROM (SELECT 1) one LEFT JOIN pg_proc p ON p.oid = to_regprocedure('public.has_side_access(uuid,text)')
+
+UNION ALL
+SELECT format('policy %s on %s uses the access rule', pp.policyname, pp.tablename), 'has_side_access or listing_owner_has_access',
+       COALESCE(pp.qual, pp.with_check),
+       COALESCE(pp.qual, '') || COALESCE(pp.with_check, '') ~ 'has_side_access|listing_owner_has_access'
+FROM pg_policies pp
+WHERE pp.schemaname = 'public'
+  AND ((pp.tablename IN ('listings', 'pets') AND pp.cmd = 'SELECT' AND pp.roles @> ARRAY['anon']::name[])
+       OR (pp.tablename = 'applications' AND pp.cmd IN ('SELECT', 'INSERT'))
+       OR (pp.tablename = 'sitter_invites' AND pp.cmd IN ('SELECT', 'INSERT')))
+
+UNION ALL
+SELECT format('trigger %s', t.name), 'enabled',
+       COALESCE((SELECT CASE tg.tgenabled WHEN 'O' THEN 'enabled' ELSE 'state ' || tg.tgenabled::text END
+                 FROM pg_trigger tg WHERE tg.tgrelid = to_regclass(t.rel) AND tg.tgname = t.name), 'missing'),
+       EXISTS (SELECT 1 FROM pg_trigger tg WHERE tg.tgrelid = to_regclass(t.rel) AND tg.tgname = t.name AND tg.tgenabled = 'O')
+FROM (VALUES ('require_nomad_access_to_apply', 'public.applications'), ('require_access_to_decide', 'public.applications'),
+             ('require_owner_access_to_invite', 'public.sitter_invites'), ('require_access_to_answer_invite', 'public.sitter_invites')) AS t(name, rel)
+
+UNION ALL
+SELECT format('%s uses the access rule', f.sig), 'mentions has_side_access, not membership_status',
+       CASE WHEN p.oid IS NULL THEN 'missing' ELSE (p.prosrc ~ 'has_side_access')::text END,
+       p.oid IS NOT NULL AND p.prosrc ~ 'has_side_access' AND p.prosrc !~ 'membership_status'
+FROM (VALUES ('public.can_publish_listing()'), ('public.get_listing_applicants(uuid)')) AS f(sig)
+LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.sig)
+
+UNION ALL
+SELECT 'confirmed sits never read membership', '0 policies on sits, messages, check-ins, guides or reviews use it',
+       (SELECT count(*) FROM pg_policies pp
+        WHERE pp.schemaname = 'public'
+          AND pp.tablename IN ('sits', 'messages', 'conversations', 'sit_checkins', 'welcome_guides', 'welcome_guide_access',
+                               'welcome_guide_photos', 'guide_questions', 'guide_qa', 'reviews', 'arrival_vault_photos')
+          AND COALESCE(pp.qual, '') || COALESCE(pp.with_check, '') ~ 'has_side_access|membership_status|membership_type')::text,
+       NOT EXISTS (SELECT 1 FROM pg_policies pp
+                   WHERE pp.schemaname = 'public'
+                     AND pp.tablename IN ('sits', 'messages', 'conversations', 'sit_checkins', 'welcome_guides', 'welcome_guide_access',
+                                          'welcome_guide_photos', 'guide_questions', 'guide_qa', 'reviews', 'arrival_vault_photos')
+                     AND COALESCE(pp.qual, '') || COALESCE(pp.with_check, '') ~ 'has_side_access|membership_status|membership_type')
+
+UNION ALL
+SELECT 'founding members always have both sides', '0 founding members without a side',
+       (SELECT count(*) FROM public.profiles p WHERE p.founding_member
+          AND NOT (public.has_side_access(p.id, 'sitter') AND public.has_side_access(p.id, 'owner')))::text,
+       NOT EXISTS (SELECT 1 FROM public.profiles p WHERE p.founding_member
+                   AND NOT (public.has_side_access(p.id, 'sitter') AND public.has_side_access(p.id, 'owner')))
+
+UNION ALL
 SELECT 'founding members redeemed at most once', '0 members with two redemptions (one row per member by key)',
        (SELECT count(*) FROM public.founding_redemptions)::text || ' redemptions recorded',
        true;
