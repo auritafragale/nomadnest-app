@@ -686,6 +686,24 @@ export type Database = {
           },
         ]
       }
+      d2_discoverability_before: {
+        Row: {
+          discoverable: boolean
+          taken_at: string
+          user_id: string
+        }
+        Insert: {
+          discoverable: boolean
+          taken_at?: string
+          user_id: string
+        }
+        Update: {
+          discoverable?: boolean
+          taken_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       deleted_accounts: {
         Row: {
           billing_records_retained: boolean
@@ -797,7 +815,29 @@ export type Database = {
           redeemed_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "founding_redemptions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "founding_member_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "founding_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "founding_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       guide_qa: {
         Row: {
@@ -1594,15 +1634,15 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
-          email_verified: boolean
           email: string
+          email_verified: boolean
           first_name: string | null
           flagged_for_admin_review: boolean
           founding_badge: boolean
           founding_member: boolean | null
           full_name: string | null
-          id_verified: boolean | null
           id: string
+          id_verified: boolean | null
           is_admin: boolean
           last_name: string | null
           location: string | null
@@ -1616,8 +1656,8 @@ export type Database = {
           onfido_check_id: string | null
           phone_line_type: string | null
           phone_number: string | null
-          phone_verified_at: string | null
           phone_verified: boolean
+          phone_verified_at: string | null
           preferred_language: string | null
           reliability_score: number
           reliability_strike_email_sent_at: string | null
@@ -1633,15 +1673,15 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
-          email_verified?: boolean
           email: string
+          email_verified?: boolean
           first_name?: string | null
           flagged_for_admin_review?: boolean
           founding_badge?: boolean
           founding_member?: boolean | null
           full_name?: string | null
-          id_verified?: boolean | null
           id: string
+          id_verified?: boolean | null
           is_admin?: boolean
           last_name?: string | null
           location?: string | null
@@ -1655,8 +1695,8 @@ export type Database = {
           onfido_check_id?: string | null
           phone_line_type?: string | null
           phone_number?: string | null
-          phone_verified_at?: string | null
           phone_verified?: boolean
+          phone_verified_at?: string | null
           preferred_language?: string | null
           reliability_score?: number
           reliability_strike_email_sent_at?: string | null
@@ -1672,15 +1712,15 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
-          email_verified?: boolean
           email?: string
+          email_verified?: boolean
           first_name?: string | null
           flagged_for_admin_review?: boolean
           founding_badge?: boolean
           founding_member?: boolean | null
           full_name?: string | null
-          id_verified?: boolean | null
           id?: string
+          id_verified?: boolean | null
           is_admin?: boolean
           last_name?: string | null
           location?: string | null
@@ -1694,8 +1734,8 @@ export type Database = {
           onfido_check_id?: string | null
           phone_line_type?: string | null
           phone_number?: string | null
-          phone_verified_at?: string | null
           phone_verified?: boolean
+          phone_verified_at?: string | null
           preferred_language?: string | null
           reliability_score?: number
           reliability_strike_email_sent_at?: string | null
@@ -3052,7 +3092,10 @@ export type Database = {
         }
         Returns: Json
       }
-      application_is_live: { Args: { p_application_id: string }; Returns: boolean }
+      application_is_live: {
+        Args: { p_application_id: string }
+        Returns: boolean
+      }
       arrival_photo_file_deletable: {
         Args: { p_path: string }
         Returns: boolean
@@ -3094,7 +3137,10 @@ export type Database = {
           reply_count: number
         }[]
       }
-      complete_onboarding: { Args: { p_role: Database["public"]["Enums"]["app_role"] }; Returns: Database["public"]["Enums"]["app_role"] }
+      complete_onboarding: {
+        Args: { p_role: Database["public"]["Enums"]["app_role"] }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       create_sit_story_share_link: {
         Args: { p_story_id: string }
         Returns: string
@@ -3343,7 +3389,10 @@ export type Database = {
         }
         Returns: boolean
       }
-      has_side_access: { Args: { p_side: string; p_user_id: string }; Returns: boolean }
+      has_side_access: {
+        Args: { p_side: string; p_user_id: string }
+        Returns: boolean
+      }
       hit_shared_sit_story: { Args: { p_token: string }; Returns: boolean }
       i_have_side_access: { Args: { p_side: string }; Returns: boolean }
       invitation_is_live: { Args: { p_invite_id: string }; Returns: boolean }
@@ -3355,7 +3404,10 @@ export type Database = {
         Returns: boolean
       }
       listing_is_live: { Args: { p_listing_id: string }; Returns: boolean }
-      listing_owner_has_access: { Args: { p_listing_id: string }; Returns: boolean }
+      listing_owner_has_access: {
+        Args: { p_listing_id: string }
+        Returns: boolean
+      }
       listing_timezone: { Args: { p_listing_id: string }; Returns: string }
       live_sit_between: { Args: { p_a: string; p_b: string }; Returns: string }
       log_sit_abandonment_flag: {
@@ -3377,7 +3429,10 @@ export type Database = {
         Returns: undefined
       }
       mark_id_documents_deleted: { Args: { p_ids: string[] }; Returns: number }
-      mark_message_digest_sent: { Args: { p_user_ids: string[] }; Returns: number }
+      mark_message_digest_sent: {
+        Args: { p_user_ids: string[] }
+        Returns: number
+      }
       member_review_rates: {
         Args: { p_user_ids: string[] }
         Returns: {
@@ -3435,12 +3490,18 @@ export type Database = {
           lng: number
         }[]
       }
-      redeem_founding_code_for: { Args: { p_code: string; p_user_id: string }; Returns: string }
+      redeem_founding_code_for: {
+        Args: { p_code: string; p_user_id: string }
+        Returns: string
+      }
       redeem_founding_member_code: {
         Args: { p_code: string; p_user_id: string }
         Returns: string
       }
-      refresh_member_role: { Args: { p_user_id: string }; Returns: Database["public"]["Enums"]["app_role"] }
+      refresh_member_role: {
+        Args: { p_user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       release_job_lease: { Args: { p_job_name: string }; Returns: undefined }
       remove_guide_question: { Args: { p_question_id: string }; Returns: Json }
       remove_listing_dates: { Args: { p_sit_dates_id: string }; Returns: Json }
