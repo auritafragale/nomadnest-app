@@ -6,9 +6,12 @@
 --   FAIL:  ERROR: FAIL: <what went wrong>
 -- Section 10 checks the membership access rule (has_side_access) with the
 -- same members; their membership is changed as the server and rolled back.
--- Needs: a non-admin member with a Nomad profile who is not a Founding
--- member, a non-admin member with no listing (the test gives them a
--- temporary one), and a third non-admin member.
+-- Section 11 (D2 fix) does exactly what the app does when applying and
+-- inviting (insert, then read the new row back), and checks that a Nomad
+-- without Nomad access is hidden and can't be invited.
+-- Needs three non-admin members who are not Founding members: one with a
+-- Nomad profile, one with no listing (the test gives them a temporary one),
+-- and a third.
 -- Test data: the title "D2 test listing 2099", messages "D2 test 2099 …",
 -- the founding codes D2TEST2099A / D2TEST2099B, so the leftover check can
 -- prove nothing stayed.
@@ -33,6 +36,12 @@ DECLARE
   v_app uuid;
   v_sit uuid;
   v_conv2 uuid;
+  v_range3 uuid;
+  v_range4 uuid;
+  v_app2 uuid;
+  v_invite2 uuid;
+  v_listing2 uuid;
+  v_id uuid;
 BEGIN
   -- ── Members ────────────────────────────────────────────────────────────
   PERFORM set_config('request.jwt.claims', '', true);
@@ -43,16 +52,16 @@ BEGIN
   ORDER BY p.created_at LIMIT 1;
 
   SELECT p.id INTO v_owner FROM public.profiles p
-  WHERE p.is_admin IS NOT TRUE AND p.id <> v_nomad
+  WHERE p.is_admin IS NOT TRUE AND p.founding_member IS NOT TRUE AND p.id <> v_nomad
     AND NOT EXISTS (SELECT 1 FROM public.listings l WHERE l.owner_user_id = p.id)
   ORDER BY p.created_at LIMIT 1;
 
   SELECT p.id INTO v_other FROM public.profiles p
-  WHERE p.is_admin IS NOT TRUE AND p.id NOT IN (v_owner, v_nomad)
+  WHERE p.is_admin IS NOT TRUE AND p.founding_member IS NOT TRUE AND p.id NOT IN (v_owner, v_nomad)
   ORDER BY p.created_at LIMIT 1;
 
   IF v_nomad IS NULL OR v_owner IS NULL OR v_other IS NULL THEN
-    RAISE EXCEPTION 'FAIL: needs a non-admin, non-founding Nomad, a non-admin member with no listing and a third non-admin member';
+    RAISE EXCEPTION 'FAIL: needs three non-admin, non-Founding members: a Nomad, one with no listing, and a third';
   END IF;
 
   -- ── Test data (as the server) ──────────────────────────────────────────
@@ -340,15 +349,20 @@ BEGIN
   RESET ROLE;
 
   -- b. Pet Parent membership again: publishes, listing back, can invite.
+  -- (The Nomad needs Nomad access to be invited; it's taken away again below.)
   PERFORM set_config('request.jwt.claims', '', true);
   UPDATE public.profiles SET membership_status = 'active', membership_type = 'owner', membership_expiry = now() + interval '1 year'
   WHERE id = v_owner;
+  UPDATE public.profiles SET membership_status = 'active', membership_type = 'sitter', membership_expiry = now() + interval '1 year'
+  WHERE id = v_other;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
   UPDATE public.listings SET status = 'published' WHERE id = v_listing;
   INSERT INTO public.sitter_invites (listing_id, sit_dates_id, owner_user_id, sitter_user_id, status)
   VALUES (v_listing, v_range, v_owner, v_other, 'pending') RETURNING id INTO v_invite;
   RESET ROLE;
+  PERFORM set_config('request.jwt.claims', '', true);
+  UPDATE public.profiles SET membership_status = 'none', membership_type = NULL, membership_expiry = NULL WHERE id = v_other;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
   SELECT count(*) INTO v_n FROM public.listings WHERE id = v_listing;
@@ -455,15 +469,205 @@ BEGIN
   INSERT INTO public.messages (conversation_id, sender_user_id, body) VALUES (v_conv2, v_owner, 'D2 test 2099 see you soon');
   RESET ROLE;
 
+  -- ── 11. D2 fix: insert and read back; lapsed Nomads ────────────────────
+  -- The app inserts applications and invitations with .select(), so the new
+  -- row must pass the SELECT policy inside the same statement. v_nomad is
+  -- the Nomad, v_owner the Pet Parent, v_other an unrelated member.
+  PERFORM set_config('request.jwt.claims', '', true);
+  UPDATE public.profiles
+  SET founding_member = false, membership_status = 'active', membership_type = 'sitter',
+      membership_expiry = now() + interval '1 year', membership_payment_failed_at = NULL
+  WHERE id = v_nomad;
+  UPDATE public.profiles
+  SET membership_status = 'active', membership_type = 'owner', membership_expiry = now() + interval '1 year',
+      membership_payment_failed_at = NULL, max_listings = 2
+  WHERE id = v_owner;
+  UPDATE public.sitter_profiles SET is_visible = true, is_active = true WHERE user_id = v_nomad;
+  UPDATE public.owner_profiles SET is_active = true WHERE user_id = v_owner;
+  UPDATE public.listings SET status = 'published' WHERE id = v_listing;
+  INSERT INTO public.sit_dates (listing_id, start_date, end_date) VALUES (v_listing, '2099-09-01', '2099-09-10') RETURNING id INTO v_range3;
+  INSERT INTO public.sit_dates (listing_id, start_date, end_date) VALUES (v_listing, '2099-11-01', '2099-11-10') RETURNING id INTO v_range4;
+  IF NOT public.has_side_access(v_nomad, 'sitter') OR NOT public.has_side_access(v_owner, 'owner') THEN
+    RAISE EXCEPTION 'FAIL: section 11 setup did not give both members their side';
+  END IF;
+
+  -- a. A paid Nomad applies, reading the new row back (the app's .select()),
+  -- and sends a message the same way.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_nomad, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  BEGIN
+    INSERT INTO public.applications (listing_id, sit_dates_id, sitter_user_id, status, message)
+    VALUES (v_listing, v_range3, v_nomad, 'applied', 'D2 test 2099 paid Nomad applies') RETURNING id INTO v_app2;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE EXCEPTION 'FAIL: a paid Nomad could not apply (insert ... RETURNING id): %', SQLERRM;
+  END;
+  IF v_app2 IS NULL THEN RAISE EXCEPTION 'FAIL: the new application was not read back'; END IF;
+  BEGIN
+    INSERT INTO public.messages (conversation_id, sender_user_id, body)
+    VALUES (v_conv, v_nomad, 'D2 test 2099 read back') RETURNING id INTO v_id;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE EXCEPTION 'FAIL: a message could not be sent and read back: %', SQLERRM;
+  END;
+  RESET ROLE;
+
+  -- b. A paid Pet Parent invites, reading the new row back, and sees the
+  -- application.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  BEGIN
+    INSERT INTO public.sitter_invites (listing_id, sit_dates_id, owner_user_id, sitter_user_id, status, message)
+    VALUES (v_listing, v_range4, v_owner, v_nomad, 'pending', 'D2 test 2099 invite') RETURNING id INTO v_invite2;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE EXCEPTION 'FAIL: a paid Pet Parent could not invite (insert ... RETURNING id): %', SQLERRM;
+  END;
+  IF v_invite2 IS NULL THEN RAISE EXCEPTION 'FAIL: the new invitation was not read back'; END IF;
+  SELECT count(*) INTO v_n FROM public.applications WHERE id = v_app2;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: the Pet Parent could not see a live application'; END IF;
+
+  -- c. The rest of the app's inserts: a listing (read back), its pets and
+  -- dates, and a conversation (read back).
+  BEGIN
+    INSERT INTO public.listings (owner_user_id, title, status, city, country)
+    VALUES (v_owner, 'D2 test listing 2099', 'draft', 'Testville', 'Testland') RETURNING id INTO v_listing2;
+    INSERT INTO public.pets (listing_id, type, name) VALUES (v_listing2, 'dog', 'D2 test 2099');
+    INSERT INTO public.sit_dates (listing_id, start_date, end_date) VALUES (v_listing2, '2099-12-01', '2099-12-10');
+    INSERT INTO public.conversations (listing_id, owner_user_id, sitter_user_id, conversation_type)
+    VALUES (v_listing2, v_owner, v_nomad, 'listing') RETURNING id INTO v_id;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE EXCEPTION 'FAIL: a listing, pet, date or conversation insert failed: %', SQLERRM;
+  END;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_nomad, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO v_n FROM public.sitter_invites WHERE id = v_invite2;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: the Nomad could not see a live invitation'; END IF;
+  RESET ROLE;
+
+  -- d. The row helpers answer only for the two members of that row.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  IF NOT public.application_is_live('applied', v_nomad, v_listing)
+     OR NOT public.invitation_is_live('pending', v_nomad, v_owner) THEN
+    RAISE EXCEPTION 'FAIL: the row helpers said no to a member of the row';
+  END IF;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  IF public.application_is_live('applied', v_nomad, v_listing) IS DISTINCT FROM false THEN
+    RAISE EXCEPTION 'FAIL: an unrelated member got an answer from application_is_live';
+  END IF;
+  IF public.invitation_is_live('pending', v_nomad, v_owner) IS DISTINCT FROM false THEN
+    RAISE EXCEPTION 'FAIL: an unrelated member got an answer from invitation_is_live';
+  END IF;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', '', true);
+  SET LOCAL ROLE anon;
+  FOREACH v_txt IN ARRAY ARRAY['application_is_live', 'invitation_is_live', 'nomad_profile_is_live'] LOOP
+    v_failed := false;
+    BEGIN
+      IF v_txt = 'application_is_live' THEN PERFORM public.application_is_live('applied', v_nomad, v_listing);
+      ELSIF v_txt = 'invitation_is_live' THEN PERFORM public.invitation_is_live('pending', v_nomad, v_owner);
+      ELSE PERFORM public.nomad_profile_is_live(gen_random_uuid());
+      END IF;
+    EXCEPTION WHEN insufficient_privilege THEN v_failed := true;
+    END;
+    IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a signed-out visitor could call %', v_txt; END IF;
+  END LOOP;
+  RESET ROLE;
+
+  -- The paid, visible Nomad is in Browse Nomads for other members.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO v_n FROM public.sitter_profiles WHERE user_id = v_nomad AND is_visible AND is_active;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: a paid, visible Nomad was missing from Browse Nomads'; END IF;
+  RESET ROLE;
+
+  -- e. The Nomad lapses.
+  PERFORM set_config('request.jwt.claims', '', true);
+  UPDATE public.profiles SET membership_status = 'none', membership_type = NULL, membership_expiry = NULL WHERE id = v_nomad;
+
+  -- They can't apply, even reading back.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_nomad, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  v_failed := false;
+  BEGIN
+    INSERT INTO public.applications (listing_id, sit_dates_id, sitter_user_id, status, message)
+    VALUES (v_listing, v_range4, v_nomad, 'applied', 'D2 test 2099 lapsed Nomad applies') RETURNING id INTO v_id;
+  EXCEPTION WHEN insufficient_privilege THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a lapsed Nomad applied'; END IF;
+  RESET ROLE;
+
+  -- Inviting them is refused with the neutral message, which never says why.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  v_txt := NULL;
+  BEGIN
+    INSERT INTO public.sitter_invites (listing_id, sit_dates_id, owner_user_id, sitter_user_id, status)
+    VALUES (v_listing, v_range3, v_owner, v_nomad, 'pending') RETURNING id INTO v_id;
+  EXCEPTION WHEN insufficient_privilege THEN v_txt := SQLERRM;
+  END;
+  IF v_txt IS NULL THEN RAISE EXCEPTION 'FAIL: a Pet Parent invited a lapsed Nomad'; END IF;
+  IF v_txt <> 'This Nomad isn''t available for invitations right now.' THEN
+    RAISE EXCEPTION 'FAIL: inviting a lapsed Nomad gave the wrong message: %', v_txt;
+  END IF;
+  -- A Pet Parent they already deal with still sees their profile.
+  SELECT count(*) INTO v_n FROM public.sitter_profiles WHERE user_id = v_nomad;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: a Pet Parent lost the profile of a Nomad they already deal with'; END IF;
+  RESET ROLE;
+
+  -- Hidden from other members (profile and Browse Nomads) and visitors.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO v_n FROM public.sitter_profiles WHERE user_id = v_nomad;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: another member could read a lapsed Nomad''s profile'; END IF;
+  SELECT count(*) INTO v_n FROM public.sitter_profiles WHERE user_id = v_nomad AND is_visible AND is_active;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: a lapsed Nomad was in Browse Nomads'; END IF;
+  RESET ROLE;
+  SELECT id INTO v_id FROM public.sitter_profiles WHERE user_id = v_nomad;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  IF public.nomad_profile_is_live(v_id) THEN
+    RAISE EXCEPTION 'FAIL: a lapsed Nomad''s profile counted as live';
+  END IF;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', '', true);
+  SET LOCAL ROLE anon;
+  v_n := 0;
+  BEGIN
+    SELECT count(*) INTO v_n FROM public.sitter_profiles WHERE user_id = v_nomad;
+  EXCEPTION WHEN insufficient_privilege THEN v_n := 0;
+  END;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: a signed-out visitor could read a lapsed Nomad''s profile'; END IF;
+  RESET ROLE;
+
+  -- f. They renew and come back by themselves.
+  UPDATE public.profiles SET membership_status = 'active', membership_type = 'sitter', membership_expiry = now() + interval '1 year'
+  WHERE id = v_nomad;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  SELECT count(*) INTO v_n FROM public.sitter_profiles WHERE user_id = v_nomad AND is_visible AND is_active;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: a Nomad who renewed did not come back to Browse Nomads'; END IF;
+  RESET ROLE;
+
+  -- g. A lapsed Pet Parent can't invite, even reading back.
+  PERFORM set_config('request.jwt.claims', '', true);
+  UPDATE public.profiles SET membership_status = 'none', membership_type = NULL, membership_expiry = NULL WHERE id = v_owner;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  v_failed := false;
+  BEGIN
+    INSERT INTO public.sitter_invites (listing_id, sit_dates_id, owner_user_id, sitter_user_id, status)
+    VALUES (v_listing, v_range3, v_owner, v_nomad, 'pending') RETURNING id INTO v_id;
+  EXCEPTION WHEN insufficient_privilege THEN v_failed := true;
+  END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a lapsed Pet Parent invited'; END IF;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', '', true);
+
   RAISE EXCEPTION 'PASS_ROLLED_BACK: every check behaved as expected';
 END;
 $$;
 
--- Leftover check (run after the test): every count must be 0.
--- SELECT
---   (SELECT count(*) FROM public.listings WHERE title = 'D2 test listing 2099') AS test_listings,
---   (SELECT count(*) FROM public.messages WHERE body LIKE 'D2 test 2099%') AS test_messages,
---   (SELECT count(*) FROM public.notifications WHERE title LIKE '%D2 test listing 2099%') AS test_notifications,
---   (SELECT count(*) FROM public.founding_member_codes WHERE code LIKE 'D2TEST2099%') AS test_codes,
---   (SELECT count(*) FROM public.founding_redemptions r JOIN public.founding_member_codes c ON c.id = r.code_id
---      WHERE c.code LIKE 'D2TEST2099%') AS test_redemptions;
+-- Leftover check (run after the test): supabase/checks/batch_d2_leftover.sql.
+-- Every count must be 0.

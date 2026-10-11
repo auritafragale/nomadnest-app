@@ -163,9 +163,21 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
       .order("updated_at", { ascending: false })
       .limit(MAX_CANDIDATES);
     if (nomadsError) throw new Error(`nomads lookup failed: ${nomadsError.message}`);
-    if (!nomads || nomads.length === 0) {
+    // Only Nomads with Nomad access (a lapsed Nomad is hidden until they renew).
+    const withAccess = nomads
+      ? (
+          await Promise.all(
+            nomads.map(async (n) => {
+              const { data: ok } = await supabase.rpc("has_side_access", { p_user_id: n.user_id, p_side: "sitter" });
+              return ok === true ? n : null;
+            }),
+          )
+        ).filter((n): n is NonNullable<typeof n> => !!n)
+      : [];
+    if (withAccess.length === 0) {
       return json({ results: [], cached: false, remaining });
     }
+    nomads.splice(0, nomads.length, ...withAccess);
     const ids = nomads.map((n) => n.user_id);
     const [{ data: places }, { data: reviews }, { data: availability }] = await Promise.all([
       supabase.from("profiles").select("id, city, country").in("id", ids),
@@ -316,8 +328,11 @@ const stillVisible = async (supabase: any, ids: string[]): Promise<Set<string>> 
   const candidates = ((data ?? []) as { user_id: string }[]).map((r) => r.user_id);
   const checks = await Promise.all(
     candidates.map(async (id) => {
-      const { data: ok } = await supabase.rpc("profile_is_discoverable", { p_user_id: id });
-      return ok === true ? id : null;
+      const [{ data: ok }, { data: access }] = await Promise.all([
+        supabase.rpc("profile_is_discoverable", { p_user_id: id }),
+        supabase.rpc("has_side_access", { p_user_id: id, p_side: "sitter" }),
+      ]);
+      return ok === true && access === true ? id : null;
     }),
   );
   return new Set(checks.filter((id): id is string => !!id));

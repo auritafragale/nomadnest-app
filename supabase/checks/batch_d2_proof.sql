@@ -1,5 +1,6 @@
 -- Batch D2: proof that the live database matches
--- 20261010090000_batch_d2.sql (or Lovable's copy of it).
+-- 20261010090000_batch_d2.sql and the fix 20261011090000_batch_d2_fix.sql
+-- (or Lovable's copies of them).
 -- READ-ONLY. One row per check; every row should have ok = true.
 
 WITH member_fns(sig) AS (VALUES
@@ -207,11 +208,52 @@ FROM (VALUES ('public.has_side_access(uuid,text)', 'server only (membership is p
              ('public.is_owner_active(uuid)', 'server only', false, false),
              ('public.listing_owner_has_access(uuid)', 'server only', false, false),
              ('public.listing_is_live(uuid)', 'members and visitors (row-keyed, listings and pets policies)', true, true),
-             ('public.application_is_live(uuid)', 'members only (row-keyed)', true, false),
-             ('public.invitation_is_live(uuid)', 'members only (row-keyed)', true, false),
+             ('public.application_is_live(application_status,uuid,uuid)', 'members only (row columns; answers only the row''s two members)', true, false),
+             ('public.invitation_is_live(text,uuid,uuid)', 'members only (row columns; answers only the row''s two members)', true, false),
+             ('public.nomad_profile_is_live(uuid)', 'members only (row-keyed, Nomad profiles policy)', true, false),
              ('public.i_have_side_access(text)', 'members only (the viewer only)', true, false),
              ('public.get_my_side_access()', 'members only (the viewer only)', true, false)) AS f(sig, expect, member_ok, anon_ok)
 LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.sig)
+
+UNION ALL
+SELECT format('old helper %s is gone', f.sig), 'dropped (it looked the row up by id, which fails inside insert ... returning)',
+       CASE WHEN to_regprocedure(f.sig) IS NULL THEN 'dropped' ELSE 'still there' END,
+       to_regprocedure(f.sig) IS NULL
+FROM (VALUES ('public.application_is_live(uuid)'), ('public.invitation_is_live(uuid)')) AS f(sig)
+
+UNION ALL
+SELECT format('%s answers only the row''s two members', f.sig), 'checks auth.uid() against the row''s members',
+       CASE WHEN p.oid IS NULL THEN 'missing' ELSE (p.prosrc ~ 'auth\.uid\(\)' AND p.prosrc ~ 'RETURN false')::text END,
+       p.oid IS NOT NULL AND p.prosrc ~ 'auth\.uid\(\)' AND p.prosrc ~ 'RETURN false'
+FROM (VALUES ('public.application_is_live(application_status,uuid,uuid)'), ('public.invitation_is_live(text,uuid,uuid)')) AS f(sig)
+LEFT JOIN pg_proc p ON p.oid = to_regprocedure(f.sig)
+
+UNION ALL
+SELECT format('policy %s on %s passes the row''s own columns', pp.policyname, pp.tablename), 'no lookup by id',
+       pp.qual,
+       pp.qual ~ '(application_is_live\(status, sitter_user_id, listing_id\)|invitation_is_live\(status, sitter_user_id, owner_user_id\))'
+FROM pg_policies pp
+WHERE pp.schemaname = 'public' AND pp.cmd = 'SELECT'
+  AND pp.tablename IN ('applications', 'sitter_invites') AND pp.qual ~ '_is_live'
+
+UNION ALL
+SELECT 'Nomad profiles: a Nomad without Nomad access is hidden', 'sitter_profiles SELECT policy uses nomad_profile_is_live',
+       COALESCE((SELECT pp.qual FROM pg_policies pp WHERE pp.schemaname = 'public' AND pp.tablename = 'sitter_profiles'
+                 AND pp.policyname = 'Authenticated users can view sitter profiles'), 'missing'),
+       COALESCE((SELECT pp.qual ~ 'nomad_profile_is_live\(id\)' AND pp.qual ~ 'nomad_profile_shared_with_me'
+                 FROM pg_policies pp WHERE pp.schemaname = 'public' AND pp.tablename = 'sitter_profiles'
+                   AND pp.policyname = 'Authenticated users can view sitter profiles'), false)
+       AND NOT EXISTS (SELECT 1 FROM pg_policies pp WHERE pp.schemaname = 'public' AND pp.tablename = 'sitter_profiles'
+                         AND pp.cmd IN ('SELECT', 'ALL') AND pp.policyname <> 'Authenticated users can view sitter profiles'
+                         AND COALESCE(pp.qual, '') ~ 'is_visible')
+
+UNION ALL
+SELECT 'inviting a Nomad without access is refused neutrally', 'require_owner_access_to_invite checks the Nomad, message never says why',
+       CASE WHEN p.oid IS NULL THEN 'missing'
+            ELSE (p.prosrc ~ 'has_side_access\(NEW\.sitter_user_id' AND p.prosrc ~ 'isn''''t available for invitations right now')::text END,
+       p.oid IS NOT NULL AND p.prosrc ~ 'has_side_access\(NEW\.sitter_user_id'
+         AND p.prosrc ~ 'This Nomad isn''''t available for invitations right now\.'
+FROM (SELECT 1) one LEFT JOIN pg_proc p ON p.oid = to_regprocedure('public.require_owner_access_to_invite()')
 
 UNION ALL
 SELECT 'has_side_access: past due only for 8 days after the failed payment', 'mentions 8 days and past_due',
@@ -220,9 +262,9 @@ SELECT 'has_side_access: past due only for 8 days after the failed payment', 'me
 FROM (SELECT 1) one LEFT JOIN pg_proc p ON p.oid = to_regprocedure('public.has_side_access(uuid,text)')
 
 UNION ALL
-SELECT format('policy %s on %s uses a row-keyed access helper', pp.policyname, pp.tablename), 'listing_is_live, application_is_live, invitation_is_live or i_have_side_access',
+SELECT format('policy %s on %s uses a row-keyed access helper', pp.policyname, pp.tablename), 'listing_is_live, application_is_live, invitation_is_live, nomad_profile_is_live or i_have_side_access',
        COALESCE(pp.qual, pp.with_check),
-       COALESCE(pp.qual, '') || COALESCE(pp.with_check, '') ~ 'listing_is_live|application_is_live|invitation_is_live|i_have_side_access'
+       COALESCE(pp.qual, '') || COALESCE(pp.with_check, '') ~ 'listing_is_live|application_is_live|invitation_is_live|nomad_profile_is_live|i_have_side_access'
 FROM pg_policies pp
 WHERE pp.schemaname = 'public'
   AND ((pp.tablename IN ('listings', 'pets') AND pp.cmd = 'SELECT' AND pp.roles @> ARRAY['anon']::name[])

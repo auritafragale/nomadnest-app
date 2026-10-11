@@ -119,8 +119,10 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
         .maybeSingle(),
       supabase.from("profiles").select("first_name").eq("id", sitterId).maybeSingle(),
     ]);
-    if (!nomad || nomad.is_visible !== true || nomad.is_active !== true) {
-      return json({ error: "This Nomad isn't available to invite." }, 404);
+    // Hidden, paused or without a Nomad membership: the same neutral answer.
+    const { data: nomadAccess } = await supabase.rpc("has_side_access", { p_user_id: sitterId, p_side: "sitter" });
+    if (!nomad || nomad.is_visible !== true || nomad.is_active !== true || nomadAccess !== true) {
+      return json({ error: "This Nomad isn't available for invitations right now." }, 404);
     }
     if (sitDateIds.length > 0 && (dates ?? []).length !== sitDateIds.length) {
       return json({ error: "Those dates don't belong to this listing." }, 400);

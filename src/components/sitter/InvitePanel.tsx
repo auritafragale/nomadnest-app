@@ -132,7 +132,7 @@ const InvitePanel = ({
       toast({
         variant: "destructive",
         title: "Couldn't send the invitation",
-        description: msg && /membership/i.test(msg) ? msg : "Please try again.",
+        description: msg && /membership|isn.t available/i.test(msg) ? msg : "Please try again.",
       });
     } finally {
       setSending(false);
