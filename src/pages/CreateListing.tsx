@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMembership } from "@/hooks/useMembership";
 import { useVerification } from "@/hooks/useVerification";
 import { useListingAllowance } from "@/hooks/useListingAllowance";
+import { useOwnerListings } from "@/hooks/useOwnerListings";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
 import { firstErrorStep, useListingForm, validateListing, STEP_NAMES, TOTAL_STEPS, type FormErrors } from "@/hooks/useListingForm";
@@ -30,6 +31,7 @@ const CreateListing = () => {
   const { hasAccess, loading: membershipLoading } = useMembership();
   const { data: verification, isLoading: verificationLoading } = useVerification();
   const { atLimit, isLoading: allowanceLoading } = useListingAllowance();
+  const { data: myListings = [], isLoading: myListingsLoading } = useOwnerListings();
   const { data: mapsConfig } = useGoogleMapsKey();
   const form = useListingForm();
   const { formData, currentStep: step, setCurrentStep: setStep, updateFormData } = form;
@@ -85,7 +87,7 @@ const CreateListing = () => {
     }
   };
 
-  const gateLoading = membershipLoading || verificationLoading || allowanceLoading;
+  const gateLoading = membershipLoading || verificationLoading || allowanceLoading || myListingsLoading;
   const gate = !hasAccess("owner") ? "membership" : !verification?.id_verified ? "id" : atLimit ? "limit" : null;
 
   if (gateLoading) {
@@ -122,7 +124,7 @@ const CreateListing = () => {
     return (
       <RoleTheme role="owner" className="flex min-h-screen flex-col">
         <Navbar wide />
-        <ListingStates state={gate} />
+        <ListingStates state={gate} listingId={gate === "limit" ? myListings[0]?.id : undefined} />
       </RoleTheme>
     );
   }

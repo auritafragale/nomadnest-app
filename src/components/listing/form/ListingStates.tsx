@@ -26,9 +26,9 @@ const COPY: Record<ListingState, { title: string; body: string; main: [string, s
   },
   limit: {
     title: "You already have a listing",
-    body: "Your membership includes one home. You can add new dates to it any time, or contact us if you need to list another home.",
+    body: "Add new dates to it any time, and Nomads can apply and be invited again.",
     main: ["Add new dates", "/dashboard"],
-    second: ["Contact us", "/contact"],
+    second: ["Back to dashboard", "/dashboard"],
   },
 };
 
@@ -39,13 +39,19 @@ const ListingStates = ({
   preview,
 }: {
   state: ListingState;
-  /** Live: the new listing, for the Welcome Guide and the preview link. */
+  /** Live: the new listing, for the Welcome Guide and the preview link.
+   *  Limit: the member's existing listing, for Add new dates. */
   listingId?: string;
   preview?: { title: string; line: string; photo?: string | null };
 }) => {
   const c = COPY[state];
   const Icon = state === "live" ? Check : state === "membership" ? Star : state === "id" ? ShieldCheck : Home;
-  const mainTo = state === "live" ? `/listing/${listingId}/welcome-guide` : c.main[1];
+  const mainTo =
+    state === "live"
+      ? `/listing/${listingId}/welcome-guide`
+      : state === "limit" && listingId
+        ? `/edit-listing/${listingId}?focus=dates`
+        : c.main[1];
   return (
     <main className={cn(NN_PAGE, "flex flex-1 flex-col items-center pb-16 pt-24")}>
       <div className="flex w-full max-w-md flex-col items-center gap-4 text-center">

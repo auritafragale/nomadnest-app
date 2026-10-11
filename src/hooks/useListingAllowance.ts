@@ -2,8 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-export const LISTING_LIMIT_NOTE = "Your membership includes one home. Contact us if you need to list another.";
-
 /**
  * How many listings this member may have (profiles.max_listings, private,
  * read through get_my_settings) and how many they have now. The database

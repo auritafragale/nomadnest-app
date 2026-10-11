@@ -233,7 +233,7 @@ const Membership = () => {
           </p>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
           <div className="flex min-w-0 flex-col gap-5">
             {user && m.loading && <Skeleton className="h-32 rounded-[22px]" />}
 
@@ -315,7 +315,7 @@ const Membership = () => {
                 <h2 id="plans-title" className="font-display text-2xl font-normal">
                   {current ? "Change your plan" : "Choose your membership"}
                 </h2>
-                <div role="radiogroup" aria-labelledby="plans-title" className="grid gap-3 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                <div role="radiogroup" aria-labelledby="plans-title" className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
                   {plans.map((id) => {
                     const p = MEMBERSHIP_PLANS[id];
                     const on = plan === id;
@@ -365,7 +365,7 @@ const Membership = () => {
             )}
           </div>
 
-          <div className="flex flex-col gap-5">
+          <div className="flex min-w-0 flex-col gap-5">
             {!isFounding && !isProblem && (
               <section aria-labelledby="founding-title" className="flex flex-col gap-2 rounded-[22px] border border-[var(--nn-border)] bg-[var(--nn-soft)] p-5">
                 <p id="founding-title" className="flex flex-wrap items-center justify-between gap-2 text-[15px] font-bold">

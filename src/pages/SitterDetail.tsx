@@ -97,6 +97,8 @@ const SitterDetail = () => {
   const [sitter, setSitter] = useState<SitterProfile | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [listings, setListings] = useState<InviteListing[]>([]);
+  // The viewer's own listing (any status), for "Add new dates" when none is open.
+  const [myListingId, setMyListingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [styleOpen, setStyleOpen] = useState(false);
@@ -158,11 +160,13 @@ const SitterDetail = () => {
         const today = new Date().toISOString().slice(0, 10);
         const { data: listingsData } = await supabase
           .from("listings")
-          .select("id, title, city, country, sit_dates (id, start_date, end_date, status)")
+          .select("id, title, city, country, status, sit_dates (id, start_date, end_date, status)")
           .eq("owner_user_id", user.id)
-          .eq("status", "published");
+          .order("updated_at", { ascending: false });
+        const own = (listingsData ?? []) as (InviteListing & { status: string })[];
+        setMyListingId((own.find((l) => l.status === "published") ?? own[0])?.id ?? null);
         setListings(
-          ((listingsData ?? []) as InviteListing[]).filter((l) => l.sit_dates?.some((d) => d.status === "open" && d.end_date >= today)),
+          own.filter((l) => l.status === "published" && l.sit_dates?.some((d) => d.status === "open" && d.end_date >= today)),
         );
       } catch (error) {
         console.error("Error fetching sitter:", error);
@@ -302,12 +306,21 @@ const SitterDetail = () => {
   const actionsNote = preview ? (
     <p className="text-sm text-muted-foreground">Pet Parents see Invite here. It's switched off in preview.</p>
   ) : isPetParentViewer && !canInvite ? (
-    <p className="text-sm text-muted-foreground">
-      Publish a listing with open dates to invite {name}.{" "}
-      <Link to="/create-listing" className="font-bold text-[var(--nn-accent-dark)] underline underline-offset-2">
-        Create a listing
-      </Link>
-    </p>
+    myListingId ? (
+      <p className="text-sm text-muted-foreground">
+        Add new dates to your listing to invite {name}.{" "}
+        <Link to={`/edit-listing/${myListingId}?focus=dates`} className="font-bold text-[var(--nn-accent-dark)] underline underline-offset-2">
+          Add new dates
+        </Link>
+      </p>
+    ) : (
+      <p className="text-sm text-muted-foreground">
+        Publish a listing with open dates to invite {name}.{" "}
+        <Link to="/create-listing" className="font-bold text-[var(--nn-accent-dark)] underline underline-offset-2">
+          Create a listing
+        </Link>
+      </p>
+    )
   ) : null;
 
   const summary = (

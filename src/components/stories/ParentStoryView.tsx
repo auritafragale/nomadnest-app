@@ -76,10 +76,21 @@ const InviteAgainDialog = ({ story, open, onOpenChange }: { story: SitStory; ope
         <DialogTitle className="font-display text-2xl font-normal">Invite {story.sitter_first_name} again</DialogTitle>
         {options.length === 0 ? (
           <>
-            <DialogDescription>Add open dates to your listing first, then invite {story.sitter_first_name} to them.</DialogDescription>
-            <Link to={`/edit-listing/${listings[0]?.id ?? ""}?focus=dates`} className={nnButton("primary")}>
-              Add new dates
-            </Link>
+            {listings[0] ? (
+              <>
+                <DialogDescription>Add new dates to your listing to invite {story.sitter_first_name}.</DialogDescription>
+                <Link to={`/edit-listing/${listings[0].id}?focus=dates`} className={nnButton("primary")}>
+                  Add new dates
+                </Link>
+              </>
+            ) : (
+              <>
+                <DialogDescription>Publish a listing with open dates to invite {story.sitter_first_name}.</DialogDescription>
+                <Link to="/create-listing" className={nnButton("primary")}>
+                  Create a listing
+                </Link>
+              </>
+            )}
           </>
         ) : (
           <>
