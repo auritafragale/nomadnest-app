@@ -77,7 +77,9 @@ const PlanChangeSheet = ({
         <button type="button" onClick={onClose} disabled={busy} className={nnButton("secondary", "w-full")}>
           Not now
         </button>
-        <p className="text-sm text-muted-foreground">Secure payment with Stripe, using the card on your membership.</p>
+        {pending?.preview === "upgrade" && (
+          <p className="text-sm text-muted-foreground">Secure payment with Stripe, using the card on your membership.</p>
+        )}
       </div>
     </ResponsiveSheet>
   );
