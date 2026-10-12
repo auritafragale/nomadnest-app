@@ -53,7 +53,8 @@ const MemberReportSheet = ({
   }, [open, initialReason]);
 
   const send = async () => {
-    const conv = conversationId ?? (user ? await findConversationWith(user.id, otherId) : null);
+    // Only ever a chat between exactly me and this member, or nothing.
+    const conv = user ? await findConversationWith(user.id, otherId, conversationId) : null;
     submit.mutate(
       {
         targetType: "user",

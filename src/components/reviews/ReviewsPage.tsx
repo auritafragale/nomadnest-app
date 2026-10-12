@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { NN_MAIN, RoleTheme, nnButton } from "@/components/nn/ui";
 import ReviewReportDialog from "@/components/reviews/ReviewReportDialog";
+import ReviewsDropdown, { type DropdownOption } from "@/components/reviews/ReviewsDropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { publicProfiles } from "@/lib/publicProfile";
@@ -30,17 +31,19 @@ import {
   type ReviewSort,
 } from "@/lib/reviews";
 
-const FILTERS: { id: ReviewFilter; label: string }[] = [
-  { id: "all", label: "All" },
+const FILTERS: DropdownOption<ReviewFilter>[] = [
+  { id: "all", label: "All reviews" },
   { id: "5", label: "5 stars" },
   { id: "4", label: "4 stars" },
-  { id: "3", label: "3 and below" },
-  { id: "written", label: "Written reviews" },
+  { id: "3", label: "3 stars and below" },
+  { id: "written", label: "With written reviews" },
 ];
 
-const SORTS: { id: ReviewSort; label: string }[] = [
-  { id: "recent", label: "Most recent" },
-  { id: "relevant", label: "Most relevant" },
+// Same ordering as before: "recent" by date, "relevant" puts recent reviews
+// with more detail first.
+const SORTS: DropdownOption<ReviewSort>[] = [
+  { id: "recent", label: "Newest first" },
+  { id: "relevant", label: "Most helpful", hint: "Recent reviews with more detail first" },
 ];
 
 const Stars = ({ value, className }: { value: number; className?: string }) => {
@@ -283,43 +286,10 @@ const ReviewsPage = ({ side }: { side: ReviewSide }) => {
   );
 
   const controls = (
-    <>
-      <div role="group" aria-label="Filter reviews" className="flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            aria-pressed={filter === f.id}
-            onClick={() => setFilter(f.id)}
-            className={cn(
-              "min-h-11 shrink-0 whitespace-nowrap rounded-full border-[1.5px] px-4 text-sm",
-              filter === f.id ? "border-[var(--nn-accent)] bg-[var(--nn-tint)] font-bold" : "border-[var(--nn-border)] font-semibold",
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-      <div className="flex items-center justify-between gap-2.5">
-        <span className="text-sm font-semibold text-muted-foreground">Sort by</span>
-        <span role="group" aria-label="Sort reviews" className="flex rounded-full bg-muted p-[3px]">
-          {SORTS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              aria-pressed={sort === s.id}
-              onClick={() => setSort(s.id)}
-              className={cn(
-                "min-h-11 rounded-full px-3.5 text-sm",
-                sort === s.id ? "bg-card font-bold text-foreground shadow-sm" : "font-semibold text-muted-foreground",
-              )}
-            >
-              {s.label}
-            </button>
-          ))}
-        </span>
-      </div>
-    </>
+    <div className="flex gap-2.5">
+      <ReviewsDropdown<ReviewFilter> label="Show" value={filter} options={FILTERS} onChange={setFilter} />
+      <ReviewsDropdown<ReviewSort> label="Sort" value={sort} options={SORTS} onChange={setSort} />
+    </div>
   );
 
   const listBody = (

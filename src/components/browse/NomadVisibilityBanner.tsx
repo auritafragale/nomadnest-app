@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -91,15 +90,34 @@ const NomadVisibilityBanner = ({ transparent = false, bare = false }: NomadVisib
     });
   };
 
-  // One slim row: a status dot, the state in words, and the switch.
+  // One slim row: a status dot, the state in words, and the switch. The
+  // whole row is the switch (56px tap target); the switch inside is drawn
+  // at its usual size.
   const row = (
-    <div className={cn("flex min-h-[56px] items-center gap-3 rounded-[18px] border border-border px-4 py-2", transparent ? "bg-background/80 backdrop-blur-sm" : "bg-card")}>
+    <button
+      type="button"
+      id="nomad-visibility"
+      role="switch"
+      aria-checked={isVisible}
+      aria-labelledby="nomad-visibility-label"
+      disabled={updating}
+      onClick={() => void handleToggle(!isVisible)}
+      className={cn(
+        "flex min-h-[56px] w-full cursor-pointer items-center gap-3 rounded-[18px] border border-border px-4 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-70",
+        transparent ? "bg-background/80 backdrop-blur-sm" : "bg-card",
+      )}
+    >
       <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", isVisible ? "bg-brand-teal" : "bg-muted-foreground")} aria-hidden="true" />
-      <label htmlFor="nomad-visibility" className="min-w-0 flex-1 cursor-pointer text-[15px] font-semibold">
+      <span id="nomad-visibility-label" className="min-w-0 flex-1 text-[15px] font-semibold">
         {isVisible ? "You are visible on the map" : "You are hidden from the map"}
-      </label>
-      <Switch id="nomad-visibility" checked={isVisible} onCheckedChange={handleToggle} disabled={updating} />
-    </div>
+      </span>
+      <span
+        aria-hidden="true"
+        className={cn("inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-transparent transition-colors", isVisible ? "bg-primary" : "bg-input")}
+      >
+        <span className={cn("block h-5 w-5 rounded-full bg-background shadow-lg transition-transform", isVisible ? "translate-x-5" : "translate-x-0")} />
+      </span>
+    </button>
   );
 
   if (bare) return row;

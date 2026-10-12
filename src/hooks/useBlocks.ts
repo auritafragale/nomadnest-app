@@ -114,8 +114,17 @@ export const useUnblockMember = () => {
   });
 };
 
-/** The chat between me and this member, for "Also report" (admins can open it). */
-export const findConversationWith = async (meId: string, otherId: string) => {
+/**
+ * The chat to attach to a report about this member: only a conversation whose
+ * two members are exactly me and them. A suggested id is used only if it is
+ * one; otherwise their newest chat together, or nothing.
+ */
+export const findConversationWith = async (meId: string, otherId: string, suggested?: string | null) => {
+  const pair = `and(owner_user_id.eq.${meId},sitter_user_id.eq.${otherId}),and(owner_user_id.eq.${otherId},sitter_user_id.eq.${meId})`;
+  if (suggested) {
+    const { data: match } = await supabase.from("conversations").select("id").eq("id", suggested).or(pair).maybeSingle();
+    if ((match as { id: string } | null)?.id) return suggested;
+  }
   const { data } = await supabase
     .from("conversations")
     .select("id")

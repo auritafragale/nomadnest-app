@@ -948,7 +948,7 @@ export const MessageThread = ({
             otherName={otherName}
             open={blockOpen}
             onOpenChange={setBlockOpen}
-            conversationId={conversation?.id ?? null}
+            conversationId={conversation ? threadConversationId(conversation) : null}
           />
           <MemberReportSheet
             otherId={otherUser.id}
@@ -956,7 +956,7 @@ export const MessageThread = ({
             open={moneyReportOpen}
             onOpenChange={setMoneyReportOpen}
             title={`Report ${otherName}`}
-            conversationId={conversation?.id ?? null}
+            conversationId={conversation ? threadConversationId(conversation) : null}
             initialReason="asked_for_money"
             skipLabel="Cancel"
           />
