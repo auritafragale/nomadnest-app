@@ -71,7 +71,7 @@ const Breadcrumbs = ({ items, showHome = true }: BreadcrumbsProps) => {
             <li>
               <Link 
                 to="/" 
-                className="flex items-center gap-1 hover:text-foreground transition-colors"
+                className="flex min-h-11 min-w-11 items-center gap-1 hover:text-foreground transition-colors"
                 aria-label="Home"
               >
                 <Home className="w-4 h-4" />
@@ -88,7 +88,7 @@ const Breadcrumbs = ({ items, showHome = true }: BreadcrumbsProps) => {
             {item.href ? (
               <Link 
                 to={item.href} 
-                className="hover:text-foreground transition-colors"
+                className="inline-flex min-h-11 items-center hover:text-foreground transition-colors"
               >
                 {item.label}
               </Link>
