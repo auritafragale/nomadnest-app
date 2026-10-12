@@ -119,7 +119,7 @@ serve(async (req) => {
         .in("status", ["confirmed", "in_progress"]),
     ]);
     const already = (saved ?? []).map((r) => ({ start: r.start_date as string, end: r.end_date as string }));
-    const booked = ((sits ?? []) as { snapshot_start_date: string | null; snapshot_end_date: string | null; sit_dates: { start_date: string; end_date: string } | null }[])
+    const booked = ((sits ?? []) as unknown as { snapshot_start_date: string | null; snapshot_end_date: string | null; sit_dates: { start_date: string; end_date: string } | null }[])
       .map((s) => ({ start: s.sit_dates?.start_date ?? s.snapshot_start_date ?? "", end: s.sit_dates?.end_date ?? s.snapshot_end_date ?? "" }))
       .filter((r) => r.start && r.end && r.end >= today);
 
