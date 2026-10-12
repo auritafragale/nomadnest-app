@@ -5,6 +5,7 @@ import { ChevronRight, Loader2, MessageCircle, Star } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { useCityChatRooms } from "@/hooks/useCityChatRooms";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import LocationSearchInput from "@/components/search/LocationSearchInput";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -142,18 +143,17 @@ const FindNomads = () => {
     }
   }, [viewMode]);
 
-  const { data: myCity = null } = useQuery({
-    queryKey: ["near-me-city", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("city")
-        .eq("id", user!.id)
-        .maybeSingle();
-      return data?.city ?? null;
-    },
-    enabled: !!user,
-  });
+  // The City Chat card follows the City Chat rule: only rooms the member can
+  // open now (a confirmed or in-progress sit there), the same list as the
+  // City Chats page.
+  const { rooms: cityRooms } = useCityChatRooms();
+  const openRooms = cityRooms.filter((r) => r.has_access && r.room_id);
+  const cityCard =
+    openRooms.length === 1
+      ? { to: `/city-chat/${openRooms[0].city_key}`, title: `${openRooms[0].city} City Chat`, sub: "Swap tips and meet up with Nomads in town." }
+      : openRooms.length > 1
+        ? { to: "/city-chats", title: `Your City Chats (${openRooms.length})`, sub: "Swap tips and meet up with Nomads in town." }
+        : { to: "/city-chats", title: "City Chats", sub: "They open when you have a confirmed sit." };
 
   const {
     data: nomads = [],
@@ -318,19 +318,15 @@ const FindNomads = () => {
         </div>
 
         <Link
-          to="/city-chats"
-          className="flex min-h-[64px] items-center gap-3 rounded-[18px] bg-brand-teal px-4 py-3 text-[#1F1B16]"
+          to={cityCard.to}
+          className="flex min-h-[64px] items-center gap-3 rounded-[18px] bg-brand-teal px-4 py-3 text-primary-foreground"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/60">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-background/60">
             <MessageCircle className="h-5 w-5" aria-hidden="true" />
           </span>
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-[16px] font-bold">
-              {myCity ? `${myCity} City Chat` : "City Chats"}
-            </span>
-            <span className="text-sm">
-              Swap tips and meet up with Nomads in town.
-            </span>
+            <span className="text-[16px] font-bold">{cityCard.title}</span>
+            <span className="text-sm">{cityCard.sub}</span>
           </span>
           <ChevronRight className="h-5 w-5 shrink-0" aria-hidden="true" />
         </Link>
