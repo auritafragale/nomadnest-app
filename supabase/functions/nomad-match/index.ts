@@ -133,7 +133,7 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
       // Someone may have hidden their profile since the cache was written:
       // only Nomads who still pass today's visibility rules are returned.
       const rows = (Array.isArray(cached.results) ? cached.results : []) as MatchResult[];
-      const visible = await stillVisible(supabase, rows.map((r) => r.user_id));
+      const visible = await stillVisible(supabase, rows.map((r) => r.user_id), user.id);
       const results = rows.filter((r) => visible.has(r.user_id));
       timings.cached = 1;
       timings.results = results.length;
@@ -163,13 +163,17 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
       .order("updated_at", { ascending: false })
       .limit(MAX_CANDIDATES);
     if (nomadsError) throw new Error(`nomads lookup failed: ${nomadsError.message}`);
-    // Only Nomads with Nomad access (a lapsed Nomad is hidden until they renew).
+    // Only Nomads with Nomad access (a lapsed Nomad is hidden until they
+    // renew), and never anyone blocked either way.
     const withAccess = nomads
       ? (
           await Promise.all(
             nomads.map(async (n) => {
-              const { data: ok } = await supabase.rpc("has_side_access", { p_user_id: n.user_id, p_side: "sitter" });
-              return ok === true ? n : null;
+              const [{ data: ok }, { data: blocked }] = await Promise.all([
+                supabase.rpc("has_side_access", { p_user_id: n.user_id, p_side: "sitter" }),
+                supabase.rpc("blocked_between", { p_a: user.id, p_b: n.user_id }),
+              ]);
+              return ok === true && blocked !== true ? n : null;
             }),
           )
         ).filter((n): n is NonNullable<typeof n> => !!n)
@@ -181,14 +185,14 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
     const ids = nomads.map((n) => n.user_id);
     const [{ data: places }, { data: reviews }, { data: availability }] = await Promise.all([
       supabase.from("profiles").select("id, city, country").in("id", ids),
-      supabase.from("reviews").select("reviewee_user_id, rating").in("reviewee_user_id", ids),
+      // The same rating as everywhere else: published reviews as a Nomad.
+      supabase.rpc("member_ratings", { p_user_ids: ids, p_side: "sitter" }),
       supabase.from("sitter_availability").select("sitter_user_id, start_date, end_date").in("sitter_user_id", ids).gte("end_date", today),
     ]);
     const placeOf = new Map((places ?? []).map((p) => [p.id, p]));
-    const ratingOf = new Map<string, { sum: number; n: number }>();
-    for (const r of reviews ?? []) {
-      const cur = ratingOf.get(r.reviewee_user_id) ?? { sum: 0, n: 0 };
-      ratingOf.set(r.reviewee_user_id, { sum: cur.sum + r.rating, n: cur.n + 1 });
+    const ratingOf = new Map<string, { avg: number; n: number }>();
+    for (const r of (reviews ?? []) as { user_id: string; average: number | null; review_count: number }[]) {
+      if (r.average != null) ratingOf.set(r.user_id, { avg: Number(r.average), n: r.review_count });
     }
     const freeDays = new Map<string, number>();
     for (const a of availability ?? []) {
@@ -217,7 +221,7 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
           tag("sit_style", clean(n.sit_style, 120)),
           tag("home_preferences", clean(n.home_preferences, 200)),
           tag("prefers", clean([...(n.preferred_cities ?? []), ...(n.preferred_countries ?? []), ...(n.preferred_regions ?? [])], 200)),
-          rating ? `<reviews>${rating.n} reviews, average ${(rating.sum / rating.n).toFixed(1)} of 5</reviews>` : "<reviews>none yet</reviews>",
+          rating ? `<reviews>${rating.n} reviews, average ${rating.avg.toFixed(1)} of 5</reviews>` : "<reviews>none yet</reviews>",
           `<free_days_during_sit>${freeDays.get(n.user_id) ?? 0}</free_days_during_sit>`,
         ].join(""),
       );
@@ -315,7 +319,7 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
 
 /** Nomads who are visible, active and discoverable right now. */
 // deno-lint-ignore no-explicit-any
-const stillVisible = async (supabase: any, ids: string[]): Promise<Set<string>> => {
+const stillVisible = async (supabase: any, ids: string[], ownerId: string): Promise<Set<string>> => {
   const unique = [...new Set(ids.filter((id) => UUID_RE.test(id)))];
   if (unique.length === 0) return new Set();
   const { data, error } = await supabase
@@ -328,11 +332,12 @@ const stillVisible = async (supabase: any, ids: string[]): Promise<Set<string>> 
   const candidates = ((data ?? []) as { user_id: string }[]).map((r) => r.user_id);
   const checks = await Promise.all(
     candidates.map(async (id) => {
-      const [{ data: ok }, { data: access }] = await Promise.all([
+      const [{ data: ok }, { data: access }, { data: blocked }] = await Promise.all([
         supabase.rpc("profile_is_discoverable", { p_user_id: id }),
         supabase.rpc("has_side_access", { p_user_id: id, p_side: "sitter" }),
+        supabase.rpc("blocked_between", { p_a: ownerId, p_b: id }),
       ]);
-      return ok === true && access === true ? id : null;
+      return ok === true && access === true && blocked !== true ? id : null;
     }),
   );
   return new Set(checks.filter((id): id is string => !!id));

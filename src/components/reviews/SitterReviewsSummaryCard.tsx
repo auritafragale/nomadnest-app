@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ChevronRight, Star } from "lucide-react";
-import { useSitterAverageRating } from "@/hooks/useSitterReviews";
+import { useMemberRating } from "@/lib/reviews";
 
 interface SitterReviewsSummaryCardProps {
   sitterUserId: string;
@@ -8,7 +8,7 @@ interface SitterReviewsSummaryCardProps {
 
 /** Reviews summary with a link to every review. */
 const SitterReviewsSummaryCard = ({ sitterUserId }: SitterReviewsSummaryCardProps) => {
-  const { data: ratingData } = useSitterAverageRating(sitterUserId);
+  const { data: ratingData } = useMemberRating(sitterUserId, "sitter");
   const average = ratingData?.average ?? 0;
   const count = ratingData?.count ?? 0;
 

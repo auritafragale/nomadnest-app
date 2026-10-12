@@ -21,7 +21,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 type ReportStatus = "pending" | "reviewed" | "resolved" | "dismissed";
-type ReportTargetType = "user" | "listing" | "message" | "sit_story" | "city_chat_message";
+type ReportTargetType = "user" | "listing" | "message" | "sit_story" | "city_chat_message" | "review";
 
 interface ReportRow {
   id: string;
@@ -40,7 +40,46 @@ interface ReportRow {
   /** Message reports: the reported text and the sender's first name. */
   reported_message?: string | null;
   reported_sender_first_name?: string | null;
+  /** "Also report" after a block: the chat with that member. */
+  conversation_id?: string | null;
 }
+
+/** An attached chat, read only, for checking what happened. */
+type ChatRow = { sender_first_name: string; is_reporter: boolean; body: string; created_at: string };
+
+const ReportChat = ({ reportId }: { reportId: string }) => {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<ChatRow[] | null>(null);
+  const load = async () => {
+    setOpen(!open);
+    if (rows) return;
+    const { data } = await supabase.rpc("admin_get_report_chat", { p_report_id: reportId });
+    setRows((data ?? []) as ChatRow[]);
+  };
+  return (
+    <div className="text-sm">
+      <button type="button" onClick={() => void load()} aria-expanded={open} className="min-h-11 font-medium text-primary hover:underline">
+        {open ? "Hide the chat" : "Open the chat"}
+      </button>
+      {open && (
+        <div className="mt-1 max-h-80 space-y-1.5 overflow-y-auto rounded-lg border border-border bg-muted/40 p-2.5">
+          {rows === null ? (
+            <p className="text-muted-foreground">Loading…</p>
+          ) : rows.length === 0 ? (
+            <p className="text-muted-foreground">No messages.</p>
+          ) : (
+            rows.map((m, i) => (
+              <p key={i} className="whitespace-pre-wrap break-words">
+                <span className="font-semibold">{m.sender_first_name}{m.is_reporter ? " (reporter)" : ""}:</span> {m.body}
+                <span className="ml-1 text-xs text-muted-foreground">{format(new Date(m.created_at), "d MMM, HH:mm")}</span>
+              </p>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const statusVariant: Record<ReportStatus, "muted" | "destructive"> = {
   pending: "destructive",
@@ -213,6 +252,15 @@ const AdminReports = () => {
                                 </span>
                               )}
                             </div>
+
+                            {r.target_type === "review" && (
+                              <div className="rounded-lg border border-border bg-muted/40 p-2.5 text-sm">
+                                <p className="text-xs text-muted-foreground">Review written by {r.reported_sender_first_name || "a member"}</p>
+                                <p className="mt-1 whitespace-pre-wrap break-words">{r.reported_message ?? "No written review."}</p>
+                              </div>
+                            )}
+
+                            {r.conversation_id && <ReportChat reportId={r.id} />}
 
                             {(r.target_type === "message" || r.target_type === "city_chat_message") && (
                               <div className="rounded-lg border border-border bg-muted/40 p-2.5 text-sm">

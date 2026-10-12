@@ -13,6 +13,7 @@ import { useCityChatThreadSubscriptions } from "@/hooks/useCityChatThreadSubscri
 import { useCityChatRooms } from "@/hooks/useCityChatRooms";
 import { useCityCatchup } from "@/hooks/useCityCatchup";
 import { useReport } from "@/components/reports/ReportContext";
+import { wordFilterMessage } from "@/lib/wordFilter";
 import MessageBubble, { TEAM_USER_ID, formatStamp, type BubbleMessage } from "@/components/city-chat/MessageBubble";
 import ThreadPanel from "@/components/city-chat/ThreadPanel";
 import CityChatsSection from "@/components/city-chat/CityChatsSection";
@@ -108,9 +109,10 @@ const CityChat = () => {
 
   const hydrateSenders = async (msgs: ChatMessage[]): Promise<ChatMessage[]> => {
     const missing = Array.from(new Set(msgs.map((m) => m.sender_user_id).filter((id) => !profileCache.current.has(id))));
-    if (missing.length > 0) {
-      // First names and photos only.
-      const { data } = await supabase.from("profiles").select("id, first_name, avatar_url").in("id", missing);
+    if (missing.length > 0 && roomId) {
+      // First names and photos only, of people who wrote in this room (never
+      // across a block).
+      const { data } = await supabase.rpc("get_city_chat_senders", { p_room_id: roomId, p_user_ids: missing });
       (data || []).forEach((p) => profileCache.current.set(p.id, p));
     }
     return msgs.map((m) => ({ ...m, sender: profileCache.current.get(m.sender_user_id) || null }));
@@ -314,7 +316,8 @@ const CityChat = () => {
     setInput("");
     const { error } = await supabase.from("city_chat_messages").insert({ room_id: roomId, sender_user_id: user.id, content: body });
     if (error) {
-      toast({ title: "Could not send message", description: "Please try again.", variant: "destructive" });
+      // Word filter: the message stays in the box to edit.
+      toast({ title: "Could not send message", description: wordFilterMessage(error) ?? "Please try again.", variant: "destructive" });
       setInput(body);
     }
     setSending(false);

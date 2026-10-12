@@ -15,6 +15,7 @@ import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 import { FieldLabel, inputClass } from "@/components/listing/form/FormBits";
 import { NN_PAGE, RoleTheme } from "@/components/nn/ui";
 import { BioField, CouldNotLoad, EditorHub, PrivateDetailsFields, SectionPage, type SectionDef } from "@/components/profile/edit/EditorParts";
+import { wordFilterMessage } from "@/lib/wordFilter";
 import { cn } from "@/lib/utils";
 
 const HUB = "/edit-owner-profile";
@@ -262,7 +263,7 @@ const EditOwnerProfile = () => {
       toast({ title: "Saved", description: "Your profile is up to date." });
       navigate(HUB);
     } catch (e) {
-      toast({ title: "Couldn't save", description: e instanceof Error ? e.message : "Please try again.", variant: "destructive" });
+      toast({ title: "Couldn't save", description: wordFilterMessage(e) ?? (e instanceof Error ? e.message : "Please try again."), variant: "destructive" });
     } finally {
       setSaving(false);
     }

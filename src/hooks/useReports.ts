@@ -13,6 +13,10 @@ interface ReportData {
   reason: string;
   details?: string;
   evidenceFiles?: File[];
+  /** "Also report" after a block: the chat with that member, for the team. */
+  conversationId?: string | null;
+  /** Plain words for the thank-you toast (title only). */
+  successToast?: string;
 }
 
 const EVIDENCE_PATH_PREFIX = "report-evidence";
@@ -41,11 +45,12 @@ export const useSubmitReport = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ targetType, targetId, reason, details, evidenceFiles }: ReportData) => {
+    mutationFn: async ({ targetType, targetId, reason, details, evidenceFiles, conversationId }: ReportData) => {
       if (!user) throw new Error("Must be logged in to submit a report");
-      // Proof is optional for chat messages, City Chat messages and Sit
-      // Stories (the team can see what was reported).
-      const proofOptional = ["sit_story", "message", "city_chat_message"].includes(targetType);
+      // Proof is optional for chat messages, City Chat messages, Sit Stories
+      // and reviews (the team can see what was reported), and for a member
+      // reported with their chat attached.
+      const proofOptional = ["sit_story", "message", "city_chat_message", "review"].includes(targetType) || !!conversationId;
       if ((!evidenceFiles || evidenceFiles.length === 0) && !proofOptional) {
         throw new Error("Please attach at least one proof file (image or PDF)");
       }
@@ -59,6 +64,7 @@ export const useSubmitReport = () => {
           target_id: targetId,
           reason,
           details: details || null,
+          ...(conversationId ? { conversation_id: conversationId } : {}),
         })
         .select("id")
         .single();
@@ -102,13 +108,17 @@ export const useSubmitReport = () => {
         evidenceUploadFailed: evidencePaths.length < (evidenceFiles?.length ?? 0),
       };
     },
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
       if (result?.evidenceUploadFailed) {
         toast({
           title: "Report submitted, but proof upload failed",
           description: `We couldn't upload your proof files — please contact support and reference report ID ${result.reportId} to add them.`,
           variant: "destructive",
         });
+        return;
+      }
+      if (variables.successToast) {
+        toast({ title: variables.successToast });
         return;
       }
       toast({
@@ -118,6 +128,10 @@ export const useSubmitReport = () => {
       });
     },
     onError: (error: any) => {
+      if (error?.hint === "already_reported" || error?.code === "23505") {
+        toast({ title: "You already reported this review." });
+        return;
+      }
       toast({
         title: "Failed to submit report",
         description: error.message || "Something went wrong. Please try again.",

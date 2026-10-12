@@ -98,7 +98,8 @@ export const ConversationList = ({ conversations, selectedId, onSelect, isLoadin
             {shown.map((c) => {
               const name = c.other_user?.first_name || "Member";
               const unread = c.unread_count > 0;
-              const chip = conversationStatus(c.context);
+              // Only the blocker sees "Blocked"; the other member sees an ordinary chat.
+              const chip = c.i_blocked ? "Blocked" : conversationStatus(c.context);
               const selected = selectedId === c.id || c.conversation_ids.includes(selectedId || "");
               const listingLine = c.listing?.title ?? (c.member_left ? "" : "Direct chat");
               return (
@@ -134,7 +135,7 @@ export const ConversationList = ({ conversations, selectedId, onSelect, isLoadin
                       )}
                       <span className="flex items-center justify-between gap-2">
                         <span className={cn("truncate text-sm", unread ? "font-semibold text-foreground" : "text-muted-foreground")}>
-                          {c.last_message?.body ? messagePreviewText(c.last_message.body) : "No messages yet"}
+                          {c.i_blocked ? `You blocked ${name}` : c.last_message?.body ? messagePreviewText(c.last_message.body) : "No messages yet"}
                         </span>
                         {unread && (
                           <span className="flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--nn-accent)] px-1.5 text-xs font-bold text-primary-foreground">

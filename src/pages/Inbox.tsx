@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVisualViewport } from "@/hooks/useVisualViewport";
 import { useHideBottomNav } from "@/lib/bottomNav";
+import { hasSwearing, wordFilterKind } from "@/lib/wordFilter";
 
 const Inbox = () => {
   const { user, loading, role } = useAuth();
@@ -141,21 +142,22 @@ const Inbox = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  const handleSend = (body: string) => {
-    if (selectedConversation) {
-      sendMessage.mutate(
-        { conversationId: threadConversationId(selectedConversation), body },
-        {
-          onError: () => {
-            toast({
-              title: "Message not sent",
-              description: "Something went wrong. Please try again.",
-              variant: "destructive",
-            });
-          },
-        },
-      );
+  const handleSend = async (body: string) => {
+    if (!selectedConversation) return { ok: false };
+    try {
+      await sendMessage.mutateAsync({ conversationId: threadConversationId(selectedConversation), body });
+    } catch (error) {
+      // A banned word: the thread shows "Message not sent" and keeps the text.
+      if (wordFilterKind(error) === "banned") return { ok: false, banned: true };
+      toast({
+        title: "Message not sent",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+      return { ok: false };
     }
+    // Swearing is allowed in a private chat, with a note only the sender sees.
+    return { ok: true, swear: await hasSwearing(body).catch(() => false) };
   };
 
   const tabs = canUseCityChats && (

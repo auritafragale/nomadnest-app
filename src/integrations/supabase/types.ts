@@ -186,6 +186,30 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_terms: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          level: string
+          norm: string
+          term: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          level: string
+          norm?: string
+          term: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          level?: string
+          norm?: string
+          term?: string
+        }
+        Relationships: []
+      }
       cancellation_strikes: {
         Row: {
           created_at: string
@@ -1186,6 +1210,24 @@ export type Database = {
           },
         ]
       }
+      member_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           attachment_path: string | null
@@ -1832,6 +1874,7 @@ export type Database = {
       }
       reports: {
         Row: {
+          conversation_id: string | null
           created_at: string
           details: string | null
           evidence_paths: string[] | null
@@ -1844,6 +1887,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          conversation_id?: string | null
           created_at?: string
           details?: string | null
           evidence_paths?: string[] | null
@@ -1856,6 +1900,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          conversation_id?: string | null
           created_at?: string
           details?: string | null
           evidence_paths?: string[] | null
@@ -1866,6 +1911,30 @@ export type Database = {
           target_id?: string
           target_type?: Database["public"]["Enums"]["report_target_type"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      review_ai_summaries: {
+        Row: {
+          review_count: number
+          side: string
+          summary: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          review_count: number
+          side: string
+          summary: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          review_count?: number
+          side?: string
+          summary?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1936,6 +2005,41 @@ export type Database = {
           },
         ]
       }
+      review_replies: {
+        Row: {
+          author_user_id: string
+          body: string
+          created_at: string
+          id: string
+          review_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_user_id: string
+          body: string
+          created_at?: string
+          id?: string
+          review_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_user_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          review_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_replies_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: true
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           created_at: string
@@ -1948,7 +2052,9 @@ export type Database = {
           flag_unauthorized_guests: boolean | null
           flag_undisclosed_cameras: boolean
           former_reviewee_user_id: string | null
+          highlights: string[]
           id: string
+          published_at: string | null
           rating: number
           rating_cleanliness: number | null
           rating_clear_expectations: number | null
@@ -1963,6 +2069,7 @@ export type Database = {
           reviewer_user_id: string | null
           sit_id: string | null
           text: string | null
+          would_again: boolean | null
         }
         Insert: {
           created_at?: string
@@ -1975,7 +2082,9 @@ export type Database = {
           flag_unauthorized_guests?: boolean | null
           flag_undisclosed_cameras?: boolean
           former_reviewee_user_id?: string | null
+          highlights?: string[]
           id?: string
+          published_at?: string | null
           rating: number
           rating_cleanliness?: number | null
           rating_clear_expectations?: number | null
@@ -1990,6 +2099,7 @@ export type Database = {
           reviewer_user_id?: string | null
           sit_id?: string | null
           text?: string | null
+          would_again?: boolean | null
         }
         Update: {
           created_at?: string
@@ -2002,7 +2112,9 @@ export type Database = {
           flag_unauthorized_guests?: boolean | null
           flag_undisclosed_cameras?: boolean
           former_reviewee_user_id?: string | null
+          highlights?: string[]
           id?: string
+          published_at?: string | null
           rating?: number
           rating_cleanliness?: number | null
           rating_clear_expectations?: number | null
@@ -2017,6 +2129,7 @@ export type Database = {
           reviewer_user_id?: string | null
           sit_id?: string | null
           text?: string | null
+          would_again?: boolean | null
         }
         Relationships: [
           {
@@ -2914,6 +3027,15 @@ export type Database = {
           verifications_pending: number
         }[]
       }
+      admin_get_report_chat: {
+        Args: { p_report_id: string }
+        Returns: {
+          body: string
+          created_at: string
+          is_reporter: boolean
+          sender_first_name: string
+        }[]
+      }
       admin_list_community_strikes: {
         Args: never
         Returns: {
@@ -3040,6 +3162,7 @@ export type Database = {
       admin_list_reports: {
         Args: never
         Returns: {
+          conversation_id: string
           created_at: string
           details: string
           evidence_paths: string[]
@@ -3113,6 +3236,7 @@ export type Database = {
         Args: { p_paths: string[]; p_report_id: string }
         Returns: string[]
       }
+      blocked_between: { Args: { p_a: string; p_b: string }; Returns: boolean }
       can_access_city_chat: {
         Args: { p_room_id: string; p_user_id: string }
         Returns: boolean
@@ -3120,6 +3244,7 @@ export type Database = {
       can_publish_listing: { Args: never; Returns: boolean }
       can_read_chat_photo: { Args: { p_name: string }; Returns: boolean }
       can_read_sit_update_photo: { Args: { p_name: string }; Returns: boolean }
+      can_reply_to_review: { Args: { p_review_id: string }; Returns: boolean }
       can_upload_chat_photo: { Args: { p_name: string }; Returns: boolean }
       can_upload_sit_update_photo: {
         Args: { p_name: string }
@@ -3145,6 +3270,7 @@ export type Database = {
         Args: { p_role: Database["public"]["Enums"]["app_role"] }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      conversation_open_to_me: { Args: { p_conversation_id: string }; Returns: boolean }
       create_sit_story_share_link: {
         Args: { p_story_id: string }
         Returns: string
@@ -3193,6 +3319,14 @@ export type Database = {
           sender_name: string
         }[]
       }
+      get_city_chat_senders: {
+        Args: { p_room_id: string; p_user_ids: string[] }
+        Returns: {
+          avatar_url: string
+          first_name: string
+          id: string
+        }[]
+      }
       get_community_warnings: {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: string[]
@@ -3222,6 +3356,8 @@ export type Database = {
           sit_id: string
           sit_start: string
           sit_status: string
+          chat_closed: boolean
+          i_blocked: boolean
           unread_count: number
         }[]
       }
@@ -3269,6 +3405,51 @@ export type Database = {
       get_listing_private_address: {
         Args: { p_listing_id: string }
         Returns: string
+      }
+      get_member_review_summary: { Args: { p_side: string; p_user: string }; Returns: Json }
+      get_member_reviews: {
+        Args: {
+          p_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_side: string
+          p_sort?: string
+          p_user: string
+        }
+        Returns: {
+          can_reply: boolean
+          categories: Json
+          city: string
+          country: string
+          created_at: string
+          highlights: string[]
+          id: string
+          link_listing_id: string
+          link_profile_id: string
+          nights: number
+          pets: Json
+          rating: number
+          reply_at: string
+          reply_body: string
+          reviewer_avatar_url: string
+          reviewer_first_name: string
+          reviewer_gone: boolean
+          score: number
+          sit_month: string
+          sits_together: number
+          text: string
+          total_count: number
+          would_again: boolean
+        }[]
+      }
+      get_my_blocked_members: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          blocked_at: string
+          blocked_id: string
+          first_name: string
+        }[]
       }
       get_my_city_chat_rooms: {
         Args: never
@@ -3322,6 +3503,7 @@ export type Database = {
         }[]
       }
       get_my_profile: { Args: never; Returns: Json }
+      get_my_review_status: { Args: { p_sit_id: string }; Returns: Json }
       get_my_settings: { Args: never; Returns: Json }
       get_my_side_access: {
         Args: never
@@ -3339,6 +3521,17 @@ export type Database = {
           id_verified: boolean
           onfido_applicant_id: string
           onfido_check_id: string
+        }[]
+      }
+      get_my_waiting_reviews: {
+        Args: never
+        Returns: {
+          my_role: string
+          other_user_id: string
+          publish_by: string
+          reviewer_first_name: string
+          side: string
+          sit_id: string
         }[]
       }
       get_owner_guide_questions: {
@@ -3397,6 +3590,7 @@ export type Database = {
         Args: { p_side: string; p_user_id: string }
         Returns: boolean
       }
+      hidden_by_block: { Args: { p_other: string }; Returns: boolean }
       hit_shared_sit_story: { Args: { p_token: string }; Returns: boolean }
       i_have_side_access: { Args: { p_side: string }; Returns: boolean }
       invitation_is_live: {
@@ -3409,12 +3603,14 @@ export type Database = {
       }
       is_active_member: { Args: { _user_id: string }; Returns: boolean }
       is_admin_user: { Args: { _user_id: string }; Returns: boolean }
+      is_blocked_with: { Args: { p_other: string }; Returns: boolean }
       is_owner_active: { Args: { _owner_user_id: string }; Returns: boolean }
       link_guide_question: {
         Args: { p_parent_id: string; p_question_id: string }
         Returns: boolean
       }
       listing_is_live: { Args: { p_listing_id: string }; Returns: boolean }
+      listing_owner_blocked_with_me: { Args: { p_listing_id: string }; Returns: boolean }
       listing_owner_has_access: {
         Args: { p_listing_id: string }
         Returns: boolean
@@ -3443,6 +3639,15 @@ export type Database = {
       mark_message_digest_sent: {
         Args: { p_user_ids: string[] }
         Returns: number
+      }
+      member_ratings: {
+        Args: { p_side: string; p_user_ids: string[] }
+        Returns: {
+          average: number
+          categories: Json
+          review_count: number
+          user_id: string
+        }[]
       }
       member_review_rates: {
         Args: { p_user_ids: string[] }
@@ -3490,6 +3695,7 @@ export type Database = {
       }
       prepare_account_deletion: { Args: { p_user_id: string }; Returns: Json }
       profile_is_discoverable: { Args: { p_user_id: string }; Returns: boolean }
+      profile_visible_to_me: { Args: { p_id: string }; Returns: boolean }
       public_founding_spots: {
         Args: never
         Returns: {
@@ -3497,6 +3703,7 @@ export type Database = {
           spots_left: number
         }[]
       }
+      publish_due_reviews: { Args: never; Returns: number }
       purge_expired_safety_records: { Args: never; Returns: Json }
       random_point_near: {
         Args: { p_lat: number; p_lng: number; p_radius_m?: number }
@@ -3535,6 +3742,10 @@ export type Database = {
       respond_to_sit_reschedule: {
         Args: { p_accept: boolean; p_request_id: string }
         Returns: Json
+      }
+      review_insert_allowed: {
+        Args: { p_reviewee: string; p_sit_id: string }
+        Returns: boolean
       }
       role_for: {
         Args: {
@@ -3602,6 +3813,8 @@ export type Database = {
         }[]
       }
       stop_sharing_my_phone: { Args: { p_other_user: string }; Returns: Json }
+      text_has_swearing: { Args: { p_text: string }; Returns: boolean }
+      text_violation: { Args: { p_text: string }; Returns: string }
       toggle_checkin_heart: { Args: { p_checkin_id: string }; Returns: Json }
       unaccent_fallback: { Args: { p_text: string }; Returns: string }
       unshortlist_application: {
@@ -3645,6 +3858,7 @@ export type Database = {
         | "message"
         | "sit_story"
         | "city_chat_message"
+        | "review"
       sit_date_status: "open" | "closed" | "booked"
       sit_status: "confirmed" | "in_progress" | "completed" | "cancelled"
     }
@@ -3792,6 +4006,7 @@ export const Constants = {
         "message",
         "sit_story",
         "city_chat_message",
+        "review",
       ],
       sit_date_status: ["open", "closed", "booked"],
       sit_status: ["confirmed", "in_progress", "completed", "cancelled"],

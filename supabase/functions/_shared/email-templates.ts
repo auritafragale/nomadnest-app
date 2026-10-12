@@ -61,6 +61,18 @@ const plainTextParts = (email: BuiltEmail): BuiltEmail => ({
 const quote = (text: string) =>
   `<blockquote style="border-left:3px solid #E8735A;padding-left:12px;color:#555;margin:16px 0;">${text}</blockquote>`;
 
+/** "12–25 Oct", or "28 Sep–3 Oct" across months. */
+const shortRange = (start: string | undefined, end: string | undefined) => {
+  if (!start || !end) return "";
+  const a = new Date(start + "T00:00:00Z");
+  const b = new Date(end + "T00:00:00Z");
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return "";
+  const mon = (d: Date) => d.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" });
+  return a.getUTCMonth() === b.getUTCMonth() && a.getUTCFullYear() === b.getUTCFullYear()
+    ? `${a.getUTCDate()}–${b.getUTCDate()} ${mon(b)}`
+    : `${a.getUTCDate()} ${mon(a)}–${b.getUTCDate()} ${mon(b)}`;
+};
+
 const fmtDate = (iso: string | null | undefined) =>
   iso
     ? new Date(iso).toLocaleDateString("en-GB", {
@@ -81,6 +93,8 @@ export type NotificationType =
   | "invite"
   | "review"
   | "review_reminder"
+  | "reviews_published"
+  | "review_reply"
   | "sit_cancelled"
   | "sit_checkin"
   | "sit_started"
@@ -249,21 +263,61 @@ function buildNotificationEmailEscaped(
       };
     case "review":
       return {
-        subject: "You've received a new review",
-        preview: `${data.reviewerName} left you a ${data.rating}-star review`,
-        heading: "New review",
+        subject: `${data.reviewerName} has reviewed you`,
+        preview: "Write yours to see it.",
+        heading: `${data.reviewerName} has reviewed you`,
         body: `
-          <p><strong>${data.reviewerName}</strong> left you a <strong>${data.rating}-star</strong> review.</p>
-          ${data.text ? quote(data.text) : ""}
+          <p><strong>${data.reviewerName}</strong> has reviewed you. Write yours to see it.</p>
+          <p>Both reviews appear together, so neither of you sees the other's review first.</p>
         `,
-        ctaLabel: "View your profile",
+        ctaLabel: "Write my review",
         ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
-        pushTitle: "New Review!",
-        pushBody: `${data.reviewerName} left you a ${data.rating}-star review`,
+        pushTitle: `${data.reviewerName} has reviewed you`,
+        pushBody: "Write yours to see it.",
+        pushUrl: data.url || "/dashboard",
+      };
+    case "reviews_published":
+      return {
+        subject: `Your reviews for ${data.place} are now visible`,
+        preview: "See what was written.",
+        heading: "Your reviews are now visible",
+        body: `<p>Your reviews for <strong>${data.place}</strong> are now visible.</p>`,
+        ctaLabel: "See the reviews",
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
+        pushTitle: "Your reviews are now visible",
+        pushBody: `Your reviews for ${data.place} are now visible.`,
+        pushUrl: data.url || "/dashboard",
+      };
+    case "review_reply":
+      return {
+        subject: `${data.replierName} replied to your review`,
+        preview: "Open NomadNest to read it.",
+        heading: `${data.replierName} replied to your review`,
+        body: `<p><strong>${data.replierName}</strong> replied to your review.</p>`,
+        ctaLabel: "Read the reply",
+        ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
+        pushTitle: `${data.replierName} replied to your review`,
+        pushBody: "Open NomadNest to read it.",
         pushUrl: data.url || "/dashboard",
       };
     case "review_reminder": {
       const days = Number(data.daysLeft);
+      if (data.otherReviewed === "true") {
+        return {
+          subject: `${data.otherName} has reviewed you`,
+          preview: "Write yours to see it.",
+          heading: `${data.otherName} has reviewed you`,
+          body: `
+            <p><strong>${data.otherName}</strong> has reviewed you. Write yours to see it.</p>
+            <p>You have <strong>${data.daysLeft} day${days === 1 ? "" : "s"}</strong> left. Both reviews appear together.</p>
+          `,
+          ctaLabel: "Write my review",
+          ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
+          pushTitle: `${data.otherName} has reviewed you`,
+          pushBody: "Write yours to see it.",
+          pushUrl: data.url || "/dashboard",
+        };
+      }
       return {
         subject:
           days <= 2
@@ -283,6 +337,38 @@ function buildNotificationEmailEscaped(
       };
     }
     case "sit_cancelled":
+      if (data.quiet === "owner_cancelled") {
+        // To the Nomad.
+        const when = shortRange(data.startDate, data.endDate);
+        const title = `Your sit${data.city ? ` in ${data.city}` : ""}${when ? ` for ${when}` : ""} was cancelled`;
+        return {
+          subject: title,
+          preview: "Those dates are free again.",
+          heading: title,
+          body: `<p>The Pet Parent cancelled this sit. Those dates are free again, so you can apply for another sit.</p>`,
+          ctaLabel: "Find another sit",
+          ctaUrl: `${APP_URL}${data.url || "/browse-sits"}`,
+          pushTitle: title,
+          pushBody: "The Pet Parent cancelled this sit. Those dates are free again, so you can apply for another sit.",
+          pushUrl: data.url || "/browse-sits",
+        };
+      }
+      if (data.quiet === "nomad_cancelled") {
+        // To the Pet Parent.
+        const when = shortRange(data.startDate, data.endDate);
+        const title = `${data.cancelledByName || "Your Nomad"} cancelled your sit${when ? ` for ${when}` : ""}`;
+        return {
+          subject: title,
+          preview: "Your dates are open again.",
+          heading: title,
+          body: `<p>Your dates are open again, so Nomads can apply. You can also invite Nomads who are free then.</p>`,
+          ctaLabel: when ? `Find a Nomad for ${when}` : "Find a Nomad",
+          ctaUrl: `${APP_URL}${data.url || "/browse-sitters"}`,
+          pushTitle: title,
+          pushBody: "Your dates are open again, so Nomads can apply. You can also invite Nomads who are free then.",
+          pushUrl: data.url || "/browse-sitters",
+        };
+      }
       return {
         subject: `Your sit at ${data.listingTitle} has been cancelled`,
         preview: `${data.cancelledByName || "The other party"} cancelled the sit`,

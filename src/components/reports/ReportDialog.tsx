@@ -16,6 +16,7 @@ import { Flag, Loader2, Paperclip, X } from "lucide-react";
 import { useSubmitReport } from "@/hooks/useReports";
 import { useAuth } from "@/contexts/AuthContext";
 import { Database } from "@/integrations/supabase/types";
+import { REVIEW_REPORT_REASONS } from "@/lib/reviews";
 
 type ReportTargetType = Database["public"]["Enums"]["report_target_type"];
 
@@ -60,6 +61,7 @@ const REPORT_REASONS: Record<ReportTargetType, { value: string; label: string }[
     { value: "inappropriate_content", label: "Inappropriate content" },
     { value: "other", label: "Other" },
   ],
+  review: REVIEW_REPORT_REASONS,
   sit_story: [
     { value: "not_what_happened", label: "Says things that didn't happen" },
     { value: "private_details", label: "Shows private details" },
@@ -74,6 +76,7 @@ const TARGET_LABELS: Record<ReportTargetType, string> = {
   message: "message",
   city_chat_message: "City Chat message",
   sit_story: "Sit Story",
+  review: "review",
 };
 
 const ACCEPTED = "image/*,application/pdf";
@@ -116,7 +119,7 @@ const ReportDialog = ({
   // Chat messages and City Chat messages are already on record (the team can
   // see the reported text), and so is a Sit Story: proof is optional for
   // those. Every other report needs at least one proof file.
-  const proofRequired = !["sit_story", "message", "city_chat_message"].includes(targetType);
+  const proofRequired = !["sit_story", "message", "city_chat_message", "review"].includes(targetType);
 
   const handleSubmit = () => {
     if (!reason || (proofRequired && files.length === 0)) return;

@@ -20,6 +20,7 @@ import { useMyPreferredLanguage, useSetPreferredLanguage } from "@/hooks/useDail
 import { useDeleteAccount } from "@/hooks/useDeleteAccount";
 import { UPDATE_LANGUAGES } from "@/lib/dailyUpdate";
 import { InfoRow, Note, Segmented, ToggleRow, GroupTitle } from "./SettingsParts";
+import BlockedMembers from "./BlockedMembers";
 
 const fmtDate = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null;
@@ -113,6 +114,7 @@ export const PrivacySection = () => {
       )}
       {!vis?.hasSitterProfile && !vis?.hasOwnerProfile && <Note>Finish setting up your profile first.</Note>}
       <Note>Your phone number is never shared automatically. Once a sit is confirmed, you can choose to share it in your chat.</Note>
+      <BlockedMembers />
     </div>
   );
 };

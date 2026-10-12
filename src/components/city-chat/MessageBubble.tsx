@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Flag } from "lucide-react";
+import { Ban, Flag } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import BlockMemberSheet from "@/components/block/BlockMemberSheet";
 import { format, isToday, isYesterday } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -48,6 +51,8 @@ export const formatStamp = (s: string) => {
 /** One City Chat post: first name, time, text, reactions, thread link. */
 const MessageBubble = ({ message, isOwn, reactions, onToggleReaction, thread, onOpenThread }: MessageBubbleProps) => {
   const { openReport } = useReport();
+  const queryClient = useQueryClient();
+  const [blockOpen, setBlockOpen] = useState(false);
   const isTeam = message.sender_user_id === TEAM_USER_ID;
   const name = isTeam ? "NomadNest Team" : isOwn ? "You" : (message.sender?.first_name || "").trim() || "Nomad";
   const initial = (isTeam ? "N" : (message.sender?.first_name || "N").trim()[0] || "N").toUpperCase();
@@ -91,17 +96,37 @@ const MessageBubble = ({ message, isOwn, reactions, onToggleReaction, thread, on
             </button>
           )}
           {!isOwn && !isTeam && (
-            <button
-              type="button"
-              aria-label={`Report ${name}'s message`}
-              onClick={() => openReport({ targetType: "city_chat_message", targetId: message.id })}
-              className="ml-auto flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
-            >
-              <Flag className="h-4 w-4" aria-hidden="true" />
-            </button>
+            <span className="ml-auto flex">
+              <button
+                type="button"
+                aria-label={`Report ${name}'s message`}
+                onClick={() => openReport({ targetType: "city_chat_message", targetId: message.id })}
+                className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+              >
+                <Flag className="h-4 w-4" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                aria-label={`Block ${name}`}
+                onClick={() => setBlockOpen(true)}
+                className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+              >
+                <Ban className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </span>
           )}
         </div>
       </div>
+      {blockOpen && (
+        <BlockMemberSheet
+          otherId={message.sender_user_id}
+          otherName={name}
+          open={blockOpen}
+          onOpenChange={setBlockOpen}
+          // Their messages and replies disappear from your City Chats.
+          onBlocked={() => void queryClient.invalidateQueries()}
+        />
+      )}
     </article>
   );
 };

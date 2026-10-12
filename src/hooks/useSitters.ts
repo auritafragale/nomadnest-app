@@ -3,11 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
 import { publicProfiles, type PublicProfile } from "@/lib/publicProfile";
 import {
-  aggregateCategoryRatings,
+  categoryAveragesFrom,
   SITTER_RATING_CATEGORIES,
   type CategoryAverage,
 } from "@/lib/categoryRatings";
-import { weightedAverage } from "@/lib/ratingWeights";
+import { fetchMemberRatings } from "@/lib/reviews";
 import { REVIEW_RATE_BOOST_THRESHOLD } from "@/hooks/useReviewRates";
 import { useAuth } from "@/contexts/AuthContext";
 import { canonicalPetType } from "@/lib/petTypes";
@@ -92,12 +92,8 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         const [profilesResult, ratingsResult, reviewRatesResult] = await Promise.all([
           publicProfiles("id, first_name, avatar_url, city, country, founding_member, id_verified")
             .in("id", userIds) as unknown as Promise<{ data: PublicProfile[] | null; error: { message: string } | null }>,
-          supabase
-            .from("reviews")
-            .select(
-              "reviewee_user_id, rating, created_at, rating_pet_care, rating_communication, rating_cleanliness, rating_reliability, rating_respect_home"
-            )
-            .in("reviewee_user_id", userIds),
+          // The one rating used everywhere (published reviews as a Nomad).
+          fetchMemberRatings(userIds, "sitter"),
           supabase.rpc("member_review_rates" as never, { p_user_ids: userIds } as never),
         ]);
 
@@ -113,39 +109,23 @@ export const useSitters = (options: UseSittersOptions = {}) => {
         );
 
         // Compute per-sitter average ratings
-        const ratingsMap = new Map<string, { average: number; count: number }>();
-        const reviewsByUser = new Map<string, Record<string, unknown>[]>();
-        const rawByUser = new Map<string, { rating: number; created_at: string }[]>();
-        (ratingsResult.data || []).forEach((r) => {
-          const raw = rawByUser.get(r.reviewee_user_id) || [];
-          raw.push({ rating: r.rating, created_at: (r as { created_at: string }).created_at });
-          rawByUser.set(r.reviewee_user_id, raw);
-          const list = reviewsByUser.get(r.reviewee_user_id) || [];
-          list.push(r as Record<string, unknown>);
-          reviewsByUser.set(r.reviewee_user_id, list);
-        });
-        // Recent feedback describes a nomad as they are today, so it counts for more.
-        rawByUser.forEach((list, userId) => {
-          ratingsMap.set(userId, weightedAverage(list));
-        });
+        const ratingsMap = ratingsResult;
 
         let filteredData: SitterWithProfile[] = sitterData
           // One rule everywhere: visible only when is_visible AND is_active.
           .filter((sitter) => sitter.is_active === true)
           .map((sitter) => {
             const ratingData = ratingsMap.get(sitter.user_id);
+            const rating = ratingData && ratingData.average != null ? { average: ratingData.average, count: ratingData.count } : null;
             const profile = profilesMap.get(sitter.user_id) || null;
             return {
               ...sitter,
               // The real ID check result lives on profiles, not the sitter copy.
               id_verified: !!profile?.id_verified,
               profile,
-              rating: ratingData || { average: 0, count: 0 },
+              rating: rating || { average: 0, count: 0 },
               review_rate: reviewRateMap.get(sitter.user_id) ?? null,
-              category_ratings: aggregateCategoryRatings(
-                reviewsByUser.get(sitter.user_id) || [],
-                SITTER_RATING_CATEGORIES
-              ),
+              category_ratings: categoryAveragesFrom(ratingData?.categories, SITTER_RATING_CATEGORIES),
             };
           }) as SitterWithProfile[];
 

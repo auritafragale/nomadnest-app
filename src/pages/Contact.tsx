@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -70,6 +70,26 @@ const Contact = () => {
       message: "",
     },
   });
+
+  // Signed-in members: first name and email filled in (they can change them).
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    void supabase
+      .from("profiles")
+      .select("first_name")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const first = (data as { first_name: string | null } | null)?.first_name?.trim();
+        if (first && !form.getValues("name")) form.setValue("name", first);
+        if (user.email && !form.getValues("email")) form.setValue("email", user.email);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, form]);
 
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
@@ -299,6 +319,12 @@ const Contact = () => {
                             </>
                           )}
                         </Button>
+                        <p className="text-center text-sm text-muted-foreground">
+                          We only use your name and email to reply to you.{" "}
+                          <Link to="/privacy" className="font-semibold text-foreground underline underline-offset-2">
+                            Read our Privacy Policy
+                          </Link>
+                        </p>
                       </form>
                     </Form>
                   </CardContent>

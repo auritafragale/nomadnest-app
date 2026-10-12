@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ChevronRight, Star } from "lucide-react";
-import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
+import { useMemberRating } from "@/lib/reviews";
 
 interface OwnerReviewsSummaryCardProps {
   ownerUserId: string;
@@ -8,7 +8,9 @@ interface OwnerReviewsSummaryCardProps {
 
 /** "★ 4.9 · 12 reviews from Nomads", linking to the Pet Parent's reviews. */
 const OwnerReviewsSummaryCard = ({ ownerUserId }: OwnerReviewsSummaryCardProps) => {
-  const { averageRating, reviewCount } = useOwnerAverageRating(ownerUserId);
+  const { data } = useMemberRating(ownerUserId, "owner");
+  const averageRating = data?.average ?? 0;
+  const reviewCount = data?.count ?? 0;
 
   return (
     <Link to={`/owner/${ownerUserId}/reviews`} className="group flex min-h-11 items-center gap-2 text-[15px]">

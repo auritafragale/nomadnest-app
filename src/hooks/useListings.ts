@@ -5,10 +5,11 @@ import { fetchPublicMemberCards } from "@/lib/publicMemberCards";
 import { useAuth } from "@/contexts/AuthContext";
 import { matchesAllTokens } from "@/lib/utils";
 import {
-  aggregateCategoryRatings,
+  categoryAveragesFrom,
   OWNER_RATING_CATEGORIES,
   type CategoryAverage,
 } from "@/lib/categoryRatings";
+import { fetchMemberRatings } from "@/lib/reviews";
 
 export interface ListingFilters {
   search?: string;
@@ -147,35 +148,18 @@ export const useListings = (filters: ListingFilters = {}) => {
       // Fetch owner ratings in bulk
       const ownerIds = [...new Set(results.map((l) => l.owner_user_id))];
       if (ownerIds.length > 0) {
-        const { data: reviewData } = await supabase
-          .from("reviews")
-          .select(
-            "reviewee_user_id, rating, rating_communication, rating_home_accuracy, rating_pet_preparedness, rating_hospitality, rating_clear_expectations"
-          )
-          .in("reviewee_user_id", ownerIds);
-
-        if (reviewData && reviewData.length > 0) {
-          const ratingMap = new Map<string, { sum: number; count: number }>();
-          const reviewsByOwner = new Map<string, Record<string, unknown>[]>();
-          reviewData.forEach((r) => {
-            const existing = ratingMap.get(r.reviewee_user_id) || { sum: 0, count: 0 };
-            ratingMap.set(r.reviewee_user_id, { sum: existing.sum + r.rating, count: existing.count + 1 });
-            const list = reviewsByOwner.get(r.reviewee_user_id) || [];
-            list.push(r as Record<string, unknown>);
-            reviewsByOwner.set(r.reviewee_user_id, list);
-          });
-          results = results.map((listing) => {
-            const rating = ratingMap.get(listing.owner_user_id);
-            return {
-              ...listing,
-              owner_rating: rating ? { average: rating.sum / rating.count, count: rating.count } : undefined,
-              owner_category_ratings: aggregateCategoryRatings(
-                reviewsByOwner.get(listing.owner_user_id) || [],
-                OWNER_RATING_CATEGORIES
-              ),
-            };
-          });
-        }
+        // The one rating used everywhere (published reviews as a Pet Parent).
+        const ratings = await fetchMemberRatings(ownerIds, "owner").catch(() => new Map());
+        results = results.map((listing) => {
+          const rating = ratings.get(listing.owner_user_id);
+          return rating && rating.average != null && rating.count > 0
+            ? {
+                ...listing,
+                owner_rating: { average: rating.average, count: rating.count },
+                owner_category_ratings: categoryAveragesFrom(rating.categories, OWNER_RATING_CATEGORIES),
+              }
+            : listing;
+        });
       }
 
       // Fetch owner profiles in bulk: members through public_profiles;

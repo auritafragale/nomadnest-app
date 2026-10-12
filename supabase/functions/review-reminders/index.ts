@@ -59,7 +59,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
   }
 
-  const summary = { autoCompleted: 0, remindersSent: 0, errors: 0 };
+  const summary = { autoCompleted: 0, remindersSent: 0, reviewsPublished: 0, errors: 0 };
 
   try {
     const today = new Date();
@@ -92,7 +92,17 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // 2) Reminders for completed sits (and sits cancelled early, mid-stay)
+    // 2) Both reviews appear together, or when the 14-day window closes:
+    // publish any review still waiting once its window has closed.
+    const { data: publishedCount, error: publishError } = await supabase.rpc("publish_due_reviews");
+    if (publishError) {
+      console.error("Failed to publish due reviews:", redact(publishError));
+      summary.errors++;
+    } else {
+      summary.reviewsPublished = Number(publishedCount ?? 0);
+    }
+
+    // 3) Reminders for completed sits (and sits cancelled early, mid-stay)
     // still inside the review window.
     const { data: completedSits, error: completedError } = await supabase
       .from("sits")
@@ -159,6 +169,9 @@ const handler = async (req: Request): Promise<Response> => {
           otherProfile?.first_name?.trim() || (party.role === "owner" ? "your Nomad" : "your Pet Parent");
 
         const daysLeft = REVIEW_WINDOW_DAYS - days;
+        // The other member already reviewed: their review shows once this
+        // one writes theirs.
+        const otherReviewed = reviewers.has(party.revieweeId);
 
         // Deep-link straight to the review form, landing combined members in
         // the correct mode first.
@@ -180,6 +193,7 @@ const handler = async (req: Request): Promise<Response> => {
                   listingTitle: (sit as any).listing?.title ?? "your recent sit",
                   daysLeft: String(daysLeft),
                   stage: String(days),
+                  otherReviewed: otherReviewed ? "true" : "false",
                   url: reviewUrl,
                 },
               },
@@ -195,8 +209,10 @@ const handler = async (req: Request): Promise<Response> => {
         await supabase.from("notifications").insert({
           user_id: party.userId,
           type: "review_reminder",
-          title: "Leave a review",
-          message: `You have ${daysLeft} day${daysLeft === 1 ? "" : "s"} left to review ${otherName}.`,
+          title: otherReviewed ? `${otherName} has reviewed you` : "Leave a review",
+          message: otherReviewed
+            ? "Write yours to see it."
+            : `You have ${daysLeft} day${daysLeft === 1 ? "" : "s"} left to review ${otherName}.`,
           data: { url: reviewUrl, sit_id: sit.id },
         });
 

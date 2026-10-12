@@ -388,6 +388,8 @@ const handleDraft = async (req: Request, timings: Timings): Promise<Response> =>
           .select("rating, text, sits!inner(sitter_user_id)")
           .eq("reviewee_user_id", user.id)
           .eq("sits.sitter_user_id", user.id)
+          // Published reviews only (both written, or the window closed).
+          .not("published_at", "is", null)
           .not("text", "is", null)
           .order("rating", { ascending: false })
           .order("created_at", { ascending: false })
