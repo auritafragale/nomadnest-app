@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
-import postgres from "npm:postgres@3.4.4";
+import postgres from "npm:postgres@3.4.9";
 import { stripPhotoMetadata } from "../_shared/photo-metadata.ts";
 
 // Admin-only, one-off: removes location and other metadata from photos that
