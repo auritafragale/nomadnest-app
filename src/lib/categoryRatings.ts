@@ -16,39 +16,12 @@ export const OWNER_RATING_CATEGORIES: { key: string; label: string }[] = [
   { key: "rating_clear_expectations", label: "Clear expectations" },
 ];
 
-export const REVIEW_CATEGORY_COLUMNS = [
-  "rating_pet_care",
-  "rating_communication",
-  "rating_cleanliness",
-  "rating_reliability",
-  "rating_respect_home",
-  "rating_home_accuracy",
-  "rating_pet_preparedness",
-  "rating_hospitality",
-  "rating_clear_expectations",
-] as const;
-
-type ReviewRow = object;
-
-/**
- * Averages each category sub-rating across a set of reviews.
- * Categories with no scores at all are omitted.
- */
-export const aggregateCategoryRatings = (
-  reviews: ReviewRow[],
+/** member_ratings' category averages, as a list with labels. */
+export const categoryAveragesFrom = (
+  averages: Record<string, number> | null | undefined,
   categories: { key: string; label: string }[]
-): CategoryAverage[] => {
-  return categories
-    .map(({ key, label }) => {
-      const values = reviews
-        .map((r) => (r as Record<string, unknown>)[key])
-        .filter((v): v is number => typeof v === "number" && v > 0);
-      if (values.length === 0) return null;
-      return {
-        key,
-        label,
-        average: values.reduce((a, b) => a + b, 0) / values.length,
-      };
-    })
-    .filter((c): c is CategoryAverage => c !== null);
-};
+): CategoryAverage[] =>
+  categories
+    .filter(({ key }) => typeof averages?.[key] === "number")
+    .map(({ key, label }) => ({ key, label, average: Number(averages![key]) }));
+

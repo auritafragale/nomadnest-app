@@ -20,7 +20,8 @@ import { toast } from "@/hooks/use-toast";
 import { BadgeCheck, ChevronRight, Flag, Loader2, Mail, MessageCircle, Phone, Send, ShieldCheck, Star } from "lucide-react";
 import { useStartConversation } from "@/hooks/useConversations";
 import SitterReviewsSummaryCard from "@/components/reviews/SitterReviewsSummaryCard";
-import { useSitterAverageRating } from "@/hooks/useSitterReviews";
+import ProfileBlockButton from "@/components/block/ProfileBlockButton";
+import { useMemberRating } from "@/lib/reviews";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { ShareDialog } from "@/components/share/ShareDialog";
 import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
@@ -138,7 +139,7 @@ const SitterDetail = () => {
   }, [isPetParentViewer, nomadWarning.hasWarning]);
 
   const startConversation = useStartConversation();
-  const { data: ratingData } = useSitterAverageRating(user ? userId : undefined);
+  const { data: ratingData } = useMemberRating(user ? userId : undefined, "sitter");
 
   useEffect(() => {
     const fetchSitterData = async () => {
@@ -353,7 +354,7 @@ const SitterDetail = () => {
           ? stat(
               <span className="inline-flex items-center gap-1">
                 <Star className="h-4 w-4 fill-[#E8B53E] text-[#E8B53E]" aria-hidden="true" />
-                {ratingData.average.toFixed(1)}
+                {(ratingData.average ?? 0).toFixed(1)}
               </span>,
               `${ratingData.count} ${ratingData.count === 1 ? "review" : "reviews"}`,
             )
@@ -539,6 +540,7 @@ const SitterDetail = () => {
                   }
                 />
               )}
+              {isOther && <ProfileBlockButton otherId={userId!} otherName={name} />}
 
               {preview && <NeverShownNote>your last name, email, phone number, date of birth, ID documents or exact location.</NeverShownNote>}
             </div>

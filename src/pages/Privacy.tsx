@@ -49,6 +49,20 @@ const Privacy = () => {
           <li>Message notifications, pushes and emails never include the text of a message (emails get forwarded and messages can hold contact details). They say who wrote and about which listing. If you choose "Once a day" for message emails, you get one email a day with how many unread messages you have and who they are from, still without the text.</li>
           <li>Voice input ("Tell me out loud" in the listing form) uses your device's or browser's own speech recognition (for example from Apple or Google), which turns your words into text. NomadNest never receives or stores the recording, only the text you choose to keep.</li>
         </ul>
+        <h3>Reviews</h3>
+        <ul>
+          <li>A review shows your first name, the city of the sit, the month it ended, how long it was and the pets cared for (as type and number, never their names). It also shows your written review, your “What stood out?” picks and, if you said Yes, that you would have them or sit for them again. A No is never shown, but every answer counts towards the percentage on their profile.</li>
+          <li>Reviews appear only when both of you have written yours, or when the 14 days for reviews end, whichever comes first. Until then, neither of you can see the other’s review.</li>
+          <li>The private questions at the end of a review, and anything you add to them, are only seen by the NomadNest team.</li>
+          <li>The member you reviewed can post one public reply under your review. Replies are public, like reviews.</li>
+          <li>The short “What Pet Parents say” or “What Nomads say” summary on a reviews page is written by AI (Anthropic) from published review text only, never from private answers, and never names a reviewer. It is switched on by the NomadNest team.</li>
+        </ul>
+        <h3>Blocking, reports and the word filter</h3>
+        <ul>
+          <li>You can block a member. You then can’t message each other, they can’t apply to your home or invite you, and you don’t see each other in Browse, Nomads Near Me or City Chats. The other member is not told. If you have a confirmed sit with them that hasn’t started, blocking cancels it, and they are told the sit was cancelled (not that you blocked them). A sit happening now keeps its chat open until it ends. You can see and unblock the members you blocked in Settings, Privacy.</li>
+          <li>When you report someone, our team may read your chat with them to check what happened, and may email you. The member you report isn’t told who reported them.</li>
+          <li>A word filter checks text automatically when it is saved, for slurs, sexual words, threats and, in public places, swearing. No one reads your messages for it, and we don’t keep a record of what it checked.</li>
+        </ul>
         <h3>Payments</h3>
         <ul>
           <li>Membership payment data is processed by Stripe; we do not store card details. We keep your Stripe customer and subscription reference, your plan, its renewal date and whether a payment failed.</li>
@@ -57,6 +71,7 @@ const Privacy = () => {
         <h3>Technical</h3>
         <ul>
           <li>IP address, device, browser, language, log data, approximate location, cookies and similar technologies.</li>
+          <li>The contact form: we use your name and email only to reply to you.</li>
           <li>Your time zone (for example Europe/London), taken from your device when you sign in. We use it only to send the daily message email in your morning. If we don't have it, we use London time.</li>
         </ul>
       </section>

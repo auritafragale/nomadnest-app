@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { LayoutDashboard, ShieldCheck, Gift, Mail, AlertTriangle, Flag } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Gift, Mail, AlertTriangle, Flag, Filter } from "lucide-react";
 
 type PendingCountKey = "verifications_pending" | "flags_pending" | "reports_pending";
 
@@ -14,6 +14,7 @@ const items: { href: string; label: string; icon: typeof LayoutDashboard; pendin
   { href: "/admin/trust", label: "Flags & Strikes", icon: AlertTriangle, pendingKey: "flags_pending" },
   { href: "/admin/reports", label: "Reports", icon: Flag, pendingKey: "reports_pending" },
   { href: "/admin/emails", label: "Emails", icon: Mail },
+  { href: "/admin/words", label: "Word filter", icon: Filter },
 ];
 
 const AdminNav = () => {
@@ -44,7 +45,7 @@ const AdminNav = () => {
             key={href}
             to={href}
             className={cn(
-              "flex items-center gap-2 shrink-0 rounded-xl border px-3.5 py-2 text-sm font-medium transition-colors",
+              "flex min-h-11 items-center gap-2 shrink-0 rounded-xl border px-3.5 py-2 text-sm font-medium transition-colors",
               active
                 ? "bg-primary text-primary-foreground border-primary"
                 : "bg-surface text-muted-foreground border-border hover:text-foreground"

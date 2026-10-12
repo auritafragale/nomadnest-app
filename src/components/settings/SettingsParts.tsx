@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 /** A setting with a switch; the whole row is the label (44px+). */
@@ -18,13 +17,36 @@ export const ToggleRow = ({
   onChange: (v: boolean) => void;
   disabled?: boolean;
 }) => (
-  <label htmlFor={id} className={cn("flex min-h-[64px] cursor-pointer items-center justify-between gap-4 rounded-[18px] border border-[var(--nn-border)] bg-card p-4", disabled && "cursor-default opacity-70")}>
+  // The whole row is the switch (64px+ tap target); the switch inside is
+  // drawn at its usual size.
+  <button
+    type="button"
+    id={id}
+    role="switch"
+    aria-checked={checked}
+    aria-labelledby={`${id}-label`}
+    aria-describedby={sub ? `${id}-sub` : undefined}
+    disabled={disabled}
+    onClick={() => onChange(!checked)}
+    className={cn(
+      "flex min-h-[64px] w-full cursor-pointer items-center justify-between gap-4 rounded-[18px] border border-[var(--nn-border)] bg-card p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      disabled && "cursor-default opacity-70",
+    )}
+  >
     <span className="flex min-w-0 flex-col gap-0.5">
-      <span className="text-[15px] font-semibold">{label}</span>
-      {sub && <span className="text-sm text-muted-foreground">{sub}</span>}
+      <span id={`${id}-label`} className="text-[15px] font-semibold">{label}</span>
+      {sub && <span id={`${id}-sub`} className="text-sm text-muted-foreground">{sub}</span>}
     </span>
-    <Switch id={id} checked={checked} onCheckedChange={onChange} disabled={disabled} />
-  </label>
+    <span
+      aria-hidden="true"
+      className={cn(
+        "inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-transparent transition-colors",
+        checked ? "bg-primary" : "bg-input",
+      )}
+    >
+      <span className={cn("block h-5 w-5 rounded-full bg-background shadow-lg transition-transform", checked ? "translate-x-5" : "translate-x-0")} />
+    </span>
+  </button>
 );
 
 /** A fact about the account: label, value, a line under it and a chip. */

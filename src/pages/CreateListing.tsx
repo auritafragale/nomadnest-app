@@ -22,6 +22,7 @@ import HomeStep from "@/components/listing/form/HomeStep";
 import { ListingDeclaration } from "@/components/listing/ListingDeclaration";
 import { NN_PAGE, RoleTheme, nnButton, shortRange } from "@/components/nn/ui";
 import { petLine } from "@/components/listing/ListingParts";
+import { wordFilterMessage } from "@/lib/wordFilter";
 import { cn } from "@/lib/utils";
 
 /** Create a listing (design: ListingFormPhone Create, ListingFormTablet, ListingStatesPhone). */
@@ -83,7 +84,7 @@ const CreateListing = () => {
         navigate("/dashboard");
       }
     } catch (err) {
-      toast({ title: "Couldn't save your listing", description: err instanceof Error ? err.message : "Please try again.", variant: "destructive" });
+      toast({ title: "Couldn't save your listing", description: wordFilterMessage(err) ?? (err instanceof Error ? err.message : "Please try again."), variant: "destructive" });
     }
   };
 

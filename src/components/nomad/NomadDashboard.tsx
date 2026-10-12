@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { arrivalWindowOpen, sitTiming } from "@/lib/sitTiming";
 import { AskNestSheet } from "@/components/welcome-guide/AskNestSheet";
 import WriteReviewDialog from "@/components/reviews/WriteReviewDialog";
+import ReviewsAboutYouRow, { ReviewsAboutYouNavRow } from "@/components/reviews/ReviewsAboutYouRow";
 import { useSits } from "@/hooks/useSits";
 import { useMyGuideWindows, daysUntil } from "@/hooks/useSitterGuide";
 import { useAskNestAvailable } from "@/hooks/useAskNest";
@@ -348,6 +349,7 @@ const NomadProfileList = ({ className }: { className?: string }) => {
         iconTone="teal"
       />
       <NavRow to="/my-sit-stories" icon={BookHeart} title="Sit Stories" subtitle={links.stories.detail} />
+      <ReviewsAboutYouNavRow side="sitter" />
     </SectionCard>
   );
 };
@@ -506,6 +508,7 @@ export const NomadDashboard = ({
       <TodoList items={todos} />
       <ApplicationsSummary />
       <NomadProfileTiles className="md:col-span-2 lg:hidden" />
+      <ReviewsAboutYouRow side="sitter" className="md:col-span-2 lg:hidden" />
       {/* Without a sit now or next, My sits (past sits, reviews, Sit Stories) is one tap away here. */}
       {!current && !next && myPastSits > 0 && (
         <SectionCard label="Your sits" className="px-[18px] py-1.5 md:col-span-2">

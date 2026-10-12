@@ -65,6 +65,7 @@ import AdminHub from "./pages/AdminHub";
 import AdminVerifications from "./pages/AdminVerifications";
 import AdminPerks from "./pages/AdminPerks";
 import AdminEmails from "./pages/AdminEmails";
+import AdminWords from "./pages/AdminWords";
 import AdminTrust from "./pages/AdminTrust";
 import AdminTrustDetail from "./pages/AdminTrustDetail";
 import AdminReliabilityDetail from "./pages/AdminReliabilityDetail";
@@ -201,6 +202,7 @@ const AppShell = () => {
         <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
         <Route path="/admin/listings" element={<AdminRoute><AdminListings /></AdminRoute>} />
         <Route path="/admin/emails" element={<AdminRoute><AdminEmails /></AdminRoute>} />
+        <Route path="/admin/words" element={<AdminRoute><AdminWords /></AdminRoute>} />
         <Route path="/admin/checkin-photo-cleanup" element={<AdminRoute><AdminCheckinPhotoCleanup /></AdminRoute>} />
         <Route path="/admin/chat-photo-cleanup" element={<AdminRoute><AdminChatPhotoCleanup /></AdminRoute>} />
 

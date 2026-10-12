@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { wordFilterMessage } from "@/lib/wordFilter";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface ThreadSender {
@@ -17,13 +18,12 @@ export interface ThreadReply {
   sender?: ThreadSender | null;
 }
 
-const hydrate = async (rows: ThreadReply[]): Promise<ThreadReply[]> => {
+// First names and photos only, of people who wrote in this room (and never
+// across a block), through get_city_chat_senders.
+const hydrate = async (rows: ThreadReply[], roomId: string | undefined): Promise<ThreadReply[]> => {
   const ids = Array.from(new Set(rows.map((r) => r.sender_user_id)));
-  if (ids.length === 0) return rows;
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, first_name, avatar_url")
-    .in("id", ids);
+  if (ids.length === 0 || !roomId) return rows;
+  const { data } = await supabase.rpc("get_city_chat_senders", { p_room_id: roomId, p_user_ids: ids });
   const map = new Map((data || []).map((p) => [p.id, p as ThreadSender]));
   return rows.map((r) => ({ ...r, sender: map.get(r.sender_user_id) || null }));
 };
@@ -51,7 +51,7 @@ export const useCityChatThread = (roomId: string | undefined, parentId: string |
         .select("id, room_id, sender_user_id, content, created_at")
         .eq("parent_message_id", parentId)
         .order("created_at", { ascending: true });
-      const hydrated = await hydrate((data || []) as ThreadReply[]);
+      const hydrated = await hydrate((data || []) as ThreadReply[], roomId);
       if (mounted) {
         setReplies(hydrated);
         setLoading(false);
@@ -70,7 +70,7 @@ export const useCityChatThread = (roomId: string | undefined, parentId: string |
           filter: `parent_message_id=eq.${parentId}`,
         },
         async (payload) => {
-          const [row] = await hydrate([payload.new as ThreadReply]);
+          const [row] = await hydrate([payload.new as ThreadReply], roomId);
           setReplies((prev) => (prev.some((r) => r.id === row.id) ? prev : [...prev, row]));
         },
       )
@@ -80,7 +80,7 @@ export const useCityChatThread = (roomId: string | undefined, parentId: string |
       mounted = false;
       supabase.removeChannel(channel);
     };
-  }, [parentId]);
+  }, [parentId, roomId]);
 
   const sendReply = useCallback(
     async (content: string) => {
@@ -93,7 +93,8 @@ export const useCityChatThread = (roomId: string | undefined, parentId: string |
         parent_message_id: parentId,
       });
       setSending(false);
-      return !error;
+      // false, or the word-filter message to show (the reply stays in the box).
+      return error ? (wordFilterMessage(error) ?? false) : true;
     },
     [roomId, parentId, user],
   );

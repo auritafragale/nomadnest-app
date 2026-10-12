@@ -134,6 +134,8 @@ const handler = async (req: Request): Promise<Response> => {
       "support@nomadnest.global",
       notification.subject,
       renderBrandedEmail(notification, { footerReason: notification.footerReason }),
+      // The team can just press Reply (the address was checked above).
+      { replyTo: email },
     );
 
     const confirmation = buildContactConfirmationEmail({ categoryLabel });

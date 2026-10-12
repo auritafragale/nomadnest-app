@@ -47,10 +47,10 @@ const ThreadBody = ({
     const body = input.trim();
     if (!body || sending) return;
     setInput("");
-    const ok = await sendReply(body);
-    if (!ok) {
+    const result = await sendReply(body);
+    if (result !== true) {
       setInput(body);
-      toast({ title: "Could not send reply", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Could not send reply", description: typeof result === "string" ? result : "Please try again.", variant: "destructive" });
     }
   };
 

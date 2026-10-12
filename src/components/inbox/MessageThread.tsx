@@ -39,12 +39,17 @@ import { parsePhoneShareMessage } from "@/lib/phoneShare";
 import { petList, useThreadSit } from "@/hooks/useThreadSit";
 import { CONTACT_LABEL, MONEY_NOTE, NOT_CONFIRMED_NOTE, detectContactDetail, mentionsMoney } from "@/lib/chatSafety";
 import { shortRange, nnButton } from "@/components/nn/ui";
+import BlockMemberSheet from "@/components/block/BlockMemberSheet";
+import MemberReportSheet from "@/components/block/MemberReportSheet";
+import { useUnblockMember } from "@/hooks/useBlocks";
+import { SWEAR_NOTE_TEXT, SWEAR_NOTE_TITLE, WORD_FILTER_BANNED } from "@/lib/wordFilter";
 
 interface MessageThreadProps {
   conversation: Conversation | null;
   messages: Message[];
   isLoading?: boolean;
-  onSend: (body: string) => void;
+  /** Resolves false when the message wasn't sent (the text goes back in the box). */
+  onSend: (body: string) => Promise<{ ok: boolean; banned?: boolean; swear?: boolean }> | void;
   isSending?: boolean;
   onBack?: () => void;
   otherUserRole?: "sitter" | "owner";
@@ -108,6 +113,12 @@ export const MessageThread = ({
   const [contactDismissed, setContactDismissed] = useState(false);
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [askDismissed, setAskDismissed] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
+  const [moneyReportOpen, setMoneyReportOpen] = useState(false);
+  // Word filter: a banned word (not sent, text kept) or a private note after
+  // sending with swearing (only the sender sees it).
+  const [filterNote, setFilterNote] = useState<null | "banned" | "swear">(null);
+  const unblock = useUnblockMember();
   const photoLibraryRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -117,6 +128,8 @@ export const MessageThread = ({
   const otherName = otherUser?.first_name || "Member";
   // The other member closed their account: the chat stays, read-only.
   const otherLeft = !!conversation && (conversation.member_left || !conversation.owner_user_id || !conversation.sitter_user_id);
+  const iBlocked = !!conversation?.i_blocked;
+  const chatClosed = !!conversation?.chat_closed;
   const userName = user?.user_metadata?.first_name || "User";
   const context = conversation?.context;
   const liveSit = !!context && hasLiveSit(context);
@@ -282,7 +295,23 @@ export const MessageThread = ({
 
   const send = () => {
     if ((!newMessage.trim() && !pendingPhoto) || isSending) return;
-    onSend(pendingPhoto ? buildImageMessageBody(pendingPhoto.path, newMessage) : newMessage.trim());
+    const typed = newMessage;
+    const photo = pendingPhoto;
+    const result = onSend(photo ? buildImageMessageBody(photo.path, typed) : typed.trim());
+    setFilterNote(null);
+    if (result && typeof (result as Promise<unknown>).then === "function") {
+      void (result as Promise<{ ok: boolean; banned?: boolean; swear?: boolean }>).then((r) => {
+        if (!r.ok) {
+          // Not sent: the message stays in the box to edit.
+          setNewMessage(typed);
+          setPendingPhoto(photo);
+          if (r.banned) setFilterNote("banned");
+          requestAnimationFrame(resizeInput);
+        } else if (r.swear) {
+          setFilterNote("swear");
+        }
+      });
+    }
     setNewMessage("");
     setPendingPhoto(null);
     setMoneyDismissed(false);
@@ -375,7 +404,7 @@ export const MessageThread = ({
   const contactKind = !sitConfirmedOnce && !contactDismissed ? detectContactDetail(draft) : null;
   const moneyWarn = !moneyDismissed && mentionsMoney(draft);
   const canShare = !!phone.state?.can_share;
-  const showAsk = !otherLeft && canShare && !phone.state?.i_am_sharing && !iEverShared && !askDismissed && !phone.isLoading;
+  const showAsk = !otherLeft && !chatClosed && canShare && !phone.state?.i_am_sharing && !iEverShared && !askDismissed && !phone.isLoading;
 
   const strip = liveSit && context?.sit_id && (
     <Link
@@ -485,12 +514,41 @@ export const MessageThread = ({
                 <span className="font-semibold text-[var(--nn-danger-text)]">Report this chat</span>
                 <span className="text-xs text-muted-foreground">Tell the NomadNest team. Screenshots are optional.</span>
               </DropdownMenuItem>
+              {otherUser?.id &&
+                (iBlocked ? (
+                  <DropdownMenuItem onSelect={() => unblock.mutate(otherUser.id)} className="flex-col items-start gap-0.5 rounded-xl py-2.5">
+                    <span className="font-semibold">Unblock {otherName}</span>
+                    <span className="text-xs text-muted-foreground">You can message each other again</span>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onSelect={() => setBlockOpen(true)} className="flex-col items-start gap-0.5 rounded-xl py-2.5">
+                    <span className="font-semibold text-[var(--nn-danger-text)]">Block {otherName}</span>
+                    <span className="text-xs text-muted-foreground">They won’t be told</span>
+                  </DropdownMenuItem>
+                ))}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
       </header>
 
       {strip}
+
+      {iBlocked && (
+        <div role="status" className="mx-3 mt-2 flex flex-wrap items-center gap-3 rounded-[18px] bg-muted p-3.5 md:mx-4">
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-[15px] font-bold">You blocked {otherName}</span>
+            <span className="text-sm text-muted-foreground">You won’t get messages, applications or invitations from {otherName}. They are not told.</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => otherUser?.id && unblock.mutate(otherUser.id)}
+            disabled={unblock.isPending}
+            className={nnButton("secondary", "h-11 rounded-xl px-4")}
+          >
+            Unblock
+          </button>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 md:px-5" role="log" aria-label={`Messages with ${otherName}`} aria-live="polite">
@@ -764,6 +822,10 @@ export const MessageThread = ({
         <p className="shrink-0 border-t border-[var(--nn-border)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center text-sm text-muted-foreground">
           This member has left NomadNest. You can still read your conversation.
         </p>
+      ) : chatClosed ? (
+        <p className="shrink-0 border-t border-[var(--nn-border)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center text-sm text-muted-foreground">
+          {iBlocked ? `You can’t send messages to ${otherName} while they’re blocked.` : "You can’t reply to this conversation."}
+        </p>
       ) : (
         <form
           onSubmit={handleSubmit}
@@ -798,10 +860,25 @@ export const MessageThread = ({
                 <button type="button" onClick={() => setMoneyDismissed(true)} className={nnButton("secondary", "min-h-[40px] px-4")}>
                   Got it
                 </button>
-                <button type="button" onClick={reportChat} className={nnButton("secondary", "min-h-[40px] px-4")}>
+                <button type="button" onClick={() => setMoneyReportOpen(true)} className={nnButton("secondary", "min-h-[40px] px-4")}>
                   Report
                 </button>
               </div>
+            </div>
+          )}
+          {filterNote === "banned" && (
+            <div role="alert" className="mb-2 rounded-2xl border border-[var(--nn-danger-text)] bg-card p-3 text-sm">
+              <p className="font-bold text-[var(--nn-danger-text)]">Message not sent</p>
+              <p className="mt-0.5">{WORD_FILTER_BANNED.replace("Message not sent. ", "")}</p>
+            </div>
+          )}
+          {filterNote === "swear" && (
+            <div role="status" className="mb-2 rounded-2xl border border-[var(--nn-tip-border)] bg-[var(--nn-tip-bg)] p-3 text-sm text-[var(--nn-tip-text)]">
+              <p className="font-bold">{SWEAR_NOTE_TITLE}</p>
+              <p className="mt-0.5">{SWEAR_NOTE_TEXT}</p>
+              <button type="button" onClick={() => setFilterNote(null)} className={nnButton("secondary", "mt-2 min-h-[40px] px-4")}>
+                Got it
+              </button>
             </div>
           )}
           {pendingPhoto && (
@@ -845,7 +922,11 @@ export const MessageThread = ({
               disabled={isSending}
               className={cn(
                 "min-h-[44px] flex-1 resize-none rounded-[22px] border-[1.5px] bg-card px-4 py-2.5 text-[15px] leading-snug outline-none placeholder:text-muted-foreground focus:border-[var(--nn-accent)]",
-                contactKind || moneyWarn ? "border-[var(--nn-tip-border)]" : "border-[var(--nn-border)]",
+                filterNote === "banned"
+                  ? "border-[var(--nn-danger-text)]"
+                  : contactKind || moneyWarn
+                    ? "border-[var(--nn-tip-border)]"
+                    : "border-[var(--nn-border)]",
               )}
             />
             <button
@@ -858,6 +939,28 @@ export const MessageThread = ({
             </button>
           </div>
         </form>
+      )}
+
+      {otherUser?.id && (
+        <>
+          <BlockMemberSheet
+            otherId={otherUser.id}
+            otherName={otherName}
+            open={blockOpen}
+            onOpenChange={setBlockOpen}
+            conversationId={conversation?.id ?? null}
+          />
+          <MemberReportSheet
+            otherId={otherUser.id}
+            otherName={otherName}
+            open={moneyReportOpen}
+            onOpenChange={setMoneyReportOpen}
+            title={`Report ${otherName}`}
+            conversationId={conversation?.id ?? null}
+            initialReason="asked_for_money"
+            skipLabel="Cancel"
+          />
+        </>
       )}
 
       <PhoneShareSheet

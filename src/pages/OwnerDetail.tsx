@@ -12,7 +12,8 @@ import { toast } from "@/hooks/use-toast";
 import { BadgeCheck, Flag, Home, Loader2, Mail, MessageCircle, Phone, Star } from "lucide-react";
 import { useStartConversation } from "@/hooks/useConversations";
 import OwnerReviewsSummaryCard from "@/components/reviews/OwnerReviewsSummaryCard";
-import { useOwnerAverageRating } from "@/hooks/useOwnerReviews";
+import ProfileBlockButton from "@/components/block/ProfileBlockButton";
+import { useMemberRating } from "@/lib/reviews";
 import ReportDialog from "@/components/reports/ReportDialog";
 import { useHideBottomNav } from "@/lib/bottomNav";
 import { NN_PAGE, RoleTheme, SectionCard, StatusChip, nnButton, shortRange } from "@/components/nn/ui";
@@ -79,7 +80,8 @@ const OwnerDetail = () => {
   const [isStartingChat, setIsStartingChat] = useState(false);
 
   const startConversation = useStartConversation();
-  const ratingData = useOwnerAverageRating(userId);
+  const { data: ownerRating } = useMemberRating(userId, "owner");
+  const ratingData = { averageRating: ownerRating?.average ?? 0, reviewCount: ownerRating?.count ?? 0 };
 
   // Preview (your own profile, from the eye button): exactly what Nomads get,
   // plus owner-only tips while "Show tips" is on.
@@ -345,6 +347,7 @@ const OwnerDetail = () => {
                   }
                 />
               )}
+              {isOther && userId && <ProfileBlockButton otherId={userId} otherName={name} />}
 
               {preview && (
                 <NeverShownNote>

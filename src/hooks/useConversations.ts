@@ -31,6 +31,10 @@ export interface Conversation {
   } | null;
   /** The other member closed their account: the chat stays, read-only. */
   member_left: boolean;
+  /** I blocked the other member (only the blocker ever learns this). */
+  i_blocked?: boolean;
+  /** No new messages: a block either way (unless a sit is happening now). */
+  chat_closed?: boolean;
   /** The most relevant sit, application and invite for the thread's listing. */
   context: ConversationContext;
   listing?: {
@@ -71,6 +75,8 @@ type PartnerRow = {
   avatar_url: string | null;
   id_verified: boolean;
   member_left: boolean;
+  i_blocked?: boolean;
+  chat_closed?: boolean;
   listing_id: string | null;
   listing_title: string | null;
   listing_city: string | null;
@@ -155,6 +161,8 @@ export const useConversations = () => {
             id_verified: r.id_verified,
           },
           member_left: r.member_left,
+          i_blocked: !!r.i_blocked,
+          chat_closed: !!r.chat_closed,
           context,
           listing: r.listing_id ? { id: r.listing_id, title: r.listing_title ?? "", city: r.listing_city } : null,
           last_message: r.last_at ? { body: r.last_body ?? "", created_at: r.last_at, sender_user_id: r.last_sender ?? "" } : null,

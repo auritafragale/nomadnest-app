@@ -90,7 +90,8 @@ export function renderBrandedEmail(
 export async function sendBrandedEmail(
   to: string,
   subject: string,
-  html: string
+  html: string,
+  options: { replyTo?: string } = {},
 ): Promise<unknown> {
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
   if (!RESEND_API_KEY) {
@@ -108,6 +109,7 @@ export async function sendBrandedEmail(
       to: [to],
       subject,
       html,
+      ...(options.replyTo ? { reply_to: options.replyTo } : {}),
     }),
   });
   if (!response.ok) {

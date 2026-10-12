@@ -7,6 +7,7 @@ import { SectionCard, SerifTitle, StatusChip, nnButton, shortRange, type ChipTon
 import { TodoList, type TodoItem } from "@/components/dashboard/TodoList";
 import { OwnerListingCard } from "@/components/dashboard/OwnerListingCard";
 import WriteReviewDialog from "@/components/reviews/WriteReviewDialog";
+import ReviewsAboutYouRow from "@/components/reviews/ReviewsAboutYouRow";
 import { SitMoreMenu, SitRescheduleNotice } from "@/components/sits/SitActions";
 import { useAuth } from "@/contexts/AuthContext";
 import { sitChip, sitTiming } from "@/lib/sitTiming";
@@ -374,6 +375,7 @@ export const ParentDashboard = ({
         />
       )}
       <StoriesRow className={cn("md:order-5 md:col-span-2", hasSits && "lg:col-span-1")} />
+      <ReviewsAboutYouRow side="owner" className="md:order-6 md:col-span-2 lg:col-span-1" />
     </DashboardColumns>
   );
 };

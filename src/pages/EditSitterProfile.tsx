@@ -19,6 +19,7 @@ import PlacesAutocompleteField from "@/components/maps/PlacesAutocompleteField";
 import { FieldLabel, PillGroup, inputClass } from "@/components/listing/form/FormBits";
 import { NN_PAGE, RoleTheme, nnButton } from "@/components/nn/ui";
 import { BioField, CouldNotLoad, EditorHub, LimitedInput, PrivateDetailsFields, SectionPage, type SectionDef } from "@/components/profile/edit/EditorParts";
+import { wordFilterMessage } from "@/lib/wordFilter";
 import { cn } from "@/lib/utils";
 
 // Stored values stay as they are; only the words shown change.
@@ -509,7 +510,7 @@ const EditSitterProfile = () => {
       toast({ title: "Saved", description: "Your profile is up to date." });
       navigate(HUB);
     } catch (e) {
-      toast({ title: "Couldn't save", description: e instanceof Error ? e.message : "Please try again.", variant: "destructive" });
+      toast({ title: "Couldn't save", description: wordFilterMessage(e) ?? (e instanceof Error ? e.message : "Please try again."), variant: "destructive" });
     } finally {
       setSaving(false);
     }
