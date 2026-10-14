@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { invitableRanges, rangeInviteState } from "@/lib/invites";
+import { loadLiveApplicationRanges } from "@/hooks/useSitterInvites";
 
 export interface InviteListing {
   id: string;
@@ -21,15 +22,17 @@ export interface InviteListing {
   sit_dates: { id: string; start_date: string; end_date: string; status: string }[];
 }
 
-const NO_INVITES: { sit_dates_id: string; status: string }[] = [];
+const NO_EXISTING: { invites: { sit_dates_id: string; status: string }[]; liveApps: string[] } = { invites: [], liveApps: [] };
 
 const overlaps = (s: string, e: string, ranges: { start: string; end: string }[]) => ranges.some((r) => r.start <= e && r.end >= s);
 
 /**
  * Invite a Nomad to one of your sits (design: NomadPublicPhone invite sheet).
  * One invitation per ticked date range, then a success screen. A range with
- * a live (pending or viewed) or applied invitation for this Nomad can't be
- * ticked; a declined one can be invited again.
+ * a live (pending or viewed) invitation, or where this Nomad has a live
+ * application (applied, shortlisted, or accepted with a live sit), can't be
+ * ticked. After a decline, or once the application has ended, it can be
+ * invited again.
  */
 const InvitePanel = ({
   open,
@@ -64,21 +67,25 @@ const InvitePanel = ({
   const dates = (listing?.sit_dates ?? []).filter((d) => d.status === "open" && d.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date));
   const queryClient = useQueryClient();
 
-  // This Nomad's invitations for the chosen sit, for the state of each range.
-  const { data: existing = NO_INVITES } = useQuery({
+  // This Nomad's invitations and live applications for the chosen sit, read
+  // together, for the state of each range.
+  const { data: existing = NO_EXISTING } = useQuery({
     queryKey: ["invite-panel-existing", listing?.id, sitterUserId],
     enabled: open && !!listing,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sitter_invites")
-        .select("sit_dates_id, status")
-        .eq("listing_id", listing!.id)
-        .eq("sitter_user_id", sitterUserId);
+      const [{ data, error }, liveApps] = await Promise.all([
+        supabase.from("sitter_invites").select("sit_dates_id, status").eq("listing_id", listing!.id).eq("sitter_user_id", sitterUserId),
+        loadLiveApplicationRanges(listing!.id, sitterUserId),
+      ]);
       if (error) throw error;
-      return data ?? [];
+      return { invites: data ?? [], liveApps: [...liveApps] };
     },
   });
-  const stateOf = (id: string) => rangeInviteState(existing.filter((r) => r.sit_dates_id === id).map((r) => r.status));
+  const stateOf = (id: string) =>
+    rangeInviteState(
+      existing.invites.filter((r) => r.sit_dates_id === id).map((r) => r.status),
+      existing.liveApps.includes(id),
+    );
   const pickable = (id: string) => {
     const s = stateOf(id);
     return s !== "waiting" && s !== "applied";
@@ -115,15 +122,19 @@ const InvitePanel = ({
     if (!listing || dateIds.length === 0) return;
     setSending(true);
     try {
-      // Only live (pending, viewed) and applied invitations count as
-      // "already invited"; a declined range can be invited again.
-      const { data: current } = await supabase
-        .from("sitter_invites")
-        .select("sit_dates_id, status")
-        .eq("listing_id", listing.id)
-        .eq("sitter_user_id", sitterUserId)
-        .in("sit_dates_id", dateIds);
-      const fresh = invitableRanges(dateIds, current ?? []);
+      // Only live (pending, viewed) invitations and live applications count
+      // as "already invited"; a declined range, or one whose application has
+      // ended, can be invited again.
+      const [{ data: current }, liveApps] = await Promise.all([
+        supabase
+          .from("sitter_invites")
+          .select("sit_dates_id, status")
+          .eq("listing_id", listing.id)
+          .eq("sitter_user_id", sitterUserId)
+          .in("sit_dates_id", dateIds),
+        loadLiveApplicationRanges(listing.id, sitterUserId),
+      ]);
+      const fresh = invitableRanges(dateIds, current ?? [], liveApps);
       if (fresh.length === 0) {
         toast({ variant: "destructive", title: "Already invited", description: `You've already invited ${sitterName} for these dates.` });
         return;
@@ -246,26 +257,43 @@ const InvitePanel = ({
               const free = overlaps(d.start_date, d.end_date, freeDates);
               const state = stateOf(d.id);
               const locked = !pickable(d.id);
-              const note =
-                state === "waiting"
-                  ? `Waiting for ${sitterName}`
-                  : state === "applied"
-                    ? `${sitterName} applied`
-                    : state === "declined"
-                      ? `${sitterName} declined · you can invite again`
-                      : null;
+              // A locked range shows only its note (no "is free" chip). For
+              // "applied", the note links to this range's applicants.
+              if (locked) {
+                return (
+                  <div key={d.id} aria-disabled="true" className="flex min-h-[56px] items-center gap-3 rounded-2xl border-[1.5px] border-border bg-muted px-4 py-2">
+                    <span className="h-[26px] w-[26px] shrink-0 rounded-lg shadow-[inset_0_0_0_2px_hsl(var(--border))]" aria-hidden="true" />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="text-[15px] font-bold">{shortRange(d.start_date, d.end_date)}</span>
+                      {state === "applied" ? (
+                        <span className="text-sm text-muted-foreground">
+                          {sitterName} applied ·{" "}
+                          <Link
+                            to={`/applications?listing=${listing.id}&range=${d.id}`}
+                            onClick={() => onOpenChange(false)}
+                            className="-my-3 inline-flex min-h-[44px] items-center font-semibold text-[var(--nn-accent-dark)] underline underline-offset-2"
+                          >
+                            see Applications
+                          </Link>
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Waiting for {sitterName}</span>
+                      )}
+                    </span>
+                  </div>
+                );
+              }
+              const note = state === "declined" ? `${sitterName} declined · you can invite again` : null;
               return (
                 <button
                   key={d.id}
                   type="button"
                   role="checkbox"
                   aria-checked={on}
-                  aria-disabled={locked}
                   onClick={() => toggle(d.id)}
                   className={cn(
                     "flex min-h-[56px] items-center gap-3 rounded-2xl px-4 py-2 text-left",
                     on ? "border-2 border-[var(--nn-accent)] bg-[var(--nn-tint)]" : "border-[1.5px] border-border bg-card",
-                    locked && "cursor-default bg-muted",
                   )}
                 >
                   <span className={cn("flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-lg", on ? "bg-[var(--nn-accent)] text-primary-foreground" : "shadow-[inset_0_0_0_2px_hsl(var(--border))]")}>

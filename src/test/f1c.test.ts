@@ -23,25 +23,29 @@ describe("other open dates vs confirmed sits (F1b)", () => {
   });
 });
 
-describe("which invitations count as already invited (F1c)", () => {
-  it("live and applied block a re-invite; declined does not", () => {
+// Updated for F1e: an "applied" invitation only blocks while its
+// application is live (passed in separately).
+describe("which invitations count as already invited (F1c, F1e)", () => {
+  it("live invitations block a re-invite; declined does not; applied only with a live application", () => {
     expect(blocksReinvite("pending")).toBe(true);
     expect(blocksReinvite("viewed")).toBe(true);
-    expect(blocksReinvite("applied")).toBe(true);
+    expect(blocksReinvite("applied")).toBe(false);
+    expect(blocksReinvite("applied", true)).toBe(true);
     expect(blocksReinvite("declined")).toBe(false);
   });
-  it("keeps a declined range invitable, drops live ones", () => {
+  it("keeps a declined range invitable, drops live ones and live applications", () => {
     const existing = [
       { sit_dates_id: "r1", status: "declined" },
       { sit_dates_id: "r2", status: "pending" },
       { sit_dates_id: "r3", status: "applied" },
     ];
-    expect(invitableRanges(["r1", "r2", "r3", "r4"], existing)).toEqual(["r1", "r4"]);
+    expect(invitableRanges(["r1", "r2", "r3", "r4"], existing, ["r3"])).toEqual(["r1", "r4"]);
+    expect(invitableRanges(["r1", "r2", "r3", "r4"], existing)).toEqual(["r1", "r3", "r4"]);
   });
   it("re-invited after a decline shows as waiting", () => {
     expect(rangeInviteState(["declined", "pending"])).toBe("waiting");
     expect(rangeInviteState(["declined"])).toBe("declined");
-    expect(rangeInviteState(["applied", "declined"])).toBe("applied");
+    expect(rangeInviteState(["applied", "declined"], true)).toBe("applied");
     expect(rangeInviteState([])).toBeNull();
   });
 });

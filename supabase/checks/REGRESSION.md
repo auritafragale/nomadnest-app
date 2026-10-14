@@ -69,6 +69,14 @@ admin"), that's a missing fixture, not a failure: note it and move on.
 | 43 | `batch_f1d_proof.sql` | every row `ok = true` |
 | 44 | `batch_f1d_member_test.sql` | `ERROR: PASS_ROLLED_BACK …` |
 | 45 | `batch_f1d_leftover.sql` | every count `0` (also checks the temporary Regressville listings) |
+| 46 | `batch_f1e_proof.sql` | every row `ok = true` (after the F1e repair) |
+| 47 | `batch_f1e_member_test.sql` | `ERROR: PASS_ROLLED_BACK …` |
+| 48 | `batch_f1e_leftover.sql` | every count `0` |
+
+One-off, not part of the regular run: `batch_f1e_repair_preview.sql` (read-only)
+lists the rows the F1e repair would change. Run it once before the repair
+migration is applied; after the repair it returns no rows with
+`will_repair = true`.
 
 ## Checks updated for later decisions
 
@@ -131,6 +139,11 @@ the old behaviour still holds):
   token, so a server step with no claim behaves like the server.
 
 ## Front-end tests
+
+**Decision, F1e:** an invitation marked "applied" only counts as "already
+invited" while its application is live (applied, shortlisted, or accepted
+with a confirmed or in-progress sit). The F1c invite tests were updated to
+that rule, and `src/test/f1e.test.ts` covers it.
 
 `npm test` (Vitest) runs the unit tests for the pure logic behind recent
 fixes: overlapping dates, which invitations count as "already invited", the
