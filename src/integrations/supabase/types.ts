@@ -3786,14 +3786,6 @@ export type Database = {
         Args: { p_a: string; p_b: string; p_sit: string }
         Returns: string
       }
-      post_invite_note: {
-        Args: {
-          p_conversation_id: string
-          p_listing_id: string
-          p_sitter_user_id: string
-        }
-        Returns: undefined
-      }
       prepare_account_deletion: { Args: { p_user_id: string }; Returns: Json }
       profile_is_discoverable: { Args: { p_user_id: string }; Returns: boolean }
       profile_visible_to_me: { Args: { p_id: string }; Returns: boolean }
