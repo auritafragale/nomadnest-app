@@ -29,6 +29,8 @@ export const notificationTarget = (n: DisplayNotification): string | null => {
       return data.url || "/dashboard?appTab=cancelled";
     case "invite":
       return data.url || "/dashboard";
+    case "invite_declined":
+      return data.url || "/dashboard?mode=owner";
     default:
       return data.url || null;
   }
@@ -53,6 +55,8 @@ export const notificationIcon = (n: DisplayNotification): { emoji: string; tone:
       return { emoji: "📋", tone: "accent" };
     case "invite":
       return { emoji: "✉️", tone: "accent" };
+    case "invite_declined":
+      return { emoji: "✉️", tone: "grey" };
     case "sit_cancelled":
       return { emoji: "✕", tone: "danger" };
     case "sit_update_loved":

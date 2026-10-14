@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveInviteConversation } from "@/lib/conversations";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, parseISO } from "date-fns";
+import { blocksReinvite } from "@/lib/invites";
 
 export interface SitterInvite {
   id: string;
@@ -126,17 +127,31 @@ export const useCreateInvite = () => {
       endDate?: string;
     }) => {
       const { listingTitle, startDate, endDate, ...inviteData } = invite;
-      
+
+      // Only a live (pending, viewed) or applied invitation for this range
+      // counts as "already invited"; a declined one can be sent again.
+      const { data: current } = await supabase
+        .from("sitter_invites")
+        .select("status")
+        .eq("sit_dates_id", invite.sit_dates_id)
+        .eq("sitter_user_id", invite.sitter_user_id);
+      if ((current ?? []).some((r) => blocksReinvite(r.status))) {
+        throw new Error("You've already invited them for these dates.");
+      }
+
       const { data, error } = await supabase
         .from("sitter_invites")
         .insert(inviteData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === "23505") throw new Error("You've already invited them for these dates.");
+        throw error;
+      }
 
 
-      // 1) The Nomad is told by the database (notify_sitter_on_invite): the
+      // 1) The Nomad is told by the database (notify_sitter_on_invite_batch): the
       //    in-app row, the push and the email, even if this tab closes now.
 
 

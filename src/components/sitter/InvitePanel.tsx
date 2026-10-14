@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import ResponsiveSheet from "@/components/nn/ResponsiveSheet";
@@ -10,6 +11,7 @@ import { useSideAccess } from "@/hooks/useSideAccess";
 import { Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { invitableRanges, rangeInviteState } from "@/lib/invites";
 
 export interface InviteListing {
   id: string;
@@ -19,12 +21,15 @@ export interface InviteListing {
   sit_dates: { id: string; start_date: string; end_date: string; status: string }[];
 }
 
+const NO_INVITES: { sit_dates_id: string; status: string }[] = [];
+
 const overlaps = (s: string, e: string, ranges: { start: string; end: string }[]) => ranges.some((r) => r.start <= e && r.end >= s);
 
 /**
  * Invite a Nomad to one of your sits (design: NomadPublicPhone invite sheet).
- * One invitation per ticked date range, with the same duplicate check and
- * chat message as before, then a success screen.
+ * One invitation per ticked date range, then a success screen. A range with
+ * a live (pending or viewed) or applied invitation for this Nomad can't be
+ * ticked; a declined one can be invited again.
  */
 const InvitePanel = ({
   open,
@@ -57,6 +62,27 @@ const InvitePanel = ({
   const listing = listings.find((l) => l.id === listingId) ?? listings[0];
   const today = new Date().toISOString().slice(0, 10);
   const dates = (listing?.sit_dates ?? []).filter((d) => d.status === "open" && d.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date));
+  const queryClient = useQueryClient();
+
+  // This Nomad's invitations for the chosen sit, for the state of each range.
+  const { data: existing = NO_INVITES } = useQuery({
+    queryKey: ["invite-panel-existing", listing?.id, sitterUserId],
+    enabled: open && !!listing,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sitter_invites")
+        .select("sit_dates_id, status")
+        .eq("listing_id", listing!.id)
+        .eq("sitter_user_id", sitterUserId);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const stateOf = (id: string) => rangeInviteState(existing.filter((r) => r.sit_dates_id === id).map((r) => r.status));
+  const pickable = (id: string) => {
+    const s = stateOf(id);
+    return s !== "waiting" && s !== "applied";
+  };
 
   // Start each opening fresh, with the dates the Nomad is free pre-ticked.
   useEffect(() => {
@@ -65,11 +91,14 @@ const InvitePanel = ({
     setListingId(listings[0]?.id ?? "");
   }, [open, listings]);
   useEffect(() => {
-    setDateIds(dates.filter((d) => overlaps(d.start_date, d.end_date, freeDates)).map((d) => d.id));
+    setDateIds(dates.filter((d) => overlaps(d.start_date, d.end_date, freeDates) && pickable(d.id)).map((d) => d.id));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listingId, open]);
+  }, [listingId, open, existing]);
 
-  const toggle = (id: string) => setDateIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const toggle = (id: string) => {
+    if (!pickable(id)) return;
+    setDateIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
 
   const helpMeWrite = async () => {
     if (!listing) return;
@@ -86,15 +115,15 @@ const InvitePanel = ({
     if (!listing || dateIds.length === 0) return;
     setSending(true);
     try {
-      // The same duplicate check as before, per date range.
-      const { data: existing } = await supabase
+      // Only live (pending, viewed) and applied invitations count as
+      // "already invited"; a declined range can be invited again.
+      const { data: current } = await supabase
         .from("sitter_invites")
-        .select("sit_dates_id")
+        .select("sit_dates_id, status")
         .eq("listing_id", listing.id)
         .eq("sitter_user_id", sitterUserId)
         .in("sit_dates_id", dateIds);
-      const already = new Set((existing ?? []).map((r) => r.sit_dates_id));
-      const fresh = dateIds.filter((id) => !already.has(id));
+      const fresh = invitableRanges(dateIds, current ?? []);
       if (fresh.length === 0) {
         toast({ variant: "destructive", title: "Already invited", description: `You've already invited ${sitterName} for these dates.` });
         return;
@@ -110,7 +139,16 @@ const InvitePanel = ({
           status: "pending",
         })),
       );
-      if (error) throw error;
+      if (error) {
+        // Someone else's tab invited them for one of these ranges a moment ago.
+        if (error.code === "23505") {
+          queryClient.invalidateQueries({ queryKey: ["invite-panel-existing"] });
+          toast({ variant: "destructive", title: "Already invited", description: `You've already invited ${sitterName} for these dates.` });
+          return;
+        }
+        throw error;
+      }
+      queryClient.invalidateQueries({ queryKey: ["invite-panel-existing"] });
 
       // The Nomad's notification comes from a database trigger (one for all
       // the ranges). The chat thread for this home and Nomad gets one note
@@ -206,19 +244,37 @@ const InvitePanel = ({
             {dates.map((d) => {
               const on = dateIds.includes(d.id);
               const free = overlaps(d.start_date, d.end_date, freeDates);
+              const state = stateOf(d.id);
+              const locked = !pickable(d.id);
+              const note =
+                state === "waiting"
+                  ? `Waiting for ${sitterName}`
+                  : state === "applied"
+                    ? `${sitterName} applied`
+                    : state === "declined"
+                      ? `${sitterName} declined · you can invite again`
+                      : null;
               return (
                 <button
                   key={d.id}
                   type="button"
                   role="checkbox"
                   aria-checked={on}
+                  aria-disabled={locked}
                   onClick={() => toggle(d.id)}
-                  className={cn("flex min-h-[56px] items-center gap-3 rounded-2xl px-4 py-2 text-left", on ? "border-2 border-[var(--nn-accent)] bg-[var(--nn-tint)]" : "border-[1.5px] border-border bg-card")}
+                  className={cn(
+                    "flex min-h-[56px] items-center gap-3 rounded-2xl px-4 py-2 text-left",
+                    on ? "border-2 border-[var(--nn-accent)] bg-[var(--nn-tint)]" : "border-[1.5px] border-border bg-card",
+                    locked && "cursor-default bg-muted",
+                  )}
                 >
                   <span className={cn("flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-lg", on ? "bg-[var(--nn-accent)] text-primary-foreground" : "shadow-[inset_0_0_0_2px_hsl(var(--border))]")}>
                     {on && <Check className="h-4 w-4" aria-hidden="true" />}
                   </span>
-                  <span className="flex-1 text-[15px] font-bold">{shortRange(d.start_date, d.end_date)}</span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="text-[15px] font-bold">{shortRange(d.start_date, d.end_date)}</span>
+                    {note && <span className="text-sm text-muted-foreground">{note}</span>}
+                  </span>
                   {free && <StatusChip tone="green">{sitterName} is free</StatusChip>}
                 </button>
               );

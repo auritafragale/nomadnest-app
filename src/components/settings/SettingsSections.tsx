@@ -215,7 +215,20 @@ const confirmPassword = async (email: string, password: string) => {
 };
 
 export const LoginSection = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [allOpen, setAllOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const logOutEverywhere = async () => {
+    setLoggingOut(true);
+    try {
+      await signOut("global");
+      navigate("/");
+    } catch {
+      toast.error("Couldn't log you out everywhere. Please try again.");
+      setLoggingOut(false);
+    }
+  };
   const { data: contact } = useMyContact();
   const email = contact?.email || user?.email || "";
   const [mode, setMode] = useState<null | "email" | "password">(null);
@@ -319,6 +332,26 @@ export const LoginSection = () => {
       ) : (
         <button type="button" onClick={() => setMode("password")} className={nnButton("secondary", "self-start")}>Change password</button>
       )}
+
+      <GroupTitle>Devices</GroupTitle>
+      <InfoRow label="Signed in devices" value="Log out on all devices" sub="Ends your sign-in on every phone, tablet and computer, including this one." />
+      <button type="button" onClick={() => setAllOpen(true)} aria-haspopup="dialog" className={nnButton("secondary", "self-start")}>
+        Log out on all devices
+      </button>
+      <ResponsiveSheet open={allOpen} onOpenChange={setAllOpen} title="Log out on all devices?" description="End your sign-in everywhere.">
+        <div className="flex flex-col gap-4">
+          <p className="text-[15px]">
+            You'll be logged out on every device, including this one. You can sign in again any time with your email and password.
+          </p>
+          <button type="button" onClick={logOutEverywhere} disabled={loggingOut} className={nnButton("primary")}>
+            {loggingOut && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            Log out on all devices
+          </button>
+          <button type="button" onClick={() => setAllOpen(false)} className={nnButton("secondary")}>
+            Cancel
+          </button>
+        </div>
+      </ResponsiveSheet>
     </div>
   );
 };

@@ -103,7 +103,7 @@ BEGIN
      OR (OLD.status IN ('pending', 'viewed') AND NEW.status = 'applied'
          AND EXISTS (SELECT 1 FROM public.applications a
                      WHERE a.sitter_user_id = OLD.sitter_user_id AND a.sit_dates_id = OLD.sit_dates_id
-                       AND a.status IN ('applied', 'shortlisted'))) THEN
+                       AND a.status IN ('applied', 'shortlisted', 'accepted'))) THEN
     RETURN NEW;
   END IF;
   RAISE EXCEPTION 'That change to the invitation is not allowed.' USING ERRCODE = '42501';

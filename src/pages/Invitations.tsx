@@ -54,8 +54,9 @@ const InviteCard = ({ invite }: { invite: SitterInvite }) => {
       {
         onSuccess: () =>
           toast("Invitation declined", {
-            action: { label: "Undo", onClick: () => update.mutate({ inviteId: invite.id, status: "viewed" }) },
+            action: { label: "Undo", onClick: () => update.mutate({ inviteId: invite.id, status: "viewed" }, { onError: () => toast.error("We couldn't undo that. Please try again.") }) },
           }),
+        onError: () => toast.error("We couldn't decline that. Please try again."),
       },
     );
 
@@ -178,7 +179,7 @@ const PastRow = ({ invite }: { invite: SitterInvite }) => {
       {canUndo && (
         <button
           type="button"
-          onClick={() => update.mutate({ inviteId: invite.id, status: "viewed" })}
+          onClick={() => update.mutate({ inviteId: invite.id, status: "viewed" }, { onError: () => toast.error("We couldn't undo that. Please try again.") })}
           disabled={update.isPending}
           className={nnButton("secondary", "px-4")}
         >
