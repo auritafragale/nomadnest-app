@@ -3,7 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveInviteConversation } from "@/lib/conversations";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, parseISO } from "date-fns";
-import { blocksReinvite } from "@/lib/invites";
+import { blocksReinvite, liveApplicationRanges } from "@/lib/invites";
+
+/** The ranges of a listing where this Nomad has a live application: applied,
+ *  shortlisted, or accepted with a confirmed or in-progress sit. Read with
+ *  the invitations, so an invite marked "applied" whose application has
+ *  ended doesn't lock the range (F1e). Works for the Pet Parent and the Nomad. */
+export const loadLiveApplicationRanges = async (listingId: string, sitterUserId: string) => {
+  const [{ data: apps, error }, { data: sits, error: sitsError }] = await Promise.all([
+    supabase.from("applications").select("sit_dates_id, status").eq("listing_id", listingId).eq("sitter_user_id", sitterUserId),
+    supabase.from("sits").select("sit_dates_id, status").eq("listing_id", listingId).eq("sitter_user_id", sitterUserId),
+  ]);
+  if (error) throw error;
+  if (sitsError) throw sitsError;
+  return liveApplicationRanges(apps ?? [], sits ?? []);
+};
 
 export interface SitterInvite {
   id: string;
@@ -70,6 +84,25 @@ export const useSitterInvites = () => {
   });
 };
 
+/** The signed-in Nomad's ranges with a live application (all listings), so
+ *  an "applied" invitation whose application has ended leaves Accepted. */
+export const useMyLiveApplicationRanges = () => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["my-live-application-ranges", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const [{ data: apps, error }, { data: sits, error: sitsError }] = await Promise.all([
+        supabase.from("applications").select("sit_dates_id, status").eq("sitter_user_id", user!.id),
+        supabase.from("sits").select("sit_dates_id, status").eq("sitter_user_id", user!.id),
+      ]);
+      if (error) throw error;
+      if (sitsError) throw sitsError;
+      return liveApplicationRanges(apps ?? [], sits ?? []);
+    },
+  });
+};
+
 export const usePendingInvitesCount = () => {
   const { user } = useAuth();
 
@@ -128,14 +161,18 @@ export const useCreateInvite = () => {
     }) => {
       const { listingTitle, startDate, endDate, ...inviteData } = invite;
 
-      // Only a live (pending, viewed) or applied invitation for this range
-      // counts as "already invited"; a declined one can be sent again.
-      const { data: current } = await supabase
-        .from("sitter_invites")
-        .select("status")
-        .eq("sit_dates_id", invite.sit_dates_id)
-        .eq("sitter_user_id", invite.sitter_user_id);
-      if ((current ?? []).some((r) => blocksReinvite(r.status))) {
+      // Only a live (pending, viewed) invitation or a live application for
+      // this range counts as "already invited"; after a decline, or once the
+      // application has ended, it can be sent again.
+      const [{ data: current }, liveApps] = await Promise.all([
+        supabase
+          .from("sitter_invites")
+          .select("status")
+          .eq("sit_dates_id", invite.sit_dates_id)
+          .eq("sitter_user_id", invite.sitter_user_id),
+        loadLiveApplicationRanges(invite.listing_id, invite.sitter_user_id),
+      ]);
+      if (liveApps.has(invite.sit_dates_id) || (current ?? []).some((r) => blocksReinvite(r.status))) {
         throw new Error("You've already invited them for these dates.");
       }
 

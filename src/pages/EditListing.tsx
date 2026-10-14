@@ -86,6 +86,9 @@ const EditListing = () => {
   const save = async (publish = false) => {
     if (!id) return;
     const e = validateListing(formData);
+    // Past and closed ranges aren't shown (F1e). A listing whose only dates
+    // have passed can still be saved; publishing still needs a range.
+    if (e.dates && !publish && (listing?.hidden_date_count ?? 0) > 0) delete e.dates;
     setErrors(e);
     const bad = firstErrorStep(e);
     if (bad) {

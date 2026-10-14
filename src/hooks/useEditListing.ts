@@ -74,8 +74,10 @@ export interface ListingWithDetails {
   locked_sit_date_ids: string[];
   /** Applied + shortlisted per date range. */
   applicant_counts: Record<string, number>;
-  /** The confirmed Nomad's first name per booked range. */
+  /** The Nomad's first name per range with a confirmed or in-progress sit (from sits). */
   booked_names: Record<string, string | null>;
+  /** Past and closed ranges kept in the database but not shown in the form. */
+  hidden_date_count: number;
 }
 
 export const useListingDetails = (listingId: string | undefined) => {
@@ -106,7 +108,7 @@ export const useListingDetails = (listingId: string | undefined) => {
           supabase.from("sit_dates").select("*").eq("listing_id", listingId),
           // Dates in use by a sit are read-only here (the database blocks edits
           // too); they change only through Propose new dates.
-          supabase.from("sits").select("sit_dates_id").eq("listing_id", listingId).in("status", ["confirmed", "in_progress", "completed"]),
+          supabase.from("sits").select("sit_dates_id, status, sitter_user_id").eq("listing_id", listingId).in("status", ["confirmed", "in_progress", "completed"]),
           supabase.rpc("get_listing_applicants", { p_listing_id: listingId }),
         ]);
       if (petsError) throw petsError;
@@ -119,11 +121,30 @@ export const useListingDetails = (listingId: string | undefined) => {
       }));
 
       const counts: Record<string, number> = {};
-      const booked: Record<string, string | null> = {};
-      for (const a of (applicants ?? []) as { sit_dates_id: string; status: string; first_name: string | null }[]) {
+      for (const a of (applicants ?? []) as { sit_dates_id: string; status: string }[]) {
         if (a.status === "applied" || a.status === "shortlisted") counts[a.sit_dates_id] = (counts[a.sit_dates_id] ?? 0) + 1;
-        if (a.status === "accepted") booked[a.sit_dates_id] = a.first_name;
       }
+
+      // "Booked with {first name}" comes from the sit itself, so a sit moved to
+      // new dates keeps its Nomad's name (F1e). First names only.
+      const liveSits = (usedBySits || []).filter(
+        (s): s is typeof s & { sit_dates_id: string; sitter_user_id: string } =>
+          !!s.sit_dates_id && !!s.sitter_user_id && (s.status === "confirmed" || s.status === "in_progress"),
+      );
+      const sitterIds = [...new Set(liveSits.map((s) => s.sitter_user_id))];
+      const names = new Map<string, string | null>();
+      if (sitterIds.length > 0) {
+        const { data: people } = await supabase.from("profiles").select("id, first_name").in("id", sitterIds);
+        for (const p of people ?? []) names.set(p.id, p.first_name?.trim() || null);
+      }
+      const booked: Record<string, string | null> = {};
+      for (const s of liveSits) booked[s.sit_dates_id] = names.get(s.sitter_user_id) ?? null;
+
+      // Ranges that ended before today stay in the database (reviews and
+      // history) but aren't shown here; nor are closed ranges, which the
+      // dashboard's "closed dates" list can reopen.
+      const today = new Date().toISOString().slice(0, 10);
+      const shownDates = (sitDates || []).filter((d) => d.end_date >= today && d.status !== "closed");
 
       return {
         ...listing,
@@ -134,7 +155,8 @@ export const useListingDetails = (listingId: string | undefined) => {
         latitude: exactLocation.latitude,
         longitude: exactLocation.longitude,
         pets,
-        sit_dates: sitDates || [],
+        sit_dates: shownDates,
+        hidden_date_count: (sitDates || []).length - shownDates.length,
       } as unknown as ListingWithDetails;
     },
     enabled: !!listingId && !!user,

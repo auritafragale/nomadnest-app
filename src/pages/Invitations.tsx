@@ -5,7 +5,7 @@ import { Check, Loader2 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NN_LIST, NN_MAIN, EmptyState, PageHeader, PillTabs, RoleTheme, SectionCard, SerifTitle, nightsBetween, nnButton, shortRange } from "@/components/nn/ui";
-import { useAcceptInvite, useSitterInvites, useUpdateInviteStatus, type SitterInvite } from "@/hooks/useSitterInvites";
+import { useAcceptInvite, useMyLiveApplicationRanges, useSitterInvites, useUpdateInviteStatus, type SitterInvite } from "@/hooks/useSitterInvites";
 import { useListingPets } from "@/hooks/useListingPets";
 import { useMyAvailability } from "@/hooks/useMyAvailability";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,8 +19,15 @@ type Tab = "waiting" | "accepted" | "past";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const ended = (i: SitterInvite) => !!i.sit_dates && i.sit_dates.end_date < todayIso();
-const tabOf = (i: SitterInvite): Tab =>
-  ended(i) || i.status === "declined" ? "past" : i.status === "applied" ? "accepted" : "waiting";
+// An accepted invitation stays under Accepted only while its application is
+// live; once it ends (withdrawn, declined, cancelled) it moves to Past (F1e).
+// Until the applications have loaded, it stays where it was.
+const tabOf = (i: SitterInvite, live: Set<string> | undefined): Tab =>
+  ended(i) || i.status === "declined"
+    ? "past"
+    : i.status === "applied"
+      ? live && !live.has(i.sit_dates_id) ? "past" : "accepted"
+      : "waiting";
 
 const EMPTY: Record<Tab, [string, string]> = {
   waiting: ["No invitations waiting", "You'll get a notification the moment a Pet Parent invites you."],
@@ -201,7 +208,11 @@ const PastRow = ({ invite, all }: { invite: SitterInvite; all: SitterInvite[] })
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate text-[15px] font-bold">{invite.listing?.title ?? "A home"}</span>
         <span className="truncate text-[13px] text-muted-foreground">
-          {invite.status === "declined" ? "You declined" : invite.status === "applied" ? "You applied" : "Dates passed"}
+          {invite.status === "declined"
+            ? "You declined"
+            : ended(invite)
+              ? invite.status === "applied" ? "You applied" : "Dates passed"
+              : "Your application closed"}
           {d ? ` · ${shortRange(d.start_date, d.end_date)}` : ""}
         </span>
       </span>
@@ -269,12 +280,13 @@ const InviteTips = () => {
 /** Invitations (design: Invitations.dc.html). */
 const Invitations = () => {
   const { data: invites = [], isLoading } = useSitterInvites();
+  const { data: liveApps } = useMyLiveApplicationRanges();
   const [tab, setTab] = useState<Tab>("waiting");
   const groups = useMemo(() => {
     const g: Record<Tab, SitterInvite[]> = { waiting: [], accepted: [], past: [] };
-    for (const i of invites) g[tabOf(i)].push(i);
+    for (const i of invites) g[tabOf(i, liveApps)].push(i);
     return g;
-  }, [invites]);
+  }, [invites, liveApps]);
   const list = groups[tab];
 
   return (
