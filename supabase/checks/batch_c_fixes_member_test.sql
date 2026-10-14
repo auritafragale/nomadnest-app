@@ -26,7 +26,7 @@ DECLARE
   v_copy boolean;
   v_real boolean;
 BEGIN
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
   SELECT sp.user_id INTO v_nomad
   FROM public.sitter_profiles sp JOIN public.profiles p ON p.id = sp.user_id
@@ -93,7 +93,7 @@ BEGIN
   RESET ROLE;
 
   -- ── 4. sitter_profiles.id_verified follows profiles.id_verified ────────
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT COALESCE(p.id_verified, false) INTO v_real FROM public.profiles p WHERE p.id = v_nomad;
   UPDATE public.profiles SET id_verified = NOT v_real WHERE id = v_nomad;
   SELECT sp.id_verified INTO v_copy FROM public.sitter_profiles sp WHERE sp.user_id = v_nomad;

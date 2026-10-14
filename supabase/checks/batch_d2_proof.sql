@@ -121,7 +121,7 @@ SELECT format('table %s: RLS on, no member access', t.name), 'rls on, no privile
        c.oid IS NOT NULL AND c.relrowsecurity
          AND NOT has_table_privilege('authenticated', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
          AND NOT has_table_privilege('anon', c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
-FROM (VALUES ('stripe_events'), ('founding_redemptions'), ('d2_discoverability_before')) AS t(name)
+FROM (VALUES ('stripe_events'), ('founding_redemptions')) AS t(name)
 LEFT JOIN pg_class c ON c.oid = to_regclass('public.' || t.name)
 
 UNION ALL
@@ -174,27 +174,10 @@ SELECT 'plans never create profiles', 'refresh_member_role inserts nothing',
        p.oid IS NOT NULL AND p.prosrc !~* 'INSERT INTO'
 FROM (SELECT 1) one LEFT JOIN pg_proc p ON p.oid = to_regprocedure('public.refresh_member_role(uuid)')
 
-UNION ALL
-SELECT 'nobody became discoverable through this migration (plans never make anyone discoverable)', '0',
-       (SELECT count(*) FROM public.d2_discoverability_before b
-        WHERE NOT b.discoverable AND public.profile_is_discoverable(b.user_id))::text,
-       NOT EXISTS (SELECT 1 FROM public.d2_discoverability_before b
-                   WHERE NOT b.discoverable AND public.profile_is_discoverable(b.user_id))
-
-UNION ALL
-SELECT 'members whose discoverability changed', '0 changed, except members who hid or paused themselves',
-       (SELECT count(*) FROM public.d2_discoverability_before b WHERE b.discoverable IS DISTINCT FROM public.profile_is_discoverable(b.user_id))::text
-         || ' changed, of which '
-         || (SELECT count(*) FROM public.d2_discoverability_before b
-             WHERE b.discoverable AND NOT public.profile_is_discoverable(b.user_id)
-               AND (EXISTS (SELECT 1 FROM public.sitter_profiles sp WHERE sp.user_id = b.user_id AND sp.is_visible IS NOT TRUE)
-                    OR EXISTS (SELECT 1 FROM public.owner_profiles op WHERE op.user_id = b.user_id AND op.is_active IS NOT TRUE)))::text
-         || ' had hidden their Nomad profile or paused their listing',
-       NOT EXISTS (SELECT 1 FROM public.d2_discoverability_before b
-                   WHERE b.discoverable IS DISTINCT FROM public.profile_is_discoverable(b.user_id)
-                     AND NOT (b.discoverable AND NOT public.profile_is_discoverable(b.user_id)
-                              AND (EXISTS (SELECT 1 FROM public.sitter_profiles sp WHERE sp.user_id = b.user_id AND sp.is_visible IS NOT TRUE)
-                                   OR EXISTS (SELECT 1 FROM public.owner_profiles op WHERE op.user_id = b.user_id AND op.is_active IS NOT TRUE))))
+-- Updated (F1d): the two "discoverability before and after" rows read the
+-- one-off snapshot table d2_discoverability_before, which was dropped once D2
+-- was confirmed. They checked the migration moment, not lasting rules, so
+-- they are gone; the rows below still check how discoverability works.
 
 UNION ALL
 SELECT format('access function %s', f.sig), f.expect,

@@ -1,10 +1,12 @@
 -- Profiles privacy: behaviour test as a signed-out visitor and as members.
--- Runs inside a transaction and ROLLS BACK: nothing is changed.
 --
--- Needs two non-admin members. Result: the last query returns "PASS";
--- anything unexpected stops with an error starting "FAIL:".
-
-BEGIN;
+-- One DO block. It always ends with an exception, so the whole statement rolls
+-- back and nothing it does is ever kept:
+--   PASS:  ERROR: PASS_ROLLED_BACK: every check behaved as expected
+--   FAIL:  ERROR: FAIL: <what went wrong>
+-- (F1d: converted from BEGIN … ROLLBACK so it can never leave data behind;
+-- setup runs as the server, with the service_role claim.)
+-- Needs two non-admin members.
 
 DO $$
 DECLARE
@@ -18,6 +20,7 @@ DECLARE
   v_seen integer;
   v_lat double precision;
 BEGIN
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT id INTO v_a FROM public.profiles WHERE is_admin IS NOT TRUE ORDER BY created_at LIMIT 1;
   SELECT id INTO v_b FROM public.profiles WHERE is_admin IS NOT TRUE AND id <> v_a ORDER BY created_at LIMIT 1;
   IF v_a IS NULL OR v_b IS NULL THEN
@@ -140,9 +143,7 @@ BEGIN
   IF v_lat::numeric <> 25.12 THEN
     RAISE EXCEPTION 'FAIL: a precise latitude was stored as % (expected 25.12)', v_lat;
   END IF;
+
+  RAISE EXCEPTION 'PASS_ROLLED_BACK: every check behaved as expected';
 END;
 $$;
-
-SELECT 'PASS: every check behaved as expected (rolled back)' AS result;
-
-ROLLBACK;

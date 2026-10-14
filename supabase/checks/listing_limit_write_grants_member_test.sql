@@ -1,32 +1,19 @@
 -- Listing limit + column-level write grants: behaviour test AS A MEMBER.
--- Runs inside a transaction and ROLLS BACK: nothing is changed.
 --
--- It picks a non-admin member who owns at least one listing (to test the
--- listing limit too). To test a specific member, replace the SELECT in
--- step 1 with their user id.
---
--- Result: if every check behaves as expected, the last query returns
--- "PASS". Any unexpected result stops with an error starting "FAIL:".
-
-BEGIN;
-
--- 1. Act as the member (their JWT), then drop to the authenticated role.
-SELECT set_config(
-  'request.jwt.claims',
-  json_build_object('sub', p.id, 'role', 'authenticated')::text,
-  true
-)
-FROM public.profiles p
-WHERE p.is_admin IS NOT TRUE
-  AND EXISTS (SELECT 1 FROM public.listings l WHERE l.owner_user_id = p.id)
-ORDER BY p.created_at
-LIMIT 1;
-
-SET LOCAL ROLE authenticated;
+-- One DO block. It always ends with an exception, so the whole statement rolls
+-- back and nothing it does is ever kept:
+--   PASS:  ERROR: PASS_ROLLED_BACK: every check behaved as expected
+--   FAIL:  ERROR: FAIL: <what went wrong>
+-- Needs a non-admin, non-Founding member with no listing and the standard
+-- allowance of one home. The test gives them a temporary listing
+-- ("Regression sample listing" in "Regressville") so the limit can be tested.
+-- Updated for later decisions (F1d): user_roles has no member UPDATE since D2
+-- (onboarding goes through complete_onboarding()).
 
 DO $$
 DECLARE
-  v_uid uuid := auth.uid();
+  v_uid uuid;
+  v_listing uuid;
   v_stmt text;
   v_settings jsonb;
   -- Each of these must fail with "permission denied" (42501).
@@ -53,7 +40,8 @@ DECLARE
     'UPDATE public.notifications SET title = ''x'' WHERE user_id = auth.uid()',
     'SELECT max_listings FROM public.profiles WHERE id = auth.uid()',
     'SELECT owner_declaration_accepted_at FROM public.listings WHERE owner_user_id = auth.uid()',
-    'SELECT flag_not_homeowner FROM public.reviews LIMIT 1'
+    'SELECT flag_not_homeowner FROM public.reviews LIMIT 1',
+    'UPDATE public.user_roles SET onboarding_completed = onboarding_completed WHERE user_id = auth.uid()'
   ];
   -- Each of these must still work (no-op edits of the member's own rows).
   v_allowed text[] := ARRAY[
@@ -61,13 +49,30 @@ DECLARE
     'UPDATE public.sitter_profiles SET is_visible = is_visible, headline = headline WHERE user_id = auth.uid()',
     'UPDATE public.owner_profiles SET bio = bio, is_active = is_active WHERE user_id = auth.uid()',
     'UPDATE public.listings SET title = title, status = status WHERE owner_user_id = auth.uid()',
-    'UPDATE public.notifications SET read_at = read_at WHERE user_id = auth.uid()',
-    'UPDATE public.user_roles SET onboarding_completed = onboarding_completed WHERE user_id = auth.uid()'
+    'UPDATE public.notifications SET read_at = read_at WHERE user_id = auth.uid()'
   ];
 BEGIN
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  SELECT p.id INTO v_uid FROM public.profiles p
+  WHERE p.is_admin IS NOT TRUE AND p.founding_member IS NOT TRUE AND p.max_listings = 1
+    AND NOT EXISTS (SELECT 1 FROM public.listings l WHERE l.owner_user_id = p.id)
+  ORDER BY p.created_at LIMIT 1;
   IF v_uid IS NULL THEN
-    RAISE EXCEPTION 'FAIL: no test member found (needs a non-admin member with a listing)';
+    RAISE EXCEPTION 'FAIL: needs a non-admin, non-Founding member with no listing and an allowance of one home';
   END IF;
+
+  -- Test data (as the server): a temporary listing.
+  UPDATE public.profiles
+  SET membership_status = 'active', membership_type = 'owner', membership_expiry = now() + interval '1 year',
+      membership_payment_failed_at = NULL
+  WHERE id = v_uid;
+  INSERT INTO public.listings (owner_user_id, title, status, city, country, owner_declaration_accepted_at)
+  VALUES (v_uid, 'Regression sample listing', 'published', 'Regressville', 'Testland', now())
+  RETURNING id INTO v_listing;
+
+  -- Act as the member (their JWT), then drop to the authenticated role.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_uid, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
   IF current_user <> 'authenticated' THEN
     RAISE EXCEPTION 'FAIL: not running as the authenticated role';
   END IF;
@@ -115,9 +120,8 @@ BEGIN
       RAISE EXCEPTION 'FAIL: unexpected error from admin_set_max_listings: %', SQLERRM;
     END IF;
   END;
+  RESET ROLE;
+
+  RAISE EXCEPTION 'PASS_ROLLED_BACK: every check behaved as expected';
 END;
 $$;
-
-SELECT 'PASS: every member check behaved as expected (rolled back)' AS result;
-
-ROLLBACK;

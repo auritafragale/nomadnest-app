@@ -26,7 +26,7 @@ DECLARE
   v_kept uuid;
   v_failed boolean;
 BEGIN
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
   SELECT p.id INTO v_a FROM public.profiles p WHERE p.is_admin IS NOT TRUE ORDER BY p.created_at LIMIT 1;
   SELECT p.id INTO v_b FROM public.profiles p WHERE p.is_admin IS NOT TRUE AND p.id <> v_a ORDER BY p.created_at LIMIT 1;
@@ -113,7 +113,7 @@ BEGIN
   RESET ROLE;
 
   -- The AI review summary is on.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   IF NOT EXISTS (SELECT 1 FROM public.app_settings WHERE key = 'review_summary_enabled' AND value = 'true'::jsonb) THEN
     RAISE EXCEPTION 'FAIL: review_summary_enabled is not on';
   END IF;

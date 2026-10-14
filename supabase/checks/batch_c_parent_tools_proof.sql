@@ -2,7 +2,9 @@
 -- 20261003090000_batch_c_parent_tools.sql (or Lovable's copy of it).
 -- READ-ONLY. One row per check; every row should have ok = true.
 -- The last rows list every function that reads a phone column, for review:
--- only get_my_contact_info (the member's own) and admin functions belong there.
+-- only get_my_contact_info (the member's own) and admin functions belong there,
+-- plus (updated for a later decision, D1) share_my_phone and get_phone_shares:
+-- consent-based, a number is only returned while its owner shares it with you.
 
 SELECT 'flag ai_writing_helper_enabled exists' AS item, 'present (off until you switch it on)' AS expected,
        COALESCE((SELECT value::text FROM public.app_settings WHERE key = 'ai_writing_helper_enabled'), 'missing') AS actual,
@@ -113,13 +115,16 @@ SELECT 'no view members can read has a phone column', 'none',
 
 UNION ALL
 -- Every function that reads a phone column. ok = only the member's own
--- (get_my_contact_info), the write-only setter, or functions that check
--- is_admin first. Review each row.
+-- (get_my_contact_info), the write-only setter, the consent-based phone
+-- sharing pair (D1: share_my_phone, get_phone_shares, which read
+-- phone_shares), or functions that check is_admin first. Review each row.
 SELECT format('reads a phone column: %s', p.oid::regprocedure::text),
-       'only get_my_contact_info, set_my_profile_phone or admin',
+       'only get_my_contact_info, set_my_profile_phone, consent-based sharing or admin',
        'member can run ' || has_function_privilege('authenticated', p.oid, 'EXECUTE')::text
-         || CASE WHEN p.prosrc ~* 'is_admin' THEN ', checks is_admin' ELSE '' END,
+         || CASE WHEN p.prosrc ~* 'is_admin' THEN ', checks is_admin' ELSE '' END
+         || CASE WHEN p.prosrc ~ 'phone_shares' THEN ', uses phone_shares consent' ELSE '' END,
        p.proname IN ('get_my_contact_info', 'set_my_profile_phone')
+         OR (p.proname IN ('share_my_phone', 'get_phone_shares') AND p.prosrc ~ 'phone_shares')
          OR p.prosrc ~* 'is_admin'
          OR NOT has_function_privilege('authenticated', p.oid, 'EXECUTE')
 FROM pg_proc p

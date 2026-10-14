@@ -1,6 +1,9 @@
 -- Listing limit + column-level write grants: proof that the live database
 -- matches 20260927160000_listing_limit_and_write_grants.sql.
 -- READ-ONLY. One row per check; every row should have ok = true.
+-- Updated for later decisions (F1d): notification_preferences gained the push
+-- and message email columns in D2 (members may set them); user_roles has no
+-- member UPDATE since D2 (onboarding goes through complete_onboarding()).
 
 WITH
 spec(tbl, priv, cols) AS (VALUES
@@ -31,9 +34,10 @@ spec(tbl, priv, cols) AS (VALUES
   ('sitter_invites', 'UPDATE', ARRAY['status']),
   ('notifications', 'UPDATE', ARRAY['read_at']),
   ('notification_preferences', 'UPDATE', ARRAY['user_id', 'email_new_applications', 'email_messages',
-    'email_sit_updates', 'email_reviews', 'email_application_status', 'email_membership']),
+    'email_sit_updates', 'email_reviews', 'email_application_status', 'email_membership',
+    'push_messages', 'push_applications', 'push_sits', 'push_reviews', 'push_city_chat', 'message_email_frequency']),
   ('manual_id_verifications', 'UPDATE', ARRAY['id_photo_path', 'selfie_path']),
-  ('user_roles', 'UPDATE', ARRAY['user_id', 'role', 'onboarding_completed']),
+  ('user_roles', 'UPDATE', ARRAY[]::text[]),
   ('guide_qa', 'UPDATE', ARRAY['answer', 'arrival_only']),
   ('welcome_guide_photos', 'UPDATE', ARRAY['note', 'instruction']),
   ('welcome_guides', 'UPDATE', ARRAY['listing_id', 'owner_user_id', 'emergency_contacts', 'out_of_hours_vet',

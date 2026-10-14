@@ -31,7 +31,7 @@ DECLARE
   v_own text;
   v_other_folder constant text := '00000000-0000-0000-0000-000000000000/draft/';
 BEGIN
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
   SELECT sp.user_id INTO v_nomad
   FROM public.sitter_profiles sp JOIN public.profiles p ON p.id = sp.user_id
@@ -76,7 +76,7 @@ BEGIN
   UPDATE public.sitter_invites SET status = 'viewed' WHERE id = v_inv1;
   UPDATE public.sitter_invites SET status = 'declined' WHERE id = v_inv1;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*), max(message) INTO v_n, v_text FROM public.notifications
   WHERE user_id = v_owner AND type = 'invite_declined' AND data->>'invite_id' = v_inv1::text;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: (a) a decline gave the Pet Parent % invite_declined notifications, not 1', v_n; END IF;
@@ -134,7 +134,7 @@ BEGIN
   UPDATE public.sitter_invites SET status = 'viewed' WHERE id = v_inv3;
   UPDATE public.sitter_invites SET status = 'declined' WHERE id = v_inv3;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   IF NOT EXISTS (SELECT 1 FROM public.sitter_invites WHERE id = v_inv2 AND status = 'pending' AND listing_id = v_listing
                    AND owner_user_id = v_owner AND sit_dates_id = r_1 AND message = 'F1c test 2099 invitation again') THEN
     RAISE EXCEPTION 'FAIL: (c) the invitation was changed';
@@ -152,7 +152,7 @@ BEGIN
     RAISE EXCEPTION 'FAIL: (d) accept_invite failed: % %', SQLSTATE, SQLERRM;
   END;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   IF NOT EXISTS (SELECT 1 FROM public.sitter_invites WHERE id = v_inv2 AND status = 'applied') THEN
     RAISE EXCEPTION 'FAIL: (d) the invitation is not applied after accepting';
   END IF;
@@ -209,7 +209,7 @@ BEGIN
   INSERT INTO public.manual_id_verifications (user_id, id_photo_path, selfie_path)
   VALUES (v_nomad, v_own || 'id-3.jpg', v_own || 'selfie-3.jpg') RETURNING id INTO v_idv2;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   IF NOT EXISTS (SELECT 1 FROM public.manual_id_verifications WHERE id = v_idv AND status = 'pending' AND notes IS NULL
                    AND id_photo_path = v_own || 'id-2.jpg') THEN
     RAISE EXCEPTION 'FAIL: (f) the ID check is not as the member left it';
@@ -221,7 +221,7 @@ BEGIN
   PERFORM public.admin_decide_id_verification(v_idv, 'approved', NULL);
   PERFORM public.admin_decide_id_verification(v_idv2, 'rejected', 'Photo unclear');
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_nomad AND type = 'id_verification_approved' AND dedupe_key = 'id_verification_approved:' || v_idv;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: (g) approving gave % notifications, not 1', v_n; END IF;
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_nomad AND type = 'id_verification_rejected' AND dedupe_key = 'id_verification_rejected:' || v_idv2;
@@ -231,7 +231,7 @@ BEGIN
   SET LOCAL ROLE authenticated;
   UPDATE public.manual_id_verifications SET id_photo_path = v_own || 'id-4.jpg' WHERE id = v_idv2;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   IF EXISTS (SELECT 1 FROM public.manual_id_verifications WHERE id = v_idv2 AND id_photo_path = v_own || 'id-4.jpg') THEN
     RAISE EXCEPTION 'FAIL: (g) the member changed a reviewed ID check';
   END IF;

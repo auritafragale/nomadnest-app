@@ -33,7 +33,7 @@ DECLARE
   v_failed boolean;
 BEGIN
   -- ── Members ────────────────────────────────────────────────────────────
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
   SELECT sp.user_id INTO v_nomad
   FROM public.sitter_profiles sp JOIN public.profiles p ON p.id = sp.user_id
@@ -78,7 +78,7 @@ BEGIN
   RESET ROLE;
 
   -- A confirmed sit (as the server). This also opens the Testville room.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   INSERT INTO public.sits (listing_id, sit_dates_id, sitter_user_id, owner_user_id, status, confirmed_at)
   VALUES (v_listing, v_range, v_nomad, v_owner, 'confirmed', now()) RETURNING id INTO v_sit;
 
@@ -93,7 +93,7 @@ BEGIN
   END;
   IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a member shared a phone that is not verified'; END IF;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles SET phone_verified = true WHERE id = v_nomad;
 
   -- ── 3. Share: only the recipient reads it ──────────────────────────────
@@ -123,7 +123,7 @@ BEGIN
   RESET ROLE;
 
   -- ── 4. The number is in no message, notification (push uses the same row) ──
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.messages WHERE body LIKE '%7700900222%' OR body LIKE '%7700900111%';
   IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: a message contains a phone number'; END IF;
   SELECT count(*) INTO v_n FROM public.notifications
@@ -164,7 +164,7 @@ BEGIN
   RESET ROLE;
 
   -- A hidden Nomad's chat still shows for the owner, with their first name.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.sitter_profiles SET is_visible = false WHERE user_id = v_nomad;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
@@ -183,7 +183,7 @@ BEGIN
   RESET ROLE;
 
   -- ── 7. City Chats: city AND country, members with access only ──────────
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT id INTO v_room FROM public.city_chat_rooms WHERE city_key = public.city_chat_key('Testville', 'Testland');
   IF v_room IS NULL THEN RAISE EXCEPTION 'FAIL: confirming the sit did not open a Testville room'; END IF;
   INSERT INTO public.city_chat_rooms (city, country, city_key)
@@ -238,7 +238,7 @@ BEGIN
   END;
   IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a member wrote a room read directly'; END IF;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.city_chat_mutes WHERE user_id = v_nomad AND room_id = v_room;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: another member removed the Nomad''s mute'; END IF;
 
@@ -247,7 +247,7 @@ BEGIN
   SET LOCAL ROLE authenticated;
   PERFORM public.share_my_phone(v_owner);
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.sits SET status = 'cancelled', cancelled_at = now() WHERE id = v_sit;
   SELECT count(*) INTO v_n FROM public.phone_shares WHERE sharer_id = v_nomad AND recipient_id = v_owner AND stopped_at IS NULL;
   IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: the share stayed active after the sit was cancelled'; END IF;

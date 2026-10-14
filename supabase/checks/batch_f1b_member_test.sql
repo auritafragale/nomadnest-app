@@ -29,7 +29,7 @@ DECLARE
   v_raised boolean;
   v_note constant text := 'Hi! I''d love to invite you to sit at my home. I''ve sent you a formal invitation — please check your notifications.';
 BEGIN
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
   SELECT sp.user_id INTO v_nomad
   FROM public.sitter_profiles sp JOIN public.profiles p ON p.id = sp.user_id
@@ -95,7 +95,7 @@ BEGIN
   VALUES (v_listing, r_1, v_owner, v_nomad, 'pending', 'F1b test 2099 my invitation message'),
          (v_listing, r_2, v_owner, v_nomad, 'pending', 'F1b test 2099 my invitation message');
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*), max(message) INTO v_n, v_text FROM public.notifications
   WHERE user_id = v_nomad AND type = 'invite' AND data->>'listing_id' = v_listing::text;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: (a) inviting for 2 ranges gave the Nomad % invite notifications, not 1', v_n; END IF;
@@ -109,7 +109,7 @@ BEGIN
   PERFORM public.post_invite_note(v_conv, v_nomad, v_listing);
   PERFORM public.post_invite_note(v_conv, v_nomad, v_listing);
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.messages
   WHERE conversation_id = v_conv AND sender_user_id = v_owner AND body = v_note AND created_at >= now();
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: (b) the invitation note is in the chat % times, not once', v_n; END IF;
@@ -122,7 +122,7 @@ BEGIN
   SET LOCAL ROLE authenticated;
   INSERT INTO public.messages (conversation_id, sender_user_id, body) VALUES (v_conv, v_owner, 'F1b test 2099 a normal message');
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications
   WHERE user_id = v_nomad AND type = 'new_message' AND data->>'conversation_id' = v_conv::text AND created_at >= now();
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: (c) a normal message gave the Nomad % new_message notifications, not 1', v_n; END IF;
@@ -156,7 +156,7 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN v_raised := true;
   END;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   IF NOT v_raised THEN RAISE EXCEPTION 'FAIL: (d) the note was posted with no recent invitation'; END IF;
   SELECT count(*) INTO v_n FROM public.messages WHERE body = v_note AND created_at >= now();
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: (d) a refused call still posted a note (% notes)', v_n; END IF;
@@ -168,7 +168,7 @@ BEGIN
   VALUES (v_listing, r_3, v_nomad, 'applied', 'F1b test 2099 my application message'),
          (v_listing, r_4, v_nomad, 'applied', 'F1b test 2099 my application message');
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.applications WHERE listing_id = v_listing AND sitter_user_id = v_nomad AND sit_dates_id IN (r_3, r_4);
   IF v_n <> 2 THEN RAISE EXCEPTION 'FAIL: (e) the Nomad with a confirmed sit could not apply for 2 more ranges (% rows)', v_n; END IF;
   SELECT count(*), max(message) INTO v_n, v_text FROM public.notifications
@@ -184,7 +184,7 @@ BEGIN
   INSERT INTO public.applications (listing_id, sit_dates_id, sitter_user_id, status, message)
   VALUES (v_listing, r_5, v_nomad, 'applied', 'F1b test 2099 one more application') RETURNING id INTO v_app5;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*), max(message) INTO v_n, v_text FROM public.notifications
   WHERE user_id = v_owner AND type = 'new_application' AND dedupe_key = 'new_application:' || v_app5;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: (f) one application gave the Pet Parent % notifications, not 1', v_n; END IF;
@@ -197,7 +197,7 @@ BEGIN
   UPDATE public.applications SET status = 'withdrawn' WHERE id = v_app5;
   UPDATE public.applications SET status = 'withdrawn' WHERE id = v_app5;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_owner AND type = 'application_withdrawn' AND dedupe_key = 'application_withdrawn:' || v_app5;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: (f) withdrawing gave the Pet Parent % notifications, not 1', v_n; END IF;
 
@@ -207,7 +207,7 @@ BEGIN
   SET LOCAL ROLE authenticated;
   PERFORM public.accept_invite(v_invite1, NULL);
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications n
   JOIN public.applications a ON n.dedupe_key = 'new_application:' || a.id
   WHERE n.user_id = v_owner AND a.listing_id = v_listing AND a.sit_dates_id = r_1;

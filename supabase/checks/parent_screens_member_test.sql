@@ -1,11 +1,13 @@
--- Stage 3 (Pet Parent screens): behaviour test as members and a signed-out
--- visitor. Runs inside a transaction and ROLLS BACK: nothing is changed.
+-- Stage 3 (Pet Parent screens): behaviour test as members and a signed-out visitor.
 --
+-- One DO block. It always ends with an exception, so the whole statement rolls
+-- back and nothing it does is ever kept:
+--   PASS:  ERROR: PASS_ROLLED_BACK: every check behaved as expected
+--   FAIL:  ERROR: FAIL: <what went wrong>
+-- (F1d: converted from BEGIN … ROLLBACK so it can never leave data behind;
+-- setup runs as the server, with the service_role claim.)
 -- Needs one ready Sit Story whose Pet Parent and Nomad are both still
--- members, and one other member. Result: the last query returns "PASS";
--- anything unexpected stops with an error starting "FAIL:".
-
-BEGIN;
+-- members, and one other member.
 
 DO $$
 DECLARE
@@ -21,6 +23,7 @@ DECLARE
   v_enabled boolean;
   i integer;
 BEGIN
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT id, sit_id, owner_user_id, sitter_user_id INTO v_story, v_sit, v_owner, v_sitter
   FROM public.sit_stories
   WHERE status = 'ready' AND owner_user_id IS NOT NULL AND sitter_user_id IS NOT NULL
@@ -163,9 +166,7 @@ BEGIN
   IF v_enabled THEN
     RAISE EXCEPTION 'FAIL: a share link stayed on after a member left';
   END IF;
+
+  RAISE EXCEPTION 'PASS_ROLLED_BACK: every check behaved as expected';
 END;
 $$;
-
-SELECT 'PASS: every check behaved as expected (rolled back)' AS result;
-
-ROLLBACK;
