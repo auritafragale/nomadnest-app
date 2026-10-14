@@ -1370,7 +1370,6 @@ export type Database = {
         Row: {
           created_at: string
           data: Json | null
-          dedupe_key: string | null
           id: string
           message: string
           read_at: string | null
@@ -1381,7 +1380,6 @@ export type Database = {
         Insert: {
           created_at?: string
           data?: Json | null
-          dedupe_key?: string | null
           id?: string
           message: string
           read_at?: string | null
@@ -1392,7 +1390,6 @@ export type Database = {
         Update: {
           created_at?: string
           data?: Json | null
-          dedupe_key?: string | null
           id?: string
           message?: string
           read_at?: string | null
@@ -3736,9 +3733,6 @@ export type Database = {
           user_id: string
         }[]
       }
-      nn_date_range: { Args: { p_end: string; p_start: string }; Returns: string }
-      nn_first_name: { Args: { p_fallback: string; p_user: string }; Returns: string }
-      nn_listing_place: { Args: { p_listing_id: string }; Returns: string }
       nomad_profile_is_live: {
         Args: { p_sitter_profile_id: string }
         Returns: boolean
@@ -3762,20 +3756,6 @@ export type Database = {
         Returns: undefined
       }
       notify_guide_unlocks: { Args: never; Returns: number }
-      notify_member: {
-        Args: {
-          p_cta?: string
-          p_data: Json
-          p_dedupe: string
-          p_email?: boolean
-          p_message: string
-          p_title: string
-          p_type: string
-          p_url: string
-          p_user: string
-        }
-        Returns: boolean
-      }
       phone_share_conversation: {
         Args: { p_a: string; p_b: string; p_sit: string }
         Returns: string
