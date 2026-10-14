@@ -59,7 +59,7 @@ BEGIN
   UPDATE public.sitter_profiles SET is_visible = true, is_active = true WHERE user_id = v_nomad;
 
   INSERT INTO public.listings (owner_user_id, title, status, city, country, owner_declaration_accepted_at)
-  VALUES (v_owner, 'F1 test 2099 listing', 'published', 'Testville', 'Testland', now())
+  VALUES (v_owner, 'F1 sample listing', 'published', 'Testville', 'Testland', now())
   RETURNING id INTO v_listing;
   UPDATE public.owner_profiles SET is_active = true WHERE user_id = v_owner;
 

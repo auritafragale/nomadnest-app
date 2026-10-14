@@ -8,6 +8,9 @@
 --   no bucket setting changed. The function itself can't be seen from SQL;
 --   the admin card's "Check" returning a counts table confirms it is
 --   deployed (and that only admins can call it: anyone else gets 403).
+--   Batch F1c changed both fingerprints on purpose (a storage policy for ID
+--   drafts, and the ID bucket's size limit and file types): take a new
+--   baseline after F1c is live, then compare as before.
 
 -- 1. Fingerprints (compare across runs).
 SELECT 'storage policies fingerprint' AS item,
@@ -26,7 +29,8 @@ ORDER BY id;
 -- 3. Files per bucket, how many have no owner, and when files last changed.
 --    After "Clean now", files_without_owner must not have gone up (the
 --    function puts each file's owner back), and id-verification-documents'
---    last_changed must not move (it is never touched).
+--    last_changed must not move because of it (since Batch F1c members
+--    add ID drafts at any time, so compare just before and after the run).
 SELECT bucket_id AS bucket,
        count(*) AS files,
        count(*) FILTER (WHERE owner_id IS NULL) AS files_without_owner,

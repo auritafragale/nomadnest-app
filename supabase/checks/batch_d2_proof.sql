@@ -266,7 +266,9 @@ SELECT format('policy %s on %s uses a row-keyed access helper', pp.policyname, p
        COALESCE(pp.qual, pp.with_check),
        COALESCE(pp.qual, '') || COALESCE(pp.with_check, '') ~ 'listing_is_live|application_is_live|invitation_is_live|nomad_profile_is_live|i_have_side_access'
 FROM pg_policies pp
-WHERE pp.schemaname = 'public'
+-- Permissive policies only: Batch E1 added RESTRICTIVE "no ... across a block"
+-- policies on these tables, which narrow access and need no access helper.
+WHERE pp.schemaname = 'public' AND pp.permissive = 'PERMISSIVE'
   AND ((pp.tablename IN ('listings', 'pets') AND pp.cmd = 'SELECT' AND pp.roles @> ARRAY['anon']::name[])
        OR (pp.tablename = 'applications' AND pp.cmd IN ('SELECT', 'INSERT'))
        OR (pp.tablename = 'sitter_invites' AND pp.cmd IN ('SELECT', 'INSERT')))

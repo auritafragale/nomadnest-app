@@ -155,7 +155,6 @@ const VerifyIdentity = () => {
 
           if (res.error) {
             console.error("[Onfido] submit error:", res.error);
-          } else {
           }
 
           queryClient.invalidateQueries({ queryKey: ["verification"] });
@@ -299,7 +298,7 @@ const VerifyIdentity = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="pt-20 pb-12">
+      <main className="pt-20 pb-28 md:pb-12">
         <div className="container max-w-2xl mx-auto px-4">
           <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" />

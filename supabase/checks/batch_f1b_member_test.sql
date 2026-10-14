@@ -6,7 +6,9 @@
 --   FAIL:  ERROR: FAIL: <what went wrong>
 -- Every action is done as the member who does it in the app. Text the test
 -- members "write" starts with "F1b test 2099" and must never reach a
--- notification. The test listing's city is "Testville F1b".
+-- notification. The test listing's city is "Testville F1b"; its title,
+-- "F1b sample listing", has no marker, because a listing title rightly
+-- appears in alerts such as New message.
 -- Needs: a non-admin, non-Founding Nomad (with a Nomad profile), a non-admin,
 -- non-Founding member with no listing (given a temporary one), and one more
 -- non-admin member.
@@ -55,7 +57,7 @@ BEGIN
   UPDATE public.sitter_profiles SET is_visible = true, is_active = true WHERE user_id = v_nomad;
 
   INSERT INTO public.listings (owner_user_id, title, status, city, country, owner_declaration_accepted_at)
-  VALUES (v_owner, 'F1b test 2099 listing', 'published', 'Testville F1b', 'Testland', now())
+  VALUES (v_owner, 'F1b sample listing', 'published', 'Testville F1b', 'Testland', now())
   RETURNING id INTO v_listing;
   UPDATE public.owner_profiles SET is_active = true WHERE user_id = v_owner;
 

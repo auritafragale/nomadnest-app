@@ -334,7 +334,9 @@ export const LoginSection = () => {
       )}
 
       <GroupTitle>Devices</GroupTitle>
-      <InfoRow label="Signed in devices" value="Log out on all devices" sub="Ends your sign-in on every phone, tablet and computer, including this one." />
+      <p className="text-[15px] text-muted-foreground">
+        Log out ends your sign-in on this device only. To end it on every phone, tablet and computer at once, including this one, log out on all devices.
+      </p>
       <button type="button" onClick={() => setAllOpen(true)} aria-haspopup="dialog" className={nnButton("secondary", "self-start")}>
         Log out on all devices
       </button>

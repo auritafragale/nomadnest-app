@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, CheckCircle2, FileText, FolderOpen, Loader2 } from "lucide-react";
+import { Camera, FileText, FolderOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { IdDraft } from "@/hooks/useIdDrafts";
 
@@ -64,10 +64,7 @@ const IdDocumentPicker = ({
               <FileText className="h-7 w-7 text-muted-foreground" aria-label={draft.isPdf ? "PDF added" : "File added"} />
             )}
           </span>
-          <p className="flex flex-1 items-center gap-1.5 text-[15px] font-semibold text-brand-teal-text">
-            <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-            Added ✓
-          </p>
+          <p className="min-w-0 flex-1 whitespace-nowrap text-[15px] font-semibold text-brand-teal-text">Added ✓</p>
           <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
             <Button type="button" variant="outline" className="h-11" onClick={() => setReplacing((r) => !r)} disabled={saving} aria-expanded={replacing}>
               Replace

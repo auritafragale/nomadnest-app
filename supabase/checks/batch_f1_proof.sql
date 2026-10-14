@@ -1,6 +1,9 @@
 -- Batch F1: proof that the live database matches
 -- 20261014090000_batch_f1.sql (or Lovable's copy of it).
 -- READ-ONLY. One row per check; every row should have ok = true.
+-- Updated for Batch F1b (new invitations and applications are notified by
+-- statement triggers, one per insert; the row trigger notify_sitter_on_invite
+-- is gone) and Batch F1c (invite_declined).
 
 SELECT 'notifications.dedupe_key exists' AS item, 'text column, may be empty' AS expected,
        COALESCE((SELECT format_type(a.atttypid, a.atttypmod) FROM pg_attribute a
@@ -23,9 +26,10 @@ SELECT format('event %s: trigger %s on %s', x.type, x.trg, x.tbl), 'enabled, run
                WHERE tg.tgrelid = to_regclass('public.' || x.tbl) AND tg.tgname = x.trg AND tg.tgenabled = 'O'
                  AND p.prosrc ~ 'notify_member')
 FROM (VALUES
-  ('new_application', 'notify_application_events', 'applications'),
+  ('new_application', 'notify_new_applications', 'applications'),
   ('application_withdrawn', 'notify_application_events', 'applications'),
-  ('invite', 'notify_sitter_on_invite', 'sitter_invites'),
+  ('invite', 'notify_sitter_on_invite_batch', 'sitter_invites'),
+  ('invite_declined', 'notify_invite_answered', 'sitter_invites'),
   ('sit_cancelled', 'notify_sit_cancelled', 'sits'),
   ('listing_dates_changed', 'notify_listing_dates_changed', 'sit_dates'),
   ('sit_reschedule_proposed / accepted / declined', 'notify_sit_reschedule', 'sit_reschedule_requests'),
@@ -50,7 +54,9 @@ FROM (VALUES
   ('public.nn_first_name(uuid,text)'),
   ('public.nn_listing_place(uuid)'),
   ('public.notify_application_events()'),
-  ('public.notify_sitter_on_invite()'),
+  ('public.notify_sitter_on_invite_batch()'),
+  ('public.notify_new_applications_batch()'),
+  ('public.notify_invite_answered()'),
   ('public.notify_sit_cancelled()'),
   ('public.notify_listing_dates_changed()'),
   ('public.notify_sit_reschedule()'),
@@ -71,8 +77,10 @@ FROM (VALUES
   ('daily update note', 'notify_owner_on_sit_checkin never uses note or flag_note', 'public.notify_owner_on_sit_checkin()', 'NEW\.(note|flag_note)'),
   ('decline note', 'notify_application_status never puts p_note in the words or the email', 'public.notify_application_status(uuid,text,uuid,text)', '\|\|\s*p_note|''note'',\s*COALESCE\(p_note'),
   ('City Chat reply', 'notify_city_chat_thread_subscribers never quotes the reply', 'public.notify_city_chat_thread_subscribers()', 'LEFT\(NEW\.content|LEFT\(m\.content'),
-  ('invitation message', 'notify_sitter_on_invite never uses the invitation message', 'public.notify_sitter_on_invite()', 'NEW\.message'),
-  ('application message', 'notify_application_events never uses the application message', 'public.notify_application_events()', 'NEW\.message'),
+  ('invitation message', 'notify_sitter_on_invite_batch never uses the invitation message', 'public.notify_sitter_on_invite_batch()', '\.message'),
+  ('declined invitation message', 'notify_invite_answered never uses the invitation message', 'public.notify_invite_answered()', '\.message'),
+  ('application message', 'notify_new_applications_batch never uses the application message', 'public.notify_new_applications_batch()', '\.message'),
+  ('application message (withdrawn)', 'notify_application_events never uses the application message', 'public.notify_application_events()', 'NEW\.message'),
   ('reschedule note', 'notify_sit_reschedule never uses the note', 'public.notify_sit_reschedule()', 'NEW\.note'),
   ('report details', 'notify_new_report never uses the details', 'public.notify_new_report()', 'NEW\.details'),
   ('block cancellation', 'cancel_sits_on_block no longer sends its own notice', 'public.cancel_sits_on_block()', 'request_internal_function')
