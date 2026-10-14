@@ -3,6 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { rejectIfNotInternal } from "../_shared/internal.ts";
 import { providerError, redact } from "../_shared/safe-log.ts";
 import { clean, cleanOutput, tag, UUID_RE } from "../_shared/ai-scrub.ts";
+import { errorBody, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // "What Pet Parents say" / "What Nomads say": 2 to 3 plain sentences about one
 // member, written from their published reviews. Called only by the database
@@ -34,6 +35,8 @@ const HIGHLIGHT_LABELS: Record<string, string> = {
 
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 const log = (entry: Record<string, unknown>) => console.log(JSON.stringify({ fn: "review-summary", ...entry }));
 
 const SYSTEM = `You write a short summary of reviews for NomadNest, a pet and house sitting community.
@@ -60,7 +63,7 @@ const TOOL = {
 };
 
 serve(async (req) => {
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
   const rejected = rejectIfNotInternal(req, "review-summary");
   if (rejected) return rejected;
 

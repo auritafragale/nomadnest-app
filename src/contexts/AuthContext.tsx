@@ -16,7 +16,8 @@ interface AuthContextType {
   onboardingCompleted: boolean;
   signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
+  /** Log out. "local" (the default) ends this device only; "global" ends every device. */
+  signOut: (scope?: "local" | "global") => Promise<void>;
   refreshRole: () => Promise<void>;
 }
 
@@ -189,7 +190,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error ? new Error(error.message) : null };
   };
 
-  const signOut = async () => {
+  const signOut = async (scope: "local" | "global" = "local") => {
     // Clean up the push subscription for this device before the session is
     // cleared — the DELETE needs a valid session to satisfy the RLS policy.
     // navigator.serviceWorker.ready never resolves when no worker is registered,
@@ -214,7 +215,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
     markIntentionalSignOut();
-    await supabase.auth.signOut();
+    // Without a scope supabase-js signs out everywhere: logging out on one
+    // device would end the member's sign-in on all of them.
+    await supabase.auth.signOut({ scope });
     clearAllGuideCaches();
     setRole(null);
     setOnboardingCompleted(false);

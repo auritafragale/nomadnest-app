@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
 import { customerIdFor, liveSubscription, periodEndOf } from "../_shared/stripe-plans.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // Redeem a founding invite code (members can no longer do this from the
 // browser). In this order:
@@ -20,11 +21,13 @@ const corsHeaders = {
 };
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 const log = (entry: Record<string, unknown>) => console.log(JSON.stringify({ fn: "redeem-founding-code", ...entry }));
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", {
     auth: { persistSession: false },
@@ -32,10 +35,10 @@ serve(async (req) => {
 
   try {
     const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
-    if (!token) return json({ error: "Please sign in first.", reason: "auth_missing_token" }, 401);
+    if (!token) return fail("auth_missing_token", "Please sign in first.");
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
     const user = userData?.user;
-    if (userError || !user) return json({ error: "Your sign-in has ended. Please sign in again.", reason: "auth_get_user_failed" }, 401);
+    if (userError || !user) return fail(getUserFailureReason(userError), "Your sign-in has ended. Please sign in again.");
 
     const body = await req.json().catch(() => ({}));
     const code = typeof body?.code === "string" ? body.code.trim().slice(0, 100) : "";

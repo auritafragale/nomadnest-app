@@ -17,7 +17,7 @@ serve(async (req) => {
   // Only the database trigger (handle_sit_cancellation_trust) may call this function.
   const expectedSecret = Deno.env.get("INTERNAL_TRIGGER_SECRET");
   if (!expectedSecret || req.headers.get("x-internal-secret") !== expectedSecret) {
-    return new Response(JSON.stringify({ error: "Forbidden" }), {
+    return new Response(JSON.stringify({ error: "Forbidden", reason: "internal_only" }), {
       status: 403,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -26,7 +26,7 @@ serve(async (req) => {
   try {
     const { user_id, strike_count } = await req.json();
     if (!user_id || !strike_count) {
-      return new Response(JSON.stringify({ error: "Missing user_id or strike_count" }), {
+      return new Response(JSON.stringify({ error: "Missing user_id or strike_count", reason: "bad_input" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

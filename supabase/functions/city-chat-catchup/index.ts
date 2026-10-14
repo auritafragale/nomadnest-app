@@ -2,6 +2,9 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { providerError, redact } from "../_shared/safe-log.ts";
 import { UUID_RE, clean, cleanOutput, corsHeaders, json } from "../_shared/ai-scrub.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 
 // "✦ Catch me up" in a City Chat room: up to 3 short bullet points about
 // what was said while the member was away. Nothing is stored.
@@ -57,7 +60,7 @@ type Timings = Record<string, number | string>;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
   const timings: Timings = {};
   const start = performance.now();
   const response = await handle(req, timings);
@@ -72,19 +75,19 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Please sign in first." }, 401);
+    if (!authHeader?.startsWith("Bearer ")) return fail("auth_missing_token", "Please sign in first.");
     const { data: userData, error: authError } = await admin.auth.getUser(authHeader.replace("Bearer ", ""));
     const user = userData?.user;
-    if (authError || !user) return json({ error: "Please sign in first." }, 401);
+    if (authError || !user) return fail(getUserFailureReason(authError), "Please sign in first.");
 
     let body: { room_id?: unknown; since?: unknown };
     try {
       body = await req.json();
     } catch {
-      return json({ error: "Invalid request." }, 400);
+      return fail("bad_input", "Invalid request.");
     }
     const roomId = typeof body.room_id === "string" && UUID_RE.test(body.room_id) ? body.room_id : null;
-    if (!roomId) return json({ error: "Invalid request." }, 400);
+    if (!roomId) return fail("bad_input", "Invalid request.");
     const sinceRaw = typeof body.since === "string" ? Date.parse(body.since) : NaN;
     const threeDaysAgo = Date.now() - 3 * 86_400_000;
     const since = new Date(Number.isFinite(sinceRaw) ? Math.max(sinceRaw, threeDaysAgo) : threeDaysAgo).toISOString();
@@ -97,12 +100,12 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
       admin.from("ai_usage").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("feature", FEATURE).gte("created_at", dayAgo),
     ]);
     if (flagRow?.value !== true && profile?.is_admin !== true) {
-      return json({ error: "Catch me up isn't available yet." }, 403);
+      return fail("feature_off", "Catch me up isn't available yet.");
     }
     if (countError) throw new Error(`usage count failed: ${countError.message}`);
     const used = usedCount ?? 0;
     if (used >= DAILY_LIMIT) {
-      return json({ error: `You've used all ${DAILY_LIMIT} catch-ups for today. More will be available within 24 hours.`, remaining: 0 }, 429);
+      return fail("rate_limited", `You've used all ${DAILY_LIMIT} catch-ups for today. More will be available within 24 hours.`, { remaining: 0 });
     }
 
     // The room's recent text, as the member: no access, no rows.
@@ -112,7 +115,7 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
     });
     const { data: rows, error: rowsError } = await asMember.rpc("get_city_chat_catchup_input", { p_room_id: roomId, p_since: since });
     if (rowsError) {
-      if (rowsError.code === "42501") return json({ error: "You don't have access to this City Chat." }, 403);
+      if (rowsError.code === "42501") return fail("not_allowed", "You don't have access to this City Chat.");
       throw new Error(`catchup input failed: ${rowsError.code ?? ""}`);
     }
     const messages = ((rows ?? []) as { content: string; sender_name: string }[]).slice(-MAX_MESSAGES);

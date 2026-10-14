@@ -119,7 +119,7 @@ serve(async (req) => {
 
     const body = (await req.json().catch(() => ({}))) as Payload;
     if (typeof body.reportId !== "string" || !UUID_RE.test(body.reportId)) {
-      return new Response(JSON.stringify({ error: "Invalid report." }), {
+      return new Response(JSON.stringify({ error: "Invalid report.", reason: "bad_input" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -133,7 +133,7 @@ serve(async (req) => {
     const row = report as ReportRow | null;
     if (!row) {
       console.error(JSON.stringify({ fn: "notify-new-report", rejected: "report_not_found" }));
-      return new Response(JSON.stringify({ error: "Report not found." }), {
+      return new Response(JSON.stringify({ error: "Report not found.", reason: "not_found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

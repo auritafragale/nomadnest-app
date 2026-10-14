@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // Deletes the caller's account and data (UK/EU data protection; app stores).
 //
@@ -43,11 +44,13 @@ const LIVE_SUBSCRIPTION = new Set(["active", "trialing", "past_due", "unpaid", "
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
+
 const log = (entry: Record<string, unknown>) => console.log(JSON.stringify({ fn: "delete-account", ...entry }));
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -56,10 +59,10 @@ serve(async (req) => {
   );
 
   const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
-  if (!jwt) return json({ error: "Please sign in again." }, 401);
+  if (!jwt) return fail("auth_missing_token", "Please sign in again.");
   const { data: userData, error: userError } = await admin.auth.getUser(jwt);
   const user = userData?.user;
-  if (userError || !user) return json({ error: "Please sign in again." }, 401);
+  if (userError || !user) return fail(getUserFailureReason(userError), "Please sign in again.");
   const userId = user.id;
 
   try {

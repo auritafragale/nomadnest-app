@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import tzlookup from "npm:@photostructure/tz-lookup@11.7.0";
 import { redact } from "../_shared/safe-log.ts";
+import { errorBody, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // Sets listings.timezone from the home's coordinates, using an offline
 // lookup (@photostructure/tz-lookup, ~88 KB, no paid API).
@@ -14,6 +15,8 @@ import { redact } from "../_shared/safe-log.ts";
 
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 
 const log = (entry: Record<string, unknown>) =>
   console.log(JSON.stringify({ fn: "listing-timezone", ...entry }));
@@ -41,13 +44,13 @@ const lookup = (lat: unknown, lng: unknown): string | null => {
 };
 
 serve(async (req) => {
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const expected = Deno.env.get("INTERNAL_TRIGGER_SECRET") ?? "";
   const provided = req.headers.get("x-internal-secret") ?? "";
   if (!expected || !safeEqual(provided, expected)) {
     log({ rejected: "internal_secret_mismatch" });
-    return json({ error: "Unauthorized" }, 401);
+    return fail("internal_only", "Internal callers only.");
   }
 
   const supabase = createClient(
@@ -69,7 +72,7 @@ serve(async (req) => {
     } else if (typeof body?.listing_id === "string" && UUID_RE.test(body.listing_id)) {
       query = query.eq("id", body.listing_id);
     } else {
-      return json({ error: "Invalid request" }, 400);
+      return fail("bad_input", "Invalid request");
     }
 
     const { data: rows, error } = await query;

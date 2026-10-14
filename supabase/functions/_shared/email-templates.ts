@@ -91,6 +91,7 @@ export type NotificationType =
   | "application_status"
   | "new_message"
   | "invite"
+  | "invite_declined"
   | "review"
   | "review_reminder"
   | "reviews_published"
@@ -115,6 +116,7 @@ const SERVER_WORDED_TYPES = new Set([
   "new_application",
   "application_withdrawn",
   "invite",
+  "invite_declined",
   "sit_cancelled",
   "listing_dates_changed",
   "sit_reschedule_proposed",
@@ -966,6 +968,20 @@ export function getPreviewTemplates(): PreviewTemplate[] {
     { id: "application_status", label: "Application accepted (to Nomad)", group: "Notifications", subgroup: "Applications & Invites", build: () => buildNotificationEmail("application_status", sample) },
     { id: "new_message", label: "New message", group: "Notifications", subgroup: "Messages", build: () => buildNotificationEmail("new_message", sample) },
     { id: "invite", label: "Sit invitation (to Nomad)", group: "Notifications", subgroup: "Applications & Invites", build: () => buildNotificationEmail("invite", sample) },
+    {
+      id: "invite_declined",
+      label: "Invitation declined (to Pet Parent)",
+      group: "Notifications",
+      subgroup: "Applications & Invites",
+      build: () =>
+        buildNotificationEmail("invite_declined", {
+          ...sample,
+          title: "Invitation declined",
+          message: "Sam can't make your sit in Lisbon, 3–10 Nov.",
+          url: "/dashboard?mode=owner",
+          cta: "Invite someone else",
+        }),
+    },
     { id: "review", label: "New review", group: "Notifications", subgroup: "Reviews", build: () => buildNotificationEmail("review", sample) },
     { id: "review_reminder", label: "Review reminder", group: "Notifications", subgroup: "Reviews", build: () => buildNotificationEmail("review_reminder", sample) },
     { id: "sit_cancelled", label: "Sit cancelled", group: "Notifications", subgroup: "Sits & Dates", build: () => buildNotificationEmail("sit_cancelled", sample) },

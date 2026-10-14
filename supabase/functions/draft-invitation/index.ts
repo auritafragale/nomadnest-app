@@ -2,6 +2,9 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { providerError, redact } from "../_shared/safe-log.ts";
 import { clean, cleanOutput, corsHeaders, json, tag, UUID_RE } from "../_shared/ai-scrub.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 
 // "Help me write it" on a Nomad's profile: drafts a short invitation from the
 // signed-in Pet Parent to that Nomad for one of the parent's own listings. It
@@ -44,7 +47,7 @@ type Timings = Record<string, number | string>;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
   const timings: Timings = {};
   const start = performance.now();
   const response = await handle(req, timings);
@@ -59,21 +62,21 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Please sign in first." }, 401);
+    if (!authHeader?.startsWith("Bearer ")) return fail("auth_missing_token", "Please sign in first.");
     const { data: userData, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     const user = userData?.user;
-    if (authError || !user) return json({ error: "Please sign in first." }, 401);
+    if (authError || !user) return fail(getUserFailureReason(authError), "Please sign in first.");
 
     let body: { listing_id?: unknown; sitter_user_id?: unknown; sit_date_ids?: unknown };
     try {
       body = await req.json();
     } catch {
-      return json({ error: "Invalid request." }, 400);
+      return fail("bad_input", "Invalid request.");
     }
     const listingId = typeof body.listing_id === "string" ? body.listing_id : "";
     const sitterId = typeof body.sitter_user_id === "string" ? body.sitter_user_id : "";
-    if (!UUID_RE.test(listingId) || !UUID_RE.test(sitterId)) return json({ error: "Invalid request." }, 400);
-    if (sitterId === user.id) return json({ error: "You can't invite yourself." }, 400);
+    if (!UUID_RE.test(listingId) || !UUID_RE.test(sitterId)) return fail("bad_input", "Invalid request.");
+    if (sitterId === user.id) return fail("bad_input", "You can't invite yourself.");
     let sitDateIds: string[] = [];
     if (body.sit_date_ids !== undefined && body.sit_date_ids !== null) {
       if (
@@ -81,7 +84,7 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
         body.sit_date_ids.length > MAX_SIT_DATE_IDS ||
         !body.sit_date_ids.every((id) => typeof id === "string" && UUID_RE.test(id))
       ) {
-        return json({ error: "Invalid dates." }, 400);
+        return fail("bad_input", "Invalid dates.");
       }
       sitDateIds = [...new Set(body.sit_date_ids as string[])];
     }
@@ -95,16 +98,16 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
       supabase.from("listings").select("id, owner_user_id, status, title, city, country").eq("id", listingId).maybeSingle(),
     ]);
     if (flagRow?.value !== true && parent?.is_admin !== true) {
-      return json({ error: "Help me write it isn't available yet." }, 403);
+      return fail("feature_off", "Help me write it isn't available yet.");
     }
     if (listingError) throw new Error(`listing lookup failed: ${listingError.message}`);
     if (!listing || listing.owner_user_id !== user.id || listing.status !== "published") {
-      return json({ error: "You can only invite to your own published listing." }, 403);
+      return fail("not_allowed", "You can only invite to your own published listing.");
     }
     if (countError) throw new Error(`usage count failed: ${countError.message}`);
     const used = usedCount ?? 0;
     if (used >= DAILY_LIMIT) {
-      return json({ error: `You've used all ${DAILY_LIMIT} AI drafts for today. You can still write it yourself.`, remaining: 0 }, 429);
+      return fail("rate_limited", `You've used all ${DAILY_LIMIT} AI drafts for today. You can still write it yourself.`, { remaining: 0 });
     }
 
     let datesQuery = supabase.from("sit_dates").select("id, start_date, end_date").eq("listing_id", listingId).order("start_date");
@@ -126,10 +129,10 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
       supabase.rpc("blocked_between", { p_a: user.id, p_b: sitterId }),
     ]);
     if (!nomad || nomad.is_visible !== true || nomad.is_active !== true || nomadAccess !== true || blocked === true) {
-      return json({ error: "This Nomad isn't available for invitations right now." }, 404);
+      return fail("not_found", "This Nomad isn't available for invitations right now.");
     }
     if (sitDateIds.length > 0 && (dates ?? []).length !== sitDateIds.length) {
-      return json({ error: "Those dates don't belong to this listing." }, 400);
+      return fail("bad_input", "Those dates don't belong to this listing.");
     }
 
     const userPrompt = [

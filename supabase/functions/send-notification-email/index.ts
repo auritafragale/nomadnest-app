@@ -90,7 +90,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!isInternalCaller && internalSecretHeader !== null) {
       const expected = Deno.env.get("INTERNAL_TRIGGER_SECRET") ?? "";
       if (!expected || !safeEqual(internalSecretHeader, expected)) {
-        return reject("internal_secret_mismatch", 401);
+        return reject("internal_secret_mismatch", 403);
       }
       isInternalCaller = true;
     }

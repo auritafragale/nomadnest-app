@@ -9,6 +9,7 @@ import {
   buildContactNotificationEmail,
 } from "../_shared/email-templates.ts";
 import { maskEmail, redact } from "../_shared/safe-log.ts";
+import { errorBody, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // Public contact form. Anyone can call it, so:
 //  1. Cloudflare Turnstile token verified server-side (TURNSTILE_SECRET_KEY);
@@ -44,6 +45,8 @@ const EMAIL_RE = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
+
 const log = (entry: Record<string, unknown>) => console.log(JSON.stringify({ fn: "send-contact-email", ...entry }));
 
 const hmac = async (key: string, value: string) => {
@@ -71,7 +74,7 @@ const verifyTurnstile = async (secret: string, token: string, ip: string) => {
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const secret = Deno.env.get("TURNSTILE_SECRET_KEY") ?? "";
   if (!secret) {
@@ -91,19 +94,19 @@ const handler = async (req: Request): Promise<Response> => {
     if (!name || name.length > 100 || !EMAIL_RE.test(email) || email.length > 254 || !(category in categoryLabels)
         || !subject || subject.length > 200 || message.length < 10 || message.length > 2000) {
       log({ rejected: "invalid_input" });
-      return json({ error: "Please check the form and try again." }, 400);
+      return fail("bad_input", "Please check the form and try again.");
     }
 
     // 1) Turnstile
     const ip = clientIp(req);
     if (!token) {
       log({ rejected: "turnstile_missing" });
-      return json({ error: "Please complete the security check." }, 400);
+      return fail("bad_input", "Please complete the security check.");
     }
     const check = await verifyTurnstile(secret, token, ip);
     if (!check.ok) {
       log({ rejected: "turnstile_failed", codes: check.codes.join(",") });
-      return json({ error: "The security check didn't pass. Please try again." }, 403);
+      return fail("captcha_failed", "The security check didn't pass. Please try again.");
     }
 
     // 2) Rate limits (keyed hashes only)
@@ -122,7 +125,7 @@ const handler = async (req: Request): Promise<Response> => {
     ]);
     if ((ipCount ?? 0) >= PER_IP_PER_HOUR || (emailCount ?? 0) >= PER_EMAIL_PER_DAY) {
       log({ rejected: "rate_limited", by: (ipCount ?? 0) >= PER_IP_PER_HOUR ? "ip" : "email" });
-      return json({ error: "You've sent a few messages already. Please try again later, or email support@nomadnest.global." }, 429);
+      return fail("rate_limited", "You've sent a few messages already. Please try again later, or email support@nomadnest.global.");
     }
     const { error: insertError } = await admin.from("contact_rate_limits").insert({ ip_hash: ipHash, email_hash: emailHash });
     if (insertError) throw new Error(`rate limit insert failed: ${insertError.message}`);

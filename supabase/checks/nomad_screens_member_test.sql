@@ -12,6 +12,7 @@ DECLARE
   v_listing uuid;
   v_other_listing uuid;
   v_dates uuid;
+  v_extra uuid;
   v_sitter uuid;
   v_stranger uuid;
   v_invite uuid;
@@ -84,15 +85,23 @@ BEGIN
   RETURNING id INTO v_invite;
   RESET ROLE;
 
-  -- 20 a day: 19 more are fine, the 21st is refused.
+  -- 20 a day: 19 more are fine, the 21st is refused. Since Batch F1c a Nomad
+  -- can have only one live invitation per date range, so each of these is
+  -- for its own new range (the daily limit is what's being tested).
   FOR i IN 1..19 LOOP
+    INSERT INTO public.sit_dates (listing_id, start_date, end_date, status)
+    VALUES (v_listing, current_date + 100 + i * 10, current_date + 105 + i * 10, 'open')
+    RETURNING id INTO v_extra;
     INSERT INTO public.sitter_invites (listing_id, sit_dates_id, owner_user_id, sitter_user_id)
-    VALUES (v_listing, v_dates, v_owner, v_stranger);
+    VALUES (v_listing, v_extra, v_owner, v_stranger);
   END LOOP;
+  INSERT INTO public.sit_dates (listing_id, start_date, end_date, status)
+  VALUES (v_listing, current_date + 400, current_date + 405, 'open')
+  RETURNING id INTO v_extra;
   SET LOCAL ROLE authenticated;
   BEGIN
     INSERT INTO public.sitter_invites (listing_id, sit_dates_id, owner_user_id, sitter_user_id)
-    VALUES (v_listing, v_dates, v_owner, v_stranger);
+    VALUES (v_listing, v_extra, v_owner, v_stranger);
     RAISE EXCEPTION 'FAIL: a Pet Parent could send a 21st invitation in a day';
   EXCEPTION WHEN raise_exception THEN
     IF SQLERRM NOT LIKE 'You can send up to 20 invitations a day%' THEN

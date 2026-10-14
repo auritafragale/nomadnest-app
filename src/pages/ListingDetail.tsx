@@ -29,6 +29,7 @@ import SignUpPromptDialog from "@/components/auth/SignUpPromptDialog";
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
 import { useUpdateInviteStatus } from "@/hooks/useSitterInvites";
+import { otherOpenDates as otherOpenDatesFor } from "@/lib/dateRanges";
 import { useApplicationSubmission } from "@/hooks/useApplicationSubmission";
 import { useHideBottomNav } from "@/lib/bottomNav";
 import { NN_PAGE, RoleTheme, StatusChip, nnButton, shortRange } from "@/components/nn/ui";
@@ -123,7 +124,7 @@ const ListingDetail = () => {
   // and this Nomad, and is still actionable — an already-declined/applied
   // or stale invite (e.g. a copied/bookmarked link) is silently ignored.
   const inviteIdParam = searchParams.get("invite");
-  const [invite, setInvite] = useState<{ id: string; status: string } | null>(null);
+  const [invite, setInvite] = useState<{ id: string; status: string; sit_dates_id: string } | null>(null);
   useEffect(() => {
     if (!inviteIdParam || !listing?.id || !user) {
       setInvite(null);
@@ -132,7 +133,7 @@ const ListingDetail = () => {
     let cancelled = false;
     supabase
       .from("sitter_invites")
-      .select("id, listing_id, sitter_user_id, status")
+      .select("id, listing_id, sit_dates_id, sitter_user_id, status")
       .eq("id", inviteIdParam)
       .maybeSingle()
       .then(({ data }) => {
@@ -143,7 +144,7 @@ const ListingDetail = () => {
           data.sitter_user_id === user.id &&
           (data.status === "pending" || data.status === "viewed")
         ) {
-          setInvite({ id: data.id, status: data.status });
+          setInvite({ id: data.id, status: data.status, sit_dates_id: data.sit_dates_id });
         } else {
           setInvite(null);
         }
@@ -309,7 +310,11 @@ const ListingDetail = () => {
         description: "The Pet Parent will review your application soon.",
       });
 
-      updateInviteStatus.mutate({ inviteId: invite.id, status: "applied" });
+      // The invitation is answered only when its own range was applied for
+      // (the database refuses "applied" without that application).
+      if (check.applicableDates.some((d) => d.id === invite.sit_dates_id) || check.alreadyApplied.has(invite.sit_dates_id)) {
+        updateInviteStatus.mutate({ inviteId: invite.id, status: "applied" });
+      }
       setSelectedDateIds([]);
     } catch (error) {
       console.error("Error accepting invitation:", error);
@@ -428,9 +433,7 @@ const ListingDetail = () => {
   const shownDates: ListingSitDate[] = viewer === "confirmed" ? confirmedDates : openDates;
   // A confirmed Nomad can still apply for the other open dates here, but
   // never for a range that overlaps one of their sits (inclusive).
-  const otherOpenDates = openDates.filter(
-    (d) => !confirmedDates.some((c) => d.start_date <= c.end_date && c.start_date <= d.end_date),
-  );
+  const otherOpenDates = otherOpenDatesFor(openDates, confirmedDates);
   const canApplyMore = viewer === "confirmed" && isNomadAccount && otherOpenDates.length > 0;
   // The ranges this viewer can pick and apply for.
   const applyDates = viewer === "nomad" ? openDates : canApplyMore ? otherOpenDates : [];

@@ -6,11 +6,13 @@ import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft, Upload, Clock } from "lucide-react";
-import { Label } from "@/components/ui/label";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { useVerification } from "@/hooks/useVerification";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useIdDrafts } from "@/hooks/useIdDrafts";
+import { useIdVerificationRequest } from "@/hooks/useIdVerificationRequest";
+import IdDocumentPicker from "@/components/verify/IdDocumentPicker";
 
 declare global {
   interface Window {
@@ -94,80 +96,13 @@ const VerifyIdentity = () => {
   const [sdkToken, setSdkToken] = useState("");
   const [applicantId, setApplicantId] = useState("");
 
-  // Manual ID review state
-  const [idFile, setIdFile] = useState<File | null>(null);
-  const [selfieFile, setSelfieFile] = useState<File | null>(null);
-  const [idPreview, setIdPreview] = useState<string | null>(null);
-  const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
-  const [idError, setIdError] = useState<string>("");
-  const [selfieError, setSelfieError] = useState<string>("");
+  // Manual ID review: each file is saved the moment it's picked.
+  const idDrafts = useIdDrafts(user?.id);
   const [manualUploading, setManualUploading] = useState(false);
   const [manualSubmitted, setManualSubmitted] = useState(false);
-  const idInputRef = useRef<HTMLInputElement>(null);
-  const selfieInputRef = useRef<HTMLInputElement>(null);
-
-  // Phone cameras often hand over a file with an empty or generic MIME type and
-  // no extension, so anything the picker returns is accepted unless it is
-  // clearly unusable. Previews make it obvious the photo actually arrived.
-  // We do NOT manually revoke the previous preview URL here — the useEffect
-  // cleanups below own that exclusively, eliminating the stale-closure race
-  // that could blank the preview when returning from the camera app.
-  const pickFile = (file: File | null, target: "id" | "selfie") => {
-    const setFile = target === "id" ? setIdFile : setSelfieFile;
-    const setPreview = target === "id" ? setIdPreview : setSelfiePreview;
-    const setError = target === "id" ? setIdError : setSelfieError;
-
-    if (!file) {
-      setFile(null);
-      setPreview(null);
-      setError("");
-      return;
-    }
-
-    if (file.size === 0) {
-      setError("That photo came through empty — please try again.");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setError("That file is larger than 10MB — please choose a smaller photo.");
-      return;
-    }
-    const type = (file.type || "").toLowerCase();
-    const isImage = type.startsWith("image/");
-    // Android camera captures often arrive with an empty MIME type — treat
-    // those as images so the preview still renders.
-    const treatAsImage = isImage || type === "";
-    if (type && !isImage && type !== "application/pdf") {
-      setError("Please choose a photo or a PDF.");
-      return;
-    }
-    // Selfie must be an image (no PDF)
-    if (target === "selfie" && type && !isImage) {
-      setError("Selfie must be a photo.");
-      return;
-    }
-
-    setError("");
-    setFile(file);
-    setPreview(treatAsImage ? URL.createObjectURL(file) : null);
-  };
-
-  // Revoke a preview URL only once it is no longer the current one.
-  const prevIdPreview = useRef<string | null>(null);
-  useEffect(() => {
-    const previous = prevIdPreview.current;
-    if (previous && previous !== idPreview) URL.revokeObjectURL(previous);
-    prevIdPreview.current = idPreview;
-  }, [idPreview]);
-
-  const prevSelfiePreview = useRef<string | null>(null);
-  useEffect(() => {
-    const previous = prevSelfiePreview.current;
-    if (previous && previous !== selfiePreview) URL.revokeObjectURL(previous);
-    prevSelfiePreview.current = selfiePreview;
-  }, [selfiePreview]);
-
-
+  const [submitError, setSubmitError] = useState("");
+  const { data: pendingRequest } = useIdVerificationRequest();
+  const hasPending = pendingRequest?.status === "pending";
 
   // Teardown on unmount
   useEffect(() => {
@@ -220,7 +155,6 @@ const VerifyIdentity = () => {
 
           if (res.error) {
             console.error("[Onfido] submit error:", res.error);
-          } else {
           }
 
           queryClient.invalidateQueries({ queryKey: ["verification"] });
@@ -259,36 +193,15 @@ const VerifyIdentity = () => {
   if (!user) return <Navigate to="/auth" replace />;
 
   const handleManualSubmit = async () => {
-    if (!idFile || !selfieFile) {
-      toast({ variant: "destructive", title: "Please upload both files" });
+    const idPath = idDrafts.drafts.id?.path;
+    const selfiePath = idDrafts.drafts.selfie?.path;
+    if (!idPath || !selfiePath) {
+      toast({ variant: "destructive", title: "Please add both your Photo ID and a selfie" });
       return;
     }
     setManualUploading(true);
-    setIdError("");
-    setSelfieError("");
-    const uploadedPaths: string[] = [];
+    setSubmitError("");
     try {
-      const uploadFile = async (file: File, name: string) => {
-        const nameExt = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
-        const typeExt = (file.type || "").split("/").pop()?.toLowerCase() || "";
-        const ext = nameExt || (typeExt === "pdf" ? "pdf" : typeExt) || "jpg";
-        const path = `${user.id}/${name}-${Date.now()}.${ext}`;
-        const { error } = await supabase.storage
-          .from("id-verification-documents")
-          .upload(path, file, {
-            upsert: false,
-            contentType: file.type || "image/jpeg",
-          });
-        if (error) throw error;
-        uploadedPaths.push(path);
-        return path;
-      };
-
-      const [idPath, selfiePath] = await Promise.all([
-        uploadFile(idFile, "id"),
-        uploadFile(selfieFile, "selfie"),
-      ]);
-
       // A previous attempt can leave a pending row behind, so reuse it rather
       // than stacking duplicate submissions in the admin review queue. The
       // "Users can update own pending verifications" policy allows this while
@@ -321,15 +234,13 @@ const VerifyIdentity = () => {
       }
 
       setManualSubmitted(true);
+      queryClient.invalidateQueries({ queryKey: ["id-verification-request"] });
       toast({ title: "Submitted for review", description: "We'll notify you once reviewed, usually within 24-48 hours." });
-    } catch (err: any) {
-      // Clean up partially uploaded files so the member can retry cleanly
-      for (const path of uploadedPaths) {
-        await supabase.storage.from("id-verification-documents").remove([path]).catch(() => {});
-      }
-      const msg = err?.message || "Upload failed — please try again.";
-      setIdError(msg);
-      toast({ variant: "destructive", title: "Upload failed", description: msg });
+    } catch (err) {
+      console.error("ID submission failed", (err as { code?: string })?.code ?? "error");
+      const msg = "That didn't send. Please check your connection and try again.";
+      setSubmitError(msg);
+      toast({ variant: "destructive", title: "Couldn't submit", description: msg });
     } finally {
       setManualUploading(false);
     }
@@ -387,7 +298,7 @@ const VerifyIdentity = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="pt-20 pb-12">
+      <main className="pt-20 pb-28 md:pb-12">
         <div className="container max-w-2xl mx-auto px-4">
           <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -459,94 +370,59 @@ const VerifyIdentity = () => {
                     </div>
                   ) : (
                     <>
-                      <div className="space-y-1">
-                        <Label>Photo ID (passport, driving licence, national ID)</Label>
-                        <p className="text-xs text-muted-foreground">Images or PDF, max 10MB.</p>
-                        {idError && (
-                          <p className="text-sm text-destructive" role="alert">{idError}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full cursor-pointer"
-                          onClick={() => idInputRef.current?.click()}
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          {idFile ? "Replace Photo ID" : "Upload Photo ID"}
-                        </Button>
-                        <input
-                          ref={idInputRef}
-                          type="file"
-                          accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,application/pdf"
-                          className="sr-only"
-                          aria-label="Upload photo ID from files"
-                          onChange={(e) => {
-                            pickFile(e.target.files?.[0] ?? null, "id");
-                            e.target.value = "";
-                          }}
-                        />
-                      </div>
-                      {idFile && (
-                        <div className="flex items-center gap-3">
-                          {idPreview && (
-                            <img src={idPreview} alt="Selected photo ID preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
-                          )}
-                          <p className="text-xs text-muted-foreground truncate flex-1">Selected: {idFile.name}</p>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "id")}>
-                            Remove
-                          </Button>
-                        </div>
+                      {hasPending && (
+                        <p className="rounded-2xl bg-muted p-3 text-sm text-muted-foreground">
+                          We have your documents and are reviewing them. You can replace them below and send them again.
+                        </p>
                       )}
-                      <div className="space-y-1">
-                        <Label>Selfie (holding your ID or looking at camera)</Label>
-                        <p className="text-xs text-muted-foreground">Photo only, max 10MB.</p>
-                        {selfieError && (
-                          <p className="text-sm text-destructive" role="alert">{selfieError}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full cursor-pointer"
-                          onClick={() => selfieInputRef.current?.click()}
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          {selfieFile ? "Replace Selfie" : "Upload Selfie"}
-                        </Button>
-                        <input
-                          ref={selfieInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="sr-only"
-                          aria-label="Upload selfie from files"
-                          onChange={(e) => {
-                            pickFile(e.target.files?.[0] ?? null, "selfie");
-                            e.target.value = "";
-                          }}
-                        />
-                      </div>
-                      {selfieFile && (
-                        <div className="flex items-center gap-3">
-                          {selfiePreview && (
-                            <img src={selfiePreview} alt="Selected selfie preview" className="w-14 h-14 rounded-lg object-cover border border-border" />
-                          )}
-                          <p className="text-xs text-muted-foreground truncate flex-1">Selected: {selfieFile.name}</p>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => pickFile(null, "selfie")}>
-                            Remove
-                          </Button>
+                      {!idDrafts.loaded ? (
+                        <div className="flex justify-center py-6">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading your documents" />
                         </div>
+                      ) : (
+                        <>
+                          <IdDocumentPicker
+                            title="Photo ID"
+                            hint="Passport, driving licence or national ID. A photo or a PDF, up to 10MB."
+                            takeLabel="Take a photo"
+                            chooseLabel="Choose a file"
+                            capture="environment"
+                            chooseAccept="image/*,application/pdf"
+                            draft={idDrafts.drafts.id}
+                            saving={idDrafts.saving.id}
+                            error={idDrafts.errors.id}
+                            onPick={(file) => idDrafts.save("id", file)}
+                            onRemove={() => idDrafts.remove("id")}
+                          />
+                          <IdDocumentPicker
+                            title="Selfie"
+                            hint="Hold your ID next to your face, or just look at the camera."
+                            takeLabel="Take a selfie"
+                            chooseLabel="Choose a photo"
+                            capture="user"
+                            chooseAccept="image/*"
+                            draft={idDrafts.drafts.selfie}
+                            saving={idDrafts.saving.selfie}
+                            error={idDrafts.errors.selfie}
+                            onPick={(file) => idDrafts.save("selfie", file)}
+                            onRemove={() => idDrafts.remove("selfie")}
+                          />
+                        </>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        Photos are made smaller on your phone and their location data is removed before they're sent.
+                      </p>
+                      {submitError && (
+                        <p className="text-sm text-destructive" role="alert">{submitError}</p>
                       )}
 
                       <Button
-                        className="w-full"
+                        className="h-11 w-full"
                         onClick={handleManualSubmit}
-                        disabled={manualUploading || !idFile || !selfieFile}
+                        disabled={manualUploading || idDrafts.saving.id || idDrafts.saving.selfie || !idDrafts.drafts.id || !idDrafts.drafts.selfie}
                       >
                         {manualUploading
-                          ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Uploading…</>
+                          ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending…</>
                           : <><Upload className="w-4 h-4 mr-2" />Submit for Review</>
                         }
                       </Button>

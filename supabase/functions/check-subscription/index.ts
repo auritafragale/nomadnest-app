@@ -1,3 +1,4 @@
+import { getUserFailureReason, statusFor } from "../_shared/http-status.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
@@ -33,7 +34,12 @@ serve(async (req) => {
     if (!token) return json(NONE);
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
     const user = userData?.user;
-    if (userError || !user?.email) return json({ ...NONE, reason: "auth_get_user_failed" }, 401);
+    if (userError || !user) {
+      const reason = getUserFailureReason(userError);
+      return json({ ...NONE, error: "Please sign in again.", reason }, statusFor(reason));
+    }
+    // No email: nothing to look up at Stripe. Not a sign-in problem.
+    if (!user.email) return json({ ...NONE, reason: "no_email" });
 
     const { data: profile } = await supabase
       .from("profiles")

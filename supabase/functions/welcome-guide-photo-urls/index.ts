@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
+import { errorBody, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // Short-lived (5 minute) signed URLs for the photos a SITTER may see right now.
 // The allowed list comes from get_sitter_guide, called AS THE SITTER, so the
@@ -24,17 +25,19 @@ const json = (body: Record<string, unknown>, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const authHeader = req.headers.get("Authorization") ?? "";
-  if (!authHeader.startsWith("Bearer ")) return json({ error: "Please sign in again." }, 401);
+  if (!authHeader.startsWith("Bearer ")) return fail("auth_missing_token", "Please sign in again.");
 
   try {
     const body = await req.json().catch(() => ({}));
     const listingId = body?.listing_id;
-    if (typeof listingId !== "string" || !UUID_RE.test(listingId)) return json({ error: "Invalid listing." }, 400);
+    if (typeof listingId !== "string" || !UUID_RE.test(listingId)) return fail("bad_input", "Invalid listing.");
 
     // As the caller: the database decides which photos they may see.
     const asUser = createClient(
@@ -45,7 +48,12 @@ serve(async (req) => {
     const { data: guide, error } = await asUser.rpc("get_sitter_guide", { p_listing_id: listingId });
     if (error) {
       console.error(JSON.stringify({ fn: "welcome-guide-photo-urls", rejected: "rpc_failed", detail: redact(error.message) }));
-      return json({ error: "Could not load photos." }, 401);
+      // Only a rejected token is a sign-in problem; anything else (the guide
+      // isn't open to them yet) is a refusal.
+      const tokenRejected = error.code === "PGRST301" || error.code === "PGRST303" || /jwt/i.test(error.message);
+      return tokenRejected
+        ? fail("auth_get_user_failed", "Please sign in again.")
+        : fail("not_allowed", "Could not load photos.");
     }
     const allPhotos = ((guide as { photos?: { id: string; storage_path: string }[] } | null)?.photos) ?? [];
     // Defence in depth: only sign files inside this listing's folder,

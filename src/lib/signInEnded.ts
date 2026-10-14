@@ -1,10 +1,12 @@
 /**
  * "Your sign-in has ended". When the member's session stops working (signed
  * out on another device, refresh failed), any call to an edge function or the
- * database answers 401. We catch that once, show one friendly message and
- * send them to /auth with a link back to where they were. No console spam,
- * no blank screen.
+ * database answers 401. A 401 is only a hint: before saying anything we ask
+ * the auth server whether the session still works, and try a refresh. Only
+ * when both fail do we show one friendly message and send them to /auth with
+ * a link back to where they were.
  */
+import { isSignInEndedCandidate, sessionHasEnded, type SessionProbe } from "./signInCheck";
 
 export const SIGN_IN_ENDED_EVENT = "nn:sign-in-ended";
 export const SIGN_IN_ENDED_MESSAGE = "Your sign-in has ended. Please sign in again.";
@@ -39,11 +41,30 @@ const hasStoredSession = () => {
   }
 };
 
+const CHECK_DELAY_MS = 2000;
+let timer: ReturnType<typeof setTimeout> | null = null;
+let checking = false;
+
+/** Check the session once (2s after the first 401, one check at a time). */
+const scheduleCheck = (probe: SessionProbe, path: string) => {
+  if (timer || checking) return;
+  timer = setTimeout(async () => {
+    timer = null;
+    checking = true;
+    try {
+      if (await sessionHasEnded(probe)) signInEnded();
+      else if (import.meta.env.DEV) console.warn("[sign-in] a 401 was ignored: the session still works", path);
+    } finally {
+      checking = false;
+    }
+  }, CHECK_DELAY_MS);
+};
+
 /**
  * Watches Supabase responses for an ended sign-in: a 401 from an edge
  * function, or a JWT error from the database. Installed once at start-up.
  */
-export const installSignInWatcher = (supabaseUrl: string) => {
+export const installSignInWatcher = (supabaseUrl: string, probe: SessionProbe) => {
   if (typeof window === "undefined" || !supabaseUrl) return;
   const w = window as Window & { __nnSignInWatcher?: boolean };
   if (w.__nnSignInWatcher) return;
@@ -54,16 +75,10 @@ export const installSignInWatcher = (supabaseUrl: string) => {
     try {
       if (res.status === 401) {
         const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-        if (url.startsWith(supabaseUrl) && !url.includes("/auth/v1/") && hasStoredSession()) {
-          const body = await res.clone().json().catch(() => null);
-          const text = JSON.stringify(body ?? {});
-          const isFunction = url.includes("/functions/v1/");
-          if (
-            (isFunction && body?.reason !== "auth_missing_token") ||
-            /auth_get_user_failed|PGRST30[0-9]|JWT|jwt|session/i.test(text)
-          ) {
-            signInEnded();
-          }
+        const body = await res.clone().json().catch(() => null);
+        if (isSignInEndedCandidate({ status: res.status, url, supabaseUrl, body, hasStoredSession: hasStoredSession() })) {
+          // The path only, never the query string or any token.
+          scheduleCheck(probe, new URL(url).pathname);
         }
       }
     } catch {

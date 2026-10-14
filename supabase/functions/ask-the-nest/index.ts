@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.89.0";
 import { isEmergencyQuestion } from "../_shared/emergencyTerms.ts";
 import { providerError, redact } from "../_shared/safe-log.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // Ask the Nest: answers a confirmed sitter's question about the home, using
 // ONLY that home's Welcome Guide.
@@ -47,6 +48,8 @@ const json = (body: Record<string, unknown>, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 
 const log = (entry: Record<string, unknown>) =>
   console.log(JSON.stringify({ fn: "ask-the-nest", ...entry }));
@@ -311,7 +314,7 @@ const guideForModel = (g: SitterGuide, locked: LockedArrival | null) => {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const authHeader = req.headers.get("Authorization") ?? "";
   const jwt = authHeader.replace("Bearer ", "").trim();
@@ -325,23 +328,23 @@ serve(async (req) => {
     // 1) Caller
     if (!jwt) {
       log({ rejected: "auth_missing_token" });
-      return json({ error: "Please sign in again." }, 401);
+      return fail("auth_missing_token", "Please sign in again.");
     }
     const { data: userData, error: authError } = await service.auth.getUser(jwt);
     const user = userData?.user;
     if (authError || !user) {
       log({ rejected: "auth_get_user_failed", detail: redact(authError?.message ?? "no user") });
-      return json({ error: "Your session has expired. Please sign in again." }, 401);
+      return fail(getUserFailureReason(authError), "Your session has expired. Please sign in again.");
     }
 
     // 2) Input
     const body = await req.json().catch(() => ({}));
     const listingId = body?.listing_id;
     const question = typeof body?.question === "string" ? body.question.trim().replace(/\s+/g, " ") : "";
-    if (typeof listingId !== "string" || !UUID_RE.test(listingId)) return json({ error: "Invalid listing." }, 400);
-    if (!question) return json({ error: "Please type a question." }, 400);
+    if (typeof listingId !== "string" || !UUID_RE.test(listingId)) return fail("bad_input", "Invalid listing.");
+    if (!question) return fail("bad_input", "Please type a question.");
     if (question.length > QUESTION_MAX) {
-      return json({ error: `Please keep your question under ${QUESTION_MAX} characters.` }, 400);
+      return fail("bad_input", `Please keep your question under ${QUESTION_MAX} characters.`);
     }
 
     // 3) Feature flag (admins allowed while it's off)
@@ -351,7 +354,7 @@ serve(async (req) => {
     ]);
     if (flagRow?.value !== true && profile?.is_admin !== true) {
       log({ rejected: "flag_off", user: user.id });
-      return json({ error: "Ask the Nest isn't available yet." }, 403);
+      return fail("feature_off", "Ask the Nest isn't available yet.");
     }
 
     // 4) Relationship + knowledge: get_sitter_guide AS THE SITTER
@@ -365,7 +368,7 @@ serve(async (req) => {
     const guide = guideData as SitterGuide | null;
     if (!guide) {
       log({ rejected: "no_guide_access", user: user.id, listing: listingId });
-      return json({ error: "Ask the Nest is only available to the confirmed sitter during the sit." }, 403);
+      return fail("not_allowed", "Ask the Nest is only available to the confirmed sitter during the sit.");
     }
 
     const storeQuestion = async (fields: { answered_from_guide: boolean; is_emergency: boolean }) => {

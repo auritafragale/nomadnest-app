@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
 import { appOrigin, customerIdFor } from "../_shared/stripe-plans.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // The Stripe billing portal (receipts, card, cancel). Opens in the same tab
 // and comes back to /membership. { flow: "update_card" } goes straight to
@@ -16,6 +17,8 @@ const corsHeaders = {
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -27,17 +30,18 @@ serve(async (req) => {
     });
 
     const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
-    if (!token) return json({ error: "Please sign in first.", reason: "auth_missing_token" }, 401);
+    if (!token) return fail("auth_missing_token", "Please sign in first.");
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
     const user = userData?.user;
-    if (userError || !user?.email) return json({ error: "Your sign-in has ended. Please sign in again.", reason: "auth_get_user_failed" }, 401);
+    if (userError || !user) return fail(getUserFailureReason(userError), "Your sign-in has ended. Please sign in again.");
+    if (!user.email) return fail("no_email", "Please add an email to your account first.");
 
     const { data: profile } = await supabase.from("profiles").select("founding_member").eq("id", user.id).maybeSingle();
-    if (profile?.founding_member) return json({ error: "Founding members have nothing to pay, so there is no billing to manage." }, 400);
+    if (profile?.founding_member) return fail("bad_input", "Founding members have nothing to pay, so there is no billing to manage.");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customerId = await customerIdFor(supabase, stripe, user.id, user.email);
-    if (!customerId) return json({ error: "No billing account found. Choose a plan to get started." }, 400);
+    if (!customerId) return fail("bad_input", "No billing account found. Choose a plan to get started.");
 
     const body = await req.json().catch(() => ({}));
     const portalSession = await stripe.billingPortal.sessions.create({

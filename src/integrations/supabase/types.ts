@@ -3366,6 +3366,7 @@ export type Database = {
           selfie_path: string
         }[]
       }
+      expired_id_drafts: { Args: never; Returns: { name: string }[] }
       export_account_data: { Args: { p_user_id: string }; Returns: Json }
       export_account_files: {
         Args: { p_user_id: string }
@@ -3660,6 +3661,7 @@ export type Database = {
       hidden_by_block: { Args: { p_other: string }; Returns: boolean }
       hit_shared_sit_story: { Args: { p_token: string }; Returns: boolean }
       i_have_side_access: { Args: { p_side: string }; Returns: boolean }
+      id_document_in_use: { Args: { p_path: string }; Returns: boolean }
       invitation_is_live: {
         Args: {
           p_owner_user_id: string

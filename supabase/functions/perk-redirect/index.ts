@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,12 +14,14 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader) return fail("auth_missing_token", "Unauthorized");
 
     const anonClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -30,10 +33,10 @@ serve(async (req) => {
       data: { user },
       error: authError,
     } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authError || !user) return json({ error: "Unauthorized" }, 401);
+    if (authError || !user) return fail(getUserFailureReason(authError), "Unauthorized");
 
     const { slug, referrer } = await req.json().catch(() => ({ slug: null, referrer: null }));
-    if (!slug || typeof slug !== "string") return json({ error: "Missing perk" }, 400);
+    if (!slug || typeof slug !== "string") return fail("bad_input", "Missing perk");
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -55,7 +58,7 @@ serve(async (req) => {
     ]);
     const isMember = profile?.founding_member === true || nomad === true || parent === true;
 
-    if (!isMember) return json({ error: "Membership required" }, 403);
+    if (!isMember) return fail("membership_needed", "Membership required");
 
     const { data: perk } = await admin
       .from("perks")
@@ -63,7 +66,7 @@ serve(async (req) => {
       .eq("slug", slug)
       .maybeSingle();
 
-    if (!perk || !perk.is_active) return json({ error: "Perk not found" }, 404);
+    if (!perk || !perk.is_active) return fail("not_found", "Perk not found");
     if (perk.expires_at && new Date(perk.expires_at) < new Date(new Date().toDateString())) {
       return json({ error: "Perk expired" }, 410);
     }

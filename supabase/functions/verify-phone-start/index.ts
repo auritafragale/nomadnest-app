@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { providerError, redact } from "../_shared/safe-log.ts";
+import { getUserFailureReason, statusFor } from "../_shared/http-status.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +13,7 @@ serve(async (req) => {
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+    return new Response(JSON.stringify({ error: "Please sign in again.", reason: "auth_missing_token" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
@@ -27,8 +28,9 @@ serve(async (req) => {
     authHeader.replace("Bearer ", "")
   );
   if (authError || !user) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const reason = getUserFailureReason(authError);
+    return new Response(JSON.stringify({ error: "Please sign in again.", reason }), {
+      status: statusFor(reason), headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 

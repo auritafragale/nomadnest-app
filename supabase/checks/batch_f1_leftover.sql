@@ -2,7 +2,7 @@
 -- Every count must be 0: the member test always rolls back.
 
 SELECT
-  (SELECT count(*) FROM public.listings WHERE title LIKE 'F1 test 2099%') AS test_listings,
+  (SELECT count(*) FROM public.listings WHERE title LIKE 'F1 test 2099%' OR (title = 'F1 sample listing' AND city = 'Testville')) AS test_listings,
   (SELECT count(*) FROM public.applications WHERE message LIKE 'F1 test 2099%') AS test_applications,
   (SELECT count(*) FROM public.sitter_invites WHERE message LIKE 'F1 test 2099%') AS test_invites,
   (SELECT count(*) FROM public.sit_reschedule_requests WHERE note LIKE 'F1 test 2099%') AS test_reschedules,

@@ -6,6 +6,7 @@ import {
 } from "../_shared/branded-email.ts";
 import { getPreviewTemplates } from "../_shared/email-templates.ts";
 import { redact } from "../_shared/safe-log.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +24,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
+  const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
+
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -33,7 +36,7 @@ serve(async (req) => {
     const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
     const { data: caller, error: callerErr } = await supabase.auth.getUser(jwt);
     if (callerErr || !caller?.user) {
-      return json({ error: "Unauthorized" }, 401);
+      return fail(getUserFailureReason(callerErr), "Please sign in again.");
     }
 
     const { data: profile } = await supabase
@@ -43,7 +46,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (!profile?.is_admin) {
-      return json({ error: "Forbidden" }, 403);
+      return fail("admin_only", "Forbidden");
     }
 
     const templates = getPreviewTemplates();
@@ -72,7 +75,7 @@ serve(async (req) => {
       const { id } = await req.json();
       const template = templates.find((t) => t.id === id);
       if (!template) {
-        return json({ error: "Unknown template" }, 404);
+        return fail("not_found", "Unknown template");
       }
       const email = template.build();
       await sendBrandedEmail(
@@ -86,7 +89,7 @@ serve(async (req) => {
       return json({ sent: true, to: profile.email });
     }
 
-    return json({ error: "Method not allowed" }, 405);
+    return fail("method_not_allowed", "Method not allowed");
   } catch (error: any) {
     console.error("Error in preview-email-templates:", redact(error));
     return json({ error: error.message }, 500);
