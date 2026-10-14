@@ -110,6 +110,21 @@ export type NotificationType =
   | "community_strike_heads_up_nomad"
   | "listing_dates_removed";
 
+/** Types whose words come from the database trigger (data.title, data.message). */
+const SERVER_WORDED_TYPES = new Set([
+  "new_application",
+  "application_withdrawn",
+  "invite",
+  "sit_cancelled",
+  "listing_dates_changed",
+  "sit_reschedule_proposed",
+  "sit_reschedule_accepted",
+  "sit_reschedule_declined",
+  "sit_checkin",
+  "id_verification_approved",
+  "id_verification_rejected",
+]);
+
 export function buildNotificationEmail(type: string, data: Record<string, string>): BuiltEmail {
   return plainTextParts(buildNotificationEmailEscaped(type, escapeValues(data)));
 }
@@ -118,6 +133,19 @@ function buildNotificationEmailEscaped(
   type: string,
   data: Record<string, string>
 ): BuiltEmail {
+  if (SERVER_WORDED_TYPES.has(type) && data.title && data.message) {
+    return {
+      subject: data.title,
+      preview: data.message,
+      heading: data.title,
+      body: `<p>${data.message}</p>`,
+      ctaLabel: data.cta || "Open NomadNest",
+      ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
+      pushTitle: data.title,
+      pushBody: data.message,
+      pushUrl: data.url || "/dashboard",
+    };
+  }
   switch (type) {
     case "new_application":
       return {
@@ -176,7 +204,7 @@ function buildNotificationEmailEscaped(
       if (data.manual === "true") {
         const title = "Update on your application";
         const message = `Thank you for applying. ${owner} isn't going ahead with you for ${data.dateRange || "these dates"} this time.`;
-        const note = data.note ? `<p>${owner} says: “${data.note}”</p>` : "";
+        const note = data.hasNote === "true" ? `<p>Open the app to read ${owner}'s note.</p>` : "";
         return {
           subject: `Update on your application for ${listing}`,
           preview: message,
@@ -375,13 +403,12 @@ function buildNotificationEmailEscaped(
         heading: "A confirmed sit has been cancelled",
         body: `
           <p>Unfortunately the sit at <strong>${data.listingTitle}</strong> (${data.startDate} – ${data.endDate}) has been cancelled by <strong>${data.cancelledByName || "the other party"}</strong>.</p>
-          ${data.reason ? quote(data.reason) : ""}
-          <p>The dates are open again, so you can keep looking for your next match.</p>
+          <p>Open the app to see why. The dates are open again, so you can keep looking for your next match.</p>
         `,
         ctaLabel: "See the cancelled sit",
         ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
         pushTitle: "Sit Cancelled",
-        pushBody: `${data.listingTitle} was cancelled${data.reason ? `: ${data.reason}` : ""}`,
+        pushBody: `${data.listingTitle} was cancelled. Open the app to see why.`,
         pushUrl: data.url || "/dashboard",
 
       };
@@ -392,12 +419,11 @@ function buildNotificationEmailEscaped(
         heading: data.checkinLabel,
         body: `
           <p><strong>${data.sitterName}</strong> shared an update from <strong>${data.listingTitle}</strong>.</p>
-          ${data.note ? quote(data.note) : ""}
         `,
         ctaLabel: "See today's update",
         ctaUrl: `${APP_URL}${data.url || "/dashboard"}`,
         pushTitle: `${data.checkinLabel}. ${data.listingTitle}`,
-        pushBody: data.note ? data.note : `${data.sitterName} shared an update.`,
+        pushBody: `${data.sitterName} shared an update.`,
         pushUrl: data.url || "/dashboard",
       };
     case "sit_started":
@@ -438,7 +464,6 @@ function buildNotificationEmailEscaped(
         body: `
           <p><strong>${data.ownerName || "Your Pet Parent"}</strong> has proposed new dates for your sit at <strong>${data.listingTitle}</strong>.</p>
           <p>Proposed dates: ${data.proposedStartDate} – ${data.proposedEndDate}</p>
-          ${data.note ? quote(data.note) : ""}
           <p>Review the new dates and accept or decline from your dashboard.</p>
         `,
         ctaLabel: "Review the proposed dates",

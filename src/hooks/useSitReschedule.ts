@@ -3,7 +3,6 @@ import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { sendNotification } from "@/lib/notifications";
 
 export interface SitRescheduleRequest {
   id: string;
@@ -106,30 +105,7 @@ export const useProposeSitReschedule = () => {
         throw error;
       }
 
-      const { data: me } = await supabase
-        .from("profiles")
-        .select("first_name")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      // The DB column needs the ISO (yyyy-MM-dd) form above — the
-      // notification/email is a display surface, so it gets a separately
-      // formatted, human-readable version instead of the raw ISO string.
-      await sendNotification({
-        type: "sit_reschedule_proposed",
-        recipientUserId: sitterUserId,
-        data: {
-          listingTitle,
-          ownerName: (me?.first_name || "") || "Your Pet Parent",
-          proposedStartDate: format(parseISO(proposedStartDate), "d MMM yyyy"),
-          proposedEndDate: format(parseISO(proposedEndDate), "d MMM yyyy"),
-          // No dedicated reschedule page exists — the response UI lives
-          // inline on the sit's card in the sitter's own dashboard, so at
-          // minimum land the recipient in the right dashboard mode.
-          url: "/dashboard?mode=sitter",
-          sit_id: sitId,
-        },
-      });
+      // The other member is told by the database (notify_sit_reschedule).
     },
     onSuccess: (_, { sitId }) => {
       queryClient.invalidateQueries({ queryKey: ["sit-reschedule-request", sitId] });
@@ -170,26 +146,7 @@ export const useRespondToSitReschedule = () => {
 
       if (error) throw error;
 
-      const { data: me } = user
-        ? await supabase
-            .from("profiles")
-            .select("first_name")
-            .eq("id", user.id)
-            .maybeSingle()
-        : { data: null };
-
-      await sendNotification({
-        type: accept ? "sit_reschedule_accepted" : "sit_reschedule_declined",
-        recipientUserId: ownerUserId,
-        data: {
-          listingTitle,
-          sitterName: (me?.first_name || "") || "Your Nomad",
-          // Same reasoning as the proposal notification above — no dedicated
-          // page, so land in the owner's dashboard mode at minimum.
-          url: "/dashboard?mode=owner",
-          sit_id: sitId,
-        },
-      });
+      // The member who proposed is told by the database (notify_sit_reschedule).
 
       return data as { status: string; new_sit_dates_id?: string };
     },

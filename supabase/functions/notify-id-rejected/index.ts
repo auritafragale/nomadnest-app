@@ -1,153 +1,24 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
-import { redact } from "../_shared/safe-log.ts";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+// Since Batch F1 an ID check decision notifies the member from the database
+// (the notify_id_verification_decision trigger on manual_id_verifications):
+// the in-app row, the push, and the email through send-notification-email
+// (type id_verification_rejected). This function sends nothing any more. It
+// stays deployed so older app versions that still call it after rejecting a
+// check get a quiet 200 instead of an error, and can't send a second notice.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface Payload {
-  userId: string;
-  reason: string;
-  notes?: string;
-}
-
-const buildHtml = (firstName: string | null, reason: string, notes?: string) => `
-  <!DOCTYPE html>
-  <html>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 24px;">
-      <div style="text-align: center; margin-bottom: 24px;">
-        <img src="https://nomadnest.global/logo-email.png" alt="NomadNest" style="max-width:160px;margin-bottom:24px;" />
-      </div>
-      <h2 style="color:#1A1A1A;">Your ID verification was unsuccessful</h2>
-      <p>Hi ${firstName || "there"},</p>
-      <p>Thank you for submitting your ID for verification. Unfortunately we weren't able to approve it for the following reason:</p>
-      <blockquote style="border-left: 3px solid #E8735A; padding-left: 12px; color: #555; margin: 16px 0;">
-        ${reason}
-        ${notes ? `<br/><br/><em>${notes}</em>` : ""}
-      </blockquote>
-      <p>Please resubmit your verification with the issue resolved. If you're unsure what to do, contact us at <a href="mailto:support@nomadnest.global">support@nomadnest.global</a> and we'll help you out.</p>
-      <p style="margin-top:24px;">The NomadNest Team</p>
-    </body>
-  </html>
-`;
-
-const sendEmail = async (to: string, subject: string, html: string) => {
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "NomadNest <noreply@nomadnest.global>",
-      to: [to],
-      subject,
-      html,
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || "Failed to send email");
-  }
-  return res.json();
-};
-
-serve(async (req) => {
+serve((req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
-
-  try {
-    const { userId, reason, notes }: Payload = await req.json();
-    if (!userId || !reason) {
-      return new Response(JSON.stringify({ error: "Missing userId or reason" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
-    // Admin-only: this sends real emails + in-app notices to arbitrary users.
-    const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
-    const { data: caller, error: callerErr } = await admin.auth.getUser(jwt);
-    if (callerErr || !caller?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const { data: callerProfile } = await admin
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", caller.user.id)
-      .maybeSingle();
-    if (!callerProfile?.is_admin) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-
-    // Look up email + name from profiles
-    const { data: profile, error: profileErr } = await admin
-      .from("profiles")
-      .select("email, first_name")
-      .eq("id", userId)
-      .single();
-
-    if (profileErr || !profile?.email) {
-      // Fallback: try auth.users
-      const { data: userData } = await admin.auth.admin.getUserById(userId);
-      const email = userData?.user?.email;
-      if (!email) {
-        console.error("Could not find user email", redact(profileErr));
-        return new Response(JSON.stringify({ error: "User email not found" }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      profile && (profile.email = email);
-    }
-
-    const email = profile?.email!;
-    const firstName = profile?.first_name ?? null;
-
-    // Insert in-app notification
-    const { error: notifErr } = await admin.from("notifications").insert({
-      user_id: userId,
-      type: "id_verification_rejected",
-      title: "ID Verification Unsuccessful",
-      message: `Your ID verification was not approved: ${reason}. Please resubmit via Settings → Verify Identity.`,
-      data: { reason, notes: notes ?? null },
-    });
-    if (notifErr) console.error("Notification insert error:", redact(notifErr));
-
-    // Send email
-    const emailRes = await sendEmail(
-      email,
-      "Your ID verification was unsuccessful",
-      buildHtml(firstName, reason, notes)
-    );
-
-    return new Response(JSON.stringify({ success: true, email: emailRes }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (err: any) {
-    console.error("notify-id-rejected error:", redact(err));
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  console.log(JSON.stringify({ fn: "notify-id-rejected", skipped: "moved_to_database" }));
+  return new Response(JSON.stringify({ skipped: true }), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 });

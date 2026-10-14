@@ -6,7 +6,6 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useSendMessage } from "@/hooks/useConversations";
 import { buildDailyUpdateMessageBody } from "@/hooks/useSitCheckins";
 import { resolveListingConversation } from "@/lib/conversations";
-import { sendNotification } from "@/lib/notifications";
 import { resizeImage } from "@/lib/imageResize";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { UPDATE_PHOTO_BUCKET, type UpdateChip } from "@/lib/dailyUpdate";
@@ -209,19 +208,7 @@ export const useSendDailyUpdate = (context: SitUpdateContext | null | undefined)
         console.error("Posting the update card to chat failed", err);
       }
 
-      sendNotification({
-        type: "sit_checkin",
-        recipientUserId: context.owner_user_id,
-        skipInAppNotification: true,
-        data: {
-          sitterName: context.sitter.first_name,
-          listingTitle: context.listing_title,
-          checkinLabel: flagged ? "Today's update, with a note for you" : "Today's update",
-          note: (flagged ? flagNote || note : note) ?? "",
-          url: `/sits/${context.sit_id}`,
-          sit_id: context.sit_id,
-        },
-      });
+      // The Pet Parent is told by the database (notify_owner_on_sit_checkin).
 
       if (aiAvailable) {
         invokeDailyUpdateAi({ action: "translate", checkin_id: row.id })

@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { sendNotification } from "@/lib/notifications";
 
 export interface Sit {
   id: string;
@@ -157,39 +156,8 @@ export const useUpdateSitStatus = () => {
           .eq("id", sitId)
           .maybeSingle();
 
-        // Notify the other party with the cancellation reason.
-        if (sit && user) {
-          const otherIsSitter = sit.owner_user_id === user.id;
-          const otherUserId = otherIsSitter ? sit.sitter_user_id : sit.owner_user_id;
-          // Deep-link straight to the cancelled item for the recipient's role.
-          const url = otherIsSitter
-            ? "/dashboard?appTab=cancelled#my-applications"
-            : "/applications?status=cancelled";
-          // In-app notification + email for the other party, both created by
-          // send-notification-email (members can't insert notification rows
-          // for someone else). The push follows automatically from the
-          // in-app row via the notifications trigger.
-          const { data: me } = await supabase
-            .from("profiles")
-            .select("first_name")
-            .eq("id", user.id)
-            .maybeSingle();
-          const dates = sit.sit_dates as { start_date?: string; end_date?: string } | null;
-          await sendNotification({
-            type: "sit_cancelled",
-            recipientUserId: otherUserId,
-            data: {
-              sit_id: sitId,
-              listingTitle: (sit.listing as { title?: string } | null)?.title || "a sit",
-              cancelledByName: (me?.first_name || "") || "The other party",
-              reason: reason?.trim() || "",
-              startDate: dates?.start_date || "",
-              endDate: dates?.end_date || "",
-              url,
-            },
-          });
-
-        }
+        // The other member is told by the database (notify_sit_cancelled),
+        // even if this tab closes now. The reason is in your chat.
 
         // Make dates available again for a new Nomad.
         if (reopenWith && sit?.listing_id) {

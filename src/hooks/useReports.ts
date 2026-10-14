@@ -93,15 +93,8 @@ export const useSubmitReport = () => {
         }
       }
 
-      // Give the founders an email heads-up so reports are never missed
-      try {
-        await supabase.functions.invoke("notify-new-report", {
-          // The function reads everything else from the saved report.
-          body: { reportId: inserted.id },
-        });
-      } catch (e) {
-        console.error("Could not alert the admin team about this report", e);
-      }
+      // The founders are told by the database (notify_new_report), even if
+      // this tab closes now.
 
       return {
         reportId: inserted.id,

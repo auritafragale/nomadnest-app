@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import {
   renderBrandedEmail,
   sendBrandedEmail,
@@ -11,14 +11,12 @@ import { redact } from "../_shared/safe-log.ts";
 // the email. The push is sent by the AFTER INSERT trigger on notifications.
 //
 // CALLERS
-// * Internal (service-role key, or x-internal-secret = INTERNAL_TRIGGER_SECRET,
-//   used by DB triggers/functions via Vault and by cron edge functions):
-//   any type, data trusted.
-// * Members (their own JWT): only the types in MEMBER_RULES, and only when the
-//   request names a specific application / sit / conversation / invite / listing
-//   that genuinely links the caller to the recipient and changed recently.
-//   Display names and listing titles are then taken from the database, not
-//   from the request. id_verification_approved: admins only.
+// * Internal only (service-role key, or x-internal-secret =
+//   INTERNAL_TRIGGER_SECRET, used by database triggers via Vault and by cron
+//   edge functions): any type, data trusted.
+// * Members (their own JWT): since Batch F1 every notification is sent by the
+//   server, so a call made with a member's sign-in (older app versions still
+//   open on phones) gets a quiet 200 { skipped: true } and nothing is sent.
 //
 // Every rejection logs one JSON line with the reason, never silently.
 
@@ -71,271 +69,6 @@ const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
-const minutesAgo = (iso: string | null | undefined) =>
-  iso ? (Date.now() - new Date(iso).getTime()) / 60000 : Infinity;
-
-const fmtDate = (iso: string | null | undefined) =>
-  iso
-    ? new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-GB", {
-        day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
-      })
-    : "";
-
-// Between members: first name only.
-const firstName = (p: { first_name?: string | null } | null, fallback: string) =>
-  p?.first_name?.trim() || fallback;
-
-const trimText = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
-
-// ─── Member rules ────────────────────────────────────────────────────────────
-
-type Ctx = {
-  sb: SupabaseClient;
-  uid: string;
-  recipient: string;
-  data: Record<string, string>;
-};
-/** ok: data overrides to apply; otherwise the reason it was refused. */
-type Verdict = { ok: true; data: Record<string, string> } | { ok: false; reason: string };
-const refuse = (reason: string): Verdict => ({ ok: false, reason });
-
-const callerName = async (sb: SupabaseClient, uid: string, fallback: string) => {
-  const { data } = await sb.from("profiles").select("first_name").eq("id", uid).maybeSingle();
-  return firstName(data, fallback);
-};
-
-/** Sit with its listing title and dates. */
-const loadSit = async (sb: SupabaseClient, sitId: string) => {
-  const { data } = await sb
-    .from("sits")
-    .select("id, owner_user_id, sitter_user_id, status, cancelled_at, listing:listing_id(title), sit_dates:sit_dates_id(start_date, end_date)")
-    .eq("id", sitId)
-    .maybeSingle();
-  return data as null | {
-    id: string; owner_user_id: string; sitter_user_id: string; status: string; cancelled_at: string | null;
-    listing: { title: string | null } | null;
-    sit_dates: { start_date: string; end_date: string } | null;
-  };
-};
-
-const MEMBER_RULES: Record<string, (ctx: Ctx) => Promise<Verdict>> = {
-  // Sitter → owner: the caller's own new application on the recipient's listing.
-  new_application: async ({ sb, uid, recipient, data }) => {
-    if (!isUuid(data.application_id)) return refuse("missing application_id");
-    const { data: app } = await sb
-      .from("applications")
-      .select("sitter_user_id, status, created_at, listing:listing_id(owner_user_id, title), sit_dates:sit_dates_id(start_date, end_date)")
-      .eq("id", data.application_id)
-      .maybeSingle();
-    const a = app as null | {
-      sitter_user_id: string; status: string; created_at: string;
-      listing: { owner_user_id: string; title: string | null } | null;
-      sit_dates: { start_date: string; end_date: string } | null;
-    };
-    if (!a || a.sitter_user_id !== uid) return refuse("application not the caller's");
-    if (a.listing?.owner_user_id !== recipient) return refuse("recipient doesn't own the listing");
-    if (a.status !== "applied") return refuse(`application status is ${a.status}`);
-    if (minutesAgo(a.created_at) > 15) return refuse("application older than 15 minutes");
-    return {
-      ok: true,
-      data: {
-        listingTitle: a.listing?.title || "your listing",
-        sitterName: await callerName(sb, uid, "A Nomad"),
-        startDate: fmtDate(a.sit_dates?.start_date),
-        endDate: fmtDate(a.sit_dates?.end_date),
-      },
-    };
-  },
-
-  // Sitter → owner: the caller's application, just withdrawn, on the recipient's listing.
-  application_withdrawn: async ({ sb, uid, recipient, data }) => {
-    if (!isUuid(data.application_id)) return refuse("missing application_id");
-    const { data: app } = await sb
-      .from("applications")
-      .select("sitter_user_id, status, updated_at, listing:listing_id(owner_user_id, title)")
-      .eq("id", data.application_id)
-      .maybeSingle();
-    const a = app as null | {
-      sitter_user_id: string; status: string; updated_at: string;
-      listing: { owner_user_id: string; title: string | null } | null;
-    };
-    if (!a || a.sitter_user_id !== uid) return refuse("application not the caller's");
-    if (a.listing?.owner_user_id !== recipient) return refuse("recipient doesn't own the listing");
-    if (a.status !== "withdrawn") return refuse(`application status is ${a.status}`);
-    if (minutesAgo(a.updated_at) > 15) return refuse("withdrawal older than 15 minutes");
-    return {
-      ok: true,
-      data: {
-        listingTitle: a.listing?.title || "your listing",
-        sitterName: await callerName(sb, uid, "A Nomad"),
-      },
-    };
-  },
-
-  // Either participant → the other: a sit cancelled in the last 15 minutes.
-  sit_cancelled: async ({ sb, uid, recipient, data }) => {
-    if (!isUuid(data.sit_id)) return refuse("missing sit_id");
-    const sit = await loadSit(sb, data.sit_id);
-    if (!sit) return refuse("sit not found");
-    const other = sit.owner_user_id === uid ? sit.sitter_user_id : sit.sitter_user_id === uid ? sit.owner_user_id : null;
-    if (!other) return refuse("caller isn't a participant");
-    if (other !== recipient) return refuse("recipient isn't the other participant");
-    if (sit.status !== "cancelled") return refuse(`sit status is ${sit.status}`);
-    if (minutesAgo(sit.cancelled_at) > 15) return refuse("cancellation older than 15 minutes");
-    return {
-      ok: true,
-      data: {
-        listingTitle: sit.listing?.title || "a sit",
-        cancelledByName: await callerName(sb, uid, "The other party"),
-        startDate: fmtDate(sit.sit_dates?.start_date),
-        endDate: fmtDate(sit.sit_dates?.end_date),
-        reason: trimText(data.reason, 500),
-      },
-    };
-  },
-
-  // New messages are notified by the database (notify_new_message trigger),
-  // never by the sender's browser.
-
-  // Owner → sitter: an invite the caller just sent to the recipient.
-  invite: async ({ sb, uid, recipient, data }) => {
-    if (!isUuid(data.invite_id)) return refuse("missing invite_id");
-    const { data: inv } = await sb
-      .from("sitter_invites")
-      .select("owner_user_id, sitter_user_id, created_at, listing:listing_id(title), sit_dates:sit_dates_id(start_date, end_date)")
-      .eq("id", data.invite_id)
-      .maybeSingle();
-    const i = inv as null | {
-      owner_user_id: string; sitter_user_id: string; created_at: string;
-      listing: { title: string | null } | null;
-      sit_dates: { start_date: string; end_date: string } | null;
-    };
-    if (!i || i.owner_user_id !== uid) return refuse("invite not from caller");
-    if (i.sitter_user_id !== recipient) return refuse("invite not to recipient");
-    if (minutesAgo(i.created_at) > 15) return refuse("invite older than 15 minutes");
-    return {
-      ok: true,
-      data: {
-        listingTitle: i.listing?.title || "my home",
-        ownerName: await callerName(sb, uid, "A Pet Parent"),
-        startDate: fmtDate(i.sit_dates?.start_date),
-        endDate: fmtDate(i.sit_dates?.end_date),
-      },
-    };
-  },
-
-  // Owner → sitter with a live application on the caller's just-edited listing.
-  listing_dates_changed: async ({ sb, uid, recipient, data }) => {
-    if (!isUuid(data.listing_id)) return refuse("missing listing_id");
-    const { data: listing } = await sb
-      .from("listings")
-      .select("owner_user_id, title, updated_at")
-      .eq("id", data.listing_id)
-      .maybeSingle();
-    if (!listing || listing.owner_user_id !== uid) return refuse("listing not the caller's");
-    if (minutesAgo(listing.updated_at) > 15) return refuse("listing not edited in the last 15 minutes");
-    const { count } = await sb
-      .from("applications")
-      .select("id", { count: "exact", head: true })
-      .eq("listing_id", data.listing_id)
-      .eq("sitter_user_id", recipient)
-      .in("status", ["applied", "shortlisted"]);
-    if (!count) return refuse("recipient has no live application on the listing");
-    return {
-      ok: true,
-      data: { listingTitle: listing.title || "a listing", dates: trimText(data.dates, 80) },
-    };
-  },
-
-  // Sitter → owner: a check-in the caller just posted on their active sit.
-  sit_checkin: async ({ sb, uid, recipient, data }) => {
-    if (!isUuid(data.sit_id)) return refuse("missing sit_id");
-    const sit = await loadSit(sb, data.sit_id);
-    if (!sit || sit.sitter_user_id !== uid) return refuse("caller isn't the sit's sitter");
-    if (sit.owner_user_id !== recipient) return refuse("recipient isn't the sit's owner");
-    if (!["confirmed", "in_progress"].includes(sit.status)) return refuse(`sit status is ${sit.status}`);
-    const since = new Date(Date.now() - 15 * 60000).toISOString();
-    const { count } = await sb
-      .from("sit_checkins")
-      .select("id", { count: "exact", head: true })
-      .eq("sit_id", data.sit_id)
-      .eq("author_user_id", uid)
-      .gte("created_at", since);
-    if (!count) return refuse("no check-in from caller in the last 15 minutes");
-    return {
-      ok: true,
-      data: {
-        listingTitle: sit.listing?.title || "your sit",
-        sitterName: await callerName(sb, uid, "Your Nomad"),
-        checkinLabel: trimText(data.checkinLabel, 60),
-        note: trimText(data.note, 500),
-      },
-    };
-  },
-
-  // Owner → sitter: the caller's pending reschedule proposal on this sit.
-  sit_reschedule_proposed: async ({ sb, uid, recipient, data }) => {
-    if (!isUuid(data.sit_id)) return refuse("missing sit_id");
-    const sit = await loadSit(sb, data.sit_id);
-    if (!sit || sit.owner_user_id !== uid) return refuse("caller isn't the sit's owner");
-    if (sit.sitter_user_id !== recipient) return refuse("recipient isn't the sit's sitter");
-    const { data: req } = await sb
-      .from("sit_reschedule_requests")
-      .select("proposed_start_date, proposed_end_date, note, created_at")
-      .eq("sit_id", data.sit_id)
-      .eq("requested_by", uid)
-      .eq("status", "pending")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (!req) return refuse("no pending proposal from caller");
-    if (minutesAgo(req.created_at) > 15) return refuse("proposal older than 15 minutes");
-    return {
-      ok: true,
-      data: {
-        listingTitle: sit.listing?.title || "your sit",
-        ownerName: await callerName(sb, uid, "Your Pet Parent"),
-        proposedStartDate: fmtDate(req.proposed_start_date),
-        proposedEndDate: fmtDate(req.proposed_end_date),
-        note: trimText(req.note, 500),
-      },
-    };
-  },
-
-  // Sitter → owner: the caller just answered a proposal on this sit.
-  sit_reschedule_accepted: (ctx) => rescheduleResponse(ctx, "accepted"),
-  sit_reschedule_declined: (ctx) => rescheduleResponse(ctx, "declined"),
-
-  // Reviews are notified by the database (notify_review_received) only, so a
-  // member can never send one (or a second copy) from the app.
-};
-
-async function rescheduleResponse({ sb, uid, recipient, data }: Ctx, status: "accepted" | "declined"): Promise<Verdict> {
-  if (!isUuid(data.sit_id)) return refuse("missing sit_id");
-  const sit = await loadSit(sb, data.sit_id);
-  if (!sit || sit.sitter_user_id !== uid) return refuse("caller isn't the sit's sitter");
-  if (sit.owner_user_id !== recipient) return refuse("recipient isn't the sit's owner");
-  const { data: req } = await sb
-    .from("sit_reschedule_requests")
-    .select("responded_at")
-    .eq("sit_id", data.sit_id)
-    .eq("status", status)
-    .order("responded_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (!req) return refuse(`no ${status} proposal on this sit`);
-  if (minutesAgo(req.responded_at) > 15) return refuse("response older than 15 minutes");
-  return {
-    ok: true,
-    data: {
-      listingTitle: sit.listing?.title || "your sit",
-      sitterName: await callerName(sb, uid, "Your Nomad"),
-    },
-  };
-}
-
-// ─── Handler ─────────────────────────────────────────────────────────────────
-
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -362,19 +95,12 @@ const handler = async (req: Request): Promise<Response> => {
       isInternalCaller = true;
     }
 
-    let callerUserId: string | null = null;
+    // Every notification is sent by the server now (Batch F1). Older app
+    // versions still call this with a member's sign-in: say nothing went
+    // wrong, send nothing, so they can't create doubles or fake notices.
     if (!isInternalCaller) {
-      if (!jwt) return reject("auth_missing_token", 401);
-      const { data: caller, error: callerErr } = await supabaseClient.auth.getUser(jwt);
-      if (callerErr || !caller?.user) {
-        // e.g. session_not_found: signed out elsewhere, but the token still
-        // works for database writes until it expires.
-        return reject("auth_get_user_failed", 401, {
-          detail: callerErr?.message ?? "no user",
-          code: (callerErr as { code?: string } | null)?.code ?? null,
-        }, "Your session has expired. Please sign in again.");
-      }
-      callerUserId = caller.user.id;
+      log({ skipped: "member_call" });
+      return json({ skipped: true });
     }
 
     // ── What are they asking for? ──
@@ -382,13 +108,13 @@ const handler = async (req: Request): Promise<Response> => {
     try {
       payload = await req.json();
     } catch {
-      return reject("bad_json", 400, { caller: callerUserId });
+      return reject("bad_json", 400);
     }
     const type = typeof payload.type === "string" ? payload.type : "";
     const recipientUserId = payload.recipientUserId;
     const skipInAppNotification = payload.skipInAppNotification === true;
-    if (!type) return reject("missing_type", 400, { caller: callerUserId });
-    if (!isUuid(recipientUserId)) return reject("bad_recipient", 400, { type, caller: callerUserId });
+    if (!type) return reject("missing_type", 400);
+    if (!isUuid(recipientUserId)) return reject("bad_recipient", 400, { type });
 
     // Keep only string values, bounded.
     const rawData: Record<string, string> = {};
@@ -402,35 +128,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (url) rawData.url = url;
     else delete rawData.url;
 
-    // ── Member callers: per-type relationship check ──
-    let data = rawData;
-    if (!isInternalCaller) {
-      if (type === "id_verification_approved") {
-        const { data: callerProfile } = await supabaseClient
-          .from("profiles")
-          .select("is_admin")
-          .eq("id", callerUserId)
-          .maybeSingle();
-        if (!callerProfile?.is_admin) {
-          return reject("admin_only_type", 403, { type, caller: callerUserId });
-        }
-      } else {
-        const rule = MEMBER_RULES[type];
-        if (!rule) return reject("type_not_allowed_for_members", 403, { type, caller: callerUserId });
-        const verdict = await rule({
-          sb: supabaseClient,
-          uid: callerUserId!,
-          recipient: recipientUserId,
-          data: rawData,
-        });
-        if (!verdict.ok) {
-          return reject("relationship_check_failed", 403, {
-            type, caller: callerUserId, recipient: recipientUserId, detail: verdict.reason,
-          });
-        }
-        data = { ...(url ? { url } : {}), ...verdict.data };
-      }
-    }
+    const data = rawData;
 
     console.log(`Processing ${type} notification for user ${recipientUserId}`);
 

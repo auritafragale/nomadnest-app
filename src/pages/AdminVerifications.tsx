@@ -123,29 +123,8 @@ const AdminVerifications = () => {
       });
       if (decideError) throw decideError;
 
-      if (decision === "approved") {
-
-        // Email + in-app notification are both created by send-notification-email
-
-
-        // Email via existing send-notification-email
-        await supabase.functions.invoke("send-notification-email", {
-          body: {
-            type: "id_verification_approved",
-            recipientUserId: userId,
-            data: { appUrl: window.location.origin },
-          },
-        });
-      } else {
-        // Rejected — call notify-id-rejected (handles email + in-app notification)
-        await supabase.functions.invoke("notify-id-rejected", {
-          body: {
-            userId,
-            reason: rejectionReason,
-            notes: rejectionNotes || undefined,
-          },
-        });
-      }
+      // The member is told by the database (notify_id_verification_decision):
+      // the in-app row, the push and the email.
 
       toast({ title: decision === "approved" ? "Approved ✓" : "Rejected", description: `Submission ${submissionId.slice(0, 8)} has been ${decision}.` });
       await loadSubmissions();

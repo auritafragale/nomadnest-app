@@ -1,6 +1,5 @@
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { sendNotification } from "@/lib/notifications";
 import { format, parseISO } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMembership } from "@/hooks/useMembership";
@@ -125,38 +124,8 @@ export const useApplicationSubmission = () => {
 
       if (error) throw error;
 
-      const { data: listing } = await supabase
-        .from("listings")
-        .select("owner_user_id")
-        .eq("id", listingId)
-        .single();
-
-      const { data: sitterProfile } = await supabase
-        .from("profiles")
-        .select("first_name")
-        .eq("id", user.id)
-        .single();
-
-      if (listing?.owner_user_id) {
-        dates.forEach((d) => {
-          // The id lets send-notification-email verify this really is the
-          // caller's new application to the recipient's listing.
-          const applicationId = inserted?.find((row) => row.sit_dates_id === d.id)?.id;
-          if (!applicationId) return;
-          sendNotification({
-            type: "new_application",
-            recipientUserId: listing.owner_user_id,
-            data: {
-              listingTitle,
-              sitterName:
-                (sitterProfile?.first_name || "") || "A nomad",
-              startDate: format(parseISO(d.start_date), "MMM d, yyyy"),
-              endDate: format(parseISO(d.end_date), "MMM d, yyyy"),
-              application_id: applicationId,
-            },
-          });
-        });
-      }
+      // The Pet Parent is told by the database (notify_application_events),
+      // even if this tab closes now.
     },
     [user],
   );
