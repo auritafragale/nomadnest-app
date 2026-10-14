@@ -2,6 +2,22 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
 
+// The founders' email about a new report. Since Batch F1 it is sent by the
+// database (the notify_new_report trigger, with the Vault secret), so a
+// report is never missed when the reporter's app closes. A call made with a
+// member's sign-in (older app versions) gets a quiet 200 { skipped: true }.
+// The email never includes the report's details text: the team reads it in
+// Admin, Reports.
+
+const safeEqual = (a: string, b: string) => {
+  const enc = new TextEncoder();
+  const x = enc.encode(a);
+  const y = enc.encode(b);
+  let diff = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return diff === 0;
+};
+
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
@@ -10,7 +26,7 @@ const corsHeaders = {
 };
 
 /** Only the report id is taken from the request; everything else is read
- * from the database, and only for the caller's own, recent report. */
+ * from the database. */
 interface Payload {
   reportId?: string;
 }
@@ -27,8 +43,6 @@ interface ReportRow {
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-// The app calls this right after submitting; older reports are not re-sent.
-const MAX_REPORT_AGE_MS = 60 * 60 * 1000;
 
 /** Escape untrusted report text before interpolating into HTML. */
 const AMP = String.fromCharCode(38) + "amp;"; // &
@@ -45,7 +59,7 @@ const esc = (s: string | null | undefined): string =>
     .replace(/'/g, APOS);
 
 const buildHtml = (
-  p: { targetType: string; reason: string; details: string | null },
+  p: { targetType: string; reason: string; hasDetails: boolean },
   reporter: string,
   reportedName: string,
   reportedEmail: string,
@@ -73,7 +87,7 @@ const buildHtml = (
       <p><strong>Reported by:</strong> ${esc(reporter)}</p>
       ${reportedLine}
       <p><strong>Reason:</strong> ${esc(p.reason)}</p>
-      ${p.details ? `<blockquote style="border-left:3px solid #E8735A;padding-left:12px;color:#555;">${esc(p.details)}</blockquote>` : ""}
+      ${p.hasDetails ? `<p>The member added details. Read them in Admin → Reports.</p>` : ""}
       ${evidenceLine}
       <p><a href="https://nomadnest.global/admin/reports" style="display:inline-block;background:#E8735A;color:#fff;padding:10px 18px;border-radius:14px;text-decoration:none;">Review in admin panel</a></p>
     </body>
@@ -91,12 +105,14 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    // Only a signed-in member can trigger this
-    const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
-    const { data: caller, error: callerErr } = await supabase.auth.getUser(jwt);
-    if (callerErr || !caller?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
+    // The database only (x-internal-secret). Older app versions call this
+    // with a member's sign-in: send nothing, report nothing wrong.
+    const expected = Deno.env.get("INTERNAL_TRIGGER_SECRET") ?? "";
+    const provided = req.headers.get("x-internal-secret") ?? "";
+    if (!expected || !safeEqual(provided, expected)) {
+      console.log(JSON.stringify({ fn: "notify-new-report", skipped: "not_internal" }));
+      return new Response(JSON.stringify({ skipped: true }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -115,12 +131,8 @@ serve(async (req) => {
       .eq("id", body.reportId)
       .maybeSingle();
     const row = report as ReportRow | null;
-    if (
-      !row ||
-      row.reporter_user_id !== caller.user.id ||
-      Date.now() - new Date(row.created_at).getTime() > MAX_REPORT_AGE_MS
-    ) {
-      console.error(JSON.stringify({ fn: "notify-new-report", rejected: "not_own_recent_report", user: caller.user.id }));
+    if (!row) {
+      console.error(JSON.stringify({ fn: "notify-new-report", rejected: "report_not_found" }));
       return new Response(JSON.stringify({ error: "Report not found." }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -130,19 +142,19 @@ serve(async (req) => {
       targetType: row.target_type,
       targetId: row.target_id,
       reason: row.reason,
-      details: row.details,
+      hasDetails: !!row.details?.trim(),
     };
     const evidenceCount = (row.evidence_paths ?? []).length;
 
     const { data: reporterProfile } = await supabase
       .from("profiles")
       .select("email, first_name, last_name")
-      .eq("id", caller.user.id)
+      .eq("id", row.reporter_user_id ?? "")
       .maybeSingle();
 
     const reporter = [reporterProfile?.first_name, reporterProfile?.last_name]
       .filter(Boolean)
-      .join(" ") || reporterProfile?.email || caller.user.id;
+      .join(" ") || reporterProfile?.email || "A member";
 
     // Resolve the reported member's name + email for the founder email
     let reportedName = "";

@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { sendNotification } from "@/lib/notifications";
 import { format, parseISO } from "date-fns";
 import type { ListingFormData } from "./useListingForm";
 import { deleteStoredImages } from "@/components/listing/ImageUpload";
@@ -336,29 +335,8 @@ export const useUpdateListing = () => {
             .eq("id", date.id);
           if (error) throw error;
 
-          // The range moved: tell the applicants still in the running.
-          const original = originalDates.get(date.id);
-          if (original && (original.start_date !== date.start_date || original.end_date !== date.end_date)) {
-            const { data: affected, error: affectedError } = await supabase
-              .from("applications")
-              .select("sitter_user_id")
-              .eq("sit_dates_id", date.id)
-              .in("status", ["applied", "shortlisted"]);
-            if (affectedError) {
-              console.error("Couldn't load applicants to tell about the new dates", affectedError.message);
-            } else if (affected && affected.length > 0) {
-              const datesLabel = `${format(parseISO(date.start_date), "MMM d")} – ${format(parseISO(date.end_date), "MMM d, yyyy")}`;
-              await Promise.all(
-                affected.map((a) =>
-                  sendNotification({
-                    type: "listing_dates_changed",
-                    recipientUserId: a.sitter_user_id,
-                    data: { listingTitle: formData.title, dates: datesLabel, url: `/listing/${listingId}`, listing_id: listingId },
-                  }),
-                ),
-              );
-            }
-          }
+          // If the range moved, the applicants still in the running are told
+          // by the database (notify_listing_dates_changed).
         } else {
           const { error } = await supabase.from("sit_dates").insert({ listing_id: listingId, ...dateColumns(date) });
           if (error) throw error;

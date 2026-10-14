@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveInviteConversation } from "@/lib/conversations";
 import { useAuth } from "@/contexts/AuthContext";
-import { sendNotification } from "@/lib/notifications";
 import { format, parseISO } from "date-fns";
 
 export interface SitterInvite {
@@ -136,20 +135,9 @@ export const useCreateInvite = () => {
 
       if (error) throw error;
 
-      // Get owner profile for notification
-      const { data: ownerProfile } = await supabase
-        .from("profiles")
-        .select("first_name")
-        .eq("id", invite.owner_user_id)
-        .single();
 
-      const ownerName =
-        (ownerProfile?.first_name || "") ||
-        "A pet owner";
-      const listingTitleSafe = listingTitle || "my home";
-
-      // 1) The sitter's in-app notification is created by a database trigger
-      //    on sitter_invites — clients cannot insert notifications directly.
+      // 1) The Nomad is told by the database (notify_sitter_on_invite): the
+      //    in-app row, the push and the email, even if this tab closes now.
 
 
 
@@ -169,25 +157,6 @@ export const useCreateInvite = () => {
         });
       }
 
-      // 4) Existing push/email notification pipeline
-      // The Nomad responds to invites from their own dashboard's Invites
-      // section — land there directly (and in the right mode, for a
-      // combined-role account) instead of a blind dashboard visit.
-      sendNotification({
-        type: "invite",
-        recipientUserId: invite.sitter_user_id,
-        // The notify_sitter_on_invite trigger already created the in-app row
-        // (which also triggers the push); this call only sends the email.
-        skipInAppNotification: true,
-        data: {
-          ownerName,
-          listingTitle: listingTitleSafe,
-          startDate: startDate || "",
-          endDate: endDate || "",
-          url: "/dashboard?mode=sitter&section=invites",
-          invite_id: data.id,
-        },
-      });
 
 
       return data;
@@ -215,19 +184,7 @@ export const useAcceptInvite = () => {
         if (error.code === "PGRST202" || /accept_invite/.test(error.message)) return { needsListing: true };
         throw new Error(error.message);
       }
-      const applicationId = data as unknown as string;
-      const { data: me } = await supabase.from("profiles").select("first_name").eq("id", user!.id).maybeSingle();
-      sendNotification({
-        type: "new_application",
-        recipientUserId: invite.owner_user_id,
-        data: {
-          listingTitle: invite.listing?.title ?? "your listing",
-          sitterName: me?.first_name || "A Nomad",
-          startDate: invite.sit_dates ? format(parseISO(invite.sit_dates.start_date), "MMM d, yyyy") : "",
-          endDate: invite.sit_dates ? format(parseISO(invite.sit_dates.end_date), "MMM d, yyyy") : "",
-          application_id: applicationId,
-        },
-      });
+      // The Pet Parent is told about the new application by the database.
       return { needsListing: false };
     },
     onSuccess: () => {
