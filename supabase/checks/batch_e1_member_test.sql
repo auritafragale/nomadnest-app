@@ -38,7 +38,7 @@ DECLARE
   v_json jsonb;
 BEGIN
   -- ── Members ────────────────────────────────────────────────────────────
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
   SELECT sp.user_id INTO v_nomad
   FROM public.sitter_profiles sp JOIN public.profiles p ON p.id = sp.user_id
@@ -130,7 +130,7 @@ BEGIN
   RESET ROLE;
 
   -- A conversation makes the hidden member readable.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   INSERT INTO public.conversations (owner_user_id, sitter_user_id, conversation_type)
   VALUES (v_owner, v_other, 'direct') RETURNING id INTO v_conv2;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
@@ -226,7 +226,7 @@ BEGIN
   SELECT count(*) INTO v_n FROM public.reviews WHERE id = v_review;
   IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: the reviewee read a review before writing theirs'; END IF;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT COALESCE((SELECT review_count FROM public.member_ratings(ARRAY[v_nomad], 'sitter')), 0) INTO v_n;
   IF v_n <> v_n2 THEN RAISE EXCEPTION 'FAIL: an unpublished review changed the average (% vs %)', v_n, v_n2; END IF;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
@@ -245,7 +245,7 @@ BEGIN
   SELECT count(*) INTO v_n FROM public.reviews WHERE id = v_review;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: the reviewee could not read the review once both were written'; END IF;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   IF EXISTS (SELECT 1 FROM public.reviews WHERE sit_id = s_a AND published_at IS NULL) THEN
     RAISE EXCEPTION 'FAIL: both reviews were written but not published together';
   END IF;
@@ -393,7 +393,7 @@ BEGIN
   RESET ROLE;
 
   -- ── 7. Blocks ──────────────────────────────────────────────────────────
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   INSERT INTO public.applications (listing_id, sit_dates_id, sitter_user_id, status, message)
   VALUES (v_listing, r_1, v_nomad, 'applied', 'E1 test 2099 application') RETURNING id INTO v_app;
   INSERT INTO public.sitter_invites (listing_id, sit_dates_id, owner_user_id, sitter_user_id, status, message)
@@ -445,7 +445,7 @@ BEGIN
   RESET ROLE;
 
   -- The confirmed sit was cancelled through the usual rules.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   IF NOT EXISTS (SELECT 1 FROM public.sits WHERE id = s_d AND status = 'cancelled' AND cancelled_from_status = 'confirmed') THEN
     RAISE EXCEPTION 'FAIL: blocking did not cancel the confirmed sit';
   END IF;
@@ -477,7 +477,7 @@ BEGIN
   RESET ROLE;
 
   -- A sit happening now keeps its chat open.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   INSERT INTO public.sits (listing_id, sit_dates_id, owner_user_id, sitter_user_id, status, confirmed_at)
   VALUES (v_listing, r_e, v_owner, v_nomad, 'in_progress', now() - interval '3 days') RETURNING id INTO s_e;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
@@ -498,7 +498,7 @@ BEGIN
   RESET ROLE;
 
   -- ── 8. Word filter ─────────────────────────────────────────────────────
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   IF public.text_violation('Scunthorpe') IS NOT NULL OR public.text_violation('a first class sit') IS NOT NULL
      OR public.text_violation('we assess every home') IS NOT NULL THEN
     RAISE EXCEPTION 'FAIL: an innocent word was caught by the filter';
@@ -574,7 +574,7 @@ BEGIN
   RESET ROLE;
 
   -- City Chat: the Nomad's sit happening now in Testville opens that room.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT r.id INTO v_room FROM public.city_chat_rooms r WHERE r.city_key = public.city_chat_key('Testville', 'Testland');
   IF v_room IS NOT NULL AND public.can_access_city_chat(v_room, v_nomad) THEN
     PERFORM set_config('request.jwt.claims', json_build_object('sub', v_nomad, 'role', 'authenticated')::text, true);
@@ -595,7 +595,7 @@ BEGIN
   END IF;
 
   -- ── 9. Grants ──────────────────────────────────────────────────────────
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n
   FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
   CROSS JOIN LATERAL aclexplode(c.relacl) a

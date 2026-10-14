@@ -9,10 +9,11 @@ import { useAcceptInvite, useSitterInvites, useUpdateInviteStatus, type SitterIn
 import { useListingPets } from "@/hooks/useListingPets";
 import { useMyAvailability } from "@/hooks/useMyAvailability";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveInviteConversation } from "@/lib/conversations";
 import { cn } from "@/lib/utils";
+import { hasNewerLiveInvite, isLiveInviteConflict } from "@/lib/invites";
 
 type Tab = "waiting" | "accepted" | "past";
 
@@ -27,10 +28,36 @@ const EMPTY: Record<Tab, [string, string]> = {
   past: ["Nothing here yet", "Invitations you've declined show here."],
 };
 
+/** Undo a decline. If the Pet Parent has already invited again for the same
+ *  dates, the database refuses (one live invitation per range): say so and
+ *  refresh, so the newer invitation shows instead. */
+const useUndoDecline = () => {
+  const update = useUpdateInviteStatus();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const undo = (invite: SitterInvite) =>
+    update.mutate(
+      { inviteId: invite.id, status: "viewed" },
+      {
+        onError: (err) => {
+          if (isLiveInviteConflict(err)) {
+            toast("You already have a newer invitation for these dates.");
+            queryClient.invalidateQueries({ queryKey: ["sitter-invites", user?.id] });
+            queryClient.invalidateQueries({ queryKey: ["sitter-invites-pending-count", user?.id] });
+          } else {
+            toast.error("We couldn't undo that. Please try again.");
+          }
+        },
+      },
+    );
+  return { undo, isPending: update.isPending };
+};
+
 const InviteCard = ({ invite }: { invite: SitterInvite }) => {
   const navigate = useNavigate();
   const accept = useAcceptInvite();
   const update = useUpdateInviteStatus();
+  const { undo } = useUndoDecline();
   const { data: pets } = useListingPets(invite.listing_id);
   const owner = invite.owner_profile?.first_name || "The Pet Parent";
   const d = invite.sit_dates;
@@ -54,7 +81,7 @@ const InviteCard = ({ invite }: { invite: SitterInvite }) => {
       {
         onSuccess: () =>
           toast("Invitation declined", {
-            action: { label: "Undo", onClick: () => update.mutate({ inviteId: invite.id, status: "viewed" }, { onError: () => toast.error("We couldn't undo that. Please try again.") }) },
+            action: { label: "Undo", onClick: () => undo(invite) },
           }),
         onError: () => toast.error("We couldn't decline that. Please try again."),
       },
@@ -160,10 +187,12 @@ const AcceptedCard = ({ invite }: { invite: SitterInvite }) => {
   );
 };
 
-const PastRow = ({ invite }: { invite: SitterInvite }) => {
-  const update = useUpdateInviteStatus();
+const PastRow = ({ invite, all }: { invite: SitterInvite; all: SitterInvite[] }) => {
+  const { undo, isPending } = useUndoDecline();
   const d = invite.sit_dates;
-  const canUndo = invite.status === "declined" && !ended(invite);
+  // No Undo once the Pet Parent has invited again for these dates: the newer
+  // invitation is the one to answer.
+  const canUndo = invite.status === "declined" && !ended(invite) && !hasNewerLiveInvite(invite, all);
   return (
     <div className="flex items-center gap-3 border-t border-[var(--nn-line)] py-3 first:border-t-0">
       <span className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[14px] bg-[#CDB79E]">
@@ -179,8 +208,8 @@ const PastRow = ({ invite }: { invite: SitterInvite }) => {
       {canUndo && (
         <button
           type="button"
-          onClick={() => update.mutate({ inviteId: invite.id, status: "viewed" }, { onError: () => toast.error("We couldn't undo that. Please try again.") })}
-          disabled={update.isPending}
+          onClick={() => undo(invite)}
+          disabled={isPending}
           className={nnButton("secondary", "px-4")}
         >
           Undo
@@ -288,7 +317,7 @@ const Invitations = () => {
         ) : (
           <SectionCard className="p-[18px]">
             {list.map((i) => (
-              <PastRow key={i.id} invite={i} />
+              <PastRow key={i.id} invite={i} all={invites} />
             ))}
           </SectionCard>
         )}

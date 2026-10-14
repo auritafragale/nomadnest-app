@@ -1,39 +1,41 @@
 -- Dashboard, report evidence and guide photo paths: behaviour test AS A MEMBER.
--- Runs inside a transaction and ROLLS BACK: nothing is changed.
 --
--- It picks a non-admin member who owns at least one listing. To test a
--- specific member, replace the SELECT in step 1 with their user id.
---
--- Result: the last query returns "PASS" if everything behaves as expected.
--- Any unexpected result stops with an error starting "FAIL:".
-
-BEGIN;
-
-SELECT set_config(
-  'request.jwt.claims',
-  json_build_object('sub', p.id, 'role', 'authenticated')::text,
-  true
-)
-FROM public.profiles p
-WHERE p.is_admin IS NOT TRUE
-  AND EXISTS (SELECT 1 FROM public.listings l WHERE l.owner_user_id = p.id)
-ORDER BY p.created_at
-LIMIT 1;
-
-SET LOCAL ROLE authenticated;
+-- One DO block. It always ends with an exception, so the whole statement rolls
+-- back and nothing it does is ever kept:
+--   PASS:  ERROR: PASS_ROLLED_BACK: every check behaved as expected
+--   FAIL:  ERROR: FAIL: <what went wrong>
+-- Needs a non-admin, non-Founding member with no listing. The test gives them
+-- a temporary listing ("Regression sample listing" in "Regressville"): no
+-- non-admin member owns a listing on live (F1d).
 
 DO $$
 DECLARE
-  v_uid uuid := auth.uid();
+  v_uid uuid;
   v_listing uuid;
   v_report uuid;
   v_summary jsonb;
   v_stories jsonb;
 BEGIN
+  -- Test data (as the server): a temporary listing.
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  SELECT p.id INTO v_uid FROM public.profiles p
+  WHERE p.is_admin IS NOT TRUE AND p.founding_member IS NOT TRUE
+    AND NOT EXISTS (SELECT 1 FROM public.listings l WHERE l.owner_user_id = p.id)
+  ORDER BY p.created_at LIMIT 1;
   IF v_uid IS NULL THEN
-    RAISE EXCEPTION 'FAIL: no test member found (needs a non-admin member with a listing)';
+    RAISE EXCEPTION 'FAIL: needs a non-admin, non-Founding member with no listing';
   END IF;
-  SELECT id INTO v_listing FROM public.listings WHERE owner_user_id = v_uid LIMIT 1;
+  UPDATE public.profiles
+  SET membership_status = 'active', membership_type = 'owner', membership_expiry = now() + interval '1 year',
+      membership_payment_failed_at = NULL
+  WHERE id = v_uid;
+  INSERT INTO public.listings (owner_user_id, title, status, city, country, owner_declaration_accepted_at)
+  VALUES (v_uid, 'Regression sample listing', 'published', 'Regressville', 'Testland', now())
+  RETURNING id INTO v_listing;
+
+  -- Act as the member.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_uid, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
 
   -- Dashboard functions return the caller's own data.
   v_summary := public.get_my_dashboard_summary();
@@ -106,9 +108,8 @@ BEGIN
     RAISE EXCEPTION 'FAIL: a guide photo row could point at a file that doesn''t exist';
   EXCEPTION WHEN insufficient_privilege THEN NULL;
   END;
+  RESET ROLE;
+
+  RAISE EXCEPTION 'PASS_ROLLED_BACK: every check behaved as expected';
 END;
 $$;
-
-SELECT 'PASS: every member check behaved as expected (rolled back)' AS result;
-
-ROLLBACK;

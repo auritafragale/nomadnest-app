@@ -69,10 +69,12 @@ SELECT 'reports: no table-level INSERT/UPDATE (member / anon)', 'false false / f
          AND NOT has_table_privilege('anon', 'public.reports', 'UPDATE')
 
 UNION ALL
-SELECT 'reports: member INSERT columns', 'details, reason, reporter_user_id, target_id, target_type',
+-- Updated for a later decision (E1): a report about a member can carry the
+-- reporter's own chat with them (conversation_id, checked by guard_report_insert).
+SELECT 'reports: member INSERT columns', 'conversation_id, details, reason, reporter_user_id, target_id, target_type',
        COALESCE(string_agg(column_name, ', ' ORDER BY column_name) FILTER (WHERE can_insert), '(none)'),
        COALESCE(string_agg(column_name, ', ' ORDER BY column_name) FILTER (WHERE can_insert), '(none)')
-         = 'details, reason, reporter_user_id, target_id, target_type'
+         = 'conversation_id, details, reason, reporter_user_id, target_id, target_type'
 FROM report_cols
 
 UNION ALL

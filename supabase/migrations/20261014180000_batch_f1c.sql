@@ -1,5 +1,4 @@
 -- Batch F1c: invitation answers and re-invites; ID upload safety.
--- DRAFT (work in progress on feat/batch-f1c). Not yet reviewed or tested.
 --
 -- 1. notify_invite_answered: the Pet Parent hears when a Nomad declines.
 -- 2. notification_category: 'invite_declined' joins 'applications'

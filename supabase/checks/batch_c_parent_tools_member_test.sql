@@ -31,7 +31,7 @@ DECLARE
   v_before integer;
 BEGIN
   -- ── Members ────────────────────────────────────────────────────────────
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
   SELECT sp.user_id INTO v_nomad
   FROM public.sitter_profiles sp JOIN public.profiles p ON p.id = sp.user_id
@@ -182,14 +182,18 @@ BEGIN
     RAISE EXCEPTION 'FAIL: the decline note kept contact details: %', left(v_txt, 80);
   END IF;
   RESET ROLE;
+  -- Updated for a later decision (F1): the notification is the server's own
+  -- wording and never carries the note; it says there is a note to read in
+  -- the app. Picked by status, because every notification in this test has
+  -- the same created_at (one transaction).
   SELECT message INTO v_txt FROM public.notifications
-  WHERE user_id = v_nomad AND data->>'application_id' = v_app1::text
+  WHERE user_id = v_nomad AND data->>'application_id' = v_app1::text AND data->>'status' = 'declined'
   ORDER BY created_at DESC LIMIT 1;
-  IF v_txt IS NULL OR v_txt NOT ILIKE 'Thank you for applying.%' THEN
-    RAISE EXCEPTION 'FAIL: the declined Nomad did not get the kind note (got: %)', left(COALESCE(v_txt, 'nothing'), 80);
+  IF v_txt IS NULL OR v_txt NOT LIKE 'Thank you for applying. % isn''t going ahead with you for % this time. Open the app to read %''s note.' THEN
+    RAISE EXCEPTION 'FAIL: the declined Nomad did not get the server wording (got: %)', left(COALESCE(v_txt, 'nothing'), 80);
   END IF;
-  IF v_txt LIKE '%7700%' OR v_txt LIKE '%@%' THEN
-    RAISE EXCEPTION 'FAIL: the decline notification kept contact details';
+  IF v_txt LIKE '%7700%' OR v_txt LIKE '%@%' OR v_txt LIKE '%xxxx%' THEN
+    RAISE EXCEPTION 'FAIL: the decline notification carried the note';
   END IF;
 
   -- One-argument decline still works.
@@ -221,7 +225,7 @@ BEGIN
 
   -- ── 5. Publishing needs membership and a verified ID ───────────────────
   UPDATE public.listings SET status = 'draft' WHERE id = v_listing;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles SET id_verified = false, founding_member = false, membership_status = 'inactive'
   WHERE id = v_owner;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
@@ -235,7 +239,7 @@ BEGIN
   -- Editing the existing draft still works.
   UPDATE public.listings SET title = title WHERE id = v_listing;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles SET id_verified = true, founding_member = true WHERE id = v_owner;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;

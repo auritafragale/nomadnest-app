@@ -1,17 +1,17 @@
 -- Sit Story portfolio, review notifications and "Write it again" removal:
--- behaviour test AS MEMBERS. Runs inside a transaction and ROLLS BACK:
--- nothing is changed (the test story is approved only inside it).
+-- behaviour test AS MEMBERS.
 --
+-- One DO block. It always ends with an exception, so the whole statement rolls
+-- back and nothing it does is ever kept:
+--   PASS:  ERROR: PASS_ROLLED_BACK: every check behaved as expected
+--   FAIL:  ERROR: FAIL: <what went wrong>
+-- (F1d: converted from BEGIN … ROLLBACK so it can never leave data behind;
+-- setup runs as the server, with the service_role claim.)
 -- Needs: one ready Sit Story whose Pet Parent and Nomad are both still
--- members, and one other non-admin member. Run it in the SQL editor as is.
---
--- Result: the last query returns "PASS" if everything behaves as expected.
--- Any unexpected result stops with an error starting "FAIL:".
+-- members, and one other non-admin member.
 --
 -- Not covered here (it's an HTTP call, not SQL): a member calling
 -- send-notification-email with type "review" gets 403. See the checklist.
-
-BEGIN;
 
 DO $$
 DECLARE
@@ -32,6 +32,7 @@ DECLARE
   v_review_owner uuid;
   v_review_sitter uuid;
 BEGIN
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   -- ── Fixtures (as the SQL editor's own role) ──────────────────────────────
   SELECT st.id, st.sit_id, st.owner_user_id, st.sitter_user_id
     INTO v_story, v_sit, v_owner, v_sitter
@@ -178,9 +179,7 @@ BEGIN
   IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'request_sit_story_rewrite' AND pronamespace = 'public'::regnamespace) THEN
     RAISE EXCEPTION 'FAIL: request_sit_story_rewrite still exists';
   END IF;
+
+  RAISE EXCEPTION 'PASS_ROLLED_BACK: every check behaved as expected';
 END;
 $$;
-
-SELECT 'PASS: every check behaved as expected (rolled back)' AS result;
-
-ROLLBACK;

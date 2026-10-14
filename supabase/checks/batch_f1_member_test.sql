@@ -32,7 +32,7 @@ DECLARE
   v_n integer;
   v_admins integer;
 BEGIN
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
   SELECT sp.user_id INTO v_nomad
   FROM public.sitter_profiles sp JOIN public.profiles p ON p.id = sp.user_id
@@ -88,7 +88,7 @@ BEGIN
   INSERT INTO public.applications (listing_id, sit_dates_id, sitter_user_id, status, message)
   VALUES (v_listing, r_1, v_nomad, 'applied', 'F1 test 2099 my application message') RETURNING id INTO v_app;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_owner AND type = 'new_application' AND dedupe_key = 'new_application:' || v_app;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: applying gave the Pet Parent % notifications, not 1', v_n; END IF;
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_nomad AND dedupe_key = 'new_application:' || v_app;
@@ -100,7 +100,7 @@ BEGIN
   UPDATE public.applications SET status = 'withdrawn' WHERE id = v_app;
   UPDATE public.applications SET status = 'withdrawn' WHERE id = v_app;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_owner AND type = 'application_withdrawn' AND dedupe_key = 'application_withdrawn:' || v_app;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: withdrawing (twice) gave the Pet Parent % notifications, not 1', v_n; END IF;
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_nomad AND dedupe_key = 'application_withdrawn:' || v_app;
@@ -112,7 +112,7 @@ BEGIN
   INSERT INTO public.sitter_invites (listing_id, sit_dates_id, owner_user_id, sitter_user_id, status, message)
   VALUES (v_listing, r_2, v_owner, v_nomad, 'pending', 'F1 test 2099 my invitation message') RETURNING id INTO v_invite;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_nomad AND type = 'invite' AND dedupe_key = 'invite:' || v_invite;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: inviting gave the Nomad % notifications, not 1', v_n; END IF;
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_owner AND dedupe_key = 'invite:' || v_invite;
@@ -127,7 +127,7 @@ BEGIN
   SET LOCAL ROLE authenticated;
   UPDATE public.sits SET status = 'cancelled' WHERE id = s_4;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_nomad AND type = 'sit_cancelled' AND dedupe_key = 'sit_cancelled:' || s_3;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: the Pet Parent cancelling gave the Nomad % notifications, not 1', v_n; END IF;
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_owner AND dedupe_key = 'sit_cancelled:' || s_3;
@@ -147,7 +147,7 @@ BEGIN
   SET LOCAL ROLE authenticated;
   UPDATE public.sit_dates SET start_date = current_date + 81, end_date = current_date + 86 WHERE id = r_5;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_nomad AND type = 'listing_dates_changed' AND dedupe_key LIKE 'listing_dates_changed:' || r_5 || ':%';
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: changing dates gave the applicant % notifications, not 1', v_n; END IF;
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_owner AND type = 'listing_dates_changed' AND dedupe_key LIKE 'listing_dates_changed:' || r_5 || ':%';
@@ -161,7 +161,7 @@ BEGIN
   INSERT INTO public.sit_reschedule_requests (sit_id, proposed_start_date, proposed_end_date, requested_by, note)
   VALUES (s_7, current_date + 101, current_date + 106, v_owner, 'F1 test 2099 another note') RETURNING id INTO v_req2;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_nomad AND type = 'sit_reschedule_proposed' AND dedupe_key = 'sit_reschedule_proposed:' || v_req;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: proposing new dates gave the Nomad % notifications, not 1', v_n; END IF;
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_owner AND dedupe_key = 'sit_reschedule_proposed:' || v_req;
@@ -172,7 +172,7 @@ BEGIN
   PERFORM public.respond_to_sit_reschedule(v_req, true);
   PERFORM public.respond_to_sit_reschedule(v_req2, false);
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_owner AND type = 'sit_reschedule_accepted' AND dedupe_key = 'sit_reschedule_accepted:' || v_req;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: accepting new dates gave the Pet Parent % notifications, not 1', v_n; END IF;
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_owner AND type = 'sit_reschedule_declined' AND dedupe_key = 'sit_reschedule_declined:' || v_req2;
@@ -187,7 +187,7 @@ BEGIN
   INSERT INTO public.sit_checkins (sit_id, author_user_id, kind, chips, note)
   VALUES (s_8, v_nomad, 'daily_update', ARRAY['fed', 'walked'], 'F1 test 2099 my daily update text') RETURNING id INTO v_checkin;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_owner AND type = 'sit_checkin' AND dedupe_key = 'sit_checkin:' || v_checkin;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: a daily update gave the Pet Parent % notifications, not 1', v_n; END IF;
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_nomad AND dedupe_key = 'sit_checkin:' || v_checkin;
@@ -201,7 +201,7 @@ BEGIN
   PERFORM public.admin_decide_id_verification(v_idv, 'approved', NULL);
   PERFORM public.admin_decide_id_verification(v_idv2, 'rejected', 'Photo unclear');
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_nomad AND type = 'id_verification_approved' AND dedupe_key = 'id_verification_approved:' || v_idv;
   IF v_n <> 1 THEN RAISE EXCEPTION 'FAIL: approving an ID check gave the member % notifications, not 1', v_n; END IF;
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id = v_nomad AND type = 'id_verification_rejected' AND dedupe_key = 'id_verification_rejected:' || v_idv2;
@@ -216,7 +216,7 @@ BEGIN
   INSERT INTO public.reports (reporter_user_id, target_type, target_id, reason, details)
   VALUES (v_nomad, 'user', v_owner, 'other', 'F1 test 2099 my report details') RETURNING id INTO v_report;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT count(*) INTO v_n FROM public.notifications WHERE type = 'new_report' AND dedupe_key = 'new_report:' || v_report;
   IF v_n <> v_admins THEN RAISE EXCEPTION 'FAIL: a report gave % founder notifications, expected one per admin (%)', v_n, v_admins; END IF;
   SELECT count(*) INTO v_n FROM public.notifications WHERE user_id IN (v_nomad, v_owner) AND dedupe_key = 'new_report:' || v_report;

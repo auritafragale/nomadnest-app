@@ -1,12 +1,13 @@
 -- Arrival Check-In photos: behaviour test as members (delete, update, insert).
--- Runs inside a transaction and ROLLS BACK: nothing is changed (no files are
--- touched; the storage rule is tested through its helper).
 --
+-- One DO block. It always ends with an exception, so the whole statement rolls
+-- back and nothing it does is ever kept:
+--   PASS:  ERROR: PASS_ROLLED_BACK: every check behaved as expected
+--   FAIL:  ERROR: FAIL: <what went wrong>
+-- (F1d: converted from BEGIN … ROLLBACK so it can never leave data behind;
+-- setup runs as the server, with the service_role claim.)
 -- Needs one sit with a Nomad, one other member, and at least one review.
--- Result: the last query returns "PASS"; anything unexpected stops with an
--- error starting "FAIL:".
-
-BEGIN;
+-- No files are touched; the storage rule is tested through its helper.
 
 DO $$
 DECLARE
@@ -20,6 +21,7 @@ DECLARE
   v_other_sit uuid;
   v_n integer;
 BEGIN
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT id, sitter_user_id INTO v_sit, v_nomad FROM public.sits WHERE sitter_user_id IS NOT NULL ORDER BY created_at DESC LIMIT 1;
   IF v_sit IS NULL THEN RAISE EXCEPTION 'FAIL: needs a sit with a Nomad'; END IF;
   SELECT id INTO v_other FROM public.profiles WHERE id <> v_nomad ORDER BY created_at LIMIT 1;
@@ -100,9 +102,7 @@ BEGIN
   IF (SELECT count(*) FROM public.arrival_vault_photos WHERE id IN (v_theirs, v_evidence)) <> 2 THEN
     RAISE EXCEPTION 'FAIL: a protected photo row is gone';
   END IF;
+
+  RAISE EXCEPTION 'PASS_ROLLED_BACK: every check behaved as expected';
 END;
 $$;
-
-SELECT 'PASS: every check behaved as expected (rolled back)' AS result;
-
-ROLLBACK;

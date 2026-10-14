@@ -19,3 +19,13 @@ export const invitableRanges = (picked: string[], existing: { sit_dates_id: stri
   const blocked = new Set(existing.filter((r) => blocksReinvite(r.status)).map((r) => r.sit_dates_id));
   return picked.filter((id) => !blocked.has(id));
 };
+
+/** Another live invitation for the same range (the Pet Parent invited again
+ *  after this one was declined). Undoing the decline would make two. */
+export const hasNewerLiveInvite = (
+  invite: { id: string; sit_dates_id: string },
+  all: { id: string; sit_dates_id: string; status: string }[],
+) => all.some((o) => o.id !== invite.id && o.sit_dates_id === invite.sit_dates_id && (o.status === "pending" || o.status === "viewed"));
+
+/** The database refused because of the one-live-invitation-per-range rule. */
+export const isLiveInviteConflict = (err: unknown) => (err as { code?: string } | null)?.code === "23505";

@@ -103,19 +103,31 @@ SELECT format('%s: no signed-out access', t), 'no anon policy, no anon column',
 FROM (VALUES ('sitter_profiles'), ('owner_profiles')) AS v(t)
 
 UNION ALL
-SELECT 'sitter_profiles: members see visible Nomads only', 'is_active AND is_visible, own row, or shared with me',
+-- Updated for later decisions: since D2 "visible" is decided by
+-- nomad_profile_is_live() (visible, active and with Nomad access), and since
+-- E1 a RESTRICTIVE "hidden across a block" policy narrows what members see.
+SELECT 'sitter_profiles: members see live Nomads only', 'nomad_profile_is_live, own row, or shared with me',
        COALESCE((SELECT qual FROM pg_policies WHERE schemaname = 'public' AND tablename = 'sitter_profiles'
                  AND policyname = 'Authenticated users can view sitter profiles'), 'missing'),
-       COALESCE((SELECT position('is_visible' IN qual) > 0 AND position('nomad_profile_shared_with_me' IN qual) > 0
+       COALESCE((SELECT position('nomad_profile_is_live' IN qual) > 0 AND position('nomad_profile_shared_with_me' IN qual) > 0
+                        AND qual ~ 'auth.uid() = user_id'
                  FROM pg_policies WHERE schemaname = 'public' AND tablename = 'sitter_profiles'
                  AND policyname = 'Authenticated users can view sitter profiles'), false)
 
 UNION ALL
-SELECT 'sitter_profiles: only one member SELECT policy', '1',
+SELECT 'sitter_profiles: only one permissive member SELECT policy', '1',
        count(*)::text, count(*) = 1
 FROM pg_policies
 WHERE schemaname = 'public' AND tablename = 'sitter_profiles' AND cmd IN ('SELECT', 'ALL')
-  AND 'authenticated' = ANY (roles)
+  AND 'authenticated' = ANY (roles) AND permissive = 'PERMISSIVE'
+
+UNION ALL
+SELECT 'sitter_profiles: hidden across a block (restrictive)', 'RESTRICTIVE SELECT, own row or hidden_by_block',
+       COALESCE((SELECT permissive || ' ' || cmd || ' ' || qual FROM pg_policies WHERE schemaname = 'public'
+                 AND tablename = 'sitter_profiles' AND policyname = 'Nomad profiles hidden across a block'), 'missing'),
+       EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'sitter_profiles'
+               AND policyname = 'Nomad profiles hidden across a block' AND permissive = 'RESTRICTIVE'
+               AND cmd = 'SELECT' AND qual ~ 'hidden_by_block')
 
 UNION ALL
 SELECT 'sitter_profiles: coordinates rounded (trigger + check)', 'trigger enabled, check present, 0 precise rows',

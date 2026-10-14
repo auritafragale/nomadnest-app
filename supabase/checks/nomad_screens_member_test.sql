@@ -1,10 +1,13 @@
 -- Stage 2 (Nomad screens): behaviour test as a signed-out visitor and as members.
--- Runs inside a transaction and ROLLS BACK: nothing is changed.
 --
--- Needs one published listing and two other members. Result: the last query
--- returns "PASS"; anything unexpected stops with an error starting "FAIL:".
-
-BEGIN;
+-- One DO block. It always ends with an exception, so the whole statement rolls
+-- back and nothing it does is ever kept:
+--   PASS:  ERROR: PASS_ROLLED_BACK: every check behaved as expected
+--   FAIL:  ERROR: FAIL: <what went wrong>
+-- Needs a non-admin, non-Founding member with no listing (given a temporary
+-- one, "Regression sample listing" in "Regressville"), a non-admin Nomad and
+-- one more non-admin member. Updated for F1d: no non-admin member owns a
+-- listing on live, so the test makes its own.
 
 DO $$
 DECLARE
@@ -23,14 +26,25 @@ DECLARE
   v_stmt text;
   i integer;
 BEGIN
-  -- ── Fixtures ─────────────────────────────────────────────────────────────
-  SELECT l.id, l.owner_user_id INTO v_listing, v_owner
-  FROM public.listings l WHERE l.status = 'published' AND l.owner_user_id IS NOT NULL
-  ORDER BY l.created_at LIMIT 1;
-  IF v_listing IS NULL THEN
-    RAISE EXCEPTION 'FAIL: needs a published listing';
+  -- ── Fixtures (as the server) ─────────────────────────────────────────────
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  SELECT p.id INTO v_owner FROM public.profiles p
+  WHERE p.is_admin IS NOT TRUE AND p.founding_member IS NOT TRUE
+    AND NOT EXISTS (SELECT 1 FROM public.listings l WHERE l.owner_user_id = p.id)
+  ORDER BY p.created_at LIMIT 1;
+  IF v_owner IS NULL THEN
+    RAISE EXCEPTION 'FAIL: needs a non-admin, non-Founding member with no listing';
   END IF;
+  -- Someone else's listing (any), before the test listing exists.
   SELECT id INTO v_other_listing FROM public.listings WHERE owner_user_id IS DISTINCT FROM v_owner LIMIT 1;
+  UPDATE public.profiles
+  SET membership_status = 'active', membership_type = 'owner', membership_expiry = now() + interval '1 year',
+      membership_payment_failed_at = NULL
+  WHERE id = v_owner;
+  INSERT INTO public.listings (owner_user_id, title, status, city, country, owner_declaration_accepted_at)
+  VALUES (v_owner, 'Regression sample listing', 'published', 'Regressville', 'Testland', now())
+  RETURNING id INTO v_listing;
+  UPDATE public.owner_profiles SET is_active = true WHERE user_id = v_owner;
 
   -- An open, upcoming date range on it (added for the test, rolled back).
   INSERT INTO public.sit_dates (listing_id, start_date, end_date, status)
@@ -47,6 +61,11 @@ BEGIN
   IF v_sitter IS NULL OR v_stranger IS NULL THEN
     RAISE EXCEPTION 'FAIL: needs a Nomad and one more member besides the listing owner';
   END IF;
+  -- Both can be invited (Nomad access).
+  UPDATE public.profiles
+  SET membership_status = 'active', membership_type = 'sitter', membership_expiry = now() + interval '1 year',
+      membership_payment_failed_at = NULL
+  WHERE id IN (v_sitter, v_stranger) AND founding_member IS NOT TRUE;
   UPDATE public.sitter_profiles SET is_visible = true, is_active = true WHERE user_id = v_sitter;
   -- Start the day with no invites from this owner, so the limit test is exact.
   DELETE FROM public.sitter_invites WHERE owner_user_id = v_owner AND created_at > now() - interval '24 hours';
@@ -188,9 +207,7 @@ BEGIN
     RAISE EXCEPTION 'FAIL: get_sitter_free_dates returned the wrong data: %', v_json;
   END IF;
   RESET ROLE;
+
+  RAISE EXCEPTION 'PASS_ROLLED_BACK: every check behaved as expected';
 END;
 $$;
-
-SELECT 'PASS: every check behaved as expected (rolled back)' AS result;
-
-ROLLBACK;

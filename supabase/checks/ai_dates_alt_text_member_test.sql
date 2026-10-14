@@ -1,11 +1,12 @@
--- Stage 4 (AI): behaviour test as members. Runs inside a transaction and
--- ROLLS BACK: nothing is changed.
+-- Stage 4 (AI): behaviour test as members.
 --
+-- One DO block. It always ends with an exception, so the whole statement rolls
+-- back and nothing it does is ever kept:
+--   PASS:  ERROR: PASS_ROLLED_BACK: every check behaved as expected
+--   FAIL:  ERROR: FAIL: <what went wrong>
+-- (F1d: converted from BEGIN … ROLLBACK so it can never leave data behind;
+-- setup runs as the server, with the service_role claim.)
 -- Needs one ready Sit Story with both members and one other member.
--- Result: the last query returns "PASS"; anything unexpected stops with an
--- error starting "FAIL:".
-
-BEGIN;
 
 DO $$
 DECLARE
@@ -16,6 +17,7 @@ DECLARE
   v_stranger uuid;
   v_json jsonb;
 BEGIN
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT id, sit_id, owner_user_id, sitter_user_id INTO v_story, v_sit, v_owner, v_sitter
   FROM public.sit_stories
   WHERE status = 'ready' AND owner_user_id IS NOT NULL AND sitter_user_id IS NOT NULL
@@ -70,9 +72,7 @@ BEGIN
   IF v_json IS NOT NULL THEN
     RAISE EXCEPTION 'FAIL: an unknown share token returned a story';
   END IF;
+
+  RAISE EXCEPTION 'PASS_ROLLED_BACK: every check behaved as expected';
 END;
 $$;
-
-SELECT 'PASS: every check behaved as expected (rolled back)' AS result;
-
-ROLLBACK;

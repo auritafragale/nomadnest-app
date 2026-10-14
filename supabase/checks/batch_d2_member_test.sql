@@ -44,7 +44,7 @@ DECLARE
   v_id uuid;
 BEGIN
   -- ── Members ────────────────────────────────────────────────────────────
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
   SELECT sp.user_id INTO v_nomad
   FROM public.sitter_profiles sp JOIN public.profiles p ON p.id = sp.user_id
@@ -153,7 +153,7 @@ BEGIN
   END;
   IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a member wrote the server-only digest time'; END IF;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   SELECT push_messages INTO v_bool FROM public.notification_preferences WHERE user_id = v_owner;
   IF v_bool THEN RAISE EXCEPTION 'FAIL: a member changed someone else''s notification choices'; END IF;
 
@@ -179,7 +179,7 @@ BEGIN
   SELECT count(*) INTO v_n FROM public.listings WHERE id = v_listing;
   IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: another member could read a paused listing'; END IF;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
   SET LOCAL ROLE anon;
   SELECT count(*) INTO v_n FROM public.listings WHERE id = v_listing;
   IF v_n <> 0 THEN RAISE EXCEPTION 'FAIL: a signed-out visitor could read a paused listing'; END IF;
@@ -227,7 +227,7 @@ BEGIN
   RESET ROLE;
 
   -- ── 8. Redeem once, never a used code; roles follow (as the server) ────
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   INSERT INTO public.founding_member_codes (code, max_uses, used_count, active) VALUES ('D2TEST2099A', 5, 0, true);
   INSERT INTO public.founding_member_codes (code, max_uses, used_count, active) VALUES ('D2TEST2099B', 1, 1, true);
   v_txt := public.redeem_founding_code_for(v_other, 'D2TEST2099B');
@@ -276,7 +276,7 @@ BEGIN
 
   -- ── 10. Membership access (has_side_access) ────────────────────────────
   -- v_other is the applying Nomad, v_owner the Pet Parent (as the server).
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles
   SET founding_member = false, membership_status = 'none', membership_type = NULL, membership_expiry = NULL,
       membership_payment_failed_at = NULL
@@ -315,7 +315,7 @@ BEGIN
     IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: an unrelated member could call %', v_txt; END IF;
   END LOOP;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
   -- Founding members always have both sides (v_nomad became Founding in step 8).
   UPDATE public.profiles SET membership_status = 'none', membership_type = NULL WHERE id = v_nomad;
@@ -350,7 +350,7 @@ BEGIN
 
   -- b. Pet Parent membership again: publishes, listing back, can invite.
   -- (The Nomad needs Nomad access to be invited; it's taken away again below.)
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles SET membership_status = 'active', membership_type = 'owner', membership_expiry = now() + interval '1 year'
   WHERE id = v_owner;
   UPDATE public.profiles SET membership_status = 'active', membership_type = 'sitter', membership_expiry = now() + interval '1 year'
@@ -361,7 +361,7 @@ BEGIN
   INSERT INTO public.sitter_invites (listing_id, sit_dates_id, owner_user_id, sitter_user_id, status)
   VALUES (v_listing, v_range, v_owner, v_other, 'pending') RETURNING id INTO v_invite;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles SET membership_status = 'none', membership_type = NULL, membership_expiry = NULL WHERE id = v_other;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
@@ -394,7 +394,7 @@ BEGIN
   END IF;
 
   -- d. Past due within the retry week: still applies.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles SET membership_status = 'past_due', membership_type = 'sitter',
          membership_expiry = now() + interval '1 year', membership_payment_failed_at = now() - interval '2 days'
   WHERE id = v_other;
@@ -405,7 +405,7 @@ BEGIN
   RESET ROLE;
 
   -- e. Payment failed more than 8 days ago: no access, application paused.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles SET membership_payment_failed_at = now() - interval '9 days' WHERE id = v_other;
   IF public.has_side_access(v_other, 'sitter') THEN RAISE EXCEPTION 'FAIL: past due for 9 days still had access'; END IF;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
@@ -429,7 +429,7 @@ BEGIN
   RESET ROLE;
 
   -- ...and comes back as it was when the Nomad pays again.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles SET membership_status = 'active', membership_payment_failed_at = NULL WHERE id = v_other;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
@@ -438,7 +438,7 @@ BEGIN
   RESET ROLE;
 
   -- A lapsed Pet Parent's pending applications are paused for the Nomad too.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles SET membership_status = 'none', membership_type = NULL WHERE id = v_owner;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_other, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
@@ -447,7 +447,7 @@ BEGIN
   RESET ROLE;
 
   -- f. A confirmed sit goes ahead after both lapse: sit and chat still work.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   INSERT INTO public.sits (listing_id, sit_dates_id, sitter_user_id, owner_user_id, status, confirmed_at)
   VALUES (v_listing, v_range, v_other, v_owner, 'confirmed', now()) RETURNING id INTO v_sit;
   INSERT INTO public.conversations (listing_id, owner_user_id, sitter_user_id, conversation_type)
@@ -473,7 +473,7 @@ BEGIN
   -- The app inserts applications and invitations with .select(), so the new
   -- row must pass the SELECT policy inside the same statement. v_nomad is
   -- the Nomad, v_owner the Pet Parent, v_other an unrelated member.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles
   SET founding_member = false, membership_status = 'active', membership_type = 'sitter',
       membership_expiry = now() + interval '1 year', membership_payment_failed_at = NULL
@@ -560,7 +560,7 @@ BEGIN
     RAISE EXCEPTION 'FAIL: an unrelated member got an answer from invitation_is_live';
   END IF;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
   SET LOCAL ROLE anon;
   FOREACH v_txt IN ARRAY ARRAY['application_is_live', 'invitation_is_live', 'nomad_profile_is_live'] LOOP
     v_failed := false;
@@ -583,7 +583,7 @@ BEGIN
   RESET ROLE;
 
   -- e. The Nomad lapses.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles SET membership_status = 'none', membership_type = NULL, membership_expiry = NULL WHERE id = v_nomad;
 
   -- They can't apply, even reading back.
@@ -631,7 +631,7 @@ BEGIN
     RAISE EXCEPTION 'FAIL: a lapsed Nomad''s profile counted as live';
   END IF;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
   SET LOCAL ROLE anon;
   v_n := 0;
   BEGIN
@@ -651,7 +651,7 @@ BEGIN
   RESET ROLE;
 
   -- g. A lapsed Pet Parent can't invite, even reading back.
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
   UPDATE public.profiles SET membership_status = 'none', membership_type = NULL, membership_expiry = NULL WHERE id = v_owner;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
@@ -663,7 +663,7 @@ BEGIN
   END;
   IF NOT v_failed THEN RAISE EXCEPTION 'FAIL: a lapsed Pet Parent invited'; END IF;
   RESET ROLE;
-  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
   RAISE EXCEPTION 'PASS_ROLLED_BACK: every check behaved as expected';
 END;

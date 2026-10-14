@@ -112,8 +112,19 @@ SELECT 'city_chat_messages: members read only rooms they can access', 'a SELECT 
                  WHERE pp.schemaname = 'public' AND pp.tablename = 'city_chat_messages' AND pp.cmd IN ('SELECT', 'ALL')), 'none'),
        EXISTS (SELECT 1 FROM pg_policies pp WHERE pp.schemaname = 'public' AND pp.tablename = 'city_chat_messages'
                AND pp.cmd IN ('SELECT', 'ALL') AND pp.qual ~ 'can_access_city_chat')
+         -- Updated for a later decision (E1): the RESTRICTIVE "hidden across a
+         -- block" policy only narrows access, so only permissive ones count.
          AND NOT EXISTS (SELECT 1 FROM pg_policies pp WHERE pp.schemaname = 'public' AND pp.tablename = 'city_chat_messages'
-                         AND pp.cmd IN ('SELECT', 'ALL') AND COALESCE(pp.qual, '') !~ 'can_access_city_chat|is_admin_user')
+                         AND pp.cmd IN ('SELECT', 'ALL') AND pp.permissive = 'PERMISSIVE'
+                         AND COALESCE(pp.qual, '') !~ 'can_access_city_chat|is_admin_user')
+
+UNION ALL
+SELECT 'city_chat_messages: hidden across a block (E1, restrictive)', 'RESTRICTIVE SELECT using is_blocked_with',
+       COALESCE((SELECT pp.permissive || ' ' || pp.cmd || ' ' || pp.qual FROM pg_policies pp WHERE pp.schemaname = 'public'
+                 AND pp.tablename = 'city_chat_messages' AND pp.policyname = 'City Chat messages hidden across a block'), 'missing'),
+       EXISTS (SELECT 1 FROM pg_policies pp WHERE pp.schemaname = 'public' AND pp.tablename = 'city_chat_messages'
+               AND pp.policyname = 'City Chat messages hidden across a block' AND pp.permissive = 'RESTRICTIVE'
+               AND pp.cmd = 'SELECT' AND pp.qual ~ 'is_blocked_with')
 
 UNION ALL
 SELECT 'muted rooms send no push for thread replies', 'push trigger checks city_chat_mutes',

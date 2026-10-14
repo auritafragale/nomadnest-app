@@ -90,13 +90,26 @@ UNION ALL
 SELECT 'policy reviews "' || p.name || '"', p.expected,
        COALESCE((SELECT roles::text || ' ' || qual FROM pg_policies WHERE tablename = 'reviews' AND policyname = p.name), 'missing'),
        COALESCE((SELECT qual LIKE p.expected FROM pg_policies WHERE tablename = 'reviews' AND policyname = p.name), false)
-FROM (VALUES ('Anyone can view reviews of current members', '%reviewee_user_id IS NOT NULL%'),
+-- Updated for a later decision (E1): reviews are no longer readable by
+-- everyone. The writer sees their own, the reviewee sees published ones about
+-- them, admins see all; everyone else reads through get_member_reviews.
+FROM (VALUES ('Writers see their own reviews', '%reviewer_user_id = auth.uid()%'),
+             ('Reviewees see published reviews about them', '%reviewee_user_id = auth.uid()%published_at IS NOT NULL%'),
              ('Admins can view all reviews', '%is_admin_user%')) AS p(name, expected)
 
 UNION ALL
-SELECT 'policy reviews "Anyone can view reviews" removed', 'absent',
-       CASE WHEN EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = 'Anyone can view reviews') THEN 'present' ELSE 'absent' END,
-       NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = 'Anyone can view reviews')
+SELECT format('policy reviews "%s" removed', x.name), 'absent',
+       CASE WHEN EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = x.name) THEN 'present' ELSE 'absent' END,
+       NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'reviews' AND policyname = x.name)
+FROM (VALUES ('Anyone can view reviews'), ('Anyone can view reviews of current members')) AS x(name)
+
+UNION ALL
+SELECT 'reviews: no SELECT policy for visitors or everyone', 'every SELECT policy is for authenticated only',
+       COALESCE((SELECT string_agg(policyname || ' ' || roles::text, '; ') FROM pg_policies
+                 WHERE schemaname = 'public' AND tablename = 'reviews' AND cmd IN ('SELECT', 'ALL')
+                   AND roles <> ARRAY['authenticated']::name[]), 'none'),
+       NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'reviews'
+                   AND cmd IN ('SELECT', 'ALL') AND roles <> ARRAY['authenticated']::name[])
 
 UNION ALL
 SELECT 'policy messages "No messages to a member who left"', 'RESTRICTIVE INSERT',
