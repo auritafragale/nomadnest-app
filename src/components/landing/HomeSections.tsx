@@ -99,7 +99,13 @@ const HeroSearch = ({ onDark }: { onDark?: boolean }) => {
   );
 };
 
-/** Phone and tablet: crossfading full-bleed photos with dots. Desktop: a tilted three-photo collage. */
+/** Per-photo focus on desktop so the faces sit above the text. */
+const DESKTOP_FOCUS = ["object-[center_40%]", "object-[center_58%]", "object-[center_34%]"];
+
+/**
+ * Phone and tablet: crossfading full-bleed photos with dots. Desktop: the
+ * same photos (same slide, timer and dots) inside a large rounded card.
+ */
 export const HomeHero = () => {
   const [slide, setSlide] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -111,23 +117,48 @@ export const HomeHero = () => {
   }, [paused]);
 
   const title = "Where travellers find homes and pets find care";
-  const lead = "Free stays for Nomads. Loving care for pets. No booking fees, ever.";
+  const lead = "Nomads live like locals. Pets stay happy at home. No booking fees, ever.";
+
+  const dots = (className?: string) => (
+    <div role="tablist" aria-label="Photos" className={cn("flex gap-1", className)}>
+      {HERO.map((_, i) => (
+        <button
+          key={i}
+          type="button"
+          role="tab"
+          aria-label={`Photo ${i + 1} of ${HERO.length}`}
+          aria-selected={i === slide}
+          onClick={() => {
+            setSlide(i);
+            setPaused(true);
+          }}
+          className="flex h-11 w-11 items-center justify-center"
+        >
+          <span className={cn("h-2 rounded-full bg-white transition-all", i === slide ? "w-6" : "w-2 opacity-60")} />
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <>
       {/* Phone and tablet */}
-      <section aria-label="Welcome" className="relative flex min-h-[600px] flex-col justify-end overflow-hidden bg-neutral-900 pt-16 lg:hidden md:min-h-[640px]">
+      <section
+        aria-label="Welcome"
+        className="relative flex min-h-[680px] flex-col justify-end overflow-hidden bg-neutral-900 pt-16 lg:hidden"
+        style={{ minHeight: "max(680px, 100svh)" }}
+      >
         <div className="absolute inset-0" aria-hidden="true">
           {HERO.map((_, i) => (
             <div key={i} className={cn("absolute inset-0 transition-opacity duration-1000", i === slide ? "opacity-100" : "opacity-0")}>
-              <HeroPhoto n={i} eager={i === 0} className="h-full w-full object-cover object-[center_30%]" />
+              <HeroPhoto n={i} eager={i === 0} className="h-full w-full object-cover object-[center_45%]" />
             </div>
           ))}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/20" />
         </div>
         <div className="relative z-10 flex flex-col gap-4 px-5 pb-8 md:px-8 md:pb-12">
-          <h1 className="max-w-2xl font-display text-[38px] leading-[1.05] text-white md:text-[52px]">{title}</h1>
-          <p className="max-w-xl text-[16px] leading-snug text-white/95 md:text-[18px]">{lead}</p>
+          <h1 className="max-w-2xl font-display text-[30px] leading-[1.1] text-white md:text-[44px] md:leading-[1.08]">{title}</h1>
+          <p className="max-w-xl text-[15px] leading-snug text-white/95 md:text-[18px]">{lead}</p>
           <HeroSearch onDark />
           <div className="grid grid-cols-2 gap-2.5 sm:max-w-md">
             <Link to={CTA.nomad} className="flex h-[52px] items-center justify-center rounded-2xl bg-brand-coral text-[15px] font-bold text-primary-foreground">
@@ -137,55 +168,40 @@ export const HomeHero = () => {
               List your home
             </Link>
           </div>
-          <div role="tablist" aria-label="Photos" className="-mb-2 flex gap-1">
-            {HERO.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                role="tab"
-                aria-label={`Photo ${i + 1} of ${HERO.length}`}
-                aria-selected={i === slide}
-                onClick={() => {
-                  setSlide(i);
-                  setPaused(true);
-                }}
-                className="flex h-11 w-11 items-center justify-center"
-              >
-                <span className={cn("h-2 rounded-full bg-white transition-all", i === slide ? "w-6" : "w-2 opacity-60")} />
-              </button>
-            ))}
-          </div>
+          {dots("-mb-2")}
         </div>
       </section>
 
-      {/* Desktop */}
+      {/* Desktop: the same crossfading photos inside a large rounded card. The
+          photos are clipped on their own layer so the search suggestions can
+          open past the card's edge. */}
       <section aria-label="Welcome" className="hidden bg-background pt-16 lg:block">
-        <div className="mx-auto grid max-w-[1200px] grid-cols-[minmax(0,1fr)_520px] items-center gap-12 px-6 py-16">
-          <div className="flex flex-col gap-6">
-            <h1 className="font-display text-[60px] leading-[1.02]">{title}</h1>
-            <p className="max-w-lg text-[19px] leading-snug text-muted-foreground">{lead}</p>
-            <HeroSearch />
-            <div className="flex gap-3">
-              <Link to={CTA.nomad} className="flex h-[52px] items-center justify-center rounded-2xl bg-brand-coral px-7 text-[15px] font-bold text-primary-foreground">
-                Join as a Nomad
-              </Link>
-              <Link
-                to={CTA.parent}
-                className="flex h-[52px] items-center justify-center rounded-2xl border-[1.5px] border-border px-7 text-[15px] font-bold"
-              >
-                List your home
-              </Link>
+        <div className="mx-auto w-full max-w-[1400px] px-6 pt-4">
+          <div className="relative h-[680px] rounded-[28px] bg-neutral-900">
+            <div className="absolute inset-0 overflow-hidden rounded-[28px]" aria-hidden="true">
+              {HERO.map((_, i) => (
+                <div key={i} className={cn("absolute inset-0 transition-opacity duration-1000", i === slide ? "opacity-100" : "opacity-0")}>
+                  <HeroPhoto n={i} eager={i === 0} className={cn("absolute inset-0 h-full w-full object-cover", DESKTOP_FOCUS[i])} />
+                </div>
+              ))}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/5" />
             </div>
-          </div>
-          <div className="relative h-[520px]" aria-hidden="true">
-            <div className="absolute left-[10px] top-[70px] h-[330px] w-[220px] -rotate-[5deg] overflow-hidden rounded-[26px] bg-[#D8C3B0] shadow-xl">
-              <HeroPhoto n={0} eager className="h-full w-full object-cover object-[center_30%]" />
-            </div>
-            <div className="absolute left-[270px] top-[40px] h-[340px] w-[230px] rotate-[4deg] overflow-hidden rounded-[26px] bg-[#D8C3B0] shadow-xl">
-              <HeroPhoto n={2} eager className="h-full w-full object-cover object-[center_25%]" />
-            </div>
-            <div className="absolute left-[150px] top-[230px] h-[270px] w-[210px] -rotate-1 overflow-hidden rounded-[26px] bg-[#D8C3B0] shadow-xl">
-              <HeroPhoto n={1} eager className="h-full w-full object-cover object-[center_20%]" />
+            <div className="relative flex h-full flex-col justify-end gap-4 px-10 pb-11 text-white">
+              <h1 className="max-w-[720px] font-display text-[56px] leading-[1.05]">{title}</h1>
+              <p className="max-w-[620px] text-[19px] leading-snug text-white/95">{lead}</p>
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1 xl:w-[520px] xl:flex-none xl:shrink-0">
+                  <HeroSearch onDark />
+                </div>
+                <Link to={CTA.nomad} className="flex h-[54px] shrink-0 items-center justify-center rounded-2xl bg-brand-coral px-6 text-[15px] font-bold text-primary-foreground">
+                  Join as a Nomad
+                </Link>
+                <Link to={CTA.parent} className="flex h-[54px] shrink-0 items-center justify-center rounded-2xl bg-brand-teal px-6 text-[15px] font-bold text-primary-foreground">
+                  List your home
+                </Link>
+                <div className="hidden flex-1 xl:block" />
+                {dots()}
+              </div>
             </div>
           </div>
         </div>
@@ -220,7 +236,7 @@ export const FoundingBanner = () => {
           >
             <div className="h-full rounded-full bg-[#E8B53E]" style={{ width: `${Math.min(100, (taken / data.cap) * 100)}%` }} />
           </div>
-          <p className="text-[15px] text-muted-foreground">Founding Members join with an invite code and get free lifetime Combined membership.</p>
+          <p className="text-[15px] text-muted-foreground">Founding Members join with an invite code and get lifetime Combined membership, on us.</p>
         </div>
       </div>
     </section>
@@ -229,9 +245,9 @@ export const FoundingBanner = () => {
 
 const STEPS = {
   nomad: [
-    ["Create your profile", "Add photos, the pets you love and the dates you are free."],
+    ["Create your profile", "Add photos, the pets you love and the dates you can travel."],
     ["Find a sit and apply", "Browse homes worldwide, or get invited by Pet Parents."],
-    ["Travel and care", "Stay for free and look after pets like your own."],
+    ["Travel and care", "Live like a local and look after pets like your own."],
   ],
   parent: [
     ["List your home", "Tell us about your pets, your home and your dates."],
@@ -241,7 +257,7 @@ const STEPS = {
 } as const;
 const BENEFITS = {
   nomad: [
-    "Stay in homes all over the world for free",
+    "Stay in real homes all over the world",
     "Spend time with pets who need you",
     "A friendly community of fellow Nomads",
     "Member perks: eSIM, insurance and luggage storage",
@@ -295,7 +311,7 @@ export const HowItWorks = () => {
         <img src={aboutJourney} alt="" loading="lazy" decoding="async" className="h-48 w-full object-cover md:h-full md:min-h-[260px]" />
         <div className="flex flex-col gap-3 p-5 md:p-7">
           <p className="font-display text-[24px] leading-tight">
-            {nomad ? "For Nomads: explore the world, free" : "For Pet Parents: peace of mind, always"}
+            {nomad ? "For Nomads: see the world like a local" : "For Pet Parents: peace of mind, always"}
           </p>
           <ul className="flex flex-col gap-2">
             {BENEFITS[role].map((b) => (
@@ -425,12 +441,14 @@ export const WhyNomadNest = () => (
       />
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {WHY.map(({ icon: Icon, title, text }) => (
-          <li key={title} className="flex flex-col gap-2 rounded-[22px] border border-border bg-card p-5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-coral-light text-brand-coral-text">
+          <li key={title} className="flex items-start gap-3.5 rounded-[22px] border border-border bg-card p-5">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-coral-light text-brand-coral-text">
               <Icon className="h-5 w-5" aria-hidden="true" />
             </span>
-            <span className="text-[17px] font-bold">{title}</span>
-            <span className="text-[15px] leading-snug text-muted-foreground">{text}</span>
+            <span className="flex min-w-0 flex-col gap-1">
+              <span className="text-[17px] font-bold leading-tight">{title}</span>
+              <span className="text-[15px] leading-snug text-muted-foreground">{text}</span>
+            </span>
           </li>
         ))}
       </ul>
@@ -475,10 +493,10 @@ export const ReadyToStart = () => (
       <div className="absolute inset-0 bg-black/55" aria-hidden="true" />
       <div className="relative flex flex-col items-center gap-3 px-6 py-12 text-center md:py-16">
         <h2 id="ready-title" className="font-display text-[34px] leading-tight text-white md:text-[42px]">Ready to start?</h2>
-        <p className="max-w-md text-[16px] text-white/95">Free to browse. Membership from £59 a year. No booking fees, ever.</p>
+        <p className="max-w-md text-[16px] text-white/95">Look around first. Membership from £59 a year. No booking fees, ever.</p>
         <div className="mt-2 flex w-full max-w-md flex-col gap-2.5 sm:flex-row">
           <Link to="/auth?signup=true" className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-brand-coral sm:flex-1 px-5 text-[15px] font-bold text-primary-foreground">
-            Join NomadNest free
+            Create your profile
           </Link>
           <Link to="/membership" className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-card sm:flex-1 px-5 text-[15px] font-bold text-foreground">
             See membership plans
