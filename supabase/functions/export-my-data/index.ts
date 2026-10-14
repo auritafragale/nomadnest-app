@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // "Download my data" (UK/EU right of access and portability).
 // Returns the caller's data as JSON (export_account_data) plus signed links,
@@ -21,11 +22,13 @@ const LINK_SECONDS = 7 * 24 * 60 * 60;
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
+
 const log = (entry: Record<string, unknown>) => console.log(JSON.stringify({ fn: "export-my-data", ...entry }));
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -34,10 +37,10 @@ serve(async (req) => {
   );
 
   const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
-  if (!jwt) return json({ error: "Please sign in again." }, 401);
+  if (!jwt) return fail("auth_missing_token", "Please sign in again.");
   const { data: userData, error: userError } = await admin.auth.getUser(jwt);
   const user = userData?.user;
-  if (userError || !user) return json({ error: "Please sign in again." }, 401);
+  if (userError || !user) return fail(getUserFailureReason(userError), "Please sign in again.");
 
   try {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -48,7 +51,7 @@ serve(async (req) => {
       .eq("feature", FEATURE)
       .gte("created_at", since);
     if ((count ?? 0) >= DAILY_LIMIT) {
-      return json({ error: "You've downloaded your data several times today. Please try again tomorrow." }, 429);
+      return fail("rate_limited", "You've downloaded your data several times today. Please try again tomorrow.");
     }
 
     const { data: exportData, error: exportError } = await admin.rpc("export_account_data", { p_user_id: user.id });

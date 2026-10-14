@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "https://esm.sh/web-push@3.6.7";
 import { redact } from "../_shared/safe-log.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // Two ways in, and neither lets a member push to someone else:
 //
@@ -37,6 +38,8 @@ const json = (body: Record<string, unknown>, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 
 /** Constant-time string comparison, so the secret can't be guessed by timing. */
 const safeEqual = (a: string, b: string) => {
@@ -123,7 +126,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -138,12 +141,12 @@ serve(async (req) => {
     if (internalHeader !== null) {
       const expected = Deno.env.get("INTERNAL_TRIGGER_SECRET") ?? "";
       if (!expected || !safeEqual(internalHeader, expected)) {
-        return json({ error: "Unauthorized" }, 401);
+        return fail("internal_only", "Internal callers only.");
       }
 
       const notificationId = body?.notification_id;
       if (typeof notificationId !== "string" || !UUID_RE.test(notificationId)) {
-        return json({ error: "Invalid notification_id" }, 400);
+        return fail("bad_input", "Invalid notification_id");
       }
 
       const { data: row, error: rowError } = await supabase
@@ -152,7 +155,7 @@ serve(async (req) => {
         .eq("id", notificationId)
         .maybeSingle();
       if (rowError) throw rowError;
-      if (!row) return json({ error: "Notification not found" }, 404);
+      if (!row) return fail("not_found", "Notification not found");
 
       if (Date.now() - new Date(row.created_at).getTime() > MAX_NOTIFICATION_AGE_MS) {
         console.log("Skipping push for old notification", row.id);
@@ -172,9 +175,10 @@ serve(async (req) => {
 
     // ── User mode: test push to yourself ────────────────────────────────────
     const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
+    if (!jwt) return fail("auth_missing_token", "Please sign in to send a test.");
     const { data: caller, error: callerError } = await supabase.auth.getUser(jwt);
     if (callerError || !caller?.user) {
-      return json({ error: "Unauthorized" }, 401);
+      return fail(getUserFailureReason(callerError), "Please sign in again.");
     }
 
     const payload = (body?.payload ?? {}) as Partial<PushPayload>;

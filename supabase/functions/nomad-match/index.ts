@@ -2,6 +2,9 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { providerError, redact } from "../_shared/safe-log.ts";
 import { clean, cleanOutput, corsHeaders, json, overlapDays, tag, UUID_RE } from "../_shared/ai-scrub.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 
 // Best match for your sit: sorts the Nomads on Browse Nomads for a Pet
 // Parent's published listing, with one short reason per Nomad.
@@ -59,7 +62,7 @@ type Timings = Record<string, number | string>;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
   const timings: Timings = {};
   const start = performance.now();
   const response = await handle(req, timings);
@@ -76,19 +79,19 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
   try {
     // 1) Who is asking.
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Please sign in first." }, 401);
+    if (!authHeader?.startsWith("Bearer ")) return fail("auth_missing_token", "Please sign in first.");
     const { data: userData, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     const user = userData?.user;
-    if (authError || !user) return json({ error: "Please sign in first." }, 401);
+    if (authError || !user) return fail(getUserFailureReason(authError), "Please sign in first.");
 
     let body: { listing_id?: unknown };
     try {
       body = await req.json();
     } catch {
-      return json({ error: "Invalid request." }, 400);
+      return fail("bad_input", "Invalid request.");
     }
     const listingId = typeof body.listing_id === "string" ? body.listing_id : "";
-    if (!UUID_RE.test(listingId)) return json({ error: "Invalid listing." }, 400);
+    if (!UUID_RE.test(listingId)) return fail("bad_input", "Invalid listing.");
 
     // 2) Flag (admins may use it while it's off), the owner's listing, and
     // runs used in the last 24 hours.
@@ -106,7 +109,7 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
           .maybeSingle(),
       ]);
     if (flagRow?.value !== true && profile?.is_admin !== true) {
-      return json({ error: "Best match isn't available yet." }, 403);
+      return fail("feature_off", "Best match isn't available yet.");
     }
     if (listingError) throw new Error(`listing lookup failed: ${listingError.message}`);
     // A listing is only matched while its owner has Pet Parent access.
@@ -115,7 +118,7 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
       return json({ error: "Your Pet Parent membership has ended. Your listing is hidden until you renew.", reason: "membership_needed" }, 403);
     }
     if (!listing || listing.owner_user_id !== user.id || listing.status !== "published") {
-      return json({ error: "Best match works for your own published listing." }, 403);
+      return fail("not_allowed", "Best match works for your own published listing.");
     }
 
     // 3) A fresh cached result costs nothing.
@@ -141,7 +144,7 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
       return json({ results, cached: true, remaining });
     }
     if (used >= DAILY_LIMIT) {
-      return json({ error: `You've used all ${DAILY_LIMIT} best-match runs for today. Try again tomorrow.`, remaining: 0 }, 429);
+      return fail("rate_limited", `You've used all ${DAILY_LIMIT} best-match runs for today. Try again tomorrow.`, { remaining: 0 });
     }
 
     // 4) The sit: open dates and pets.
@@ -150,7 +153,7 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
       supabase.from("pets").select("type, age, requires_medication, reactive_to_animals, separation_anxiety_tolerance").eq("listing_id", listingId),
     ]);
     if (!dates || dates.length === 0) {
-      return json({ error: "Add open dates to your listing to use best match." }, 400);
+      return fail("bad_input", "Add open dates to your listing to use best match.");
     }
 
     // 5) Candidates: visible Nomads, public fields only.

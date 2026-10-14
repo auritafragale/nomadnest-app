@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
+import { errorBody, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // Daily privacy retention (pg_cron -> request_privacy_retention -> here, with
 // x-internal-secret from Vault). Internal callers only.
@@ -9,10 +10,14 @@ import { redact } from "../_shared/safe-log.ts";
 //  2. Safety records about deleted accounts: 24 months after deletion, the
 //     reports, flags and strikes about them are deleted, with the reports'
 //     evidence files.
+//  3. ID drafts: photos a member picked on Verify your identity but never
+//     sent ({uid}/draft/...), 24 hours after upload.
 // Logs contain counts only.
 
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 
 const log = (entry: Record<string, unknown>) => console.log(JSON.stringify({ fn: "privacy-retention", ...entry }));
 
@@ -26,13 +31,13 @@ const safeEqual = (a: string, b: string) => {
 };
 
 serve(async (req) => {
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const expected = Deno.env.get("INTERNAL_TRIGGER_SECRET") ?? "";
   const provided = req.headers.get("x-internal-secret") ?? "";
   if (!expected || !safeEqual(provided, expected)) {
     log({ rejected: "internal_secret_mismatch" });
-    return json({ error: "Unauthorized" }, 401);
+    return fail("internal_only", "Internal callers only.");
   }
 
   const admin = createClient(
@@ -76,8 +81,20 @@ serve(async (req) => {
       else evidenceDeleted += removed?.length ?? 0;
     }
 
+    // 3) Unsent ID drafts older than 24 hours
+    const { data: drafts, error: draftsError } = await admin.rpc("expired_id_drafts");
+    if (draftsError) throw new Error(`expired_id_drafts failed: ${draftsError.message}`);
+    const draftPaths = ((drafts ?? []) as { name: string }[]).map((d) => d.name).filter(Boolean);
+    let draftsDeleted = 0;
+    for (let i = 0; i < draftPaths.length; i += 100) {
+      const { data: removed, error } = await admin.storage.from("id-verification-documents").remove(draftPaths.slice(i, i + 100));
+      if (error) log({ step: "id_drafts", failed: redact(error.message) });
+      else draftsDeleted += removed?.length ?? 0;
+    }
+
     const summary = {
       id_files_deleted: idFilesDeleted,
+      id_drafts_deleted: draftsDeleted,
       id_rows_cleared: idRowsCleared,
       accounts_purged: (purged as { accounts_purged?: number })?.accounts_purged ?? 0,
       evidence_files_deleted: evidenceDeleted,

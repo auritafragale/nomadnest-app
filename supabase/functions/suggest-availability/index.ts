@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { providerError, redact } from "../_shared/safe-log.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // "Suggest my dates" on a Nomad's Availability page: date ranges they could
 // add because they match open sits. The Nomad taps to add any suggestion.
@@ -29,6 +30,8 @@ const TIMEOUT_MS = 25_000;
 
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 const log = (entry: Record<string, unknown>) => console.log(JSON.stringify({ fn: "suggest-availability", ...entry }));
 const tagSafe = (s: string) => s.replace(/</g, "‹").replace(/>/g, "›");
 const hasTags = (s: string) => /<\/?[a-z_]+>/i.test(s);
@@ -79,7 +82,7 @@ const TOOL = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", {
     auth: { persistSession: false },
@@ -87,10 +90,10 @@ serve(async (req) => {
 
   try {
     const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
-    if (!jwt) return json({ error: "Please sign in again." }, 401);
+    if (!jwt) return fail("auth_missing_token", "Please sign in again.");
     const { data: userData, error: authError } = await admin.auth.getUser(jwt);
     const user = userData?.user;
-    if (authError || !user) return json({ error: "Your session has expired. Please sign in again." }, 401);
+    if (authError || !user) return fail(getUserFailureReason(authError), "Your session has expired. Please sign in again.");
 
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const [{ data: profile }, { data: flagRow }, { count }] = await Promise.all([
@@ -100,10 +103,10 @@ serve(async (req) => {
     ]);
     if (flagRow?.value !== true && profile?.is_admin !== true) {
       log({ rejected: "flag_off", user: user.id });
-      return json({ error: "This AI helper isn't available yet." }, 403);
+      return fail("feature_off", "This AI helper isn't available yet.");
     }
     if ((count ?? 0) >= DAILY_LIMIT) {
-      return json({ error: `You've used all ${DAILY_LIMIT} suggestions for today. You can still pick your dates yourself.` }, 429);
+      return fail("rate_limited", `You've used all ${DAILY_LIMIT} suggestions for today. You can still pick your dates yourself.`);
     }
 
     const today = iso(new Date());

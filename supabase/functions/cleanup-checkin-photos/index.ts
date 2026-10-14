@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
+import { errorBody, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // One-off, admin-only cleanup of old private photos that were stored in the
 // PUBLIC listing-images bucket.
@@ -41,9 +42,11 @@ type Kind = keyof typeof KINDS;
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -55,11 +58,11 @@ serve(async (req) => {
     const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
     const { data: userData } = jwt ? await supabase.auth.getUser(jwt) : { data: { user: null } };
     const user = userData?.user;
-    if (!user) return json({ error: "Please sign in again." }, 401);
+    if (!user) return fail("auth_get_user_failed", "Please sign in again.");
     const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
     if (profile?.is_admin !== true) {
       console.log(JSON.stringify({ fn: "cleanup-checkin-photos", rejected: "not_admin", user: user.id }));
-      return json({ error: "Admins only." }, 403);
+      return fail("admin_only", "Admins only.");
     }
 
     const body = await req.json().catch(() => ({}));
@@ -76,7 +79,7 @@ serve(async (req) => {
       return json({ mode: "preview", kind, ...preview, files });
     }
     if (body.expected_files !== files.length) {
-      return json({ error: "The list changed since your preview. Please preview again." }, 409);
+      return fail("conflict", "The list changed since your preview. Please preview again.");
     }
 
     let deleted = 0;

@@ -17,7 +17,7 @@ serve(async (req) => {
     !!req.headers.get("Authorization") || !!req.headers.get("apikey");
 
   if (!hasCredentials) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+    return new Response(JSON.stringify({ error: "Please sign in again.", reason: "auth_missing_token" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

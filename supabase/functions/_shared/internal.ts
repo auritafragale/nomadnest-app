@@ -12,14 +12,15 @@ const safeEqual = (a: string, b: string) => {
   return diff === 0;
 };
 
-/** null if the caller is internal; otherwise a 401 response to return. */
+/** null if the caller is internal; otherwise a 403 response to return. A wrong
+ *  secret is "not allowed", never a member whose sign-in has ended. */
 export const rejectIfNotInternal = (req: Request, fn: string): Response | null => {
   const expected = Deno.env.get("INTERNAL_TRIGGER_SECRET") ?? "";
   const provided = req.headers.get("x-internal-secret") ?? "";
   if (expected && safeEqual(provided, expected)) return null;
   console.log(JSON.stringify({ fn: fn, rejected: "internal_secret_mismatch" }));
-  return new Response(JSON.stringify({ error: "Unauthorized" }), {
-    status: 401,
+  return new Response(JSON.stringify({ error: "Internal callers only.", reason: "internal_only" }), {
+    status: 403,
     headers: { "Content-Type": "application/json" },
   });
 };

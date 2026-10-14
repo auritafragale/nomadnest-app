@@ -2,6 +2,9 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { providerError, redact } from "../_shared/safe-log.ts";
 import { clean, cleanOutput, corsHeaders, json } from "../_shared/ai-scrub.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 
 // Writing helper for four buttons: the listing title (Help me write it), the
 // listing description, the Nomad bio and the Pet Parent bio (Polish with AI).
@@ -54,7 +57,7 @@ type Timings = Record<string, number | string>;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
   const timings: Timings = {};
   const start = performance.now();
   const response = await handle(req, timings);
@@ -70,22 +73,22 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Please sign in first." }, 401);
+    if (!authHeader?.startsWith("Bearer ")) return fail("auth_missing_token", "Please sign in first.");
     const { data: userData, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     const user = userData?.user;
-    if (authError || !user) return json({ error: "Please sign in first." }, 401);
+    if (authError || !user) return fail(getUserFailureReason(authError), "Please sign in first.");
 
     let body: { kind?: unknown; text?: unknown; context?: unknown };
     try {
       body = await req.json();
     } catch {
-      return json({ error: "Invalid request." }, 400);
+      return fail("bad_input", "Invalid request.");
     }
     const kind = body.kind as Kind;
-    if (!(kind in LIMITS)) return json({ error: "Invalid request." }, 400);
+    if (!(kind in LIMITS)) return fail("bad_input", "Invalid request.");
     const text = typeof body.text === "string" ? body.text : "";
-    if (text.length > INPUT_MAX) return json({ error: "That text is too long to polish. Please shorten it first." }, 400);
-    if (kind !== "listing_title" && !text.trim()) return json({ error: "Write a few words first, then polish them." }, 400);
+    if (text.length > INPUT_MAX) return fail("bad_input", "That text is too long to polish. Please shorten it first.");
+    if (kind !== "listing_title" && !text.trim()) return fail("bad_input", "Write a few words first, then polish them.");
 
     // Flag (admins may use it while it's off) and today's usage.
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -95,12 +98,12 @@ const handle = async (req: Request, timings: Timings): Promise<Response> => {
       supabase.from("ai_usage").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("feature", FEATURE).gte("created_at", since),
     ]);
     if (flagRow?.value !== true && profile?.is_admin !== true) {
-      return json({ error: "The writing helper isn't available yet." }, 403);
+      return fail("feature_off", "The writing helper isn't available yet.");
     }
     if (countError) throw new Error(`usage count failed: ${countError.message}`);
     const used = usedCount ?? 0;
     if (used >= DAILY_LIMIT) {
-      return json({ error: `You've used all ${DAILY_LIMIT} AI suggestions for today. More will be available within 24 hours.`, remaining: 0 }, 429);
+      return fail("rate_limited", `You've used all ${DAILY_LIMIT} AI suggestions for today. More will be available within 24 hours.`, { remaining: 0 });
     }
 
     // Listing context: city, home type and pet types with counts only.

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { providerError, redact } from "../_shared/safe-log.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // AI Daily Updates for the confirmed sitter of an active sit:
 //   action "draft":     photos + chips + pets' names + the sitter's note
@@ -60,6 +61,8 @@ const json = (body: Record<string, unknown>, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 
 const log = (entry: Record<string, unknown>) =>
   console.log(JSON.stringify({ fn: "daily-update-ai", ...entry }));
@@ -200,7 +203,7 @@ const callTool = async (
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -213,13 +216,13 @@ serve(async (req) => {
     const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
     if (!jwt) {
       log({ rejected: "auth_missing_token" });
-      return json({ error: "Please sign in again." }, 401);
+      return fail("auth_missing_token", "Please sign in again.");
     }
     const { data: userData, error: authError } = await supabase.auth.getUser(jwt);
     const user = userData?.user;
     if (authError || !user) {
       log({ rejected: "auth_get_user_failed", detail: redact(authError?.message ?? "no user") });
-      return json({ error: "Your session has expired. Please sign in again." }, 401);
+      return fail(getUserFailureReason(authError), "Your session has expired. Please sign in again.");
     }
 
     // 2) Input
@@ -227,10 +230,10 @@ serve(async (req) => {
     try {
       body = await req.json();
     } catch {
-      return json({ error: "Invalid request." }, 400);
+      return fail("bad_input", "Invalid request.");
     }
     const action = body.action;
-    if (action !== "draft" && action !== "translate") return json({ error: "Invalid request." }, 400);
+    if (action !== "draft" && action !== "translate") return fail("bad_input", "Invalid request.");
     const feature = action === "draft" ? DRAFT_FEATURE : TRANSLATE_FEATURE;
     const limit = action === "draft" ? DRAFT_DAILY_LIMIT : TRANSLATE_DAILY_LIMIT;
 
@@ -244,7 +247,7 @@ serve(async (req) => {
     ]);
     if (flagRow?.value !== true && profile?.is_admin !== true) {
       log({ rejected: "flag_off", user: user.id, action });
-      return json({ error: "This AI helper isn't available yet." }, 403);
+      return fail("feature_off", "This AI helper isn't available yet.");
     }
     if (countError) throw new Error(`usage count failed: ${countError.message}`);
     const used = usedCount ?? 0;
@@ -262,7 +265,7 @@ serve(async (req) => {
     // ─── draft ────────────────────────────────────────────────────────────
     if (action === "draft") {
       const sitId = body.sit_id;
-      if (typeof sitId !== "string" || !UUID_RE.test(sitId)) return json({ error: "Invalid sit." }, 400);
+      if (typeof sitId !== "string" || !UUID_RE.test(sitId)) return fail("bad_input", "Invalid sit.");
 
       // Relationship: the confirmed sitter of an active sit, today within its dates.
       const { data: sit } = await supabase
@@ -276,13 +279,13 @@ serve(async (req) => {
       };
       if (!s || s.sitter_user_id !== user.id || !["confirmed", "in_progress"].includes(s.status) || !s.sit_dates) {
         log({ rejected: "not_active_sitter", user: user.id, sit: sitId });
-        return json({ error: "AI updates are only available to the sitter during the sit." }, 403);
+        return fail("not_allowed", "AI updates are only available to the sitter during the sit.");
       }
       const { data: tz } = await supabase.rpc("listing_timezone", { p_listing_id: s.listing_id });
       const today = localDate(typeof tz === "string" && tz ? tz : "UTC");
       if (today < s.sit_dates.start_date || today > s.sit_dates.end_date) {
         log({ rejected: "outside_sit_dates", user: user.id, sit: sitId });
-        return json({ error: "AI updates are only available during the sit." }, 403);
+        return fail("not_allowed", "AI updates are only available during the sit.");
       }
 
       // Inputs
@@ -292,14 +295,14 @@ serve(async (req) => {
       const note = typeof body.note === "string" ? body.note.trim().slice(0, NOTE_MAX) : "";
       const flagNote = typeof body.flag_note === "string" ? body.flag_note.trim().slice(0, NOTE_MAX) : "";
       const paths = Array.isArray(body.photo_paths) ? (body.photo_paths as unknown[]) : [];
-      if (paths.length > MAX_PHOTOS) return json({ error: `Please use up to ${MAX_PHOTOS} photos.` }, 400);
+      if (paths.length > MAX_PHOTOS) return fail("bad_input", `Please use up to ${MAX_PHOTOS} photos.`);
       const pathRe = new RegExp(`^${sitId}/[A-Za-z0-9_-]+\\.(jpg|jpeg|png|webp)$`);
       if (!paths.every((p) => typeof p === "string" && pathRe.test(p))) {
         log({ rejected: "bad_photo_path", user: user.id, sit: sitId });
-        return json({ error: "Invalid photo." }, 400);
+        return fail("bad_input", "Invalid photo.");
       }
       if (paths.length === 0 && chips.length === 0 && !note) {
-        return json({ error: "Add a photo, a tap or a few words first." }, 400);
+        return fail("bad_input", "Add a photo, a tap or a few words first.");
       }
 
       const images: unknown[] = [];
@@ -307,14 +310,14 @@ serve(async (req) => {
         const { data: file, error: fileError } = await supabase.storage.from(BUCKET).download(path);
         if (fileError || !file) {
           log({ rejected: "photo_missing", sit: sitId });
-          return json({ error: "One of the photos couldn't be read. Please try again." }, 400);
+          return fail("bad_input", "One of the photos couldn't be read. Please try again.");
         }
         const mediaType = file.type || "image/jpeg";
         if (!["image/jpeg", "image/png", "image/webp"].includes(mediaType)) {
-          return json({ error: "Please use JPG, PNG or WebP photos." }, 400);
+          return fail("bad_input", "Please use JPG, PNG or WebP photos.");
         }
         const bytes = new Uint8Array(await file.arrayBuffer());
-        if (bytes.byteLength > MAX_IMAGE_BYTES) return json({ error: "One of the photos is too large." }, 400);
+        if (bytes.byteLength > MAX_IMAGE_BYTES) return fail("bad_input", "One of the photos is too large.");
         images.push({ type: "image", source: { type: "base64", media_type: mediaType, data: encodeBase64(bytes) } });
       }
 
@@ -354,7 +357,7 @@ serve(async (req) => {
 
     // ─── translate ────────────────────────────────────────────────────────
     const checkinId = body.checkin_id;
-    if (typeof checkinId !== "string" || !UUID_RE.test(checkinId)) return json({ error: "Invalid update." }, 400);
+    if (typeof checkinId !== "string" || !UUID_RE.test(checkinId)) return fail("bad_input", "Invalid update.");
 
     const { data: row } = await supabase
       .from("sit_checkins")
@@ -368,7 +371,7 @@ serve(async (req) => {
     };
     if (!c || c.author_user_id !== user.id || c.kind !== "daily_update" || c.sit?.sitter_user_id !== user.id) {
       log({ rejected: "not_author", user: user.id, checkin: checkinId });
-      return json({ error: "Update not found." }, 404);
+      return fail("not_found", "Update not found.");
     }
     if (c.translated_at) return json({ skipped: "done" });
     if (Date.now() - new Date(c.created_at).getTime() > TRANSLATE_WINDOW_MS) return json({ skipped: "too_old" });

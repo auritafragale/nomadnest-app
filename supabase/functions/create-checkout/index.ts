@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 import {
   PLANS,
   appOrigin,
@@ -36,6 +37,8 @@ const corsHeaders = {
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -45,15 +48,16 @@ serve(async (req) => {
 
   try {
     const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
-    if (!token) return json({ error: "Please sign in first.", reason: "auth_missing_token" }, 401);
+    if (!token) return fail("auth_missing_token", "Please sign in first.");
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
     const user = userData?.user;
-    if (userError || !user?.email) return json({ error: "Your sign-in has ended. Please sign in again.", reason: "auth_get_user_failed" }, 401);
+    if (userError || !user) return fail(getUserFailureReason(userError), "Your sign-in has ended. Please sign in again.");
+    if (!user.email) return fail("no_email", "Please add an email to your account first.");
 
     const body = await req.json().catch(() => ({}));
     // A plan name, or (older app versions) one of our price ids. Anything else is refused.
     const plan: Plan | null = isPlan(body?.plan) ? body.plan : typeof body?.priceId === "string" ? planForPrice(body.priceId) : null;
-    if (!plan) return json({ error: "That plan isn't available." }, 400);
+    if (!plan) return fail("bad_input", "That plan isn't available.");
     const price = PLANS[plan].price;
     const action: "preview" | "change" | "checkout" =
       body?.action === "preview" ? "preview" : body?.action === "change" ? "change" : "checkout";
@@ -66,7 +70,7 @@ serve(async (req) => {
         : nowUnix;
 
     const { data: profile } = await supabase.from("profiles").select("founding_member").eq("id", user.id).maybeSingle();
-    if (profile?.founding_member) return json({ error: "You're a Founding member: Combined is yours for life." }, 400);
+    if (profile?.founding_member) return fail("bad_input", "You're a Founding member: Combined is yours for life.");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
@@ -80,7 +84,7 @@ serve(async (req) => {
       const currentPlan = planOf(item?.price);
       const periodEnd = periodEndOf(current);
       if (currentPlan === plan && !current.cancel_at_period_end) {
-        return json({ error: "You already have this plan." }, 400);
+        return fail("bad_input", "You already have this plan.");
       }
       const upgrade = !!currentPlan && planRank(plan) > planRank(currentPlan);
       const keep = currentPlan === plan && current.cancel_at_period_end;

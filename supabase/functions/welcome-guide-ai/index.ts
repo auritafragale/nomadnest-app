@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { providerError, redact } from "../_shared/safe-log.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // Welcome Guide AI helpers for the listing's OWNER (private owner content):
 //   action "explain_photo": a photo (+ optional note) -> one short instruction
@@ -45,6 +46,8 @@ const json = (body: Record<string, unknown>, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 
 const log = (entry: Record<string, unknown>) =>
   console.log(JSON.stringify({ fn: "welcome-guide-ai", ...entry }));
@@ -108,7 +111,7 @@ RULES
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -121,13 +124,13 @@ serve(async (req) => {
     const jwt = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
     if (!jwt) {
       log({ rejected: "auth_missing_token" });
-      return json({ error: "Please sign in again." }, 401);
+      return fail("auth_missing_token", "Please sign in again.");
     }
     const { data: userData, error: authError } = await supabase.auth.getUser(jwt);
     const user = userData?.user;
     if (authError || !user) {
       log({ rejected: "auth_get_user_failed", detail: redact(authError?.message ?? "no user") });
-      return json({ error: "Your session has expired. Please sign in again." }, 401);
+      return fail(getUserFailureReason(authError), "Your session has expired. Please sign in again.");
     }
 
     // 2) Input
@@ -135,12 +138,12 @@ serve(async (req) => {
     try {
       body = await req.json();
     } catch {
-      return json({ error: "Invalid request." }, 400);
+      return fail("bad_input", "Invalid request.");
     }
     const action = body.action;
     const listingId = body.listing_id;
-    if (action !== "explain_photo" && action !== "polish") return json({ error: "Invalid request." }, 400);
-    if (typeof listingId !== "string" || !UUID_RE.test(listingId)) return json({ error: "Invalid listing." }, 400);
+    if (action !== "explain_photo" && action !== "polish") return fail("bad_input", "Invalid request.");
+    if (typeof listingId !== "string" || !UUID_RE.test(listingId)) return fail("bad_input", "Invalid listing.");
     const feature = action === "explain_photo" ? "guide_photo" : "guide_polish";
 
     // 3) Flag, owner, daily limit (parallel reads)
@@ -160,11 +163,11 @@ serve(async (req) => {
 
     if (flagRow?.value !== true && profile?.is_admin !== true) {
       log({ rejected: "flag_off", user: user.id });
-      return json({ error: "This AI helper isn't available yet." }, 403);
+      return fail("feature_off", "This AI helper isn't available yet.");
     }
     if (!listing || listing.owner_user_id !== user.id) {
       log({ rejected: "not_owner", user: user.id, listing: listingId });
-      return json({ error: "Listing not found." }, 404);
+      return fail("not_found", "Listing not found.");
     }
     if (countError) throw new Error(`usage count failed: ${countError.message}`);
     const used = usedCount ?? 0;
@@ -185,7 +188,7 @@ serve(async (req) => {
 
     if (action === "explain_photo") {
       const photoId = body.photo_id;
-      if (typeof photoId !== "string" || !UUID_RE.test(photoId)) return json({ error: "Invalid photo." }, 400);
+      if (typeof photoId !== "string" || !UUID_RE.test(photoId)) return fail("bad_input", "Invalid photo.");
 
       const { data: photo } = await supabase
         .from("welcome_guide_photos")
@@ -198,18 +201,18 @@ serve(async (req) => {
       };
       if (!p || p.listing_id !== listingId || !p.storage_path.startsWith(`${user.id}/${listingId}/`)) {
         log({ rejected: "photo_not_owner", user: user.id, photo: photoId });
-        return json({ error: "Photo not found." }, 404);
+        return fail("not_found", "Photo not found.");
       }
 
       const { data: file, error: fileError } = await supabase.storage.from(BUCKET).download(p.storage_path);
       if (fileError || !file) throw new Error(`photo download failed: ${fileError?.message}`);
       const mediaType = file.type || "image/jpeg";
       if (!["image/jpeg", "image/png", "image/webp"].includes(mediaType)) {
-        return json({ error: "Please use a JPG, PNG or WebP photo." }, 400);
+        return fail("bad_input", "Please use a JPG, PNG or WebP photo.");
       }
       const bytes = new Uint8Array(await file.arrayBuffer());
       if (bytes.byteLength > MAX_IMAGE_BYTES) {
-        return json({ error: "That photo is too large. Please try a smaller one." }, 400);
+        return fail("bad_input", "That photo is too large. Please try a smaller one.");
       }
 
       const note = typeof p.note === "string" ? p.note.trim().slice(0, NOTE_MAX) : "";
@@ -230,10 +233,10 @@ serve(async (req) => {
     } else if (body.purpose === "qa_answer") {
       const text = typeof body.text === "string" ? body.text.trim() : "";
       const question = typeof body.question === "string" ? body.question.trim() : "";
-      if (!text) return json({ error: "Add some text first, then tidy it." }, 400);
-      if (!question || question.length > 500) return json({ error: "Invalid question." }, 400);
+      if (!text) return fail("bad_input", "Add some text first, then tidy it.");
+      if (!question || question.length > 500) return fail("bad_input", "Invalid question.");
       if (text.length > POLISH_MAX) {
-        return json({ error: `Please keep this under ${POLISH_MAX} characters to tidy it.` }, 400);
+        return fail("bad_input", `Please keep this under ${POLISH_MAX} characters to tidy it.`);
       }
       system = QA_ANSWER_SYSTEM;
       maxTokens = 800;
@@ -250,10 +253,10 @@ serve(async (req) => {
     } else {
       const section = body.section;
       const text = typeof body.text === "string" ? body.text.trim() : "";
-      if (!SECTIONS.includes(section as Section)) return json({ error: "Invalid section." }, 400);
-      if (!text) return json({ error: "Add some text first, then tidy it." }, 400);
+      if (!SECTIONS.includes(section as Section)) return fail("bad_input", "Invalid section.");
+      if (!text) return fail("bad_input", "Add some text first, then tidy it.");
       if (text.length > POLISH_MAX) {
-        return json({ error: `Please keep this under ${POLISH_MAX} characters to tidy it.` }, 400);
+        return fail("bad_input", `Please keep this under ${POLISH_MAX} characters to tidy it.`);
       }
       system = POLISH_SYSTEM;
       maxTokens = 2000;

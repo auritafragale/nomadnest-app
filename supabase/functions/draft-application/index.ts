@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { providerError, redact } from "../_shared/safe-log.ts";
+import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // AI Application Co-Writer: drafts a personalised application from the
 // signed-in Nomad to a listing's Pet Parent. It only ever RETURNS text for
@@ -33,6 +34,8 @@ const json = (body: Record<string, unknown>, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 
 const GENERIC_ERROR =
   "Sorry, we couldn't draft your application right now. Please try again in a moment, or write it yourself.";
@@ -152,7 +155,7 @@ const timed = async <T>(timings: Timings, step: string, work: PromiseLike<T>): P
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
 
   const timings: Timings = {};
   const start = performance.now();
@@ -179,7 +182,7 @@ const handleDraft = async (req: Request, timings: Timings): Promise<Response> =>
     // 1) Authenticate the caller.
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return json({ error: "Please sign in to use the AI Co-Writer." }, 401);
+      return fail("auth_missing_token", "Please sign in to use the AI Co-Writer.");
     }
     const { data: userData, error: authError } = await timed(
       timings,
@@ -188,7 +191,7 @@ const handleDraft = async (req: Request, timings: Timings): Promise<Response> =>
     );
     const user = userData?.user;
     if (authError || !user) {
-      return json({ error: "Please sign in to use the AI Co-Writer." }, 401);
+      return fail(getUserFailureReason(authError), "Please sign in to use the AI Co-Writer.");
     }
 
     // 2) Feature flag, membership and rate-limit count are independent reads,
@@ -227,11 +230,11 @@ const handleDraft = async (req: Request, timings: Timings): Promise<Response> =>
     ]);
     timings.gate_total_ms = Math.round(performance.now() - gateStart);
     if (profileError) throw new Error(`profile lookup failed: ${profileError.message}`);
-    if (!profile) return json({ error: "Please complete your profile first." }, 403);
+    if (!profile) return fail("not_allowed", "Please complete your profile first.");
 
     const flagEnabled = flagRow?.value === true;
     if (!flagEnabled && profile.is_admin !== true) {
-      return json({ error: "The AI Co-Writer isn't available yet." }, 403);
+      return fail("feature_off", "The AI Co-Writer isn't available yet.");
     }
 
     // The one membership rule (has_side_access): Founding, Nomad or Combined,
@@ -262,17 +265,17 @@ const handleDraft = async (req: Request, timings: Timings): Promise<Response> =>
     try {
       body = await req.json();
     } catch {
-      return json({ error: "Invalid request." }, 400);
+      return fail("bad_input", "Invalid request.");
     }
     const listingId = typeof body.listing_id === "string" ? body.listing_id : "";
-    if (!UUID_RE.test(listingId)) return json({ error: "Invalid listing." }, 400);
+    if (!UUID_RE.test(listingId)) return fail("bad_input", "Invalid listing.");
 
     const rawNote = typeof body.note === "string" ? body.note.trim() : "";
     if (body.note !== undefined && body.note !== null && typeof body.note !== "string") {
-      return json({ error: "Invalid note." }, 400);
+      return fail("bad_input", "Invalid note.");
     }
     if (rawNote.length > NOTE_MAX_LENGTH) {
-      return json({ error: `Please keep your note to ${NOTE_MAX_LENGTH} characters or fewer.` }, 400);
+      return fail("bad_input", `Please keep your note to ${NOTE_MAX_LENGTH} characters or fewer.`);
     }
 
     let sitDateIds: string[] = [];
@@ -282,7 +285,7 @@ const handleDraft = async (req: Request, timings: Timings): Promise<Response> =>
         body.sit_date_ids.length > MAX_SIT_DATE_IDS ||
         !body.sit_date_ids.every((id) => typeof id === "string" && UUID_RE.test(id))
       ) {
-        return json({ error: "Invalid dates." }, 400);
+        return fail("bad_input", "Invalid dates.");
       }
       sitDateIds = [...new Set(body.sit_date_ids as string[])];
     }
@@ -295,7 +298,7 @@ const handleDraft = async (req: Request, timings: Timings): Promise<Response> =>
         body.highlights.length > MAX_HIGHLIGHTS ||
         !body.highlights.every((h) => typeof h === "string")
       ) {
-        return json({ error: "Invalid highlights." }, 400);
+        return fail("bad_input", "Invalid highlights.");
       }
       highlights = [
         ...new Set(
@@ -400,17 +403,17 @@ const handleDraft = async (req: Request, timings: Timings): Promise<Response> =>
 
     if (listingError) throw new Error(`listing lookup failed: ${listingError.message}`);
     if (!listing || listing.status !== "published") {
-      return json({ error: "This listing isn't available." }, 404);
+      return fail("not_found", "This listing isn't available.");
     }
     if (listing.owner_user_id === user.id) {
-      return json({ error: "You can't apply to your own listing." }, 400);
+      return fail("bad_input", "You can't apply to your own listing.");
     }
     if (datesError) throw new Error(`dates lookup failed: ${datesError.message}`);
     if (petsError) throw new Error(`pets lookup failed: ${petsError.message}`);
 
     // Every requested date range must belong to this listing.
     if (sitDateIds.length > 0 && (dates ?? []).length !== sitDateIds.length) {
-      return json({ error: "Those dates don't belong to this listing." }, 400);
+      return fail("bad_input", "Those dates don't belong to this listing.");
     }
 
     const completedSits = completedCount ?? 0;

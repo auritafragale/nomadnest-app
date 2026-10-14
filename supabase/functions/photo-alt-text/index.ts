@@ -3,6 +3,7 @@ import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { rejectIfNotInternal } from "../_shared/internal.ts";
 import { providerError, redact } from "../_shared/safe-log.ts";
+import { errorBody, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // Short alt text for a Sit Story's photos, written once and stored in
 // sit_stories.photo_alt (path -> text), for screen readers.
@@ -28,6 +29,8 @@ const PHOTO_RE = /^[0-9a-f-]{36}\/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$/i;
 
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
+const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 const log = (entry: Record<string, unknown>) => console.log(JSON.stringify({ fn: "photo-alt-text", ...entry }));
 const hasTags = (s: string) => /<\/?[a-z_]+>/i.test(s);
 
@@ -67,7 +70,7 @@ const TOOL = {
 };
 
 serve(async (req) => {
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed");
   const rejected = rejectIfNotInternal(req, "photo-alt-text");
   if (rejected) return rejected;
 

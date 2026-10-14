@@ -17,7 +17,7 @@ serve(async (req) => {
   // Only the database triggers may call this function.
   const expectedSecret = Deno.env.get("INTERNAL_TRIGGER_SECRET");
   if (!expectedSecret || req.headers.get("x-internal-secret") !== expectedSecret) {
-    return new Response(JSON.stringify({ error: "Forbidden" }), {
+    return new Response(JSON.stringify({ error: "Forbidden", reason: "internal_only" }), {
       status: 403,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -26,7 +26,7 @@ serve(async (req) => {
   try {
     const { verification_id } = await req.json();
     if (!verification_id) {
-      return new Response(JSON.stringify({ error: "Missing verification_id" }), {
+      return new Response(JSON.stringify({ error: "Missing verification_id", reason: "bad_input" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
