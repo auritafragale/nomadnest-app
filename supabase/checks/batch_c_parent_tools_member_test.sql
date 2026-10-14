@@ -286,13 +286,17 @@ BEGIN
     AND has_table_privilege('authenticated', c.oid, 'SELECT');
   IF v_bad IS NOT NULL THEN RAISE EXCEPTION 'FAIL: views with a phone column members can read: %', v_bad; END IF;
 
-  -- No function members can run reads a phone column, except their own.
+  -- No function members can run reads a phone column, except their own and
+  -- (updated for a later decision, D1) the consent-based sharing pair, which
+  -- only returns a number while its owner shares it (phone_shares). Same rule
+  -- as batch_c_parent_tools_proof.sql.
   SELECT string_agg(p.proname, ', ') INTO v_bad
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public'
     AND has_function_privilege('authenticated', p.oid, 'EXECUTE')
     AND p.prosrc ~* '(phone_number|sp\.phone\M|op\.phone\M|\.phone\M)'
     AND p.proname NOT IN ('get_my_contact_info', 'set_my_profile_phone')
+    AND NOT (p.proname IN ('share_my_phone', 'get_phone_shares') AND p.prosrc ~ 'phone_shares')
     -- Admin functions check is_admin before reading anything.
     AND p.prosrc !~* 'is_admin';
   IF v_bad IS NOT NULL THEN RAISE EXCEPTION 'FAIL: functions members can run that read a phone column: %', v_bad; END IF;

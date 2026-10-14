@@ -110,7 +110,7 @@ SELECT 'sitter_profiles: members see live Nomads only', 'nomad_profile_is_live, 
        COALESCE((SELECT qual FROM pg_policies WHERE schemaname = 'public' AND tablename = 'sitter_profiles'
                  AND policyname = 'Authenticated users can view sitter profiles'), 'missing'),
        COALESCE((SELECT position('nomad_profile_is_live' IN qual) > 0 AND position('nomad_profile_shared_with_me' IN qual) > 0
-                        AND qual ~ 'auth.uid() = user_id'
+                        AND position('auth.uid() = user_id' IN qual) > 0
                  FROM pg_policies WHERE schemaname = 'public' AND tablename = 'sitter_profiles'
                  AND policyname = 'Authenticated users can view sitter profiles'), false)
 
