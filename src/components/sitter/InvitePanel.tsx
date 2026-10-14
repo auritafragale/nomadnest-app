@@ -112,15 +112,18 @@ const InvitePanel = ({
       );
       if (error) throw error;
 
-      // The Nomad's notification comes from a database trigger. The chat
-      // thread for this home and Nomad gets one note about the invitation.
+      // The Nomad's notification comes from a database trigger (one for all
+      // the ranges). The chat thread for this home and Nomad gets one note
+      // about the invitation, without its own "New message" alert. A failure
+      // there never blocks the invite.
       const conversationId = await resolveListingConversation({ listingId: listing.id, ownerUserId, sitterUserId });
       if (conversationId) {
-        await supabase.from("messages").insert({
-          conversation_id: conversationId,
-          sender_user_id: ownerUserId,
-          body: "Hi! I'd love to invite you to sit at my home. I've sent you a formal invitation — please check your notifications.",
+        const { error: noteError } = await supabase.rpc("post_invite_note", {
+          p_conversation_id: conversationId,
+          p_sitter_user_id: sitterUserId,
+          p_listing_id: listing.id,
         });
+        if (noteError) console.error("Could not post the invitation note", noteError.code);
       }
 
       setSent(true);

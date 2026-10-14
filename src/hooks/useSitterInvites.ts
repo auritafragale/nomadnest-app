@@ -148,13 +148,16 @@ export const useCreateInvite = () => {
         sitterUserId: invite.sitter_user_id,
       });
 
-      // 3) Send an opening message from the owner
+      // 3) One opening note from the owner. post_invite_note posts it
+      //    without its own "New message" alert (the invitation already told
+      //    the Nomad) and never twice. A failure never blocks the invite.
       if (conversationId) {
-        await supabase.from("messages").insert({
-          conversation_id: conversationId,
-          sender_user_id: invite.owner_user_id,
-          body: `Hi! I'd love to invite you to sit at my home. I've sent you a formal invitation — please check your notifications.`,
+        const { error: noteError } = await supabase.rpc("post_invite_note", {
+          p_conversation_id: conversationId,
+          p_sitter_user_id: invite.sitter_user_id,
+          p_listing_id: invite.listing_id,
         });
+        if (noteError) console.error("Could not post the invitation note", noteError.code);
       }
 
 

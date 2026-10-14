@@ -251,7 +251,6 @@ const ListingDetail = () => {
   const openDates = (listing?.sit_dates.filter((d) => d.status === "open" && d.end_date >= today) || []).sort((a, b) =>
     a.start_date.localeCompare(b.start_date),
   );
-  const selectedSitDates = openDates.filter((d) => selectedDateIds.includes(d.id));
   const toggleDate = (dateId: string) =>
     setSelectedDateIds((prev) => (prev.includes(dateId) ? prev.filter((d) => d !== dateId) : [...prev, dateId]));
 
@@ -327,18 +326,17 @@ const ListingDetail = () => {
   const isOwner = !!user && user.id === listing?.owner_user_id;
   const { data: acceptedSitter = false } = useAcceptedSitter(listing?.id);
 
-  // The Nomad's own confirmed or current sit here, for "Your dates".
-  const { data: mySit = null } = useQuery({
-    queryKey: ["listing-my-sit", listing?.id, user?.id],
+  // The Nomad's own confirmed or current sits here, for "Your dates".
+  const { data: mySits = [] } = useQuery({
+    queryKey: ["listing-my-sits", listing?.id, user?.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("sits")
         .select("id, sit_dates_id, snapshot_start_date, snapshot_end_date")
         .eq("listing_id", listing!.id)
         .eq("sitter_user_id", user!.id)
-        .in("status", ["confirmed", "in_progress"])
-        .limit(1);
-      return data?.[0] ?? null;
+        .in("status", ["confirmed", "in_progress"]);
+      return data ?? [];
     },
     enabled: !!listing?.id && !!user && !isOwner && acceptedSitter,
   });
@@ -413,20 +411,30 @@ const ListingDetail = () => {
   const hostName = hostFirst || "the Pet Parent";
   const place = [listing.area, listing.city, listing.country].filter(Boolean).join(", ");
   const isNomadAccount = role === "sitter" || role === "both";
-  const viewer: Viewer = !user ? "out" : isOwner ? "owner" : mySit ? "confirmed" : !isNomadAccount ? "parent" : "nomad";
+  const viewer: Viewer = !user ? "out" : isOwner ? "owner" : mySits.length > 0 ? "confirmed" : !isNomadAccount ? "parent" : "nomad";
   const shortNotice = openDates.length > 0 && differenceInDays(parseISO(openDates[0].start_date), new Date()) <= 14;
   const totalApplicants = Object.values(applicantCounts).reduce((a, b) => a + b, 0);
 
-  // Confirmed Nomads see only their own dates; everyone else the open ones.
-  const confirmedDate = mySit ? listing.sit_dates.find((d) => d.id === mySit.sit_dates_id) : undefined;
-  const shownDates: ListingSitDate[] =
-    viewer === "confirmed"
-      ? confirmedDate
-        ? [confirmedDate]
-        : mySit?.snapshot_start_date && mySit.snapshot_end_date
-          ? [{ id: mySit.id, start_date: mySit.snapshot_start_date, end_date: mySit.snapshot_end_date, flexibility: null, handover_preference: null, status: "filled" }]
-          : []
-      : openDates;
+  // Confirmed Nomads see their own dates first; everyone else the open ones.
+  const confirmedDates: ListingSitDate[] = mySits
+    .map((sit): ListingSitDate | undefined =>
+      listing.sit_dates.find((d) => d.id === sit.sit_dates_id) ??
+      (sit.snapshot_start_date && sit.snapshot_end_date
+        ? { id: sit.id, start_date: sit.snapshot_start_date, end_date: sit.snapshot_end_date, flexibility: null, handover_preference: null, status: "filled" }
+        : undefined),
+    )
+    .filter((d): d is ListingSitDate => !!d)
+    .sort((a, b) => a.start_date.localeCompare(b.start_date));
+  const shownDates: ListingSitDate[] = viewer === "confirmed" ? confirmedDates : openDates;
+  // A confirmed Nomad can still apply for the other open dates here, but
+  // never for a range that overlaps one of their sits (inclusive).
+  const otherOpenDates = openDates.filter(
+    (d) => !confirmedDates.some((c) => d.start_date <= c.end_date && c.start_date <= d.end_date),
+  );
+  const canApplyMore = viewer === "confirmed" && isNomadAccount && otherOpenDates.length > 0;
+  // The ranges this viewer can pick and apply for.
+  const applyDates = viewer === "nomad" ? openDates : canApplyMore ? otherOpenDates : [];
+  const selectedSitDates = applyDates.filter((d) => selectedDateIds.includes(d.id));
   const dateBadges =
     viewer === "owner"
       ? Object.fromEntries(
@@ -458,7 +466,8 @@ const ListingDetail = () => {
         };
 
   const scrollToDates = () => {
-    const el = [document.getElementById("available-dates"), document.getElementById("available-dates-side")].find(
+    const ids = canApplyMore ? ["available-dates-more", "available-dates-side-more"] : ["available-dates", "available-dates-side"];
+    const el = ids.map((i) => document.getElementById(i)).find(
       (e) => e && e.offsetParent !== null,
     );
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -505,6 +514,36 @@ const ListingDetail = () => {
     const wrap = (children: React.ReactNode) => (
       <div className={cn(where === "bar" ? "flex items-center justify-between gap-3" : "flex flex-col gap-2.5")}>{children}</div>
     );
+    const applyActions = () => (
+      <div className="flex flex-col gap-2">
+        {wrap(
+          <>
+            {where === "bar" &&
+              text(nSel > 0 ? `${nSel} date ${nSel === 1 ? "range" : "ranges"} picked` : "Pick your dates", nSel > 0 ? "No booking fees" : `${applyDates.length} date ${applyDates.length === 1 ? "range" : "ranges"} open`)}
+            <button
+              type="button"
+              onClick={startApply}
+              disabled={acceptingInvite}
+              className={btn(nSel > 0 ? "primary" : "secondary", "shrink-0")}
+            >
+              {acceptingInvite && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              {nSel === 0 ? (where === "side" ? "Pick dates above" : "Choose dates") : invite ? "Accept invitation" : nSel > 1 ? `Apply for ${nSel}` : "Apply"}
+            </button>
+            {where === "side" && <p className="text-center text-sm text-muted-foreground">No booking fees, ever.</p>}
+          </>,
+        )}
+        {invite && (
+          <button
+            type="button"
+            onClick={handleDeclineInvite}
+            disabled={updateInviteStatus.isPending || acceptingInvite}
+            className={nnButton("ghost", "self-center")}
+          >
+            Decline invitation
+          </button>
+        )}
+      </div>
+    );
     switch (viewer) {
       case "out":
         return wrap(
@@ -531,6 +570,18 @@ const ListingDetail = () => {
           </div>,
         );
       case "confirmed":
+        // With other open dates the phone bar applies; Message and My sits
+        // sit under "Your dates" (and below Apply in the side card).
+        if (canApplyMore) {
+          return where === "bar" ? (
+            applyActions()
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {applyActions()}
+              {sitLinks("side")}
+            </div>
+          );
+        }
         return wrap(
           <div className={cn("flex gap-2", where === "bar" ? "w-full" : "flex-col")}>
             <button type="button" onClick={messageHost} disabled={messaging} className={btn("primary", "flex-1")}>
@@ -553,41 +604,40 @@ const ListingDetail = () => {
         );
       default:
         if (openDates.length === 0) return wrap(text("No open dates right now", "Save it and check back soon."));
-        return (
-          <div className="flex flex-col gap-2">
-            {wrap(
-              <>
-                {where === "bar" &&
-                  text(nSel > 0 ? `${nSel} date ${nSel === 1 ? "range" : "ranges"} picked` : "Pick your dates", nSel > 0 ? "No booking fees" : `${openDates.length} date ${openDates.length === 1 ? "range" : "ranges"} open`)}
-                <button
-                  type="button"
-                  onClick={startApply}
-                  disabled={acceptingInvite}
-                  className={btn(nSel > 0 ? "primary" : "secondary", "shrink-0")}
-                >
-                  {acceptingInvite && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                  {nSel === 0 ? (where === "side" ? "Pick dates above" : "Choose dates") : invite ? "Accept invitation" : nSel > 1 ? `Apply for ${nSel}` : "Apply"}
-                </button>
-                {where === "side" && <p className="text-center text-sm text-muted-foreground">No booking fees, ever.</p>}
-              </>,
-            )}
-            {invite && (
-              <button
-                type="button"
-                onClick={handleDeclineInvite}
-                disabled={updateInviteStatus.isPending || acceptingInvite}
-                className={nnButton("ghost", "self-center")}
-              >
-                Decline invitation
-              </button>
-            )}
-          </div>
-        );
+        return applyActions();
     }
   };
 
+  /** Message the host and My sits, as two small secondary buttons (stacked in the narrow tablet side card). */
+  const sitLinks = (where: "main" | "side") => (
+    <div className={cn("grid grid-cols-2 gap-2", where === "side" && "md:grid-cols-1 lg:grid-cols-2")}>
+      <button type="button" onClick={messageHost} disabled={messaging} className={nnButton("secondary", "h-11 min-w-0 rounded-2xl px-3 text-[15px]")}>
+        {messaging && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+        <span className="truncate">Message {hostFirst ?? "your host"}</span>
+      </button>
+      <Link to="/my-sits" className={nnButton("secondary", "h-11 min-w-0 rounded-2xl px-3 text-[15px]")}>
+        My sits
+      </Link>
+    </div>
+  );
+
   const datesTitle = viewer === "confirmed" ? "Your dates" : viewer === "owner" ? "Open dates" : "Available dates";
-  const datesBlock = (sectionId: string) => (
+  const datesBlock = (sectionId: string) =>
+    canApplyMore ? (
+      <div className="flex flex-col gap-6">
+        <section id={sectionId} aria-labelledby={`${sectionId}-title`} className="flex scroll-mt-24 flex-col gap-3">
+          <SectionTitle id={`${sectionId}-title`}>Your dates</SectionTitle>
+          <DateTiles dates={shownDates} pickable={false} selected={[]} onToggle={() => {}} badges={dateBadges} />
+          {/* On tablet and desktop these are below Apply in the side card. */}
+          {sectionId === "available-dates" && sitLinks("main")}
+        </section>
+        <section id={`${sectionId}-more`} aria-labelledby={`${sectionId}-more-title`} className="flex scroll-mt-24 flex-col gap-3">
+          <SectionTitle id={`${sectionId}-more-title`}>More dates you can apply for</SectionTitle>
+          <p className="text-[15px] text-muted-foreground">Pick one or more. You can apply for them together.</p>
+          <DateTiles dates={otherOpenDates} pickable selected={selectedDateIds} onToggle={toggleDate} />
+        </section>
+      </div>
+    ) : (
     <section id={sectionId} aria-labelledby={`${sectionId}-title`} className="flex scroll-mt-24 flex-col gap-3">
       <SectionTitle id={`${sectionId}-title`}>{datesTitle}</SectionTitle>
       {viewer === "nomad" && openDates.length > 0 && <p className="text-[15px] text-muted-foreground">Pick one or more. You can apply for them together.</p>}
@@ -597,7 +647,7 @@ const ListingDetail = () => {
         <p className="text-[15px] text-muted-foreground">No open dates right now.</p>
       )}
     </section>
-  );
+    );
 
   const hostCard = viewer !== "owner" && (
     <HostCard
@@ -767,7 +817,7 @@ const ListingDetail = () => {
       <PetPanel pet={listing.pets.find((p) => p.id === petPanelId) ?? null} isOwner={isOwner} onClose={() => setPetPanelId(null)} />
       <HomePanel tab={homeTab} onTab={setHomeTab} onClose={() => setHomeTab(null)} home={listing} hostName={hostName} />
 
-      {viewer === "nomad" && openDates.length > 0 && (
+      {applyDates.length > 0 && (
         <>
           <CommunityWarningModal
             open={warningOpen}
@@ -792,7 +842,7 @@ const ListingDetail = () => {
             listingLocation={[listing.city, listing.country].filter(Boolean).join(", ") || null}
             petNames={listing.pets.map((pet) => pet.name).filter(Boolean)}
             hostFirstName={hostFirst}
-            otherDates={openDates.filter((d) => !selectedDateIds.includes(d.id))}
+            otherDates={applyDates.filter((d) => !selectedDateIds.includes(d.id))}
             onChooseOtherDates={() => {
               setApplyDialogOpen(false);
               setSelectedDateIds([]);
