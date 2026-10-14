@@ -3326,6 +3326,10 @@ export type Database = {
           reply_count: number
         }[]
       }
+      close_moved_sit_dates: {
+        Args: { p_sit_dates_id: string }
+        Returns: undefined
+      }
       complete_onboarding: {
         Args: { p_role: Database["public"]["Enums"]["app_role"] }
         Returns: Database["public"]["Enums"]["app_role"]
