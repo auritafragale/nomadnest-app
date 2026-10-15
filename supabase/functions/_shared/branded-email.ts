@@ -1,4 +1,5 @@
 import { maskEmail } from "./safe-log.ts";
+import { escapeHtml, plainSubject } from "./escape.ts";
 // Shared branded email layout for every NomadNest email.
 // Edit this file to change branding (colors, logo, footer) across ALL emails.
 
@@ -25,7 +26,8 @@ export interface EmailContent {
 }
 
 export interface RenderOptions {
-  /** Hidden preview text shown in inbox list views. */
+  /** Hidden preview text shown in inbox list views. Plain text: it is
+   *  HTML-escaped here. */
   preview?: string;
   /** First sentence of the footer, e.g. why the user received this. */
   footerReason?: string;
@@ -50,7 +52,7 @@ export function renderBrandedEmail(
   </style>
 </head>
 <body style="margin:0;padding:0;background-color:${BRAND.cream};">
-  ${opts.preview ? `<span style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${opts.preview}</span>` : ""}
+  ${opts.preview ? `<span style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${escapeHtml(opts.preview)}</span>` : ""}
   <div style="background-color:${BRAND.cream};padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
     <div style="max-width:560px;margin:0 auto;background-color:#ffffff;border-radius:14px;padding:40px 28px;box-shadow:0 2px 8px rgba(26,26,26,0.06);">
       <div style="text-align:center;margin-bottom:28px;">
@@ -86,7 +88,9 @@ export function renderBrandedEmail(
 </html>`;
 }
 
-/** Shared Resend sender. Throws on failure so callers can log/react. */
+/** Shared Resend sender. Throws on failure so callers can log/react. The
+ *  subject is always sent as plain text: no control characters or line
+ *  breaks, at most 120 characters. */
 export async function sendBrandedEmail(
   to: string,
   subject: string,
@@ -107,7 +111,7 @@ export async function sendBrandedEmail(
     body: JSON.stringify({
       from: "NomadNest <noreply@nomadnest.global>",
       to: [to],
-      subject,
+      subject: plainSubject(subject),
       html,
       ...(options.replyTo ? { reply_to: options.replyTo } : {}),
     }),

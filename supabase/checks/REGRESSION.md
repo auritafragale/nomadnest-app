@@ -75,6 +75,9 @@ admin"), that's a missing fixture, not a failure: note it and move on.
 | 49 | `batch_f1f_proof.sql` | every row `ok = true` (the file-types row says whether the bucket or the upload rule limits them) |
 | 50 | `batch_f1f_member_test.sql` | `ERROR: PASS_ROLLED_BACK …` |
 | 51 | `batch_f1f_leftover.sql` | count `0` |
+| 52 | `batch_f1g_proof.sql` | every row `ok = true` |
+| 53 | `batch_f1g_member_test.sql` | `ERROR: PASS_ROLLED_BACK …` |
+| 54 | `batch_f1g_leftover.sql` | every count `0` |
 
 One-off, not part of the regular run: `batch_f1e_repair_preview.sql` (read-only)
 lists the rows the F1e repair would change. Run it once before the repair
@@ -155,4 +158,6 @@ that rule, and `src/test/f1e.test.ts` covers it.
 `npm test` (Vitest) runs the unit tests for the pure logic behind recent
 fixes: overlapping dates, which invitations count as "already invited", the
 sign-in-ended decision, ID photo sizing and the edge-function status helper.
+Since F1g they also cover email escaping and subjects, the Onfido "own applicant" rule,
+the block-then-report order, store-app detection and quiet sign-in errors.
 The build does not run them; run them before every push.

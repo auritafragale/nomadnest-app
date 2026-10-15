@@ -65,9 +65,6 @@ const SAFE_PATH_RE = /^\/(?!\/)[^\s"'<>\\]*$/;
 const safePath = (url: unknown): string | undefined =>
   typeof url === "string" && url.length <= 500 && SAFE_PATH_RE.test(url) ? url : undefined;
 
-const escapeHtml = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -155,12 +152,12 @@ const handler = async (req: Request): Promise<Response> => {
     });
     if (allowedError) console.error("notification_allowed failed:", redact(allowedError));
 
-    // Plain text for the in-app row (and so the push); HTML-escaped copy for
-    // the email, so text people wrote can't inject markup into it.
+    // One build: the template HTML-escapes every value once for the email
+    // body and heading, and gives the subject, preview and push text back as
+    // plain text (the in-app row and the push use those). Escaping here as
+    // well showed names like O'Brien as "O&#39;Brien".
     const plainContent = buildNotificationEmail(type, data);
-    const escapedData = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, escapeHtml(v)]));
-    if (data.url) escapedData.url = data.url; // already a safe relative path
-    const emailContent = buildNotificationEmail(type, escapedData);
+    const emailContent = plainContent;
 
     // Write the in-app notification first: the bell/notification list reads this
     // table, and clients are not allowed to insert rows for other members.

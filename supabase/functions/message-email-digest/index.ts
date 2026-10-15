@@ -14,9 +14,6 @@ import { redact } from "../_shared/safe-log.ts";
 
 const MAX_PER_RUN = 300;
 
-const escapeHtml = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-
 /** "Marta", "Marta and Jonas", "Marta, Jonas and 2 others". */
 const nameList = (names: string[]) => {
   const n = names.filter(Boolean);
@@ -53,7 +50,7 @@ serve(async (req) => {
     for (const r of rows) {
       const email = emailOf.get(r.user_id);
       if (!email || !r.message_count) continue;
-      const data = { messageCount: String(r.message_count), senderNames: escapeHtml(nameList(r.sender_names ?? [])) };
+      const data = { messageCount: String(r.message_count), senderNames: nameList(r.sender_names ?? []) }; // escaped once, by the template
       const content = buildNotificationEmail("message_digest", data);
       try {
         await sendBrandedEmail(email, content.subject, renderBrandedEmail(content, { preview: content.preview }));

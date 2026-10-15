@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { renderBrandedEmail, sendBrandedEmail, APP_URL } from "../_shared/branded-email.ts";
 import { maskEmail, redact } from "../_shared/safe-log.ts";
+import { escapeHtml } from "../_shared/escape.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,7 +82,7 @@ serve(async (req) => {
       {
         heading: "New ID verification to review",
         body: `
-    <p><strong>${memberName}</strong> has submitted their photo ID and selfie for manual review.</p>
+    <p><strong>${escapeHtml(memberName)}</strong> has submitted their photo ID and selfie for manual review.</p>
     <p>Submitted: ${new Date(row.created_at).toUTCString()}</p>
     <p>Open the admin verifications page to approve or reject the submission.</p>
   `,

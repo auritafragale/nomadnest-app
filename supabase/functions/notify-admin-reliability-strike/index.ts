@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { renderBrandedEmail, sendBrandedEmail, APP_URL } from "../_shared/branded-email.ts";
 import { maskEmail, redact } from "../_shared/safe-log.ts";
+import { escapeHtml, plainSubject } from "../_shared/escape.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -67,7 +68,7 @@ serve(async (req) => {
       {
         heading: "Reliability strike logged",
         body: `
-    <p><strong>${memberName}</strong> has now cancelled <strong>${strike_count}</strong> confirmed sits late (within 7 days of start).</p>
+    <p><strong>${escapeHtml(memberName)}</strong> has now cancelled <strong>${strike_count}</strong> confirmed sits late (within 7 days of start).</p>
     <p>Reliability score: <strong>${reliabilityScore}</strong></p>
   `,
         ctaLabel: "Review in Trust & Safety",
@@ -81,7 +82,7 @@ serve(async (req) => {
 
     for (const to of recipients) {
       try {
-        await sendBrandedEmail(to, `Reliability strike: ${memberName}`, html);
+        await sendBrandedEmail(to, plainSubject(`Reliability strike: ${memberName}`), html);
       } catch (err) {
         console.error("Failed to email admin", maskEmail(to), redact(err));
       }

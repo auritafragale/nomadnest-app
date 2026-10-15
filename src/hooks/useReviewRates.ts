@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { isQuietAuthError } from "@/lib/signInCheck";
 
 export interface ReviewRate {
   user_id: string;
@@ -14,6 +16,8 @@ export interface ReviewRate {
  */
 export const useReviewRates = (userIds: string[] | undefined) => {
   const ids = [...new Set(userIds || [])].filter(Boolean);
+  // Members only: signed out nothing is asked.
+  const { session } = useAuth();
 
   return useQuery({
     queryKey: ["review-rates", ids.join(",")],
@@ -22,12 +26,15 @@ export const useReviewRates = (userIds: string[] | undefined) => {
       const { data, error } = await supabase.rpc("member_review_rates" as never, {
         p_user_ids: ids,
       } as never);
-      if (error) throw error;
+      if (error) {
+        if (isQuietAuthError(error)) return new Map<string, ReviewRate>();
+        throw error;
+      }
       return new Map(
         ((data || []) as ReviewRate[]).map((row) => [row.user_id, row]),
       );
     },
-    enabled: ids.length > 0,
+    enabled: !!session && ids.length > 0,
   });
 };
 

@@ -2,6 +2,7 @@
 // Edit this file to change the wording/subject of any email the app sends.
 
 import { APP_URL, BRAND } from "./branded-email.ts";
+import { escapeHtml } from "./escape.ts";
 
 export interface BuiltEmail {
   subject: string;
@@ -28,13 +29,7 @@ export interface BuiltEmail {
 // so nobody can put their own links or markup into mail sent from our domain.
 // Plain-text parts (subject, preview, push title/body) are decoded again.
 
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+// One escaper for every email (_shared/escape.ts).
 
 const decodeHtml = (value: string) =>
   value

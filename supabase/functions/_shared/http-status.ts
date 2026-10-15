@@ -22,6 +22,7 @@ export const REASON_STATUS = {
   method_not_allowed: 405,
   conflict: 409,
   rate_limited: 429,
+  provider_failed: 502,
 } as const;
 
 export type Reason = keyof typeof REASON_STATUS;

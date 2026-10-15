@@ -10,6 +10,7 @@ import {
 import { fetchMemberRatings } from "@/lib/reviews";
 import { REVIEW_RATE_BOOST_THRESHOLD } from "@/hooks/useReviewRates";
 import { useAuth } from "@/contexts/AuthContext";
+import { isQuietAuthError } from "@/lib/signInCheck";
 import { canonicalPetType } from "@/lib/petTypes";
 
 export interface SitterWithProfile {
@@ -196,6 +197,9 @@ export const useSitters = (options: UseSittersOptions = {}) => {
     sitters: query.data ?? [],
     loading: authLoading || (!!user && query.isLoading),
     error: query.error ? (query.error as Error).message : null,
+    // The session ended and couldn't be refreshed: show the members notice,
+    // not an error.
+    authError: isQuietAuthError(query.error),
     refetch: query.refetch,
   };
 };
