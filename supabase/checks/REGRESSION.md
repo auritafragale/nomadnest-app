@@ -72,6 +72,9 @@ admin"), that's a missing fixture, not a failure: note it and move on.
 | 46 | `batch_f1e_proof.sql` | every row `ok = true` (after the F1e repair) |
 | 47 | `batch_f1e_member_test.sql` | `ERROR: PASS_ROLLED_BACK …` |
 | 48 | `batch_f1e_leftover.sql` | every count `0` |
+| 49 | `batch_f1f_proof.sql` | every row `ok = true` (the file-types row says whether the bucket or the upload rule limits them) |
+| 50 | `batch_f1f_member_test.sql` | `ERROR: PASS_ROLLED_BACK …` |
+| 51 | `batch_f1f_leftover.sql` | count `0` |
 
 One-off, not part of the regular run: `batch_f1e_repair_preview.sql` (read-only)
 lists the rows the F1e repair would change. Run it once before the repair
@@ -130,6 +133,10 @@ the old behaviour still holds):
 - `batch_d2_proof.sql`. **D2 clean-up:** the snapshot table
   `d2_discoverability_before` was dropped, so the two rows that compared
   against it are gone.
+- `batch_f1c_proof.sql`, `batch_f1d_proof.sql` and `photo_metadata_cleanup_proof.sql`.
+  **Decision, F1f:** Lovable can't set the ID bucket's file types, so they
+  are limited by the upload rule instead (extensions jpg, jpeg, png, webp,
+  heic, heif, pdf). The file-types row passes either way and says which.
 - Tests that needed a listing owner (`listing_limit_write_grants`,
   `dashboard_reports_chat`, `nomad_screens`, `batch_b_finding` member
   tests) now make a temporary listing for a non-admin, non-Founding member.

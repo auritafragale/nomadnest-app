@@ -38,6 +38,14 @@ export const extensionFor = (contentType: string) =>
     contentType
   ] ?? "jpg";
 
+/** The file name extensions the ID bucket accepts (its upload rule, F1f). */
+export const ALLOWED_ID_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "heic", "heif", "pdf"] as const;
+
+/** Where a picked file is saved: {uid}/draft/{id|selfie}-{timestamp}.{ext},
+ *  the extension always lower case and from the content type sent. */
+export const draftPath = (userId: string, kind: "id" | "selfie", contentType: string, now = Date.now()) =>
+  `${userId}/draft/${kind}-${now}.${extensionFor(contentType)}`;
+
 type Decoded = { source: CanvasImageSource; width: number; height: number; close: () => void };
 
 const decode = async (file: Blob): Promise<Decoded | null> => {
