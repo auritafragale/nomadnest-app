@@ -78,6 +78,9 @@ admin"), that's a missing fixture, not a failure: note it and move on.
 | 52 | `batch_f1g_proof.sql` | every row `ok = true` |
 | 53 | `batch_f1g_member_test.sql` | `ERROR: PASS_ROLLED_BACK …` |
 | 54 | `batch_f1g_leftover.sql` | every count `0` |
+| 55 | `batch_p1_proof.sql` | every row `ok = true` |
+| 56 | `batch_p1_member_test.sql` | `ERROR: PASS_ROLLED_BACK …` |
+| 57 | `batch_p1_leftover.sql` | every count `0` |
 
 One-off, not part of the regular run: `batch_f1e_repair_preview.sql` (read-only)
 lists the rows the F1e repair would change. Run it once before the repair
@@ -140,6 +143,9 @@ the old behaviour still holds):
   **Decision, F1f:** Lovable can't set the ID bucket's file types, so they
   are limited by the upload rule instead (extensions jpg, jpeg, png, webp,
   heic, heif, pdf). The file-types row passes either way and says which.
+- `batch_f1g_proof.sql` and `batch_f1g_member_test.sql`. **Decision, P1:**
+  nobody reads `perks` directly; visitors and members see active perks through
+  `get_perks_preview`, members get the list through `get_member_perks`.
 - Tests that needed a listing owner (`listing_limit_write_grants`,
   `dashboard_reports_chat`, `nomad_screens`, `batch_b_finding` member
   tests) now make a temporary listing for a non-admin, non-Founding member.

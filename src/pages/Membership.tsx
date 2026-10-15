@@ -121,6 +121,16 @@ const Membership = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // "Have a founding code? Redeem it" (Member perks) links to #founding-code:
+  // once the page has loaded, bring that box into view and focus it.
+  useEffect(() => {
+    if (m.loading || window.location.hash !== "#founding-code") return;
+    const el = document.getElementById("founding-code");
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    (el as HTMLInputElement).focus({ preventScroll: true });
+  }, [m.loading]);
+
   // Default choice: Combined, or (for a one-side member) Combined as the upgrade.
   useEffect(() => {
     if (current && plan === current) setPlan(current === "combined" ? "sitter" : "combined");

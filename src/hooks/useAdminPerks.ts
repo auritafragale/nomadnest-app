@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface AdminPerk {
   id: string;
@@ -17,6 +18,13 @@ export interface AdminPerk {
   is_featured: boolean;
   sort_order: number;
   subid_param: string | null;
+  /** Batch P1: where the perk sits on the page, and how it's shown. */
+  trip_moment: "before" | "road" | "sit";
+  benefit_headline: string | null;
+  benefit_subline: string | null;
+  is_perk_of_month: boolean;
+  spotlight_text: string | null;
+  picked_for_sits: boolean;
 }
 
 export interface PerkStats {
@@ -61,20 +69,23 @@ export const useAdminPerks = () => {
     fetchAll();
   }, [fetchAll]);
 
+  // Since Batch P1 members (admins included) have no direct access to the
+  // perks table: admins write through admin_save_perk / admin_delete_perk.
+  // Turning on Perk of the month turns the previous one off.
   const createPerk = async (input: PerkInput) => {
-    const { error } = await supabase.from("perks").insert(input);
+    const { error } = await supabase.rpc("admin_save_perk", { p_id: null, p_perk: input as unknown as Json });
     if (error) throw error;
     await fetchAll();
   };
 
   const updatePerk = async (id: string, input: Partial<PerkInput>) => {
-    const { error } = await supabase.from("perks").update(input).eq("id", id);
+    const { error } = await supabase.rpc("admin_save_perk", { p_id: id, p_perk: input as unknown as Json });
     if (error) throw error;
     await fetchAll();
   };
 
   const deletePerk = async (id: string) => {
-    const { error } = await supabase.from("perks").delete().eq("id", id);
+    const { error } = await supabase.rpc("admin_delete_perk", { p_id: id });
     if (error) throw error;
     await fetchAll();
   };
