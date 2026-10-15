@@ -49,7 +49,8 @@ BEGIN
   -- ── A visitor sees the perk, never its code or link ──────────────────
   PERFORM set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
   SET LOCAL ROLE anon;
-  SELECT count(*) INTO v_n FROM public.perks WHERE slug = 'f1g-test-perk';
+  -- Since P1 the visitor sees active perks through get_perks_preview only.
+  SELECT count(*) INTO v_n FROM public.get_perks_preview() WHERE name = 'F1g test perk';
   IF v_n <> 1 THEN RESET ROLE; RAISE EXCEPTION 'FAIL: a visitor can no longer see an active perk'; END IF;
   FOREACH v_col IN ARRAY ARRAY['discount_code', 'affiliate_url', 'subid_param'] LOOP
     v_raised := false;

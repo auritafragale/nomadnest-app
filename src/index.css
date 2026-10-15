@@ -165,6 +165,18 @@
     --nn-tip-text: hsl(43 77% 27%);
     /* Red text for delete actions, readable on cards in each mode. */
     --nn-danger-text: hsl(0 72% 42%);
+    /* Member perks (P1): the ink membership card (dark in both modes), the
+       "picked for your next sit" panel, and the gold of the Founding pill,
+       also used for the Perk of the month pill. */
+    --nn-ink: hsl(33 16% 10%);
+    --nn-ink-text: hsl(36 33% 95%);
+    --nn-ink-muted: hsl(30 6% 84%);
+    --nn-pick-bg: hsl(168 62% 95%);
+    --nn-pick-text: hsl(171 56% 27%);
+    --nn-gold: #E8B53E;
+    --nn-gold-text: #3A2A06;
+    /* Partner logos are drawn for a light background, in both modes. */
+    --nn-logo-bg: hsl(0 0% 100%);
   }
   :root[data-active-role="owner"],
   [data-nn-role="owner"] {
@@ -212,6 +224,11 @@
     --nn-tip-border: hsl(42 60% 40%);
     --nn-tip-text: hsl(43 80% 68%);
     --nn-danger-text: hsl(0 85% 72%);
+    --nn-ink: hsl(33 16% 10%);
+    --nn-ink-text: hsl(36 33% 95%);
+    --nn-ink-muted: hsl(30 6% 84%);
+    --nn-pick-bg: hsl(171 59% 18%);
+    --nn-pick-text: hsl(171 50% 67%);
     /* Small coral and teal text on dark surfaces: lighter shades. */
     --brand-coral-text: 11 85% 72%;
     --brand-teal-text: 168 50% 58%;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -51,9 +51,17 @@ const contactSchema = z.object({
 
 type ContactFormData = z.infer<typeof contactSchema>;
 
+// Links can preset a topic, e.g. Member perks' "Suggest a partner"
+// (/contact?topic=partnership). Only these known topics, with our own subject.
+const TOPIC_PRESETS: Record<string, { category: string; subject: string }> = {
+  partnership: { category: "partnership", subject: "Partner suggestion for Member perks" },
+};
+
 
 const Contact = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const preset = TOPIC_PRESETS[searchParams.get("topic") ?? ""];
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   // Cloudflare Turnstile: single-use token; remount the widget after a try.
@@ -65,8 +73,8 @@ const Contact = () => {
     defaultValues: {
       name: "",
       email: user?.email || "",
-      category: "",
-      subject: "",
+      category: preset?.category ?? "",
+      subject: preset?.subject ?? "",
       message: "",
     },
   });

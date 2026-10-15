@@ -15,14 +15,16 @@ SELECT 'perks: no table-level SELECT for visitors or members', 'false / false',
        NOT has_table_privilege('anon', 'public.perks', 'SELECT') AND NOT has_table_privilege('authenticated', 'public.perks', 'SELECT')
 
 UNION ALL
-SELECT 'perks: the public columns are still readable', 'every other column, visitors and members',
-       COALESCE(string_agg(column_name, ', ' ORDER BY column_name)
-                  FILTER (WHERE NOT (has_column_privilege('anon', 'public.perks', column_name, 'SELECT')
-                                     AND has_column_privilege('authenticated', 'public.perks', column_name, 'SELECT'))), 'all readable'),
-       bool_and(has_column_privilege('anon', 'public.perks', column_name, 'SELECT')
-                AND has_column_privilege('authenticated', 'public.perks', column_name, 'SELECT'))
-FROM information_schema.columns
-WHERE table_schema = 'public' AND table_name = 'perks' AND column_name NOT IN ('discount_code', 'affiliate_url', 'subid_param')
+-- Updated for a later decision (P1): nobody reads perks directly any more;
+-- visitors and members see active perks through get_perks_preview.
+SELECT 'perks: visitors and members see active perks through get_perks_preview', 'function exists, open to visitors and members',
+       CASE WHEN to_regprocedure('public.get_perks_preview()') IS NULL THEN 'missing'
+            ELSE format('visitor %s, member %s',
+                        has_function_privilege('anon', 'public.get_perks_preview()', 'EXECUTE'),
+                        has_function_privilege('authenticated', 'public.get_perks_preview()', 'EXECUTE')) END,
+       to_regprocedure('public.get_perks_preview()') IS NOT NULL
+         AND has_function_privilege('anon', 'public.get_perks_preview()', 'EXECUTE')
+         AND has_function_privilege('authenticated', 'public.get_perks_preview()', 'EXECUTE')
 
 UNION ALL
 SELECT 'get_perk_discount_code: has_side_access on either side', 'definer, search_path=public, members yes, visitors no; no is_active_member',

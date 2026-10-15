@@ -28,7 +28,7 @@ import {
 import { Gift, Loader2, MousePointerClick, Pencil, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminPerks, slugify, type AdminPerk, type PerkInput } from "@/hooks/useAdminPerks";
-import { PERK_CATEGORIES } from "@/hooks/usePerks";
+import { PERK_CATEGORIES, TRIP_MOMENTS, isPlaceholderHeadline } from "@/hooks/usePerks";
 
 const emptyPerk: PerkInput = {
   name: "",
@@ -45,6 +45,12 @@ const emptyPerk: PerkInput = {
   is_featured: false,
   sort_order: 100,
   subid_param: "",
+  trip_moment: "road",
+  benefit_headline: "",
+  benefit_subline: "",
+  is_perk_of_month: false,
+  spotlight_text: "",
+  picked_for_sits: false,
 };
 
 const AdminPerks = () => {
@@ -72,10 +78,19 @@ const AdminPerks = () => {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.benefit_short.trim() || !form.affiliate_url.trim()) {
+    if (!form.name.trim() || !form.affiliate_url.trim()) {
       toast({
         title: "Missing details",
-        description: "Partner name, benefit and affiliate link are required.",
+        description: "Partner name and affiliate link are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // A currency sign needs an amount: no placeholders like "Get $ OFF".
+    if (form.benefit_headline && isPlaceholderHeadline(form.benefit_headline)) {
+      toast({
+        title: "Add the amount to the headline",
+        description: "A headline with “$” or “£” needs a number, for example “$5 off”. Or leave it empty to show “Member discount”.",
         variant: "destructive",
       });
       return;
@@ -92,6 +107,9 @@ const AdminPerks = () => {
         terms: form.terms || null,
         subid_param: form.subid_param || null,
         expires_at: form.expires_at || null,
+        benefit_headline: form.benefit_headline?.trim() || null,
+        benefit_subline: form.benefit_subline?.trim() || null,
+        spotlight_text: form.spotlight_text?.trim() || null,
       };
 
       if (editing) await updatePerk(editing.id, payload);
@@ -120,7 +138,7 @@ const AdminPerks = () => {
     }
   };
 
-  const toggle = async (perk: AdminPerk, field: "is_active" | "is_featured") => {
+  const toggle = async (perk: AdminPerk, field: "is_active" | "is_perk_of_month") => {
     try {
       await updatePerk(perk.id, { [field]: !perk[field] } as Partial<PerkInput>);
     } catch {
@@ -180,7 +198,15 @@ const AdminPerks = () => {
                             Hidden
                           </Badge>
                         )}
-                        {perk.is_featured && <Badge className="text-[10px]">Featured</Badge>}
+                        {perk.is_perk_of_month && <Badge className="text-[10px]">Perk of the month</Badge>}
+                        <Badge variant="outline" className="text-[10px]">
+                          {TRIP_MOMENTS.find((m) => m.id === perk.trip_moment)?.label ?? "On the road"}
+                        </Badge>
+                        {perk.picked_for_sits && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Picked for sits
+                          </Badge>
+                        )}
                       </CardTitle>
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={() => openEdit(perk)} className="gap-1.5">
@@ -199,7 +225,9 @@ const AdminPerks = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0 space-y-3">
-                    <p className="text-sm text-primary font-medium">{perk.benefit_short}</p>
+                    <p className="text-sm text-primary font-medium">
+                      {[perk.benefit_headline, perk.benefit_subline].filter(Boolean).join(" ") || "Member discount (no headline yet)"}
+                    </p>
                     <p className="text-xs text-muted-foreground break-all">{perk.affiliate_url}</p>
                     <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                       <span className="inline-flex items-center gap-1.5">
@@ -223,12 +251,12 @@ const AdminPerks = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <Switch
-                          id={`featured-${perk.id}`}
-                          checked={perk.is_featured}
-                          onCheckedChange={() => toggle(perk, "is_featured")}
+                          id={`month-${perk.id}`}
+                          checked={perk.is_perk_of_month}
+                          onCheckedChange={() => toggle(perk, "is_perk_of_month")}
                         />
-                        <Label htmlFor={`featured-${perk.id}`} className="text-xs">
-                          Featured
+                        <Label htmlFor={`month-${perk.id}`} className="text-xs">
+                          Perk of the month
                         </Label>
                       </div>
                     </div>
@@ -245,8 +273,8 @@ const AdminPerks = () => {
           <DialogHeader>
             <DialogTitle>{editing ? "Edit perk" : "Add perk"}</DialogTitle>
             <DialogDescription>
-              Members see the name, logo, benefit and code. The affiliate link stays private and is
-              only used by the redirect.
+              Members see the name, logo, headline, description and code. Non-members see only the
+              name, logo and category. The affiliate link stays private and is only used by the redirect.
             </DialogDescription>
           </DialogHeader>
 
@@ -262,7 +290,53 @@ const AdminPerks = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="perk-benefit">Benefit (one line) *</Label>
+              <Label htmlFor="perk-moment">Trip moment</Label>
+              <Select
+                value={form.trip_moment}
+                onValueChange={(value) => setForm({ ...form, trip_moment: value as PerkInput["trip_moment"] })}
+              >
+                <SelectTrigger id="perk-moment">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRIP_MOMENTS.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="perk-headline">Headline</Label>
+                <Input
+                  id="perk-headline"
+                  maxLength={40}
+                  value={form.benefit_headline ?? ""}
+                  onChange={(e) => setForm({ ...form, benefit_headline: e.target.value })}
+                  placeholder="$5 off"
+                  aria-describedby="perk-headline-hint"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="perk-subline">Subline</Label>
+                <Input
+                  id="perk-subline"
+                  maxLength={80}
+                  value={form.benefit_subline ?? ""}
+                  onChange={(e) => setForm({ ...form, benefit_subline: e.target.value })}
+                  placeholder="your first data plan"
+                />
+              </div>
+            </div>
+            <p id="perk-headline-hint" className="-mt-2 text-xs text-muted-foreground">
+              Empty shows “Member discount”. A “$” or “£” needs an amount.
+            </p>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="perk-benefit">Short benefit (shown in this list only)</Label>
               <Input
                 id="perk-benefit"
                 value={form.benefit_short}
@@ -386,13 +460,37 @@ const AdminPerks = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Switch
-                  id="perk-featured"
-                  checked={form.is_featured}
-                  onCheckedChange={(v) => setForm({ ...form, is_featured: v })}
+                  id="perk-picked"
+                  checked={form.picked_for_sits}
+                  onCheckedChange={(v) => setForm({ ...form, picked_for_sits: v })}
                 />
-                <Label htmlFor="perk-featured" className="text-sm">
-                  Featured
+                <Label htmlFor="perk-picked" className="text-sm">
+                  Picked for your next sit
                 </Label>
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-border p-3">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="perk-month"
+                  checked={form.is_perk_of_month}
+                  onCheckedChange={(v) => setForm({ ...form, is_perk_of_month: v })}
+                />
+                <Label htmlFor="perk-month" className="text-sm">
+                  Perk of the month
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground">Turning this on turns it off for the current Perk of the month.</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="perk-spotlight">Spotlight text</Label>
+                <Input
+                  id="perk-spotlight"
+                  maxLength={160}
+                  value={form.spotlight_text ?? ""}
+                  onChange={(e) => setForm({ ...form, spotlight_text: e.target.value })}
+                  placeholder="Land with data in 200+ destinations. No SIM swap at the airport."
+                />
               </div>
             </div>
           </div>
