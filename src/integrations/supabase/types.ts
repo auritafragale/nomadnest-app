@@ -1481,12 +1481,6 @@ export type Database = {
           slug: string
           sort_order: number
           subid_param: string | null
-          benefit_headline: string | null
-          benefit_subline: string | null
-          is_perk_of_month: boolean
-          picked_for_sits: boolean
-          spotlight_text: string | null
-          trip_moment: string
           terms: string | null
           updated_at: string
         }
@@ -1506,12 +1500,6 @@ export type Database = {
           slug: string
           sort_order?: number
           subid_param?: string | null
-          benefit_headline?: string | null
-          benefit_subline?: string | null
-          is_perk_of_month?: boolean
-          picked_for_sits?: boolean
-          spotlight_text?: string | null
-          trip_moment?: string
           terms?: string | null
           updated_at?: string
         }
@@ -1531,12 +1519,6 @@ export type Database = {
           slug?: string
           sort_order?: number
           subid_param?: string | null
-          benefit_headline?: string | null
-          benefit_subline?: string | null
-          is_perk_of_month?: boolean
-          picked_for_sits?: boolean
-          spotlight_text?: string | null
-          trip_moment?: string
           terms?: string | null
           updated_at?: string
         }
@@ -3185,7 +3167,6 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
-      admin_delete_perk: { Args: { p_id: string }; Returns: undefined }
       admin_list_perks: {
         Args: never
         Returns: {
@@ -3204,12 +3185,6 @@ export type Database = {
           slug: string
           sort_order: number
           subid_param: string | null
-          benefit_headline: string | null
-          benefit_subline: string | null
-          is_perk_of_month: boolean
-          picked_for_sits: boolean
-          spotlight_text: string | null
-          trip_moment: string
           terms: string | null
           updated_at: string
         }[]
@@ -3280,7 +3255,6 @@ export type Database = {
         Returns: undefined
       }
       admin_queue_sit_story: { Args: { p_sit_id: string }; Returns: string }
-      admin_save_perk: { Args: { p_id: string | null; p_perk: Json }; Returns: string }
       admin_set_max_listings: {
         Args: { p_max_listings: number; p_user_id: string }
         Returns: number
@@ -3605,37 +3579,6 @@ export type Database = {
           payment_failed_at: string
         }[]
       }
-      get_member_perks: {
-        Args: never
-        Returns: {
-          benefit_headline: string | null
-          benefit_subline: string | null
-          category: string
-          description: string | null
-          expires_at: string | null
-          has_code: boolean
-          id: string
-          is_perk_of_month: boolean
-          logo_url: string | null
-          name: string
-          picked_for_sits: boolean
-          slug: string
-          sort_order: number
-          spotlight_text: string | null
-          terms: string | null
-          trip_moment: string
-          used_by_me: boolean
-        }[]
-      }
-      get_my_next_sit_for_perks: {
-        Args: never
-        Returns: {
-          city: string | null
-          country: string | null
-          end_date: string | null
-          start_date: string | null
-        }[]
-      }
       get_my_profile: { Args: never; Returns: Json }
       get_my_review_status: { Args: { p_sit_id: string }; Returns: Json }
       get_my_settings: { Args: never; Returns: Json }
@@ -3673,17 +3616,6 @@ export type Database = {
         Returns: Json
       }
       get_perk_discount_code: { Args: { p_slug: string }; Returns: string }
-      get_perks_preview: {
-        Args: never
-        Returns: {
-          category: string
-          id: string
-          logo_url: string | null
-          name: string
-          sort_order: number
-          trip_moment: string
-        }[]
-      }
       get_pet_private_details: {
         Args: { p_listing_id: string }
         Returns: {
