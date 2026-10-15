@@ -1616,30 +1616,6 @@ export type Database = {
           },
         ]
       }
-      phone_verify_attempts: {
-        Row: {
-          channel: string
-          created_at: string
-          id: string
-          phone_hash: string
-          user_id: string
-        }
-        Insert: {
-          channel: string
-          created_at?: string
-          id?: string
-          phone_hash: string
-          user_id: string
-        }
-        Update: {
-          channel?: string
-          created_at?: string
-          id?: string
-          phone_hash?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       phone_shares: {
         Row: {
           created_at: string
@@ -1702,6 +1678,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      phone_verify_attempts: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          phone_hash: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          phone_hash: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          phone_hash?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -3927,10 +3927,6 @@ export type Database = {
       publish_sit_reviews: { Args: { p_sit_id: string }; Returns: number }
       purge_expired_safety_records: { Args: never; Returns: Json }
       purge_phone_verify_attempts: { Args: never; Returns: number }
-      record_phone_verify_attempt: {
-        Args: { p_channel: string; p_phone_hash: string; p_user_id: string }
-        Returns: string
-      }
       queue_review_summary: {
         Args: { p_side: string; p_user: string }
         Returns: undefined
@@ -3941,6 +3937,10 @@ export type Database = {
           lat: number
           lng: number
         }[]
+      }
+      record_phone_verify_attempt: {
+        Args: { p_channel: string; p_phone_hash: string; p_user_id: string }
+        Returns: string
       }
       redeem_founding_code_for: {
         Args: { p_code: string; p_user_id: string }
