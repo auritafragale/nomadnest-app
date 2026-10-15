@@ -1467,7 +1467,9 @@ export type Database = {
       perks: {
         Row: {
           affiliate_url: string
+          benefit_headline: string | null
           benefit_short: string
+          benefit_subline: string | null
           category: string
           created_at: string
           description: string | null
@@ -1476,17 +1478,23 @@ export type Database = {
           id: string
           is_active: boolean
           is_featured: boolean
+          is_perk_of_month: boolean
           logo_url: string | null
           name: string
+          picked_for_sits: boolean
           slug: string
           sort_order: number
+          spotlight_text: string | null
           subid_param: string | null
           terms: string | null
+          trip_moment: string
           updated_at: string
         }
         Insert: {
           affiliate_url: string
+          benefit_headline?: string | null
           benefit_short: string
+          benefit_subline?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -1495,17 +1503,23 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_featured?: boolean
+          is_perk_of_month?: boolean
           logo_url?: string | null
           name: string
+          picked_for_sits?: boolean
           slug: string
           sort_order?: number
+          spotlight_text?: string | null
           subid_param?: string | null
           terms?: string | null
+          trip_moment?: string
           updated_at?: string
         }
         Update: {
           affiliate_url?: string
+          benefit_headline?: string | null
           benefit_short?: string
+          benefit_subline?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -1514,12 +1528,16 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_featured?: boolean
+          is_perk_of_month?: boolean
           logo_url?: string | null
           name?: string
+          picked_for_sits?: boolean
           slug?: string
           sort_order?: number
+          spotlight_text?: string | null
           subid_param?: string | null
           terms?: string | null
+          trip_moment?: string
           updated_at?: string
         }
         Relationships: []
@@ -3074,6 +3092,7 @@ export type Database = {
         Args: { p_decision: string; p_notes?: string; p_submission_id: string }
         Returns: string
       }
+      admin_delete_perk: { Args: { p_id: string }; Returns: undefined }
       admin_get_listing_allowance: {
         Args: { p_user_id: string }
         Returns: Json
@@ -3171,7 +3190,9 @@ export type Database = {
         Args: never
         Returns: {
           affiliate_url: string
+          benefit_headline: string | null
           benefit_short: string
+          benefit_subline: string | null
           category: string
           created_at: string
           description: string | null
@@ -3180,12 +3201,16 @@ export type Database = {
           id: string
           is_active: boolean
           is_featured: boolean
+          is_perk_of_month: boolean
           logo_url: string | null
           name: string
+          picked_for_sits: boolean
           slug: string
           sort_order: number
+          spotlight_text: string | null
           subid_param: string | null
           terms: string | null
+          trip_moment: string
           updated_at: string
         }[]
         SetofOptions: {
@@ -3255,6 +3280,7 @@ export type Database = {
         Returns: undefined
       }
       admin_queue_sit_story: { Args: { p_sit_id: string }; Returns: string }
+      admin_save_perk: { Args: { p_id: string; p_perk: Json }; Returns: string }
       admin_set_max_listings: {
         Args: { p_max_listings: number; p_user_id: string }
         Returns: number
@@ -3480,6 +3506,28 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: string
       }
+      get_member_perks: {
+        Args: never
+        Returns: {
+          benefit_headline: string
+          benefit_subline: string
+          category: string
+          description: string
+          expires_at: string
+          has_code: boolean
+          id: string
+          is_perk_of_month: boolean
+          logo_url: string
+          name: string
+          picked_for_sits: boolean
+          slug: string
+          sort_order: number
+          spotlight_text: string
+          terms: string
+          trip_moment: string
+          used_by_me: boolean
+        }[]
+      }
       get_member_review_summary: {
         Args: { p_side: string; p_user: string }
         Returns: Json
@@ -3579,6 +3627,15 @@ export type Database = {
           payment_failed_at: string
         }[]
       }
+      get_my_next_sit_for_perks: {
+        Args: never
+        Returns: {
+          city: string
+          country: string
+          end_date: string
+          start_date: string
+        }[]
+      }
       get_my_profile: { Args: never; Returns: Json }
       get_my_review_status: { Args: { p_sit_id: string }; Returns: Json }
       get_my_settings: { Args: never; Returns: Json }
@@ -3616,6 +3673,17 @@ export type Database = {
         Returns: Json
       }
       get_perk_discount_code: { Args: { p_slug: string }; Returns: string }
+      get_perks_preview: {
+        Args: never
+        Returns: {
+          category: string
+          id: string
+          logo_url: string
+          name: string
+          sort_order: number
+          trip_moment: string
+        }[]
+      }
       get_pet_private_details: {
         Args: { p_listing_id: string }
         Returns: {
