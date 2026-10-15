@@ -6,6 +6,7 @@ import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_sha
 import {
   PLANS,
   appOrigin,
+  createCustomerFor,
   customerIdFor,
   isPlan,
   liveSubscription,
@@ -76,7 +77,8 @@ serve(async (req) => {
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    const customerId = await customerIdFor(supabase, stripe, user.id, user.email);
+    // The member's own customer (saved id or Stripe metadata.user_id), never by email.
+    const customerId = await customerIdFor(supabase, stripe, user.id);
     const current = customerId ? await liveSubscription(stripe, customerId) : null;
 
     if (current) {
@@ -165,9 +167,20 @@ serve(async (req) => {
     // New membership: Stripe Checkout (it shows the amount itself).
     if (action === "preview") return json({ preview: "checkout", plan });
     const origin = appOrigin(req);
+    // A new member gets a customer of their own, with user_id in its
+    // metadata (saved on the profile straight away). An existing customer
+    // without it gets it added.
+    let checkoutCustomer = customerId;
+    if (!checkoutCustomer) {
+      checkoutCustomer = await createCustomerFor(supabase, stripe, user.id, user.email ?? undefined);
+    } else {
+      const existing = await stripe.customers.retrieve(checkoutCustomer);
+      if (!existing.deleted && (existing as Stripe.Customer).metadata?.user_id !== user.id) {
+        await stripe.customers.update(checkoutCustomer, { metadata: { ...(existing as Stripe.Customer).metadata, user_id: user.id } });
+      }
+    }
     const session = await stripe.checkout.sessions.create({
-      customer: customerId ?? undefined,
-      customer_email: customerId ? undefined : user.email,
+      customer: checkoutCustomer,
       client_reference_id: user.id,
       line_items: [{ price, quantity: 1 }],
       mode: "subscription",

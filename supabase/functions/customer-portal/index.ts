@@ -40,7 +40,7 @@ serve(async (req) => {
     if (profile?.founding_member) return fail("bad_input", "Founding members have nothing to pay, so there is no billing to manage.");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customerId = await customerIdFor(supabase, stripe, user.id, user.email);
+    const customerId = await customerIdFor(supabase, stripe, user.id);
     if (!customerId) return fail("bad_input", "No billing account found. Choose a plan to get started.");
 
     const body = await req.json().catch(() => ({}));

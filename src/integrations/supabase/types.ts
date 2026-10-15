@@ -1616,6 +1616,30 @@ export type Database = {
           },
         ]
       }
+      phone_verify_attempts: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          phone_hash: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          phone_hash: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          phone_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       phone_shares: {
         Row: {
           created_at: string
@@ -3865,6 +3889,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      phone_lookup_needed: {
+        Args: { p_phone_hash: string; p_user_id: string }
+        Returns: boolean
+      }
+      phone_number_taken: {
+        Args: { p_phone_number: string; p_user_id: string }
+        Returns: boolean
+      }
+      phone_send_matches: {
+        Args: { p_phone_hash: string; p_user_id: string }
+        Returns: boolean
+      }
       phone_share_conversation: {
         Args: { p_a: string; p_b: string; p_sit: string }
         Returns: string
@@ -3890,6 +3926,11 @@ export type Database = {
       publish_due_reviews: { Args: never; Returns: number }
       publish_sit_reviews: { Args: { p_sit_id: string }; Returns: number }
       purge_expired_safety_records: { Args: never; Returns: Json }
+      purge_phone_verify_attempts: { Args: never; Returns: number }
+      record_phone_verify_attempt: {
+        Args: { p_channel: string; p_phone_hash: string; p_user_id: string }
+        Returns: string
+      }
       queue_review_summary: {
         Args: { p_side: string; p_user: string }
         Returns: undefined

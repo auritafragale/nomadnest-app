@@ -6,6 +6,7 @@ import Navbar from "@/components/layout/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { fetchMyProfile } from "@/lib/myProfile";
 import { useToast } from "@/hooks/use-toast";
 import { OWNER_PROFILE_COLUMNS } from "@/lib/profileColumns";
@@ -160,7 +161,7 @@ const EditOwnerProfile = () => {
     );
   }
 
-  const updateProfile = async (fields: Record<string, unknown>) => {
+  const updateProfile = async (fields: TablesUpdate<"profiles">) => {
     const { error } = await supabase.from("profiles").update(fields).eq("id", user.id);
     if (error) throw error;
   };

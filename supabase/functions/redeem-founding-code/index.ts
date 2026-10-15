@@ -58,7 +58,7 @@ serve(async (req) => {
     if (stripeKey && user.email) {
       const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
       try {
-        const customerId = await customerIdFor(supabase, stripe, user.id, user.email);
+        const customerId = await customerIdFor(supabase, stripe, user.id);
         const sub = customerId ? await liveSubscription(stripe, customerId) : null;
         if (sub) {
           // The unused part of the last paid invoice, by time left.

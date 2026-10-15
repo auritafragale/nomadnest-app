@@ -2,12 +2,13 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
+import { customerIdFor } from "../_shared/stripe-plans.ts";
 import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 
 // Deletes the caller's account and data (UK/EU data protection; app stores).
 //
 // Order matters:
-//  1. Stripe: cancel every live subscription for this email immediately (no
+//  1. Stripe: cancel every live subscription on the member's own customer (no
 //     proration, no refund). The Stripe customer and invoices are KEPT for
 //     legal accounting retention (we store no Stripe id ourselves). If this
 //     fails we stop: nothing is deleted and the member is never left paying
@@ -68,10 +69,9 @@ serve(async (req) => {
   try {
     const { data: profile } = await admin
       .from("profiles")
-      .select("email, onfido_applicant_id")
+      .select("onfido_applicant_id")
       .eq("id", userId)
       .maybeSingle();
-    const email = (profile?.email as string | null) ?? user.email ?? null;
     const body = await req.json().catch(() => ({}));
     const dryRun = body?.dry_run === true;
 
@@ -91,12 +91,15 @@ serve(async (req) => {
     let stripeCancelled = 0;
     const toCancel: { id: string; status: string }[] = [];
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (stripeKey && email) {
+    if (stripeKey) {
       try {
         const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-        const customers = await stripe.customers.list({ email, limit: 10 });
-        for (const customer of customers.data) {
-          const subs = await stripe.subscriptions.list({ customer: customer.id, status: "all", limit: 100 });
+        // Only the member's own customer (saved id, else Stripe
+        // metadata.user_id). Never by email: another person's billing could
+        // share an address.
+        const customerId = await customerIdFor(admin, stripe, userId);
+        if (customerId) {
+          const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 100 });
           for (const sub of subs.data) {
             if (LIVE_SUBSCRIPTION.has(sub.status)) toCancel.push({ id: sub.id, status: sub.status });
           }

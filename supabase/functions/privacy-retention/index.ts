@@ -92,7 +92,12 @@ serve(async (req) => {
       else draftsDeleted += removed?.length ?? 0;
     }
 
+    // 4) Phone verification attempts (hashes only) older than 30 days
+    const { data: phoneAttempts, error: phoneError } = await admin.rpc("purge_phone_verify_attempts");
+    if (phoneError) log({ step: "phone_attempts", failed: redact(phoneError.message) });
+
     const summary = {
+      phone_attempts_deleted: typeof phoneAttempts === "number" ? phoneAttempts : 0,
       id_files_deleted: idFilesDeleted,
       id_drafts_deleted: draftsDeleted,
       id_rows_cleared: idRowsCleared,
