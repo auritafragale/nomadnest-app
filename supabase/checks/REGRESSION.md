@@ -81,6 +81,9 @@ admin"), that's a missing fixture, not a failure: note it and move on.
 | 55 | `batch_p1_proof.sql` | every row `ok = true` |
 | 56 | `batch_p1_member_test.sql` | `ERROR: PASS_ROLLED_BACK …` |
 | 57 | `batch_p1_leftover.sql` | every count `0` |
+| 58 | `batch_f1h_proof.sql` | every row `ok = true` |
+| 59 | `batch_f1h_member_test.sql` | `ERROR: PASS_ROLLED_BACK …` |
+| 60 | `batch_f1h_leftover.sql` | every count `0` |
 
 One-off, not part of the regular run: `batch_f1e_repair_preview.sql` (read-only)
 lists the rows the F1e repair would change. Run it once before the repair
