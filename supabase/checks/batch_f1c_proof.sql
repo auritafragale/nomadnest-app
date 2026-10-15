@@ -73,13 +73,39 @@ SELECT 'bucket id-verification-documents: size limit', '10MB (10485760 bytes), p
        EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'id-verification-documents' AND file_size_limit = 10485760 AND NOT public)
 
 UNION ALL
-SELECT 'bucket id-verification-documents: file types', 'jpeg, png, webp, heic, heif, pdf only',
-       COALESCE((SELECT COALESCE(array_to_string(allowed_mime_types, ', '), 'any type') FROM storage.buckets
-                 WHERE id = 'id-verification-documents'), 'missing'),
-       EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'id-verification-documents'
-                 AND allowed_mime_types IS NOT NULL
-                 AND (SELECT array_agg(t ORDER BY t) FROM unnest(allowed_mime_types) t)
-                     = ARRAY['application/pdf', 'image/heic', 'image/heif', 'image/jpeg', 'image/png', 'image/webp'])
+-- Updated for F1f: Lovable can't set the bucket's file types, so the limit may
+-- instead be the upload rule (allowed_mime_types null and the INSERT policy
+-- requiring jpg, jpeg, png, webp, heic, heif or pdf). "actual" says which way
+-- it passed.
+SELECT 'bucket id-verification-documents: file types limited', 'by the bucket''s file types, or by the upload rule',
+       COALESCE(t.way, 'not limited: ' || COALESCE((SELECT array_to_string(allowed_mime_types, ', ') FROM storage.buckets
+                                                    WHERE id = 'id-verification-documents'), 'any type, and no extension rule')),
+       t.way IS NOT NULL
+FROM (
+  SELECT (SELECT CASE
+            WHEN b.allowed_mime_types IS NOT NULL
+                 AND (SELECT array_agg(x ORDER BY x) FROM unnest(b.allowed_mime_types) x)
+                     = ARRAY['application/pdf', 'image/heic', 'image/heif', 'image/jpeg', 'image/png', 'image/webp']
+              THEN 'by the bucket''s file types'
+            WHEN b.allowed_mime_types IS NULL
+                 AND EXISTS (SELECT 1 FROM pg_policies p
+                             WHERE p.schemaname = 'storage' AND p.tablename = 'objects' AND p.cmd = 'INSERT'
+                               AND p.policyname = 'Users can upload own ID documents'
+                               AND position('id-verification-documents' IN p.with_check) > 0
+                               AND position('foldername(name)' IN p.with_check) > 0
+                               AND position('lower(storage.extension(name))' IN p.with_check) > 0
+                               AND (SELECT bool_and(position(quote_literal(e) IN p.with_check) > 0)
+                                    FROM unnest(ARRAY['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'pdf']) e))
+                 -- and no other permissive policy lets members add files to this bucket
+                 AND NOT EXISTS (SELECT 1 FROM pg_policies p
+                                 WHERE p.schemaname = 'storage' AND p.tablename = 'objects' AND p.cmd IN ('INSERT', 'ALL')
+                                   AND p.permissive = 'PERMISSIVE' AND p.policyname <> 'Users can upload own ID documents'
+                                   AND (position('id-verification-documents' IN COALESCE(p.with_check, p.qual, '')) > 0
+                                        OR position('bucket_id = ''' IN COALESCE(p.with_check, p.qual, '')) = 0))
+              THEN 'by the upload rule (file extensions)'
+          END
+          FROM storage.buckets b WHERE b.id = 'id-verification-documents') AS way
+) t
 
 UNION ALL
 SELECT format('notification_category(%L)', x.t), 'applications',

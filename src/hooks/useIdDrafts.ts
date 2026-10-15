@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { extensionFor, extensionOf, prepareIdFile } from "@/lib/idUpload";
+import { draftPath, extensionOf, prepareIdFile } from "@/lib/idUpload";
 
 export type IdDraftKind = "id" | "selfie";
 export interface IdDraft {
@@ -85,7 +85,7 @@ export const useIdDrafts = (userId: string | undefined) => {
         setErrors((e) => ({ ...e, [kind]: prepared.error }));
         return;
       }
-      const path = `${userId}/draft/${kind}-${Date.now()}.${extensionFor(prepared.contentType)}`;
+      const path = draftPath(userId, kind, prepared.contentType);
       const { error } = await supabase.storage
         .from(BUCKET)
         .upload(path, prepared.blob, { upsert: false, contentType: prepared.contentType });
