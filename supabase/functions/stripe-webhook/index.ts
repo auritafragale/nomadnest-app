@@ -82,7 +82,19 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode !== "subscription" || !session.subscription) break;
         const sub = await stripe.subscriptions.retrieve(session.subscription as string);
-        if (!sub.metadata?.user_id && session.client_reference_id) sub.metadata = { ...sub.metadata, user_id: session.client_reference_id };
+        // Only when the session's client_reference_id and metadata.user_id
+        // (both set by our create-checkout) name the same member: link the
+        // customer to that member.
+        const ref = session.client_reference_id;
+        const metaUser = session.metadata?.user_id ?? null;
+        const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;
+        if (ref && metaUser && ref === metaUser) {
+          if (!sub.metadata?.user_id) sub.metadata = { ...sub.metadata, user_id: ref };
+          if (customerId) {
+            const { data: other } = await supabase.from("profiles").select("id").eq("stripe_customer_id", customerId).neq("id", ref).maybeSingle();
+            if (!other) await supabase.from("profiles").update({ stripe_customer_id: customerId }).eq("id", ref);
+          }
+        }
         await handleSubscription(supabase, stripe, sub);
         break;
       }

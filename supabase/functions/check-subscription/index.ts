@@ -43,7 +43,7 @@ serve(async (req) => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("founding_member, membership_payment_failed_at")
+      .select("founding_member, membership_payment_failed_at, membership_status, membership_type, membership_expiry, membership_cancel_at_period_end")
       .eq("id", user.id)
       .single();
 
@@ -52,7 +52,32 @@ serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customerId = await customerIdFor(supabase, stripe, user.id, user.email);
+    // The member's own customer: saved id, else Stripe metadata.user_id
+    // (linked on the way). Never by email.
+    const customerId = await customerIdFor(supabase, stripe, user.id);
+
+    // A membership we can't link to a Stripe customer yet (paid before
+    // checkout recorded user_id in Stripe): keep the profile as it is rather
+    // than switching it off, and log it (member id only) so it can be linked.
+    const profileLive =
+      (profile?.membership_status === "active" || profile?.membership_status === "past_due") &&
+      (!profile?.membership_expiry || Date.parse(profile.membership_expiry) > Date.now());
+    if (!customerId && profileLive) {
+      console.log(JSON.stringify({ fn: "check-subscription", user: user.id, unlinked: true }));
+      return json({
+        subscribed: true,
+        status: profile?.membership_status,
+        membership_type: profile?.membership_type ?? null,
+        subscription_end: profile?.membership_expiry ?? null,
+        cancel_at_period_end: !!profile?.membership_cancel_at_period_end,
+        payment_failed_at: profile?.membership_payment_failed_at ?? null,
+        pending_plan: null,
+        founding_member: false,
+        card_brand: null,
+        card_last4: null,
+      });
+    }
+
     const sub = customerId ? await liveSubscription(stripe, customerId) : null;
 
     if (!sub) {

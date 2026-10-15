@@ -43,7 +43,9 @@ export const periodEndOf = (sub: Stripe.Subscription): string | null => {
   return typeof end === "number" && Number.isFinite(end) ? new Date(end * 1000).toISOString() : null;
 };
 
-/** The member a subscription belongs to: its metadata, then the customer id, then the email. */
+/** The member a subscription belongs to: its metadata (set by our own
+ *  checkout), then the saved customer id. Never by email: an email at Stripe
+ *  is not proof of who the member is. */
 export const findMember = async (
   supabase: Supa,
   stripe: Stripe,
@@ -59,12 +61,6 @@ export const findMember = async (
   if (customerId) {
     const { data } = await supabase.from("profiles").select(cols).eq("stripe_customer_id", customerId).maybeSingle();
     if (data) return data;
-    const customer = await stripe.customers.retrieve(customerId);
-    const email = !customer.deleted ? (customer as Stripe.Customer).email : null;
-    if (email) {
-      const { data: byEmail } = await supabase.from("profiles").select(cols).eq("email", email).maybeSingle();
-      if (byEmail) return byEmail;
-    }
   }
   return null;
 };
@@ -109,12 +105,51 @@ export const liveSubscription = async (stripe: Stripe, customerId: string): Prom
   return (subs.data as Stripe.Subscription[]).filter((s: Stripe.Subscription) => LIVE.has(s.status)).sort((a: Stripe.Subscription, b: Stripe.Subscription) => b.created - a.created)[0] ?? null;
 };
 
-/** The member's Stripe customer id: saved on the profile, else found by email. */
-export const customerIdFor = async (supabase: Supa, stripe: Stripe, userId: string, email: string): Promise<string | null> => {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Stripe search query for objects whose metadata.user_id is this member. */
+export const userIdQuery = (userId: string) => {
+  if (!UUID_RE.test(userId)) throw new Error("not a member id");
+  return `metadata['user_id']:'${userId.toLowerCase()}'`;
+};
+
+/**
+ * The member's own Stripe customer id. Order of trust:
+ *   1. profiles.stripe_customer_id;
+ *   2. a Stripe customer, then a subscription, whose metadata.user_id is the
+ *      member (only our server sets that metadata); the id is then saved.
+ * Never by email. Nothing found: null ("no billing account yet"). If Stripe
+ * search itself fails, this throws, so a caller never mistakes an outage for
+ * "no membership".
+ */
+export const customerIdFor = async (supabase: Supa, stripe: Stripe, userId: string): Promise<string | null> => {
   const { data } = await supabase.from("profiles").select("stripe_customer_id").eq("id", userId).maybeSingle();
   if (data?.stripe_customer_id) return data.stripe_customer_id as string;
-  const customers = await stripe.customers.list({ email, limit: 1 });
-  return customers.data[0]?.id ?? null;
+
+  const query = userIdQuery(userId);
+  const customers = await stripe.customers.search({ query, limit: 10 });
+  let found: string | null =
+    (customers.data as Stripe.Customer[]).filter((c) => !(c as unknown as { deleted?: boolean }).deleted).sort((a, b) => b.created - a.created)[0]?.id ?? null;
+  if (!found) {
+    const subs = await stripe.subscriptions.search({ query, limit: 10 });
+    const sub = (subs.data as Stripe.Subscription[]).sort((a, b) => b.created - a.created)[0];
+    found = sub ? (typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? null) : null;
+  }
+  if (found) {
+    // Link it, unless another member already holds this customer id.
+    const { data: other } = await supabase.from("profiles").select("id").eq("stripe_customer_id", found).neq("id", userId).maybeSingle();
+    if (other) return null;
+    await supabase.from("profiles").update({ stripe_customer_id: found }).eq("id", userId).is("stripe_customer_id", null);
+  }
+  return found;
+};
+
+/** A customer created for this member at checkout, with metadata.user_id. */
+export const createCustomerFor = async (supabase: Supa, stripe: Stripe, userId: string, email: string | undefined) => {
+  if (!UUID_RE.test(userId)) throw new Error("not a member id");
+  const customer = await stripe.customers.create({ email, metadata: { user_id: userId } });
+  await supabase.from("profiles").update({ stripe_customer_id: customer.id }).eq("id", userId).is("stripe_customer_id", null);
+  return customer.id;
 };
 
 /** Only our own pages, so a forged Origin can't send members elsewhere. */
