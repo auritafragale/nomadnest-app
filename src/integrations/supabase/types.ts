@@ -3819,10 +3819,6 @@ export type Database = {
         Args: { p_end: string; p_start: string }
         Returns: string
       }
-      nn_distance_m: {
-        Args: { p_lat1: number; p_lat2: number; p_lng1: number; p_lng2: number }
-        Returns: number
-      }
       nn_first_name: {
         Args: { p_fallback: string; p_user: string }
         Returns: string
