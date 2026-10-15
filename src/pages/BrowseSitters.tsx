@@ -16,6 +16,7 @@ import Pagination from "@/components/browse/Pagination";
 import { usePagination } from "@/hooks/usePagination";
 import { NN_PAGE, RoleTheme, nnButton } from "@/components/nn/ui";
 import { cn } from "@/lib/utils";
+import MembersOnlyNotice from "@/components/nn/MembersOnlyNotice";
 
 const SitterGoogleMap = lazy(() => import("@/components/maps/SitterGoogleMap"));
 
@@ -37,7 +38,7 @@ const BrowseSitters = () => {
   const [panelOpen, setPanelOpen] = useState(false);
   const [bestMatch, setBestMatch] = useState(false);
 
-  const { sitters, loading, error, refetch } = useSitters({
+  const { sitters, loading, error, authError, refetch } = useSitters({
     searchQuery,
     petTypes: filters.petTypes,
     languages: filters.languages,
@@ -91,14 +92,8 @@ const BrowseSitters = () => {
           <p className="text-[15px] text-muted-foreground">Trusted Nomads ready to look after your home and pets.</p>
         </div>
 
-        {!user && !loading ? (
-          <div className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-[22px] border border-dashed border-border p-8 text-center">
-            <p className="text-[17px] font-bold">Sign in to see Nomads</p>
-            <p className="text-[15px] text-muted-foreground">Nomad profiles are for members only, to keep everyone safe.</p>
-            <Link to="/auth" className={nnButton("primary")}>
-              Log in or join free
-            </Link>
-          </div>
+        {(!user && !loading) || authError ? (
+          <MembersOnlyNotice headingLevel="h2" />
         ) : (
           <>
             <NomadFilterBar

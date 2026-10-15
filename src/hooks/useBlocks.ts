@@ -80,7 +80,7 @@ export const useSitWith = (otherId: string | null | undefined, enabled: boolean)
   });
 };
 
-const invalidateAfterBlock = (queryClient: ReturnType<typeof useQueryClient>) => {
+export const invalidateAfterBlock = (queryClient: ReturnType<typeof useQueryClient>) => {
   for (const key of [
     "my-blocked-members", "i-blocked", "sit-with", "conversations", "sits", "sitters", "listings",
     "owner-listings", "sitter-invites", "sitter-applications", "dashboard-summary", "city-chat-messages",
@@ -89,7 +89,10 @@ const invalidateAfterBlock = (queryClient: ReturnType<typeof useQueryClient>) =>
   }
 };
 
-export const useBlockMember = () => {
+/** Block a member. With refreshOnSuccess: false the caller refreshes the
+ *  lists itself (the block sheet waits until an "Also report" is done, so the
+ *  chat or message it belongs to doesn't disappear first). */
+export const useBlockMember = ({ refreshOnSuccess = true }: { refreshOnSuccess?: boolean } = {}) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
@@ -98,7 +101,9 @@ export const useBlockMember = () => {
       // Already blocked counts as done.
       if (error && error.code !== "23505") throw error;
     },
-    onSuccess: () => invalidateAfterBlock(queryClient),
+    onSuccess: () => {
+      if (refreshOnSuccess) invalidateAfterBlock(queryClient);
+    },
   });
 };
 

@@ -38,3 +38,20 @@ export const authErrorMeansEnded = (error: { status?: number } | null | undefine
   const status = error.status ?? 0;
   return status > 0 && status < 500;
 };
+
+/** A members-only call refused because the session is missing, expired or
+ *  being refreshed (or the caller isn't allowed). Screens treat it quietly:
+ *  no error screen, no toast; the query runs again once signed in. */
+export const isQuietAuthError = (error: unknown) => {
+  if (!error || typeof error !== "object") return false;
+  const e = error as { code?: unknown; status?: unknown; message?: unknown };
+  const code = typeof e.code === "string" ? e.code : "";
+  const status = typeof e.status === "number" ? e.status : 0;
+  const message = typeof e.message === "string" ? e.message : "";
+  return (
+    status === 401 ||
+    status === 403 ||
+    ["PGRST301", "PGRST302", "42501", "28000"].includes(code) ||
+    /jwt|permission denied|not signed in|sign in again|not authenticated/i.test(message)
+  );
+};

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { redact } from "../_shared/safe-log.ts";
+import { plainSubject } from "../_shared/escape.ts";
 
 // The founders' email about a new report. Since Batch F1 it is sent by the
 // database (the notify_new_report trigger, with the Vault secret), so a
@@ -225,7 +226,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: "NomadNest <noreply@nomadnest.global>",
         to: recipients,
-        subject: `New safety report: ${payload.reason}`,
+        subject: plainSubject(`New safety report: ${payload.reason}`),
         html: buildHtml(payload, reporter, reportedName, reportedEmail, reportedProfileUrl, evidenceCount),
       }),
     });

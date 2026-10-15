@@ -53,6 +53,9 @@ const MessageBubble = ({ message, isOwn, reactions, onToggleReaction, thread, on
   const { openReport } = useReport();
   const queryClient = useQueryClient();
   const [blockOpen, setBlockOpen] = useState(false);
+  // The block sheet (and an "Also report" after it) stays mounted until the
+  // whole flow is over, even once the block sheet itself has closed.
+  const [blockMounted, setBlockMounted] = useState(false);
   const isTeam = message.sender_user_id === TEAM_USER_ID;
   const name = isTeam ? "NomadNest Team" : isOwn ? "You" : (message.sender?.first_name || "").trim() || "Nomad";
   const initial = (isTeam ? "N" : (message.sender?.first_name || "N").trim()[0] || "N").toUpperCase();
@@ -108,7 +111,10 @@ const MessageBubble = ({ message, isOwn, reactions, onToggleReaction, thread, on
               <button
                 type="button"
                 aria-label={`Block ${name}`}
-                onClick={() => setBlockOpen(true)}
+                onClick={() => {
+                  setBlockMounted(true);
+                  setBlockOpen(true);
+                }}
                 className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
               >
                 <Ban className="h-4 w-4" aria-hidden="true" />
@@ -117,7 +123,7 @@ const MessageBubble = ({ message, isOwn, reactions, onToggleReaction, thread, on
           )}
         </div>
       </div>
-      {blockOpen && (
+      {blockMounted && (
         <BlockMemberSheet
           otherId={message.sender_user_id}
           otherName={name}
@@ -125,6 +131,7 @@ const MessageBubble = ({ message, isOwn, reactions, onToggleReaction, thread, on
           onOpenChange={setBlockOpen}
           // Their messages and replies disappear from your City Chats.
           onBlocked={() => void queryClient.invalidateQueries()}
+          onFinished={() => setBlockMounted(false)}
         />
       )}
     </article>

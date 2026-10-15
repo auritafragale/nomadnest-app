@@ -17,6 +17,8 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
+import MembersOnlyNotice from "@/components/nn/MembersOnlyNotice";
+import { isQuietAuthError } from "@/lib/signInCheck";
 import { BadgeCheck, ChevronRight, Flag, Loader2, Mail, MessageCircle, Phone, Send, ShieldCheck, Star } from "lucide-react";
 import { useStartConversation } from "@/hooks/useConversations";
 import SitterReviewsSummaryCard from "@/components/reviews/SitterReviewsSummaryCard";
@@ -101,6 +103,8 @@ const SitterDetail = () => {
   // The viewer's own listing (any status), for "Add new dates" when none is open.
   const [myListingId, setMyListingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // The session ended and couldn't be refreshed: the members notice, quietly.
+  const [authBlocked, setAuthBlocked] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [styleOpen, setStyleOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -170,8 +174,12 @@ const SitterDetail = () => {
           own.filter((l) => l.status === "published" && l.sit_dates?.some((d) => d.status === "open" && d.end_date >= today)),
         );
       } catch (error) {
-        console.error("Error fetching sitter:", error);
-        toast({ variant: "destructive", title: "Error", description: "Failed to load this profile" });
+        if (isQuietAuthError(error)) {
+          setAuthBlocked(true);
+        } else {
+          console.error("Error fetching sitter:", error);
+          toast({ variant: "destructive", title: "Error", description: "Failed to load this profile" });
+        }
       } finally {
         setLoading(false);
       }
@@ -191,18 +199,12 @@ const SitterDetail = () => {
   // briefly see the "sign in" wall while their session is still loading in.
   if (authLoading) return <Skeletons />;
 
-  if (!user) {
+  if (!user || authBlocked) {
     return (
       <RoleTheme role="owner" className="flex min-h-screen flex-col">
         <Navbar wide />
         <main className={cn(NN_PAGE, "flex flex-1 flex-col items-center pb-12 pt-24")}>
-          <div className="flex max-w-md flex-col items-center gap-3 rounded-[22px] border border-dashed border-border p-8 text-center">
-            <h1 className="text-[20px] font-bold">Sign in to view this profile</h1>
-            <p className="text-[15px] text-muted-foreground">Nomad profiles are only visible to members, to protect their privacy.</p>
-            <Link to="/auth" className={nnButton("primary")}>
-              Log in or join free
-            </Link>
-          </div>
+          <MembersOnlyNotice />
         </main>
         <Footer />
       </RoleTheme>
