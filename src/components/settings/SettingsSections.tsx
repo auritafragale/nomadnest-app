@@ -478,6 +478,8 @@ export const HelpSection = () => {
       <Link to="/faq" className={nnButton("secondary", "justify-start")}>Questions and answers</Link>
       <Link to="/contact" className={nnButton("secondary", "justify-start")}>Contact us</Link>
       <Link to="/code-of-conduct" className={nnButton("secondary", "justify-start")}>Code of conduct</Link>
+      <Link to="/terms" className={nnButton("secondary", "justify-start")}>Terms of Service</Link>
+      <Link to="/privacy" className={nnButton("secondary", "justify-start")}>Privacy Policy</Link>
     </div>
   );
 };

@@ -41,6 +41,7 @@ import {
   useMyContact,
 } from "@/components/settings/SettingsSections";
 import { cn } from "@/lib/utils";
+import { HELP_LINKS } from "@/lib/footer";
 
 type SectionId = "notifications" | "privacy" | "verification" | "login" | "language" | "appearance" | "data" | "help";
 
@@ -213,6 +214,14 @@ const Settings = () => {
 
   const bottom = (
     <div className="flex flex-col gap-2">
+      {/* Contact and legal pages: two taps from the dashboard, footer or not. */}
+      <nav aria-label="Contact and legal" className="flex flex-wrap gap-3">
+        {HELP_LINKS.map((l) => (
+          <Link key={l.href} to={l.href} className="inline-flex min-h-[44px] items-center px-2 text-sm font-semibold text-[var(--nn-accent-dark)] underline-offset-2 hover:underline">
+            {l.label}
+          </Link>
+        ))}
+      </nav>
       {isAdmin && (
         <Link to="/admin" className="flex min-h-[52px] items-center justify-between gap-3 rounded-[18px] border border-[var(--nn-border)] bg-card px-4 font-semibold">
           <span className="flex items-center gap-2">
