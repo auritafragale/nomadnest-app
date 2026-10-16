@@ -234,16 +234,29 @@ export const MemberCard = ({
 }) => (
   <section
     aria-label="Your membership"
-    className={cn("relative flex flex-col gap-3.5 overflow-hidden rounded-[24px] bg-[var(--nn-ink)] p-5 text-[var(--nn-ink-text)]", className)}
+    className={cn("relative flex flex-col gap-3.5 overflow-hidden rounded-[24px] p-5 text-[var(--nn-on-perk-gold)]", className)}
+    style={{
+      background: "linear-gradient(135deg, var(--nn-perk-gold-1) 0%, var(--nn-perk-gold-2) 50%, var(--nn-perk-gold-3) 100%)",
+      boxShadow: "var(--nn-perk-gold-shadow)",
+    }}
   >
-    <span aria-hidden="true" className="absolute -right-10 -top-[60px] h-[200px] w-[200px] rounded-full bg-[radial-gradient(circle,hsl(var(--brand-coral)/0.55),transparent_70%)]" />
-    <span aria-hidden="true" className="absolute -bottom-20 -left-[50px] h-[200px] w-[200px] rounded-full bg-[radial-gradient(circle,hsl(var(--brand-teal)/0.45),transparent_70%)]" />
+    {/* Same gold as the dashboard card, in light and dark: a white glow top right, a faint coral one bottom left. */}
+    <span
+      aria-hidden="true"
+      className="absolute -right-10 -top-[60px] h-[200px] w-[200px] rounded-full"
+      style={{ background: "radial-gradient(circle, var(--nn-perk-gold-glow), transparent 70%)" }}
+    />
+    <span
+      aria-hidden="true"
+      className="absolute -bottom-20 -left-[50px] h-[200px] w-[200px] rounded-full"
+      style={{ background: "radial-gradient(circle, hsl(var(--brand-coral) / 0.3), transparent 70%)" }}
+    />
     <div className="relative flex min-h-7 items-center justify-between gap-2.5">
       {founding ? (
-        <GoldPill>
+        <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-[var(--nn-on-perk-gold)] px-3 text-xs font-bold text-[var(--nn-perk-gold-1)]">
           <Star className="h-3 w-3 fill-current" aria-hidden="true" />
           Founding member
-        </GoldPill>
+        </span>
       ) : (
         <span />
       )}
@@ -251,7 +264,7 @@ export const MemberCard = ({
     </div>
     <div className="relative flex flex-col gap-1">
       <span className="text-xl font-bold">{firstName ? `${firstName}’s perks` : "Your perks"}</span>
-      <span className="text-sm leading-normal text-[var(--nn-ink-muted)]">Every partner link and code, included with your membership.</span>
+      <span className="text-sm leading-normal text-[var(--nn-on-perk-gold-soft)]">Every partner link and code, included with your membership.</span>
     </div>
     <div className="relative flex gap-[26px]">
       <Stat value={String(perkCount)} label={perkCount === 1 ? "partner perk" : "partner perks"} />
@@ -264,7 +277,7 @@ export const MemberCard = ({
 const Stat = ({ value, label }: { value: string; label: string }) => (
   <span className="flex flex-col gap-0.5">
     <span className="font-display text-[28px] leading-none">{value}</span>
-    <span className="text-xs text-[var(--nn-ink-muted)]">{label}</span>
+    <span className="text-xs text-[var(--nn-on-perk-gold-soft)]">{label}</span>
   </span>
 );
 
