@@ -13,6 +13,7 @@ import ResponsiveSheet from "@/components/nn/ResponsiveSheet";
 import { formatCount, useFoundingSpots } from "@/hooks/useFoundingSpots";
 import { REDEEM_MESSAGES } from "@/lib/foundingCode";
 import { MembershipPerksBlock } from "@/components/perks/Placements";
+import { isStoreApp } from "@/lib/storeApp";
 import { cn } from "@/lib/utils";
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null);
@@ -27,6 +28,10 @@ const FAQS: [string, string][] = [
   ["Why do I need an ID check?", "Everyone who sits or lists a home checks their ID once. Your documents are only used to confirm it is you, and nobody else ever sees them."],
   ["What happens to my reviews if I stop?", "They stay on your profile, so you can pick up where you left off."],
 ];
+
+/** Store apps: no prices, Stripe buttons or codes, only this neutral line. */
+const STORE_LINE = "NomadNest membership is managed on nomadnest.global.";
+const GOLD_PILL = "rounded-full bg-[#E8B53E] px-2.5 py-1 text-xs font-bold text-[#3A2A06]";
 
 const PLAN_ORDER: PlanId[] = ["sitter", "owner", "combined"];
 const PLAN_TONE: Record<PlanId, string> = {
@@ -102,6 +107,7 @@ const Membership = () => {
   // A change waiting for the member to confirm it (from Stripe's preview).
   const [pending, setPending] = useState<PlanPreview | null>(null);
 
+  const store = isStoreApp();
   const isFounding = m.foundingMember;
   const isProblem = !isFounding && m.status === "past_due";
   const isMember = !isFounding && !isProblem && m.subscribed;
@@ -274,7 +280,7 @@ const Membership = () => {
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    {[`${MEMBERSHIP_PLANS[current].price} a year`, m.subscriptionEnd && `renews on ${fmt(m.subscriptionEnd)}`, card].filter(Boolean).join(" · ")}
+                    {[!store && `${MEMBERSHIP_PLANS[current].price} a year`, m.subscriptionEnd && `renews on ${fmt(m.subscriptionEnd)}`, !store && card].filter(Boolean).join(" · ")}
                   </p>
                 )}
                 {m.pendingPlan && !isEnding && (
@@ -282,6 +288,9 @@ const Membership = () => {
                     Your plan changes to {MEMBERSHIP_PLANS[m.pendingPlan].short} on {fmt(m.subscriptionEnd) ?? "your renewal date"}.
                   </p>
                 )}
+                {store ? (
+                  <p className="text-sm text-muted-foreground">{STORE_LINE}</p>
+                ) : (
                 <div className="flex flex-wrap gap-2">
                   {isEnding && (
                     <button type="button" onClick={keepMembership} disabled={busy} className={nnButton("primary")}>
@@ -293,15 +302,29 @@ const Membership = () => {
                     Manage billing and receipts
                   </button>
                 </div>
+                )}
                 {current !== "combined" && !isEnding && (
-                  <div className="rounded-2xl bg-[var(--nn-soft)] p-4">
-                    <p className="text-[15px] font-bold">{current === "sitter" ? "Want to list your home too?" : "Want to go sitting too?"}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Switch to Combined for £99 a year. We credit what is left of your {MEMBERSHIP_PLANS[current].short} plan, so you never pay twice.
-                    </p>
-                    <button type="button" onClick={() => { setPlan("combined"); void choose("combined"); }} disabled={busy} className={nnButton("secondary", "mt-3")}>
-                      Switch to Combined
-                    </button>
+                  <div className="flex flex-col items-start gap-2 rounded-2xl border-2 border-[var(--nn-gold)] bg-card p-4">
+                    {!store && <span className={GOLD_PILL}>Best value · save £19</span>}
+                    <p className="text-[17px] font-bold">{current === "sitter" ? "Want to list your home too?" : "Want to go sitting too?"}</p>
+                    {store ? (
+                      <p className="text-sm text-muted-foreground">You can add the other side of NomadNest from your membership on nomadnest.global.</p>
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground">
+                          Combined is Nomad and Pet Parent in one. We credit what is left of your {MEMBERSHIP_PLANS[current].short} plan, so you never pay twice.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => { setPlan("combined"); void choose("combined"); }}
+                          disabled={busy}
+                          className={nnButton("primary", "mt-1 h-12 w-full md:w-auto md:px-8")}
+                        >
+                          {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                          Switch to Combined · {MEMBERSHIP_PLANS.combined.price} a year
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </section>
@@ -315,28 +338,30 @@ const Membership = () => {
                   {fmt(m.paymentFailedAt ? new Date(Date.parse(m.paymentFailedAt) + 7 * 86_400_000).toISOString() : null) ?? "the end of this week"}{" "}
                   to keep your membership. Your listing and confirmed sits stay as they are until then.
                 </p>
-                <button type="button" onClick={() => portal(true)} className={nnButton("primary", "self-start")}>
-                  Update my card
-                </button>
+                {store ? (
+                  <p className="text-[15px]">{STORE_LINE}</p>
+                ) : (
+                  <button type="button" onClick={() => portal(true)} className={nnButton("primary", "self-start")}>
+                    Update my card
+                  </button>
+                )}
               </section>
             )}
 
             {showPlans && (
               <section aria-labelledby="plans-title" className="flex flex-col gap-3">
                 <h2 id="plans-title" className="font-display text-2xl font-normal">
-                  {current ? "Change your plan" : "Choose your membership"}
+                  {store ? "What membership includes" : current ? "Change your plan" : "Choose your membership"}
                 </h2>
-                <div role="radiogroup" aria-labelledby="plans-title" className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                <div {...(store ? {} : { role: "radiogroup", "aria-labelledby": "plans-title" })} className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
                   {plans.map((id) => {
                     const p = MEMBERSHIP_PLANS[id];
-                    const on = plan === id;
+                    const on = !store && plan === id;
+                    const Card = store ? "div" : "button";
                     return (
-                      <button
+                      <Card
                         key={id}
-                        type="button"
-                        role="radio"
-                        aria-checked={on}
-                        onClick={() => setPlan(id)}
+                        {...(store ? {} : { type: "button" as const, role: "radio", "aria-checked": on, onClick: () => setPlan(id) })}
                         className={cn(
                           "flex flex-col gap-2 rounded-[22px] border-[1.5px] bg-card p-4 text-left transition-colors",
                           on ? PLAN_TONE[id] : "border-[var(--nn-border)]",
@@ -347,14 +372,14 @@ const Membership = () => {
                             <span className="block text-[17px] font-bold">{p.short}</span>
                             <span className="block text-sm text-muted-foreground">{p.who}</span>
                           </span>
-                          <span className="text-right">
-                            <span className="block text-xl font-bold">{p.price}</span>
-                            <span className="block text-xs text-muted-foreground">a year</span>
-                          </span>
+                          {!store && (
+                            <span className="text-right">
+                              <span className="block text-xl font-bold">{p.price}</span>
+                              <span className="block text-xs text-muted-foreground">a year</span>
+                            </span>
+                          )}
                         </span>
-                        {id === "combined" && (
-                          <span className="self-start rounded-full bg-[#E8B53E] px-2.5 py-1 text-xs font-bold text-[#3A2A06]">Best value · save £19</span>
-                        )}
+                        {id === "combined" && !store && <span className={cn(GOLD_PILL, "self-start")}>Best value · save £19</span>}
                         <ul className="flex flex-col gap-1.5">
                           {p.features.map((f) => (
                             <li key={f} className="flex items-start gap-2 text-sm">
@@ -363,27 +388,32 @@ const Membership = () => {
                             </li>
                           ))}
                         </ul>
-                      </button>
+                      </Card>
                     );
                   })}
                 </div>
                 {/* Non-members: what the membership pays back (logos from the preview, no amounts). */}
                 {!m.subscribed && !isFounding && <MembershipPerksBlock />}
-                <button type="button" onClick={() => void choose()} disabled={busy || (!!user && m.loading)} className={nnButton("primary", "h-12 w-full md:w-auto md:self-start md:px-10")}>
-                  {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                  {ctaLabel}
-                </button>
-                <p className="text-sm text-muted-foreground">Secure payment with Stripe. Cancel any time in a couple of taps.</p>
+                {/* Store apps: the neutral line is already on the member card or in the perks block above. */}
+                {!store && (
+                  <>
+                    <button type="button" onClick={() => void choose()} disabled={busy || (!!user && m.loading)} className={nnButton("primary", "h-12 w-full md:w-auto md:self-start md:px-10")}>
+                      {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                      {ctaLabel}
+                    </button>
+                    <p className="text-sm text-muted-foreground">Secure payment with Stripe. Cancel any time in a couple of taps.</p>
+                  </>
+                )}
               </section>
             )}
           </div>
 
           <div className="flex min-w-0 flex-col gap-5">
-            {!isFounding && !isProblem && (
+            {!store && !isFounding && !isProblem && (
               <section aria-labelledby="founding-title" className="flex flex-col gap-2 rounded-[22px] border border-[var(--nn-border)] bg-[var(--nn-soft)] p-5">
                 <p id="founding-title" className="flex flex-wrap items-center justify-between gap-2 text-[15px] font-bold">
                   Have a founding invite code?
-                  {founding && <span className="rounded-full bg-[#E8B53E] px-2.5 py-1 text-xs font-bold text-[#3A2A06]">{formatCount(founding.spotsLeft)} of 1,000 left</span>}
+                  {founding && <span className={GOLD_PILL}>{formatCount(founding.spotsLeft)} of 1,000 left</span>}
                 </p>
                 <p className="text-sm text-muted-foreground">Founding members get Combined membership for life. Codes are shared by the founders and early members.</p>
                 <label htmlFor="founding-code" className="text-sm font-semibold">Enter your code</label>
@@ -406,7 +436,9 @@ const Membership = () => {
 
             <section aria-labelledby="faq-title" className="flex flex-col gap-2">
               <h2 id="faq-title" className="font-display text-2xl font-normal">Good to know</h2>
-              {FAQS.map(([q, a], i) => (
+              {FAQS.map(([q, a0], i) => {
+                const a = store && q === "Can I cancel?" ? "Yes, any time. You keep your membership until the end of the year you paid for. " + STORE_LINE : a0;
+                return (
                 <div key={q} className="rounded-[18px] border border-[var(--nn-border)] bg-card">
                   <button
                     type="button"
@@ -424,7 +456,8 @@ const Membership = () => {
                     </p>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </section>
           </div>
         </div>
