@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import aboutJourney from "@/assets/about-journey.jpg";
 import aboutHero from "@/assets/about-hero.jpg";
 import petsHome from "@/assets/hero-pets-home.jpg";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 
 /**
  * Home page sections (design: HomePhone, HomeTablet, HomeDesktop). Signed
@@ -486,23 +487,30 @@ export const FoundersCard = () => (
   </section>
 );
 
-export const ReadyToStart = () => (
+export const ReadyToStart = () => {
+  const store = isStoreApp();
+  return (
   <section aria-labelledby="ready-title" className="mx-auto w-full max-w-[1200px] px-5 md:px-8 lg:px-6">
     <div className="relative overflow-hidden rounded-[28px] bg-neutral-800">
       <img src={petsHome} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover object-[center_60%]" />
       <div className="absolute inset-0 bg-black/55" aria-hidden="true" />
       <div className="relative flex flex-col items-center gap-3 px-6 py-12 text-center md:py-16">
         <h2 id="ready-title" className="font-display text-[34px] leading-tight text-white md:text-[42px]">Ready to start?</h2>
-        <p className="max-w-md text-[16px] text-white/95">Look around first. Membership from £59 a year. No booking fees, ever.</p>
+        <p className="max-w-md text-[16px] text-white/95">
+          {store ? `Look around first. No booking fees, ever. ${STORE_MEMBERSHIP_LINE}` : "Look around first. Membership from £59 a year. No booking fees, ever."}
+        </p>
         <div className="mt-2 flex w-full max-w-md flex-col gap-2.5 sm:flex-row">
           <Link to="/auth?signup=true" className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-brand-coral sm:flex-1 px-5 text-[15px] font-bold text-primary-foreground">
             Create your profile
           </Link>
-          <Link to="/membership" className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-card sm:flex-1 px-5 text-[15px] font-bold text-foreground">
-            See membership plans
-          </Link>
+          {!store && (
+            <Link to="/membership" className="flex h-[52px] w-full items-center justify-center rounded-2xl bg-card sm:flex-1 px-5 text-[15px] font-bold text-foreground">
+              See membership plans
+            </Link>
+          )}
         </div>
       </div>
     </div>
   </section>
-);
+  );
+};

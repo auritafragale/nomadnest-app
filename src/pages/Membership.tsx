@@ -13,7 +13,7 @@ import ResponsiveSheet from "@/components/nn/ResponsiveSheet";
 import { formatCount, useFoundingSpots } from "@/hooks/useFoundingSpots";
 import { REDEEM_MESSAGES } from "@/lib/foundingCode";
 import { MembershipPerksBlock } from "@/components/perks/Placements";
-import { isStoreApp } from "@/lib/storeApp";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 import { cn } from "@/lib/utils";
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null);
@@ -30,7 +30,7 @@ const FAQS: [string, string][] = [
 ];
 
 /** Store apps: no prices, Stripe buttons or codes, only this neutral line. */
-const STORE_LINE = "NomadNest membership is managed on nomadnest.global.";
+const STORE_LINE = STORE_MEMBERSHIP_LINE;
 const GOLD_PILL = "rounded-full bg-[#E8B53E] px-2.5 py-1 text-xs font-bold text-[#3A2A06]";
 
 const PLAN_ORDER: PlanId[] = ["sitter", "owner", "combined"];

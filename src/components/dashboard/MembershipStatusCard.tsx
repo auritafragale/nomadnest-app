@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { Badge } from "@/components/ui/badge";
 import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -72,7 +73,7 @@ const MembershipStatusCard = () => {
               <p className="text-sm text-muted-foreground">Lifetime access — no expiry</p>
             )}
 
-            {!foundingMember && (
+            {!foundingMember && !isStoreApp() && (
               <Button variant="outline" size="sm" onClick={handleManage} disabled={portalLoading} className="w-full">
                 {portalLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
                 Manage Subscription
@@ -82,10 +83,14 @@ const MembershipStatusCard = () => {
         ) : (
           <>
             <p className="text-sm text-muted-foreground">No active membership</p>
-            <Button size="sm" onClick={() => navigate("/membership")} className="w-full">
-              <Crown className="w-4 h-4 mr-2" />
-              View Plans
-            </Button>
+            {isStoreApp() ? (
+              <p className="text-sm text-muted-foreground">{STORE_MEMBERSHIP_LINE}</p>
+            ) : (
+              <Button size="sm" onClick={() => navigate("/membership")} className="w-full">
+                <Crown className="w-4 h-4 mr-2" />
+                View Plans
+              </Button>
+            )}
           </>
         )}
       </CardContent>

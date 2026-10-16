@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Check, X, Sparkles } from "lucide-react";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 
 const nomadSteps = [
   {
@@ -122,6 +123,7 @@ const StepCard = ({
 );
 
 const HowItWorks = () => {
+  const store = isStoreApp();
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
@@ -199,6 +201,7 @@ const HowItWorks = () => {
               <p className="text-muted-foreground">
                 One flat annual fee. No booking fees. Ever.
               </p>
+              {store && <p className="mt-1 text-sm text-muted-foreground">{STORE_MEMBERSHIP_LINE}</p>}
             </div>
 
             <Card variant="default" className="overflow-hidden">
@@ -210,21 +213,15 @@ const HowItWorks = () => {
                     </TableHead>
                     <TableHead className="font-display text-foreground text-center">
                       Nomad
-                      <div className="text-xs font-normal text-muted-foreground">
-                        £59 / year
-                      </div>
+                      {!store && <div className="text-xs font-normal text-muted-foreground">£59 / year</div>}
                     </TableHead>
                     <TableHead className="font-display text-foreground text-center">
                       Pet Parent
-                      <div className="text-xs font-normal text-muted-foreground">
-                        £59 / year
-                      </div>
+                      {!store && <div className="text-xs font-normal text-muted-foreground">£59 / year</div>}
                     </TableHead>
                     <TableHead className="font-display text-primary text-center">
                       Combined
-                      <div className="text-xs font-normal text-muted-foreground">
-                        £99 / year
-                      </div>
+                      {!store && <div className="text-xs font-normal text-muted-foreground">£99 / year</div>}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -247,6 +244,7 @@ const HowItWorks = () => {
               </Table>
             </Card>
 
+            {!store && (
             <Card variant="feature" className="mt-8">
               <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
                 <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -266,6 +264,7 @@ const HowItWorks = () => {
                 </Button>
               </CardContent>
             </Card>
+            )}
           </section>
 
           {/* The exchange */}

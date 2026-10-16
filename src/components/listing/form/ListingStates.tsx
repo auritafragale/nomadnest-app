@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Check, Home, ShieldCheck, Star } from "lucide-react";
 import { NN_PAGE, nnButton } from "@/components/nn/ui";
 import { cn } from "@/lib/utils";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 
 export type ListingState = "live" | "membership" | "id" | "limit";
 
@@ -44,7 +45,9 @@ const ListingStates = ({
   listingId?: string;
   preview?: { title: string; line: string; photo?: string | null };
 }) => {
-  const c = COPY[state];
+  // Store apps: no prices and no way to buy, only the neutral line.
+  const store = isStoreApp() && state === "membership";
+  const c = store ? { ...COPY.membership, body: STORE_MEMBERSHIP_LINE } : COPY[state];
   const Icon = state === "live" ? Check : state === "membership" ? Star : state === "id" ? ShieldCheck : Home;
   const mainTo =
     state === "live"
@@ -79,9 +82,11 @@ const ListingStates = ({
             </span>
           </div>
         )}
-        <Link to={mainTo} className={nnButton("primary", "h-12 w-full")}>
-          {c.main[0]}
-        </Link>
+        {!store && (
+          <Link to={mainTo} className={nnButton("primary", "h-12 w-full")}>
+            {c.main[0]}
+          </Link>
+        )}
         <Link to={c.second[1]} className={nnButton("secondary", "h-12 w-full")}>
           {c.second[0]}
         </Link>

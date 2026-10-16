@@ -11,6 +11,9 @@
  */
 const KEY = "nn_store_app";
 
+/** The only thing store apps say about paying: no price, button or link. */
+export const STORE_MEMBERSHIP_LINE = "NomadNest membership is managed on nomadnest.global.";
+
 export const detectStoreApp = (env: {
   capacitorNative?: boolean;
   referrer?: string;

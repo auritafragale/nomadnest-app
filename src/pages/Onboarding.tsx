@@ -12,6 +12,7 @@ import { AvatarUpload } from "@/components/onboarding/AvatarUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { redeemFoundingCode } from "@/lib/foundingCode";
+import { isStoreApp } from "@/lib/storeApp";
 import { fetchMyProfile } from "@/lib/myProfile";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -148,9 +149,10 @@ const Onboarding = () => {
       await refreshRole();
 
       // Redeem a pending invite code if one was stashed during signup.
+      // Store apps never redeem codes (sign up there has no code field).
       const pendingCode = sessionStorage.getItem("pendingInviteCode");
-      if (pendingCode) {
-        sessionStorage.removeItem("pendingInviteCode");
+      if (pendingCode) sessionStorage.removeItem("pendingInviteCode");
+      if (pendingCode && !isStoreApp()) {
         let codeResult: string | null = null;
         let codeError: Error | null = null;
         try {
