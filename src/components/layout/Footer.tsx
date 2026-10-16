@@ -1,11 +1,24 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Instagram, Facebook, Mail } from "lucide-react";
 import blackLogo from "@/assets/Black_Logo.png";
 import whiteLogo from "@/assets/White_Logo.png";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { footerMode } from "@/lib/footer";
+import { isStoreApp } from "@/lib/storeApp";
+import { cn } from "@/lib/utils";
 
 const Footer = () => {
   const { theme } = useTheme();
+  const { user } = useAuth();
+  const { pathname } = useLocation();
+  // Store apps: no footer. Members on app pages: not on phones (the bottom
+  // bar and the menu are the navigation there; Terms, Privacy and Contact
+  // are in the menu and in Settings).
+  const mode = footerMode({ store: isStoreApp(), signedIn: !!user, path: pathname });
+  // Where the footer is hidden, keep a little room so the last thing on the
+  // page never sits right against the bottom bar.
+  const gap = <div aria-hidden="true" className={cn("h-10 shrink-0", mode === "tablet-up" && "md:hidden")} />;
   const logo = theme === "dark" ? whiteLogo : blackLogo;
 
   const columns = [
@@ -55,8 +68,11 @@ const Footer = () => {
     { label: "Cookies", href: "/cookies" },
   ];
 
+  if (mode === "none") return gap;
   return (
-    <footer className="mt-auto border-t border-border bg-surface">
+    <>
+    {mode === "tablet-up" && gap}
+    <footer className={cn("mt-auto border-t border-border bg-surface", mode === "tablet-up" && "hidden md:block")}>
       <div className="px-5 py-8 md:hidden">
         <nav aria-label="Footer" className="grid grid-cols-2 gap-x-4">
           {compact.map((link) => (
@@ -136,6 +152,7 @@ const Footer = () => {
         </div>
       </div>
     </footer>
+    </>
   );
 };
 

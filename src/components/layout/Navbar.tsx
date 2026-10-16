@@ -14,6 +14,7 @@ import { MobileNotificationsBell } from "@/components/notifications/MobileNotifi
 import { useTheme } from "@/contexts/ThemeContext";
 import { usePerkAccess } from "@/hooks/usePerks";
 import { perksMonthStore } from "@/lib/perkPlacements";
+import { HELP_LINKS } from "@/lib/footer";
 import { Gift, Sparkles } from "lucide-react";
 import blackLogo from "@/assets/Black_Logo.png";
 import whiteLogo from "@/assets/White_Logo.png";
@@ -368,6 +369,19 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                   <span className="flex-1 text-left">Help & Support</span>
                   <ChevronRight className="w-4 h-4 ml-auto text-[var(--nn-accent-dark)]" />
                 </Button>
+                {/* Two taps from anywhere, also where the footer is hidden. */}
+                <nav aria-label="Contact and legal" className="flex flex-wrap gap-3 pl-1">
+                  {HELP_LINKS.map((l) => (
+                    <Link
+                      key={l.href}
+                      to={l.href}
+                      onClick={closeMenu}
+                      className="inline-flex min-h-[44px] items-center px-2 text-sm font-semibold text-muted-foreground underline-offset-2 hover:underline"
+                    >
+                      {l.label}
+                    </Link>
+                  ))}
+                </nav>
               </div>
 
               <div className="pt-4 space-y-2 border-t border-border">
