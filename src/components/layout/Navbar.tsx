@@ -204,14 +204,18 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
 
               </>
             ) : (
-              <>
-                <Link to="/auth">
-                  <Button variant="ghost">Log in</Button>
-                </Link>
-                <Link to="/auth?signup=true">
-                  <Button>Create profile</Button>
-                </Link>
-              </>
+              // Signed out: Create profile is the main action; Log in is the quieter one.
+              <div className="flex items-center gap-3">
+                <Button asChild className="h-12 px-5">
+                  <Link to="/auth?signup=true">Create profile</Link>
+                </Button>
+                <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <span className="hidden md:inline lg:hidden xl:inline">Already a member?</span>
+                  <Button asChild variant="ghost" className="h-11 px-3 font-semibold text-[var(--nn-accent-dark)]">
+                    <Link to="/auth">Log in</Link>
+                  </Button>
+                </span>
+              </div>
             )}
           </div>
 
@@ -381,16 +385,22 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                     </Button>
                   </>
                 ) : (
-                  <>
-                    <Link to="/auth" onClick={closeMenu}>
-                      <Button variant="outline" className="w-full">
-                        Log in
+                  // Signed out: Create profile first, then "Already a member? Log in".
+                  <div className="flex flex-col gap-4">
+                    <Button asChild className="h-12 w-full text-[15px]">
+                      <Link to="/auth?signup=true" onClick={closeMenu}>
+                        Create profile
+                      </Link>
+                    </Button>
+                    <p className="flex flex-wrap items-center justify-center gap-x-1 text-[15px] text-muted-foreground">
+                      Already a member?
+                      <Button asChild variant="ghost" className="h-11 px-3 text-[15px] font-semibold text-[var(--nn-accent-dark)]">
+                        <Link to="/auth" onClick={closeMenu}>
+                          Log in
+                        </Link>
                       </Button>
-                    </Link>
-                    <Link to="/auth?signup=true" onClick={closeMenu}>
-                      <Button className="w-full">Create profile</Button>
-                    </Link>
-                  </>
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
