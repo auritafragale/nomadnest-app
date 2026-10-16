@@ -25,12 +25,16 @@ export interface AdminPerk {
   is_perk_of_month: boolean;
   spotlight_text: string | null;
   picked_for_sits: boolean;
+  /** P2: up to 30 characters; {country} and {city} filled in on the member's device. */
+  short_title: string | null;
 }
 
 export interface PerkStats {
   perk_id: string;
   total_clicks: number;
   clicks_30d: number;
+  /** P2: clicks per placement (perks_page, sit_confirmed, sit_upcoming, sit_now, dashboard, menu). */
+  by_placement?: Record<string, number> | null;
 }
 
 export type PerkInput = Omit<AdminPerk, "id">;

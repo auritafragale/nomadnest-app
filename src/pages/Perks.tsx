@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Briefcase, PawPrint, Plane } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -28,6 +28,7 @@ import {
   type TripMoment,
 } from "@/hooks/usePerks";
 import { isStoreApp } from "@/lib/storeApp";
+import { perksMonthStore } from "@/lib/perkPlacements";
 import { cn } from "@/lib/utils";
 import aboutJourney from "@/assets/about-journey.jpg";
 
@@ -91,6 +92,10 @@ const PageTitle = ({ pills }: { pills?: React.ReactNode }) => (
 const Perks = () => {
   const { signedIn, isMember, loading: accessLoading } = usePerkAccess();
   const [active, setActive] = useState<TripMoment>("before");
+  // Opening the perks this month clears the menu's "New this month" badge (on this device).
+  useEffect(() => {
+    if (isMember) perksMonthStore.markSeen();
+  }, [isMember]);
 
   // Members get the member list; everyone else only the preview. Signed-out
   // visitors never call a members-only function.

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -12,6 +13,9 @@ import { SitSummary, SitActions } from "@/components/sit-updates/SitSummary";
 import { DailyUpdateComposer } from "@/components/sit-updates/DailyUpdateComposer";
 import { UpdatesTimeline } from "@/components/sit-updates/UpdatesTimeline";
 import { SitMoreMenu } from "@/components/sits/SitActions";
+import { SitConfirmedView } from "@/components/sits/SitConfirmedView";
+import { FreeTimePanel, TripPass } from "@/components/perks/Placements";
+import { daysUntil, sitConfirmedStore } from "@/lib/perkPlacements";
 
 /**
  * A sit (design: SitNomad, SitParent, SitTabletDark, SitDesktop). The Nomad
@@ -19,6 +23,10 @@ import { SitMoreMenu } from "@/components/sits/SitActions";
  * the updates, newest day first. Phone: one column. Tablet: updates with the
  * summary and actions in a column on the right. Desktop: summary and actions
  * on the left. The private Arrival Check-In is linked for the Nomad only.
+ *
+ * Member perks (P2), for the Nomad: "Sit confirmed" once per sit (on this
+ * device), the Trip pass from confirmation until the start date, and "Free
+ * time in {city}?" during the sit. The perks parts show for members only.
  */
 const SitDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +35,10 @@ const SitDetail = () => {
   const { data: updates = [] } = useSitCheckins(context ? id : undefined);
   const { data: sits = [] } = useSits();
   const sit = sits.find((s) => s.id === id);
+  const [confirmedSeen, setConfirmedSeen] = useState(true);
+  useEffect(() => {
+    if (id) setConfirmedSeen(sitConfirmedStore.seen(id));
+  }, [id]);
 
   if (!authLoading && !user) return <Navigate to="/auth" replace />;
 
@@ -38,6 +50,17 @@ const SitDetail = () => {
   const showComposer = !!context?.can_post && context.day_number !== null;
   const role = context?.role ?? "sitter";
   const menuItems = role === "owner" ? (["propose", "listing", "mySits"] as const) : (["arrival", "listing", "mySits"] as const);
+
+  const isNomad = context?.role === "sitter";
+  const city = sit?.listing?.city ?? null;
+  const country = sit?.listing?.country ?? null;
+  const beforeStart = !!context && context.status === "confirmed" && daysUntil(context.today, context.start_date) >= 0;
+  const during = !!context && context.status === "in_progress" && context.day_number !== null;
+  const showConfirmed = isNomad && beforeStart && !confirmedSeen;
+  const closeConfirmed = () => {
+    if (id) sitConfirmedStore.markSeen(id);
+    setConfirmedSeen(true);
+  };
 
   return (
     <RoleTheme role={role} className="flex min-h-screen flex-col">
@@ -56,6 +79,8 @@ const SitDetail = () => {
           <div className="rounded-[24px] border border-[var(--nn-border)] p-10 text-center text-muted-foreground">
             This sit could not be found.
           </div>
+        ) : showConfirmed ? (
+          <SitConfirmedView context={context} city={city} country={country} onDone={closeConfirmed} />
         ) : (
           <div className="flex flex-col gap-[18px] md:grid md:grid-cols-[minmax(0,1fr)_280px] md:items-start md:gap-5 lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-7 xl:grid-cols-[380px_minmax(0,1fr)]">
             <aside className="flex min-w-0 flex-col gap-[18px] md:order-2 md:sticky md:top-24 md:gap-4 lg:order-1">
@@ -63,6 +88,19 @@ const SitDetail = () => {
               <SitActions context={context} />
             </aside>
             <div className="flex min-w-0 flex-col gap-[18px] md:order-1 md:gap-5 lg:order-2">
+              {isNomad && beforeStart && (
+                <TripPass
+                  sitId={context.sit_id}
+                  city={city}
+                  country={country}
+                  startDate={context.start_date}
+                  endDate={context.end_date}
+                  today={context.today}
+                  petNames={context.pets.map((p) => p.name)}
+                  placement="sit_upcoming"
+                />
+              )}
+              {isNomad && during && <FreeTimePanel city={city} country={country} />}
               {showComposer && <DailyUpdateComposer context={context} todayChips={todayChips} />}
               <section aria-labelledby="updates-heading" className="flex flex-col gap-3">
                 <SerifTitle as="h2" className="text-[22px]">

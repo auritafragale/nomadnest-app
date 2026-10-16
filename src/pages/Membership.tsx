@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Check, ChevronRight, Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -12,6 +12,7 @@ import { useMembership, MEMBERSHIP_PLANS, type PlanId, type PlanPreview } from "
 import ResponsiveSheet from "@/components/nn/ResponsiveSheet";
 import { formatCount, useFoundingSpots } from "@/hooks/useFoundingSpots";
 import { REDEEM_MESSAGES } from "@/lib/foundingCode";
+import { MembershipPerksBlock } from "@/components/perks/Placements";
 import { cn } from "@/lib/utils";
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null);
@@ -366,6 +367,8 @@ const Membership = () => {
                     );
                   })}
                 </div>
+                {/* Non-members: what the membership pays back (logos from the preview, no amounts). */}
+                {!m.subscribed && !isFounding && <MembershipPerksBlock />}
                 <button type="button" onClick={() => void choose()} disabled={busy || (!!user && m.loading)} className={nnButton("primary", "h-12 w-full md:w-auto md:self-start md:px-10")}>
                   {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                   {ctaLabel}
@@ -400,15 +403,6 @@ const Membership = () => {
                 {isMember && <p className="text-sm text-muted-foreground">If you redeem a code, we cancel your paid plan and refund what is left.</p>}
               </section>
             )}
-
-            <Link to="/perks" className="flex min-h-[64px] items-center gap-3 rounded-[22px] border border-[var(--nn-border)] bg-card p-4">
-              <span className="text-2xl" aria-hidden="true">🎁</span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-bold">Member perks</span>
-                <span className="block text-sm text-muted-foreground">Travel insurance, eSIMs, pet care and more</span>
-              </span>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
-            </Link>
 
             <section aria-labelledby="faq-title" className="flex flex-col gap-2">
               <h2 id="faq-title" className="font-display text-2xl font-normal">Good to know</h2>

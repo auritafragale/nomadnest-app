@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { PerksDashCard } from "@/components/perks/Placements";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { differenceInCalendarDays, parseISO, startOfToday } from "date-fns";
@@ -500,12 +501,15 @@ export const NomadDashboard = ({
       aside={
         <>
           {header}
+          <PerksDashCard className="hidden lg:flex" />
           <NomadProfileList className="hidden lg:block" />
         </>
       }
     >
       <YourSitCard current={current} next={next} />
       <TodoList items={todos} />
+      {/* Members only (the card renders nothing for anyone else). */}
+      <PerksDashCard className="md:col-span-2 lg:hidden" />
       <ApplicationsSummary />
       <NomadProfileTiles className="md:col-span-2 lg:hidden" />
       <ReviewsAboutYouRow side="sitter" className="md:col-span-2 lg:hidden" />

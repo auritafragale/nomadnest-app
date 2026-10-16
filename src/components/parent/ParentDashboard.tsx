@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { PerksDashCard } from "@/components/perks/Placements";
 import { Link } from "react-router-dom";
 import { differenceInCalendarDays, parseISO, startOfToday } from "date-fns";
 import { BookHeart, BookOpen, CalendarPlus, Camera, ChevronRight, MessageSquare, Plus, Star, User, Users } from "lucide-react";
@@ -325,6 +326,7 @@ export const ParentDashboard = ({
       aside={
         <>
           {header}
+          <PerksDashCard parentMode className="hidden lg:flex" />
           <TodoList items={todos} className="hidden lg:block" />
         </>
       }
@@ -332,6 +334,8 @@ export const ParentDashboard = ({
       <MembershipNotice hasPublishedListing={listings.some((l) => l.status === "published")} className="md:order-0 md:col-span-2" />
       <TodoList items={todos} className={cn("md:order-3 lg:hidden", !hasSits && "md:col-span-2")} />
       <HomeSitCard current={current} next={next} className="md:order-1 md:col-span-2" />
+      {/* Members only (the card renders nothing for anyone else). */}
+      <PerksDashCard parentMode className="md:order-[7] md:col-span-2 lg:hidden" />
 
       <div className="flex min-w-0 flex-col gap-[18px] md:order-2 md:col-span-2 md:gap-4 lg:gap-5">
       {listingsLoading ? (

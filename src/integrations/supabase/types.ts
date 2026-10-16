@@ -1437,6 +1437,7 @@ export type Database = {
           clicked_at: string
           id: string
           perk_id: string
+          placement: string
           referrer: string | null
           user_id: string | null
         }
@@ -1444,6 +1445,7 @@ export type Database = {
           clicked_at?: string
           id?: string
           perk_id: string
+          placement?: string
           referrer?: string | null
           user_id?: string | null
         }
@@ -1451,6 +1453,7 @@ export type Database = {
           clicked_at?: string
           id?: string
           perk_id?: string
+          placement?: string
           referrer?: string | null
           user_id?: string | null
         }
@@ -1482,6 +1485,7 @@ export type Database = {
           logo_url: string | null
           name: string
           picked_for_sits: boolean
+          short_title: string | null
           slug: string
           sort_order: number
           spotlight_text: string | null
@@ -1507,6 +1511,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           picked_for_sits?: boolean
+          short_title?: string | null
           slug: string
           sort_order?: number
           spotlight_text?: string | null
@@ -1532,6 +1537,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           picked_for_sits?: boolean
+          short_title?: string | null
           slug?: string
           sort_order?: number
           spotlight_text?: string | null
@@ -3229,6 +3235,7 @@ export type Database = {
           logo_url: string | null
           name: string
           picked_for_sits: boolean
+          short_title: string | null
           slug: string
           sort_order: number
           spotlight_text: string | null
@@ -3294,6 +3301,7 @@ export type Database = {
       admin_perk_click_stats: {
         Args: never
         Returns: {
+          by_placement: Json
           clicks_30d: number
           perk_id: string
           total_clicks: number
@@ -3544,6 +3552,7 @@ export type Database = {
           logo_url: string
           name: string
           picked_for_sits: boolean
+          short_title: string | null
           slug: string
           sort_order: number
           spotlight_text: string

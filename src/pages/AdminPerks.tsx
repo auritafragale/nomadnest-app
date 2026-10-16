@@ -29,6 +29,16 @@ import { Gift, Loader2, MousePointerClick, Pencil, Plus, Trash2 } from "lucide-r
 import { useToast } from "@/hooks/use-toast";
 import { useAdminPerks, slugify, type AdminPerk, type PerkInput } from "@/hooks/useAdminPerks";
 import { PERK_CATEGORIES, TRIP_MOMENTS, isPlaceholderHeadline } from "@/hooks/usePerks";
+import { PerkLogoUploader } from "@/components/perks/PerkLogoUploader";
+
+const PLACEMENT_LABEL: Record<string, string> = {
+  perks_page: "Perks page",
+  sit_confirmed: "Sit confirmed",
+  sit_upcoming: "Trip pass",
+  sit_now: "During the sit",
+  dashboard: "Dashboard",
+  menu: "Menu",
+};
 
 const emptyPerk: PerkInput = {
   name: "",
@@ -51,6 +61,7 @@ const emptyPerk: PerkInput = {
   is_perk_of_month: false,
   spotlight_text: "",
   picked_for_sits: false,
+  short_title: "",
 };
 
 const AdminPerks = () => {
@@ -110,6 +121,7 @@ const AdminPerks = () => {
         benefit_headline: form.benefit_headline?.trim() || null,
         benefit_subline: form.benefit_subline?.trim() || null,
         spotlight_text: form.spotlight_text?.trim() || null,
+        short_title: form.short_title?.trim() || null,
       };
 
       if (editing) await updatePerk(editing.id, payload);
@@ -235,6 +247,14 @@ const AdminPerks = () => {
                         {stat?.total_clicks ?? 0} clicks total
                       </span>
                       <span>{stat?.clicks_30d ?? 0} in last 30 days</span>
+                      {stat?.by_placement && Object.keys(stat.by_placement).length > 0 && (
+                        <span>
+                          {Object.entries(stat.by_placement)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([k, n]) => `${PLACEMENT_LABEL[k] ?? k} ${n}`)
+                            .join(" · ")}
+                        </span>
+                      )}
                       {perk.discount_code && <span>Code: {perk.discount_code}</span>}
                       <span>Order: {perk.sort_order}</span>
                     </div>
@@ -306,6 +326,22 @@ const AdminPerks = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="perk-short-title">Short title</Label>
+              <Input
+                id="perk-short-title"
+                maxLength={30}
+                value={form.short_title ?? ""}
+                onChange={(e) => setForm({ ...form, short_title: e.target.value.slice(0, 30) })}
+                placeholder="{country} data plan"
+                aria-describedby="perk-short-title-hint"
+              />
+              <p id="perk-short-title-hint" className="text-xs text-muted-foreground">
+                Up to 30 characters, e.g. “Travel cover” or “Safe Wi-Fi at the sit”. {"{country}"} and {"{city}"} are filled in from the
+                member’s own sit. Empty: the partner name.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -407,12 +443,12 @@ const AdminPerks = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="perk-logo">Logo URL</Label>
-              <Input
-                id="perk-logo"
-                value={form.logo_url ?? ""}
-                onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-                placeholder="https://…/logo.png"
+              <Label>Logo</Label>
+              <PerkLogoUploader
+                name={form.name}
+                slug={form.slug}
+                value={form.logo_url ?? null}
+                onChange={(url) => setForm({ ...form, logo_url: url ?? "" })}
               />
             </div>
 
