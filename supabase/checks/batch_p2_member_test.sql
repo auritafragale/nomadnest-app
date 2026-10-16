@@ -1,13 +1,15 @@
--- Batch P2: behaviour test, acting as members.
+-- Batch P2 (with P2b): behaviour test, acting as visitors and members.
 --
 -- One DO block. It always ends with an exception, so the whole statement rolls
 -- back and nothing it does is ever kept:
 --   PASS:  ERROR: PASS_ROLLED_BACK: every check behaved as expected
 --   FAIL:  ERROR: FAIL: <what went wrong>
--- Test data: a perk "p2-test-perk" with short title "{country} test plan",
--- and storage rows named "p2-test-*" (no file is stored). Needs two non-admin
--- members (a paying one and one without membership); an admin is used if
--- there is one.
+-- Test data: a perk "p2-test-perk" with short title "{country} test plan"
+-- and logo "p2-test-logo.png", and storage rows named "p2-test-*" (no file
+-- is stored). Needs two non-admin members (a paying one and one without
+-- membership); an admin is used if there is one. P2b: perk-logos is a
+-- private bucket that anyone can read; deletes can't be tried from SQL
+-- (storage blocks them), batch_p2_proof checks the delete rule instead.
 
 DO $$
 DECLARE
@@ -29,9 +31,20 @@ BEGIN
          membership_expiry = now() + interval '1 year', membership_payment_failed_at = NULL WHERE id = v_member;
   UPDATE public.profiles SET founding_member = false, membership_status = 'none', membership_type = NULL,
          membership_expiry = NULL, membership_payment_failed_at = NULL WHERE id = v_none;
-  INSERT INTO public.perks (name, slug, category, benefit_short, affiliate_url, is_active, trip_moment, short_title)
-  VALUES ('P2 test perk', 'p2-test-perk', 'Other', 'P2 test', 'https://example.com/p2', true, 'before', '{country} test plan')
+  INSERT INTO public.perks (name, slug, category, benefit_short, affiliate_url, is_active, trip_moment, short_title, logo_url)
+  VALUES ('P2 test perk', 'p2-test-perk', 'Other', 'P2 test', 'https://example.com/p2', true, 'before', '{country} test plan', 'p2-test-logo.png')
   RETURNING id INTO v_perk;
+  -- A logo in perk-logos, and a file in a private bucket that must stay private.
+  INSERT INTO storage.objects (bucket_id, name, owner_id) VALUES ('perk-logos', 'p2-test-logo.png', v_admin::text);
+  INSERT INTO storage.objects (bucket_id, name, owner_id) VALUES ('id-verification-documents', 'p2-test-private.png', v_admin::text);
+
+  -- ── P2b: logo_url takes a file name, never a web link ─────────────────
+  v_raised := false;
+  BEGIN
+    UPDATE public.perks SET logo_url = 'https://partner.example/logo.png' WHERE id = v_perk;
+  EXCEPTION WHEN check_violation THEN v_raised := true;
+  END;
+  IF NOT v_raised THEN RAISE EXCEPTION 'FAIL: a web link was stored as a perk logo'; END IF;
 
   -- ── A member's click is stored with its placement (as perk-redirect does) ─
   INSERT INTO public.perk_clicks (perk_id, user_id, placement) VALUES (v_perk, v_member, 'sit_upcoming');
@@ -49,13 +62,28 @@ BEGIN
   END;
   IF NOT v_raised THEN RAISE EXCEPTION 'FAIL: a placement that is not one of the six was stored'; END IF;
 
-  -- The member sees it in their list, with the short title and "used".
+  -- ── A visitor: can read perk logos, nothing else, and can't upload ────
+  PERFORM set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
+  SET LOCAL ROLE anon;
+  SELECT count(*) INTO v_n FROM storage.objects WHERE bucket_id = 'perk-logos' AND name = 'p2-test-logo.png';
+  IF v_n <> 1 THEN RESET ROLE; RAISE EXCEPTION 'FAIL: a visitor cannot read a perk logo'; END IF;
+  SELECT count(*) INTO v_n FROM storage.objects WHERE name = 'p2-test-private.png';
+  IF v_n <> 0 THEN RESET ROLE; RAISE EXCEPTION 'FAIL: a visitor can read a file in another bucket'; END IF;
+  v_raised := false;
+  BEGIN
+    INSERT INTO storage.objects (bucket_id, name) VALUES ('perk-logos', 'p2-test-visitor.png');
+  EXCEPTION WHEN insufficient_privilege THEN v_raised := true;
+  END;
+  IF NOT v_raised THEN RESET ROLE; RAISE EXCEPTION 'FAIL: a visitor could upload a perk logo'; END IF;
+  RESET ROLE;
+
+  -- ── A member: sees the list with short title and "used" ───────────────
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_member, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
   SELECT count(*) INTO v_n FROM public.get_member_perks() x
-  WHERE x.slug = 'p2-test-perk' AND x.short_title = '{country} test plan' AND x.used_by_me;
-  IF v_n <> 1 THEN RESET ROLE; RAISE EXCEPTION 'FAIL: the member list lacks the short title or "used"'; END IF;
-  -- … but can't write clicks or read them directly.
+  WHERE x.slug = 'p2-test-perk' AND x.short_title = '{country} test plan' AND x.logo_url = 'p2-test-logo.png' AND x.used_by_me;
+  IF v_n <> 1 THEN RESET ROLE; RAISE EXCEPTION 'FAIL: the member list lacks the short title, logo or "used"'; END IF;
+  -- … but can't write clicks or read them, or perks, directly.
   FOREACH v_stmt IN ARRAY ARRAY[
     format('INSERT INTO public.perk_clicks (perk_id, user_id, placement) VALUES (%L, %L, %L)', v_perk, v_member, 'menu'),
     'SELECT name FROM public.perks LIMIT 1'
@@ -70,13 +98,20 @@ BEGIN
   SELECT count(*) INTO v_n FROM public.perk_clicks WHERE perk_id = v_perk;
   IF v_n <> 0 THEN RESET ROLE; RAISE EXCEPTION 'FAIL: a member could read clicks'; END IF;
 
-  -- ── A member can't upload, replace or delete perk logos ──────────────
+  -- A member can read the logo, but not upload, replace, or read other buckets.
+  SELECT count(*) INTO v_n FROM storage.objects WHERE bucket_id = 'perk-logos' AND name = 'p2-test-logo.png';
+  IF v_n <> 1 THEN RESET ROLE; RAISE EXCEPTION 'FAIL: a member cannot read a perk logo'; END IF;
+  SELECT count(*) INTO v_n FROM storage.objects WHERE name = 'p2-test-private.png';
+  IF v_n <> 0 THEN RESET ROLE; RAISE EXCEPTION 'FAIL: a member can read someone else''s file in another bucket'; END IF;
   v_raised := false;
   BEGIN
     INSERT INTO storage.objects (bucket_id, name, owner_id) VALUES ('perk-logos', 'p2-test-member.png', v_member::text);
   EXCEPTION WHEN insufficient_privilege THEN v_raised := true;
   END;
   IF NOT v_raised THEN RESET ROLE; RAISE EXCEPTION 'FAIL: a member could upload a perk logo'; END IF;
+  UPDATE storage.objects SET name = 'p2-test-moved.png' WHERE bucket_id = 'perk-logos' AND name = 'p2-test-logo.png';
+  GET DIAGNOSTICS v_n = ROW_COUNT;
+  IF v_n <> 0 THEN RESET ROLE; RAISE EXCEPTION 'FAIL: a member could replace a perk logo'; END IF;
   RESET ROLE;
 
   -- ── A non-member gets nothing from the member list ────────────────────

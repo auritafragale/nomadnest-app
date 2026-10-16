@@ -7,18 +7,45 @@ export type PerkPlacement = (typeof PERK_PLACEMENTS)[number];
 
 export const PERK_LOGO_BUCKET = "perk-logos";
 
+/** Logo files the admin uploader accepts (checked again by the storage rules). */
+export const PERK_LOGO_EXTENSIONS = ["png", "webp", "svg", "jpg", "jpeg"] as const;
+export const PERK_LOGO_MAX_BYTES = 512 * 1024;
+
+export const PERK_LOGO_TYPES: Record<string, string> = {
+  png: "image/png",
+  webp: "image/webp",
+  svg: "image/svg+xml",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+};
+
+/** Plain messages for a file the uploader won't take, or null when it's fine. */
+export const checkLogoFile = (file: { name: string; type: string; size: number }) => {
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const okExt = (PERK_LOGO_EXTENSIONS as readonly string[]).includes(ext);
+  if (!okExt || (file.type && file.type !== PERK_LOGO_TYPES[ext])) return "Please choose a PNG, WebP, SVG or JPG file.";
+  if (file.size > PERK_LOGO_MAX_BYTES) return "That file is larger than 512 KB. Please choose a smaller one.";
+  return null;
+};
+
 /**
- * A logo URL the app may show: only files in our own public perk-logos
- * bucket. Partner websites (hotlinking) and data: URLs are never shown; the
- * letter tile is used instead.
+ * perks.logo_url holds a file name in our private perk-logos bucket, for
+ * example "safetywing-1760000000000.png". The app shows it through a signed
+ * link; anything else (a partner website, a data: URL, another bucket) gets
+ * the letter tile.
  */
-export const isOurPerkLogo = (url: string | null | undefined, supabaseUrl: string | undefined) => {
-  if (!url || !supabaseUrl) return false;
-  const base = `${supabaseUrl.replace(/\/+$/, "")}/storage/v1/object/public/${PERK_LOGO_BUCKET}/`;
-  if (!url.startsWith(base)) return false;
-  const rest = url.slice(base.length);
-  // A plain file name in the bucket, nothing that could leave it.
-  return /^[A-Za-z0-9._/-]+$/.test(rest) && !rest.includes("..");
+export const perkLogoPath = (value: string | null | undefined): string | null => {
+  const v = (value ?? "").trim();
+  return /^[A-Za-z0-9_-][A-Za-z0-9._-]*\.(png|webp|svg|jpe?g)$/i.test(v) ? v : null;
+};
+
+/**
+ * Files to delete when the perk editor closes: every logo uploaded or saved
+ * before that the perk no longer uses. Not saved: only this session's uploads.
+ */
+export const logoFilesToDelete = ({ saved, uploaded, final }: { saved: string | null; uploaded: string[]; final: string | null }) => {
+  const keep = perkLogoPath(final);
+  return [...new Set([...uploaded, saved])].map(perkLogoPath).filter((p): p is string => !!p && p !== keep);
 };
 
 /** "{country} data plan" → "India data plan" from the member's own sit. With

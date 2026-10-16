@@ -87,9 +87,10 @@ admin"), that's a missing fixture, not a failure: note it and move on.
 | 61 | `batch_f1i_proof.sql` | every row `ok = true` (and `npm test`: no Stripe customer is looked up by email) |
 | 62 | `batch_f1i_member_test.sql` | `ERROR: PASS_ROLLED_BACK …` |
 | 63 | `batch_f1i_leftover.sql` | every count `0` |
-| 64 | `batch_p2_proof.sql` | every row `ok = true` (run after the `perk-logos` bucket is created) |
+| 64 | `batch_p2_proof.sql` | every row `ok = true` (the private `perk-logos` bucket must exist) |
 | 65 | `batch_p2_member_test.sql` | `ERROR: PASS_ROLLED_BACK …` |
 | 66 | `batch_p2_leftover.sql` | every count `0` |
+| 67 | `batch_p2b_proof.sql` | every row `ok = true` (perk logos: private bucket anyone can read, file names only) |
 
 One-off, not part of the regular run: `batch_f1e_repair_preview.sql` (read-only)
 lists the rows the F1e repair would change. Run it once before the repair

@@ -2,52 +2,64 @@ import { useRef, useState } from "react";
 import { Loader2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PerkLogo } from "@/components/perks/PerkParts";
-import { isOurPerkLogo, PERK_LOGO_BUCKET } from "@/lib/perkPlacements";
-
-const TYPES: Record<string, string> = { "image/png": "png", "image/webp": "webp", "image/svg+xml": "svg", "image/jpeg": "jpg" };
-const MAX_BYTES = 512 * 1024;
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { checkLogoFile, PERK_LOGO_BUCKET, PERK_LOGO_TYPES, perkLogoPath } from "@/lib/perkPlacements";
 
 /**
- * Admin only: uploads a partner logo to our public perk-logos bucket and
- * hands back its URL (the app never shows logos from anywhere else). PNG,
- * WebP, SVG or JPG, 512 KB at most (the storage rules check the type too).
+ * Admin only: uploads a partner logo to our private perk-logos bucket as
+ * "<slug>-<timestamp>.<ext>" and hands back that file name, which is what
+ * perks.logo_url stores. The app shows it through a signed link. Uploads
+ * replaced before saving are deleted here; the editor deletes the old saved
+ * file once the perk is saved.
  */
 export const PerkLogoUploader = ({
   name,
   slug,
   value,
   onChange,
+  onUploaded,
 }: {
   name: string;
   slug: string;
   value: string | null;
-  onChange: (url: string | null) => void;
+  onChange: (path: string | null) => void;
+  /** Every file uploaded in this editing session, so the editor can tidy up. */
+  onUploaded: (path: string) => void;
 }) => {
   const input = useRef<HTMLInputElement>(null);
+  const mine = useRef<Set<string>>(new Set());
+  const { isAdmin } = useIsAdmin();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const ours = isOurPerkLogo(value, import.meta.env.VITE_SUPABASE_URL);
+  const ours = !!perkLogoPath(value);
 
   const pick = async (file: File | undefined) => {
     setError(null);
     if (!file) return;
-    const ext = TYPES[file.type];
-    if (!ext) {
-      setError("Please choose a PNG, WebP, SVG or JPG file.");
-      return;
-    }
-    if (file.size > MAX_BYTES) {
-      setError("That file is larger than 512 KB. Please choose a smaller one.");
+    const problem = checkLogoFile(file);
+    if (problem) {
+      setError(problem);
       return;
     }
     setBusy(true);
     try {
+      const ext = file.name.split(".").pop()!.toLowerCase();
       const base = (slug || name || "perk").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "perk";
       const path = `${base}-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from(PERK_LOGO_BUCKET).upload(path, file, { contentType: file.type, upsert: false });
+      const { error: upErr } = await supabase.storage.from(PERK_LOGO_BUCKET).upload(path, file, { contentType: PERK_LOGO_TYPES[ext], upsert: false });
       if (upErr) throw upErr;
-      onChange(supabase.storage.from(PERK_LOGO_BUCKET).getPublicUrl(path).data.publicUrl);
-    } catch {
+      mine.current.add(path);
+      onUploaded(path);
+      // An upload from this session that was never saved: nothing else uses it.
+      const previous = perkLogoPath(value);
+      if (previous && mine.current.has(previous)) {
+        const { error: rmErr } = await supabase.storage.from(PERK_LOGO_BUCKET).remove([previous]);
+        if (rmErr && isAdmin) console.error("[perk logo] could not delete the replaced upload", rmErr);
+      }
+      onChange(path);
+    } catch (e) {
+      // The real storage error, for admins only, so a failed upload can be diagnosed.
+      if (isAdmin) console.error("[perk logo] upload failed", e);
       setError("We couldn't upload the logo. Please try again.");
     } finally {
       setBusy(false);
@@ -72,9 +84,7 @@ export const PerkLogoUploader = ({
           <span className="text-xs text-muted-foreground">
             {ours
               ? "Shown on a white tile in light and dark."
-              : value
-                ? "The current logo is from another website, so the app shows the letter tile. Please upload one."
-                : "PNG, WebP, SVG or JPG, 512 KB at most. Without one, the app shows the letter tile."}
+              : "PNG, WebP, SVG or JPG, 512 KB at most. Without one, the app shows the letter tile."}
           </span>
         </div>
       </div>
@@ -86,7 +96,7 @@ export const PerkLogoUploader = ({
       <input
         ref={input}
         type="file"
-        accept="image/png,image/webp,image/svg+xml,image/jpeg"
+        accept=".png,.webp,.svg,.jpg,.jpeg,image/png,image/webp,image/svg+xml,image/jpeg"
         className="sr-only"
         tabIndex={-1}
         aria-hidden="true"

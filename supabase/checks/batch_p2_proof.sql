@@ -1,5 +1,9 @@
 -- Batch P2: proof that the live database matches 20261016090000_batch_p2.sql
 -- and the perk-logos bucket set up through Lovable's Storage settings.
+-- P2b: the bucket is PRIVATE (the workspace allows no public buckets); anyone
+-- can read its files through the "Anyone can read perk logos" policy, and the
+-- app shows them through signed links. The 512 KB limit is checked in the
+-- admin uploader; the bucket has no size limit unless one is set in Storage.
 -- READ-ONLY. One row per check; every row should have ok = true.
 
 SELECT 'perk_clicks.placement: only the six placements' AS item,
@@ -16,9 +20,18 @@ SELECT 'perks.short_title: up to 30 characters', 'check constraint',
        EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'perks_short_title_length_check' AND pg_get_constraintdef(oid) ~ '30')
 
 UNION ALL
-SELECT 'bucket perk-logos: public, 512 KB', 'public, 524288 bytes',
-       COALESCE((SELECT format('public %s, %s bytes', public, COALESCE(file_size_limit::text, 'no limit')) FROM storage.buckets WHERE id = 'perk-logos'), 'missing'),
-       EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'perk-logos' AND public AND file_size_limit = 524288)
+SELECT 'bucket perk-logos: private', 'private; size limit 524288 bytes or none (checked in the admin uploader)',
+       COALESCE((SELECT format('public %s, %s', public, COALESCE(file_size_limit::text || ' bytes', 'no size limit')) FROM storage.buckets WHERE id = 'perk-logos'), 'missing'),
+       EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'perk-logos' AND NOT public AND (file_size_limit IS NULL OR file_size_limit <= 524288))
+
+UNION ALL
+SELECT 'perk-logos: anyone can read, this bucket only', 'SELECT for anon and authenticated, using only bucket_id = perk-logos',
+       COALESCE((SELECT string_agg(format('%s %s: %s', policyname, roles, qual), '; ') FROM pg_policies
+                 WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Anyone can read perk logos'), 'missing'),
+       EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects'
+               AND policyname = 'Anyone can read perk logos' AND cmd = 'SELECT' AND permissive = 'PERMISSIVE'
+               AND roles @> ARRAY['anon', 'authenticated']::name[]
+               AND regexp_replace(qual, '[()[:space:]]', '', 'g') = 'bucket_id=''perk-logos''::text')
 
 UNION ALL
 SELECT 'bucket perk-logos: file types limited', 'by the bucket''s types, or by the upload rule (png, webp, svg, jpg, jpeg)',
