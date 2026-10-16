@@ -222,7 +222,7 @@ const AppShell = () => {
         <>
           {/* Spacer so page content isn't hidden behind the fixed bottom nav */}
           {location.pathname !== "/inbox" && (
-            <div className="h-16 md:hidden" aria-hidden="true" />
+            <div className="h-[calc(4rem+env(safe-area-inset-bottom))] md:hidden" aria-hidden="true" />
           )}
           <BottomNav />
         </>
