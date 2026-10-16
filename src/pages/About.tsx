@@ -15,6 +15,7 @@ import { Instagram, Facebook, Mail, Heart } from "lucide-react";
 import aboutHero from "@/assets/about-hero.jpg";
 import aboutCommunity from "@/assets/about-community.jpg";
 import aboutJourney from "@/assets/about-journey.jpg";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 
 const About = () => {
   useEffect(() => {
@@ -29,8 +30,9 @@ const About = () => {
     if (!meta.parentNode) document.head.appendChild(meta);
   }, []);
 
+  const store = isStoreApp();
   const comparisonRows = [
-    { feature: "Annual fee", nn: "From £59", others: "From £99–£129" },
+    ...(store ? [] : [{ feature: "Annual fee", nn: "From £59", others: "From £99–£129" }]),
     { feature: "Booking fees", nn: "Never", others: "Often" },
     {
       feature: "ID verification",
@@ -147,7 +149,7 @@ const About = () => {
                     world is better explored slowly, with a dog at your feet
                     and a local neighbourhood to call home for a while.
                     Together they&apos;ve completed over 50 sits across more
-                    than 20 countries, saving over £20,000 in accommodation
+                    than 20 countries, saving {store ? "thousands" : "over £20,000"} in accommodation
                     costs along the way. That experience became the foundation
                     for NomadNest.
                   </p>

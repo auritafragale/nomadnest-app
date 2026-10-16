@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { invitableRanges, rangeInviteState } from "@/lib/invites";
 import { loadLiveApplicationRanges } from "@/hooks/useSitterInvites";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 
 export interface InviteListing {
   id: string;
@@ -199,9 +200,13 @@ const InvitePanel = ({
       description={`Invite ${sitterName} to one of your sits`}
       footer={
         noAccess ? (
-          <Link to="/membership" className={nnButton("primary", "h-12 w-full")}>
-            See memberships
-          </Link>
+          isStoreApp() ? (
+            <p className="text-center text-sm text-muted-foreground">{STORE_MEMBERSHIP_LINE}</p>
+          ) : (
+            <Link to="/membership" className={nnButton("primary", "h-12 w-full")}>
+              See memberships
+            </Link>
+          )
         ) : sent ? (
           <button type="button" onClick={() => onOpenChange(false)} className={nnButton("primary", "h-12 w-full")}>
             Done

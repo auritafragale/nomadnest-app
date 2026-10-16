@@ -10,6 +10,7 @@ import BackToTopButton from "@/components/ui/BackToTopButton";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import Pagination from "@/components/browse/Pagination";
 import SignUpPromptDialog from "@/components/auth/SignUpPromptDialog";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 import { usePagination } from "@/hooks/usePagination";
 import { useAuth } from "@/contexts/AuthContext";
 import { NN_PAGE, RoleTheme, nnButton } from "@/components/nn/ui";
@@ -168,7 +169,11 @@ const BrowseSits = () => {
         onOpenChange={setPromptOpen}
         heart
         title="Save sits you love"
-        message="Create a free account to save sits and see full profiles. Membership from £59 a year when you are ready to apply."
+        message={
+          isStoreApp()
+            ? `Create a free account to save sits and see full profiles. ${STORE_MEMBERSHIP_LINE}`
+            : "Create a free account to save sits and see full profiles. Membership from £59 a year when you are ready to apply."
+        }
       />
       <Footer />
       <BackToTopButton />

@@ -26,6 +26,7 @@ import ListingLocationMap from "@/components/maps/ListingLocationMap";
 import InlineWelcomeGuide from "@/components/listing/InlineWelcomeGuide";
 import { useAcceptedSitter } from "@/hooks/useAcceptedSitter";
 import SignUpPromptDialog from "@/components/auth/SignUpPromptDialog";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { PhotoLightbox } from "@/components/profile/PhotoLightbox";
 import { useUpdateInviteStatus } from "@/hooks/useSitterInvites";
@@ -265,12 +266,15 @@ const ListingDetail = () => {
     if (!invite || !listing || selectedSitDates.length === 0) return;
 
     if (!membershipLoading && !hasAccess("sitter")) {
+      const store = isStoreApp();
       toast({
         title: "You need a Nomad membership to apply.",
-        description: "A Nomad or Combined membership lets you accept invitations. See memberships to join.",
+        description: store
+          ? `A Nomad or Combined membership lets you accept invitations. ${STORE_MEMBERSHIP_LINE}`
+          : "A Nomad or Combined membership lets you accept invitations. See memberships to join.",
         variant: "destructive",
       });
-      navigate("/membership");
+      if (!store) navigate("/membership");
       return;
     }
     if (!verificationLoading && !verificationData?.id_verified) {
@@ -551,11 +555,13 @@ const ListingDetail = () => {
       case "out":
         return wrap(
           <>
-            {where === "bar" && text("Free to browse", "Membership from £59 a year")}
+            {where === "bar" && (isStoreApp() ? text("Free to browse", "Sign in to apply") : text("Free to browse", "Membership from £59 a year"))}
             <Link to="/auth" className={btn("primary")}>
               Sign in to apply
             </Link>
-            {where === "side" && <p className="text-center text-sm text-muted-foreground">Free to browse · Membership from £59 a year</p>}
+            {where === "side" && (
+              <p className="text-center text-sm text-muted-foreground">{isStoreApp() ? "Free to browse" : "Free to browse · Membership from £59 a year"}</p>
+            )}
           </>,
         );
       case "owner":
@@ -599,10 +605,16 @@ const ListingDetail = () => {
       case "parent":
         return wrap(
           <>
-            {text("Only Nomad accounts can apply.", "Add a Nomad membership to sit too.")}
-            <Link to="/membership" className={btn("secondary", "shrink-0")}>
-              Membership
-            </Link>
+            {isStoreApp() ? (
+              text("Only Nomad accounts can apply.", STORE_MEMBERSHIP_LINE)
+            ) : (
+              <>
+                {text("Only Nomad accounts can apply.", "Add a Nomad membership to sit too.")}
+                <Link to="/membership" className={btn("secondary", "shrink-0")}>
+                  Membership
+                </Link>
+              </>
+            )}
           </>,
         );
       default:
@@ -863,7 +875,9 @@ const ListingDetail = () => {
         title={promptOpen === "save" ? "Save sits you love" : "Join NomadNest to see more"}
         message={
           promptOpen === "save"
-            ? "Create a free account to save sits and see full profiles. Membership from £59 a year when you are ready to apply."
+            ? isStoreApp()
+              ? `Create a free account to save sits and see full profiles. ${STORE_MEMBERSHIP_LINE}`
+              : "Create a free account to save sits and see full profiles. Membership from £59 a year when you are ready to apply."
             : "Create a free account to see full profiles and save sits. Profiles stay members-only to keep everyone safe."
         }
       />

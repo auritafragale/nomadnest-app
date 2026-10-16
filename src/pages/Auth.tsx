@@ -12,6 +12,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import blackLogo from "@/assets/Black_Logo.png";
 import whiteLogo from "@/assets/White_Logo.png";
 import { z } from "zod";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -275,7 +276,7 @@ const Auth = () => {
                 )}
               </div>
 
-              {mode === "signup" && (
+              {mode === "signup" && !isStoreApp() && (
                 <div className="space-y-2">
                   <Label htmlFor="inviteCode">Have an invite code? (optional)</Label>
                   <div className="relative">

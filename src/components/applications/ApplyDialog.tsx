@@ -46,6 +46,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 
 interface SitDate {
   id: string;
@@ -905,11 +906,15 @@ export const ApplyDialog = ({
     body = gateCard({
       icon: <Lock className="h-6 w-6" aria-hidden="true" />,
       title: "You need a Nomad membership to apply.",
-      body: "A Nomad or Combined membership lets you apply for sits and accept invitations.",
-      action: {
-        label: "See memberships",
-        onClick: () => { onOpenChange(false); navigate("/membership"); },
-      },
+      body: isStoreApp()
+        ? `A Nomad or Combined membership lets you apply for sits and accept invitations. ${STORE_MEMBERSHIP_LINE}`
+        : "A Nomad or Combined membership lets you apply for sits and accept invitations.",
+      action: isStoreApp()
+        ? undefined
+        : {
+            label: "See memberships",
+            onClick: () => { onOpenChange(false); navigate("/membership"); },
+          },
     });
   } else if (showVerificationGate) {
     body = gateCard({

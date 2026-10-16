@@ -5,6 +5,7 @@ import { useListingAllowance } from "@/hooks/useListingAllowance";
 import { useOwnerListings } from "@/hooks/useOwnerListings";
 import type { Completion } from "@/lib/profileCompletion";
 import { cn } from "@/lib/utils";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 
 interface DashboardHeaderProps {
   role: "sitter" | "owner";
@@ -124,7 +125,7 @@ const DashboardHeader = ({ role, modeSwitch, userId, displayName, avatarUrl, cit
       </div>
 
       {pills("flex md:hidden lg:flex")}
-      {!loading && !subscribed && (
+      {!loading && !subscribed && !isStoreApp() && (
         <Link
           to="/membership"
           className="text-sm font-bold text-[var(--nn-accent-dark)] underline-offset-2 hover:underline md:col-start-1 md:self-start"

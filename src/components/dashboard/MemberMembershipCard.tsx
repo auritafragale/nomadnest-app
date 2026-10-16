@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import FoundingMemberBadge from "@/components/ui/FoundingMemberBadge";
 import { useMembership, MEMBERSHIP_PLANS } from "@/hooks/useMembership";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 import { useToast } from "@/hooks/use-toast";
 
 interface MemberMembershipCardProps {
@@ -95,7 +96,7 @@ const MemberMembershipCard = ({ role, name, subtitle, avatarUrl, userId }: Membe
                 })}
               </span>
             )}
-            {!foundingMember && (
+            {!foundingMember && !isStoreApp() && (
               <Button
                 variant="link"
                 size="sm"
@@ -115,6 +116,9 @@ const MemberMembershipCard = ({ role, name, subtitle, avatarUrl, userId }: Membe
         ) : (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>No active membership</span>
+            {isStoreApp() ? (
+              <span>{STORE_MEMBERSHIP_LINE}</span>
+            ) : (
             <Button
               variant="link"
               size="sm"
@@ -124,6 +128,7 @@ const MemberMembershipCard = ({ role, name, subtitle, avatarUrl, userId }: Membe
               <Crown className="w-3.5 h-3.5 mr-1.5" />
               View plans
             </Button>
+            )}
           </div>
         )}
 

@@ -6,6 +6,7 @@ import { nnButton } from "@/components/nn/ui";
 import { useSideAccess } from "@/hooks/useSideAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { isStoreApp, STORE_MEMBERSHIP_LINE } from "@/lib/storeApp";
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long" }) : null);
 
@@ -35,6 +36,7 @@ export const useUpdateCard = () => {
 const MembershipNotice = ({ hasPublishedListing = false, className }: { hasPublishedListing?: boolean; className?: string }) => {
   const { data: access } = useSideAccess();
   const card = useUpdateCard();
+  const store = isStoreApp();
   if (!access) return null;
 
   if (access.pastDue) {
@@ -43,10 +45,14 @@ const MembershipNotice = ({ hasPublishedListing = false, className }: { hasPubli
         <p className="text-[15px]">
           <strong>Your last payment didn't go through.</strong> Please update your card by {fmt(access.retryUntil) ?? "the end of this week"} to keep your membership.
         </p>
-        <button type="button" onClick={card.open} disabled={card.busy} className={nnButton("primary", "shrink-0")}>
-          {card.busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-          Update my card
-        </button>
+        {store ? (
+          <p className="text-[15px]">{STORE_MEMBERSHIP_LINE}</p>
+        ) : (
+          <button type="button" onClick={card.open} disabled={card.busy} className={nnButton("primary", "shrink-0")}>
+            {card.busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            Update my card
+          </button>
+        )}
       </section>
     );
   }
@@ -55,11 +61,15 @@ const MembershipNotice = ({ hasPublishedListing = false, className }: { hasPubli
     return (
       <section role="status" className={cn("flex flex-col gap-3 rounded-[20px] border-[1.5px] border-[var(--nn-tip-border)] bg-[var(--nn-tip-bg)] p-4 text-[var(--nn-tip-text)] sm:flex-row sm:items-center sm:justify-between", className)}>
         <p className="text-[15px]">
-          <strong>Your Pet Parent membership has ended.</strong> Your listing is hidden until you renew. Confirmed sits go ahead as planned.
+          <strong>Your Pet Parent membership has ended.</strong> {store ? "Your listing is hidden for now." : "Your listing is hidden until you renew."} Confirmed sits go ahead as planned.
         </p>
-        <Link to="/membership" className={nnButton("primary", "shrink-0")}>
-          Renew
-        </Link>
+        {store ? (
+          <p className="text-[15px]">{STORE_MEMBERSHIP_LINE}</p>
+        ) : (
+          <Link to="/membership" className={nnButton("primary", "shrink-0")}>
+            Renew
+          </Link>
+        )}
       </section>
     );
   }
