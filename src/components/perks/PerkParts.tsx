@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { nnButton, shortRange } from "@/components/nn/ui";
 import aboutJourney from "@/assets/about-journey.jpg";
-import { isOurPerkLogo } from "@/lib/perkPlacements";
+import { perkLogoPath } from "@/lib/perkPlacements";
+import { usePerkLogoLink } from "@/hooks/usePerkLogoLink";
 import {
   getDiscountCode,
   openPerk,
@@ -17,13 +18,22 @@ import {
 
 /**
  * Partner logo on a white rounded tile with a light border, so it works in
- * light and dark. Only logos in our own perk-logos bucket are shown (never a
- * partner's website or a data: URL); otherwise the letter tile.
+ * light and dark. Only files in our private perk-logos bucket are shown,
+ * through a signed link (never a partner's website or a data: URL);
+ * otherwise the letter tile.
  */
 export const PerkLogo = ({ name, logoUrl, size = 44 }: { name: string; logoUrl: string | null; size?: 36 | 38 | 40 | 42 | 44 | 48 }) => {
-  const [failed, setFailed] = useState(false);
+  const path = perkLogoPath(logoUrl);
+  const { url, retry } = usePerkLogoLink(path);
+  // One new link after an image error (for example an expired one), then the tile.
+  const [errors, setErrors] = useState<{ path: string | null; n: number }>({ path, n: 0 });
+  const n = errors.path === path ? errors.n : 0;
   const initials = name.replace(/[^A-Za-z0-9 ]/g, "").split(/\s+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2) || name.slice(0, 2);
-  const show = !failed && isOurPerkLogo(logoUrl, import.meta.env.VITE_SUPABASE_URL);
+  const show = !!url && n < 2;
+  const onError = () => {
+    setErrors({ path, n: n + 1 });
+    if (n === 0) retry();
+  };
   return (
     <span
       aria-hidden="true"
@@ -33,7 +43,7 @@ export const PerkLogo = ({ name, logoUrl, size = 44 }: { name: string; logoUrl: 
         size <= 38 ? "rounded-[11px] text-[13px]" : size <= 42 ? "rounded-xl text-sm" : "rounded-[14px] text-[16px]",
       )}
     >
-      {show ? <img src={logoUrl!} alt="" loading="lazy" onError={() => setFailed(true)} className="h-full w-full object-contain p-1" /> : initials}
+      {show ? <img src={url} alt="" loading="lazy" onError={onError} className="h-full w-full object-contain p-1" /> : initials}
     </span>
   );
 };
@@ -272,13 +282,13 @@ export const PickedForSit = ({ sit, perks }: { sit: NextSitForPerks; perks: Memb
           {(place || dates) && <span className="text-[13px] text-foreground/85">{[place, dates].filter(Boolean).join(" · ")}</span>}
         </span>
       </div>
-      <div className="grid gap-2.5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
         {perks.map((p) => (
           <button
             key={p.id}
             type="button"
             onClick={() => open(p.slug)}
-            className="flex min-h-[64px] items-center gap-3 rounded-2xl border border-[var(--nn-border)] bg-card p-3 text-left"
+            className="flex min-h-[64px] min-w-0 items-center gap-3 rounded-2xl border border-[var(--nn-border)] bg-card p-3 text-left"
           >
             <PerkLogo name={p.name} logoUrl={p.logo_url} size={40} />
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">

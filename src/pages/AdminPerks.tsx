@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import AdminNav from "@/components/admin/AdminNav";
 
@@ -28,6 +28,7 @@ import {
 import { Gift, Loader2, MousePointerClick, Pencil, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminPerks, slugify, type AdminPerk, type PerkInput } from "@/hooks/useAdminPerks";
+import { logoFilesToDelete } from "@/lib/perkPlacements";
 import { PERK_CATEGORIES, TRIP_MOMENTS, isPlaceholderHeadline } from "@/hooks/usePerks";
 import { PerkLogoUploader } from "@/components/perks/PerkLogoUploader";
 
@@ -66,7 +67,9 @@ const emptyPerk: PerkInput = {
 
 const AdminPerks = () => {
   const { toast } = useToast();
-  const { perks, stats, loading, createPerk, updatePerk, deletePerk } = useAdminPerks();
+  const { perks, stats, loading, createPerk, updatePerk, deletePerk, removeLogoFiles } = useAdminPerks();
+  // Logo files uploaded while the editor is open (deleted unless saved).
+  const uploads = useRef<string[]>([]);
 
   const [editing, setEditing] = useState<AdminPerk | null>(null);
   const [form, setForm] = useState<PerkInput>(emptyPerk);
@@ -76,16 +79,27 @@ const AdminPerks = () => {
 
 
   const openCreate = () => {
+    uploads.current = [];
     setEditing(null);
     setForm(emptyPerk);
     setDialogOpen(true);
   };
 
   const openEdit = (perk: AdminPerk) => {
+    uploads.current = [];
     setEditing(perk);
     const { id: _id, ...rest } = perk;
     setForm(rest);
     setDialogOpen(true);
+  };
+
+  // Closed without saving: delete only this session's uploads.
+  const closeOrOpen = (open: boolean) => {
+    if (!open && !saving) {
+      void removeLogoFiles(logoFilesToDelete({ saved: editing?.logo_url ?? null, uploaded: uploads.current, final: editing?.logo_url ?? null }));
+      uploads.current = [];
+    }
+    setDialogOpen(open);
   };
 
   const handleSave = async () => {
@@ -126,6 +140,9 @@ const AdminPerks = () => {
 
       if (editing) await updatePerk(editing.id, payload);
       else await createPerk(payload);
+      // Saved: the old logo and any unused uploads go.
+      await removeLogoFiles(logoFilesToDelete({ saved: editing?.logo_url ?? null, uploaded: uploads.current, final: payload.logo_url }));
+      uploads.current = [];
 
       toast({ title: editing ? "Perk updated" : "Perk added" });
       setDialogOpen(false);
@@ -144,6 +161,7 @@ const AdminPerks = () => {
     if (!window.confirm(`Delete “${perk.name}”? Click history will be removed too.`)) return;
     try {
       await deletePerk(perk.id);
+      await removeLogoFiles([perk.logo_url]);
       toast({ title: "Perk deleted" });
     } catch {
       toast({ title: "Could not delete perk", variant: "destructive" });
@@ -288,7 +306,7 @@ const AdminPerks = () => {
         )}
       </main>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={closeOrOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit perk" : "Add perk"}</DialogTitle>
@@ -448,7 +466,8 @@ const AdminPerks = () => {
                 name={form.name}
                 slug={form.slug}
                 value={form.logo_url ?? null}
-                onChange={(url) => setForm({ ...form, logo_url: url ?? "" })}
+                onChange={(path) => setForm({ ...form, logo_url: path ?? "" })}
+                onUploaded={(path) => uploads.current.push(path)}
               />
             </div>
 

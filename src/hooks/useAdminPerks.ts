@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
+import { PERK_LOGO_BUCKET, perkLogoPath } from "@/lib/perkPlacements";
 
 export interface AdminPerk {
   id: string;
@@ -94,5 +95,14 @@ export const useAdminPerks = () => {
     await fetchAll();
   };
 
-  return { perks, stats, loading, refetch: fetchAll, createPerk, updatePerk, deletePerk };
+  // Logo files no perk uses any more (P2b). A failed delete never blocks the
+  // editor; the real error goes to the console (this is the admin page).
+  const removeLogoFiles = async (paths: (string | null | undefined)[]) => {
+    const files = [...new Set(paths.map(perkLogoPath).filter((p): p is string => !!p))];
+    if (!files.length) return;
+    const { error } = await supabase.storage.from(PERK_LOGO_BUCKET).remove(files);
+    if (error) console.error("[perk logo] could not delete old logo files", error);
+  };
+
+  return { perks, stats, loading, refetch: fetchAll, createPerk, updatePerk, deletePerk, removeLogoFiles };
 };

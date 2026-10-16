@@ -4,41 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   countdownLabel,
   daysUntil,
-  isOurPerkLogo,
   monthKey,
   perksMonthStore,
   petNamesSentence,
   shortTitleFor,
   tripPassStore,
 } from "@/lib/perkPlacements";
-
-const BASE = "https://abc.supabase.co";
-const OURS = `${BASE}/storage/v1/object/public/perk-logos/`;
-
-describe("perk logos come from our own storage only (P2)", () => {
-  it("shows a file in the perk-logos bucket", () => {
-    expect(isOurPerkLogo(`${OURS}safetywing-1760000000000.png`, BASE)).toBe(true);
-    expect(isOurPerkLogo(`${OURS}airalo.svg`, `${BASE}/`)).toBe(true);
-  });
-
-  it("never shows partner websites, data: URLs, other buckets or odd paths", () => {
-    for (const url of [
-      "https://safetywing.com/logo.png",
-      "data:image/png;base64,AAAA",
-      `${BASE}/storage/v1/object/public/avatars/x.png`,
-      `${OURS}../avatars/x.png`,
-      `${OURS}x.png?redirect=https://evil.example`,
-      `${OURS}`,
-      `https://abc.supabase.co.evil.example/storage/v1/object/public/perk-logos/x.png`,
-      null,
-      undefined,
-      "",
-    ]) {
-      expect(isOurPerkLogo(url, BASE)).toBe(false);
-    }
-    expect(isOurPerkLogo(`${OURS}x.png`, undefined)).toBe(false);
-  });
-});
 
 describe("short titles (P2)", () => {
   const perk = { name: "Airalo", short_title: "{country} data plan" };
