@@ -11,6 +11,7 @@ import { useNewApplicationsCount } from "@/hooks/useNewApplicationsCount";
 import { Badge } from "@/components/ui/badge";
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 import { MobileNotificationsBell } from "@/components/notifications/MobileNotificationsBell";
+import AccountMenu from "@/components/layout/AccountMenu";
 import { useTheme } from "@/contexts/ThemeContext";
 import { usePerkAccess } from "@/hooks/usePerks";
 import { perksMonthStore } from "@/lib/perkPlacements";
@@ -92,19 +93,22 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
 
           {/* Desktop Navigation */}
           <div className="hidden min-w-0 lg:flex items-center gap-0.5">
-            {navLinks.map((link) => (
-              <Link key={link.href} to={link.href}>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "h-11 px-2.5 xl:px-3 text-muted-foreground hover:text-foreground",
-                    isActive(link.href) && "text-[var(--nn-accent-dark)] bg-terracotta-light"
-                  )}
-                >
-                  {link.label}
-                </Button>
-              </Link>
-            ))}
+            {navLinks
+              .filter((link) => !(user && link.href === "/membership"))
+              .map((link) => (
+                <Link key={link.href} to={link.href}>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "h-11 px-2.5 xl:px-3 text-muted-foreground hover:text-foreground",
+                      isActive(link.href) && "text-[var(--nn-accent-dark)] bg-terracotta-light"
+                    )}
+                  >
+                    {link.href === "/perks" && <Gift className="mr-1.5 h-4 w-4 text-[var(--nn-gold)]" aria-hidden="true" />}
+                    {link.label}
+                  </Button>
+                </Link>
+              ))}
             {/* Only visible to sitters and combined members — hidden for owner-only role */}
             {user && (role === "sitter" || role === "both") && (
               <Link to="/find-nomads">
@@ -127,37 +131,12 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
               <div className="w-24 h-9 bg-muted animate-pulse rounded-md" />
             ) : user ? (
               <>
-                {(role === "sitter" || role === "both") && (
-                  <Link to="/saved" className="hidden lg:block">
-                    <Button variant="ghost" aria-label="Saved" className={cn("h-11 px-3", isActive("/saved") && "text-[var(--nn-accent-dark)] bg-terracotta-light")}>
-                      <Heart className="w-4 h-4 2xl:mr-2" aria-hidden="true" />
-                      <span className="hidden 2xl:inline">Saved</span>
-                    </Button>
-                  </Link>
-                )}
-                {(role === "owner" || role === "both") && (
-                  <Link to="/applications" className="hidden lg:block">
-                    <Button
-                      variant="ghost"
-                      aria-label={newApplicationsCount > 0 ? `Applications, ${newApplicationsCount} new` : "Applications"}
-                      className={cn("relative h-11 px-3", isActive("/applications") && "text-[var(--nn-accent-dark)] bg-terracotta-light")}
-                    >
-                      <FileText className="w-4 h-4 2xl:mr-2" aria-hidden="true" />
-                      <span className="hidden 2xl:inline">Applications</span>
-                      {newApplicationsCount > 0 && (
-                        <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
-                          {newApplicationsCount > 99 ? "99+" : newApplicationsCount}
-                        </Badge>
-                      )}
-                    </Button>
-                  </Link>
-                )}
-                {/* Tablet: Messages as an icon with its badge */}
+                {/* Messages: an icon with its unread badge, tablet and desktop */}
                 <Link
                   to="/inbox"
                   aria-label={unreadCount > 0 ? `Messages, ${unreadCount} unread` : "Messages"}
                   className={cn(
-                    "relative flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground lg:hidden",
+                    "relative flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground",
                     isActive("/inbox") && "text-[var(--nn-accent-dark)] bg-terracotta-light",
                   )}
                 >
@@ -168,41 +147,24 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                     </Badge>
                   )}
                 </Link>
-                <Link to="/inbox" className="hidden lg:block">
-                  <Button
-                    variant="ghost"
-                    aria-label={unreadCount > 0 ? `Messages, ${unreadCount} unread` : "Messages"}
-                    className={cn("relative h-11 px-3", isActive("/inbox") && "text-[var(--nn-accent-dark)] bg-terracotta-light")}
-                  >
-                    <MessageCircle className="w-4 h-4 2xl:mr-2" aria-hidden="true" />
-                    <span className="hidden 2xl:inline">Messages</span>
-                    {unreadCount > 0 && (
-                      <Badge className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
-                        {unreadCount > 99 ? "99+" : unreadCount}
-                      </Badge>
-                    )}
-                  </Button>
-                </Link>
                 <NotificationsDropdown />
-                {isAdmin && (
-                  <Link to="/admin" className="hidden lg:block">
-                    <Button variant="ghost" aria-label="Admin" className={cn("h-11 px-3", isActive("/admin") && "text-[var(--nn-accent-dark)] bg-terracotta-light")}>
-                      <ShieldCheck className="w-4 h-4 2xl:mr-2" aria-hidden="true" />
-                      <span className="hidden 2xl:inline">Admin</span>
-                    </Button>
-                  </Link>
-                )}
                 <Link to="/dashboard" className="ml-1">
-                  {/* Icon only between 1024 and 1279, where the text links need the room. */}
-                  <Button aria-label="Dashboard" className="h-11 px-4 lg:w-11 lg:px-0 xl:w-auto xl:px-4">
-                    <LayoutDashboard className="w-4 h-4 mr-2 lg:mr-0 xl:mr-2" aria-hidden="true" />
-                    <span className="lg:hidden xl:inline">Dashboard</span>
+                  <Button className="h-11 px-4">
+                    <LayoutDashboard className="w-4 h-4 mr-2" aria-hidden="true" />
+                    Dashboard
                   </Button>
                 </Link>
-                <Button variant="ghost" onClick={handleSignOut} aria-label="Sign out" className="hidden h-11 w-11 p-0 lg:inline-flex">
-                  <LogOut className="w-4 h-4" />
-                </Button>
-
+                {/* Desktop: Saved, applications, membership, settings, admin,
+                    dark mode and log out live in the account menu. */}
+                <div className="hidden lg:block">
+                  <AccountMenu
+                    showSaved={role === "sitter" || role === "both"}
+                    showApplications={role === "owner" || role === "both"}
+                    newApplications={newApplicationsCount}
+                    isAdmin={!!isAdmin}
+                    onSignOut={() => void handleSignOut()}
+                  />
+                </div>
               </>
             ) : (
               // Signed out: Create profile is the main action; Log in is the quieter one.
@@ -228,7 +190,10 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
               </div>
             )}
             <button
-              className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground transition-colors rounded-md"
+              className={cn(
+                "flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground transition-colors rounded-md",
+                user && "lg:hidden",
+              )}
               onClick={toggleTheme}
               aria-label="Toggle theme"
             >
