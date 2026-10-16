@@ -262,13 +262,13 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                     <Button
                       variant="ghost"
                       className={cn(
-                        "w-full justify-start text-primary hover:bg-terracotta-light",
+                        "w-full justify-start text-[var(--nn-accent-dark)] hover:bg-terracotta-light",
                         isActive(item.href) && "bg-terracotta-light"
                       )}
                     >
-                      <item.icon className="w-4 h-4 mr-2 text-primary" />
+                      <item.icon className="w-4 h-4 mr-2 text-[var(--nn-accent-dark)]" />
                       <span className="flex-1 text-left">{item.label}</span>
-                      <ChevronRight className="w-4 h-4 ml-auto text-primary" />
+                      <ChevronRight className="w-4 h-4 ml-auto text-[var(--nn-accent-dark)]" />
                     </Button>
                   </Link>
                 ))}
@@ -358,11 +358,11 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                 <Button
                   variant="ghost"
                   onClick={() => setShowHelp(true)}
-                  className="w-full justify-start text-primary hover:bg-terracotta-light"
+                  className="w-full justify-start text-[var(--nn-accent-dark)] hover:bg-terracotta-light"
                 >
-                  <HelpCircle className="w-4 h-4 mr-2 text-primary" />
+                  <HelpCircle className="w-4 h-4 mr-2 text-[var(--nn-accent-dark)]" />
                   <span className="flex-1 text-left">Help & Support</span>
-                  <ChevronRight className="w-4 h-4 ml-auto text-primary" />
+                  <ChevronRight className="w-4 h-4 ml-auto text-[var(--nn-accent-dark)]" />
                 </Button>
               </div>
 
