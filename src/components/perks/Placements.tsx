@@ -237,9 +237,9 @@ export const FreeTimePanel = ({ city, country, className }: { city: string | nul
             disabled={opening === p.id}
             className="flex min-w-0 flex-col gap-2.5 rounded-[18px] border border-[var(--nn-border)] bg-card p-3.5 text-left"
           >
-            <span className="flex items-center justify-between gap-2">
+            <span className="flex flex-wrap items-center justify-between gap-2">
               <PerkLogo name={p.name} logoUrl={p.logo_url} size={38} />
-              <span className="inline-flex h-7 shrink-0 items-center rounded-full bg-[var(--nn-tint)] px-2.5 text-[13px] font-bold text-[var(--nn-accent-dark)]">
+              <span className="inline-flex h-7 max-w-full items-center truncate rounded-full bg-[var(--nn-tint)] px-2.5 text-[13px] font-bold text-[var(--nn-accent-dark)]">
                 {perkHeadline(p.benefit_headline)}
               </span>
             </span>
