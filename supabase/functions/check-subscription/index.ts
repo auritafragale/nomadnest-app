@@ -1,7 +1,7 @@
 import { getUserFailureReason, statusFor } from "../_shared/http-status.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { redact } from "../_shared/safe-log.ts";
 import { customerIdFor, liveSubscription, periodEndOf, planOf, syncSubscription } from "../_shared/stripe-plans.ts";
 

@@ -59,7 +59,9 @@ export const useAdminPerks = () => {
       supabase.rpc("admin_perk_click_stats"),
     ]);
 
-    setPerks((perkData as AdminPerk[]) ?? []);
+    // Cast through unknown: the deployed admin_list_perks does not return
+    // short_title yet (Batch P2 migration pending), so the direct cast fails.
+    setPerks((perkData as unknown as AdminPerk[]) ?? []);
 
     const map: Record<string, PerkStats> = {};
     ((statData as PerkStats[]) ?? []).forEach((s) => {
