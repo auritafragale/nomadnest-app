@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSideAccess } from "@/hooks/useSideAccess";
+import type { PerkPlacement } from "@/lib/perkPlacements";
 
 /**
  * Member perks (Batch P1). Nobody reads public.perks directly:
@@ -52,6 +53,8 @@ export interface MemberPerk extends PerkPreview {
   is_perk_of_month: boolean;
   spotlight_text: string | null;
   picked_for_sits: boolean;
+  /** Up to 30 characters; "{country}" / "{city}" filled in from the member's own sit (P2). */
+  short_title: string | null;
   has_code: boolean;
   used_by_me: boolean;
 }
@@ -137,9 +140,11 @@ export const getDiscountCode = async (slug: string): Promise<string | null> => {
   return (data as string | null) ?? null;
 };
 
-export const openPerk = async (slug: string) => {
-  const { data, error } = await supabase.functions.invoke("perk-redirect", {
-    body: { slug, referrer: window.location.pathname },
+/** Opens a perk through perk-redirect. Only the placement is sent (?from=),
+ *  nothing else about the page or the sit. */
+export const openPerk = async (slug: string, from: PerkPlacement = "perks_page") => {
+  const { data, error } = await supabase.functions.invoke(`perk-redirect?from=${from}`, {
+    body: { slug, from },
   });
   if (error) throw error;
   if (data?.url) window.open(data.url as string, "_blank", "noopener,noreferrer");

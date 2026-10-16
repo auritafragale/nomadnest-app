@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { nnButton, shortRange } from "@/components/nn/ui";
 import aboutJourney from "@/assets/about-journey.jpg";
+import { isOurPerkLogo } from "@/lib/perkPlacements";
 import {
   getDiscountCode,
   openPerk,
@@ -14,24 +15,25 @@ import {
   type PerkPreview,
 } from "@/hooks/usePerks";
 
-/** Partner logo on a light tile (logos are drawn for light backgrounds); initials if it won't load. */
-export const PerkLogo = ({ name, logoUrl, size = 44 }: { name: string; logoUrl: string | null; size?: 36 | 40 | 44 }) => {
+/**
+ * Partner logo on a white rounded tile with a light border, so it works in
+ * light and dark. Only logos in our own perk-logos bucket are shown (never a
+ * partner's website or a data: URL); otherwise the letter tile.
+ */
+export const PerkLogo = ({ name, logoUrl, size = 44 }: { name: string; logoUrl: string | null; size?: 36 | 38 | 40 | 42 | 44 | 48 }) => {
   const [failed, setFailed] = useState(false);
   const initials = name.replace(/[^A-Za-z0-9 ]/g, "").split(/\s+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2) || name.slice(0, 2);
+  const show = !failed && isOurPerkLogo(logoUrl, import.meta.env.VITE_SUPABASE_URL);
   return (
     <span
       aria-hidden="true"
       style={{ width: size, height: size }}
       className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden border border-[var(--nn-border)] bg-[var(--nn-chip)] font-bold tracking-tight text-[var(--nn-accent-dark)]",
-        size === 36 ? "rounded-[11px] text-xs" : size === 40 ? "rounded-xl text-sm" : "rounded-[14px] text-[15px]",
+        "flex shrink-0 items-center justify-center overflow-hidden border border-[var(--nn-logo-border)] bg-[var(--nn-logo-bg)] font-extrabold tracking-tight text-[var(--nn-logo-ink)]",
+        size <= 38 ? "rounded-[11px] text-[13px]" : size <= 42 ? "rounded-xl text-sm" : "rounded-[14px] text-[16px]",
       )}
     >
-      {logoUrl && !failed ? (
-        <img src={logoUrl} alt="" loading="lazy" onError={() => setFailed(true)} className="h-full w-full bg-[var(--nn-logo-bg)] object-contain p-1" />
-      ) : (
-        initials
-      )}
+      {show ? <img src={logoUrl!} alt="" loading="lazy" onError={() => setFailed(true)} className="h-full w-full object-contain p-1" /> : initials}
     </span>
   );
 };

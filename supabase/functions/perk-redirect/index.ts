@@ -16,6 +16,11 @@ const json = (body: unknown, status = 200) =>
 
 const fail = (reason: Reason, error: string, extra: Record<string, unknown> = {}) => json(errorBody(reason, error, extra), statusFor(reason));
 
+// Where the click came from (?from= or "from" in the body). Only one of these
+// values is stored; nothing else about the page or the sit.
+const PLACEMENTS = new Set(["perks_page", "sit_confirmed", "sit_upcoming", "sit_now", "dashboard", "menu"]);
+const placementOf = (value: unknown) => (typeof value === "string" && PLACEMENTS.has(value) ? value : "perks_page");
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -35,7 +40,9 @@ serve(async (req) => {
     } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) return fail(getUserFailureReason(authError), "Unauthorized");
 
-    const { slug, referrer } = await req.json().catch(() => ({ slug: null, referrer: null }));
+    const body = await req.json().catch(() => ({}));
+    const slug = body?.slug;
+    const placement = placementOf(new URL(req.url).searchParams.get("from") ?? body?.from);
     if (!slug || typeof slug !== "string") return fail("bad_input", "Missing perk");
 
     const admin = createClient(
@@ -71,10 +78,8 @@ serve(async (req) => {
       return json({ error: "Perk expired" }, 410);
     }
 
-    // Log the click (never blocks the redirect)
-    await admin
-      .from("perk_clicks")
-      .insert({ perk_id: perk.id, user_id: user.id, referrer: referrer ?? null });
+    // Log the click with its placement only (never blocks the redirect).
+    await admin.from("perk_clicks").insert({ perk_id: perk.id, user_id: user.id, placement });
 
     // Append sub-id so partner dashboards can be matched back to members
     let url = perk.affiliate_url as string;

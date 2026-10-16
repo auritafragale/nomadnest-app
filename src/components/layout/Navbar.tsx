@@ -12,6 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 import { MobileNotificationsBell } from "@/components/notifications/MobileNotificationsBell";
 import { useTheme } from "@/contexts/ThemeContext";
+import { usePerkAccess } from "@/hooks/usePerks";
+import { perksMonthStore } from "@/lib/perkPlacements";
+import { Gift, Sparkles } from "lucide-react";
 import blackLogo from "@/assets/Black_Logo.png";
 import whiteLogo from "@/assets/White_Logo.png";
 
@@ -54,11 +57,23 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
   const { theme, toggleTheme } = useTheme();
   const logo = theme === "dark" ? whiteLogo : blackLogo;
 
-  const navLinks = [
+  // Member perks (P2): members only, next to Membership. "Perks" in the top
+  // bar, "Member perks" in the phone menu; the gold "New this month" badge
+  // until the member opens /perks this month (kept on this device).
+  const { isMember } = usePerkAccess();
+  const perksNew = isMember && !perksMonthStore.seenThisMonth();
+  const navLinks: { href: string; label: string; menuLabel?: string; icon: typeof Search; isNew?: boolean }[] = [
     { href: "/browse-sits", label: "Browse Sits", icon: Search },
     { href: "/browse-sitters", label: "Browse Nomads", icon: User },
+    ...(isMember ? [{ href: "/perks", label: "Perks", menuLabel: "Member perks", icon: Gift, isNew: perksNew }] : []),
     { href: "/membership", label: "Membership", icon: Crown },
   ];
+  const NewBadge = () => (
+    <span className="ml-2 inline-flex h-[22px] items-center gap-1 rounded-full bg-[var(--nn-gold)] px-2 text-[11px] font-bold text-[var(--nn-gold-text)]">
+      <Sparkles className="h-2.5 w-2.5" aria-hidden="true" />
+      New this month
+    </span>
+  );
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -81,7 +96,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                 <Button
                   variant="ghost"
                   className={cn(
-                    "h-11 px-3 text-muted-foreground hover:text-foreground",
+                    "h-11 px-2.5 xl:px-3 text-muted-foreground hover:text-foreground",
                     isActive(link.href) && "text-[var(--nn-accent-dark)] bg-terracotta-light"
                   )}
                 >
@@ -95,7 +110,7 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                 <Button
                   variant="ghost"
                   className={cn(
-                    "h-11 px-3 text-muted-foreground hover:text-foreground",
+                    "h-11 px-2.5 xl:px-3 text-muted-foreground hover:text-foreground",
                     isActive("/find-nomads") && "text-[var(--nn-accent-dark)] bg-terracotta-light"
                   )}
                 >
@@ -114,8 +129,8 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                 {(role === "sitter" || role === "both") && (
                   <Link to="/saved" className="hidden lg:block">
                     <Button variant="ghost" aria-label="Saved" className={cn("h-11 px-3", isActive("/saved") && "text-[var(--nn-accent-dark)] bg-terracotta-light")}>
-                      <Heart className="w-4 h-4 xl:mr-2" aria-hidden="true" />
-                      <span className="hidden xl:inline">Saved</span>
+                      <Heart className="w-4 h-4 2xl:mr-2" aria-hidden="true" />
+                      <span className="hidden 2xl:inline">Saved</span>
                     </Button>
                   </Link>
                 )}
@@ -158,8 +173,8 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                     aria-label={unreadCount > 0 ? `Messages, ${unreadCount} unread` : "Messages"}
                     className={cn("relative h-11 px-3", isActive("/inbox") && "text-[var(--nn-accent-dark)] bg-terracotta-light")}
                   >
-                    <MessageCircle className="w-4 h-4 xl:mr-2" aria-hidden="true" />
-                    <span className="hidden xl:inline">Messages</span>
+                    <MessageCircle className="w-4 h-4 2xl:mr-2" aria-hidden="true" />
+                    <span className="hidden 2xl:inline">Messages</span>
                     {unreadCount > 0 && (
                       <Badge className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
                         {unreadCount > 99 ? "99+" : unreadCount}
@@ -177,9 +192,10 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                   </Link>
                 )}
                 <Link to="/dashboard" className="ml-1">
-                  <Button className="h-11 px-4">
-                    <LayoutDashboard className="w-4 h-4 mr-2" aria-hidden="true" />
-                    Dashboard
+                  {/* Icon only between 1024 and 1279, where the text links need the room. */}
+                  <Button aria-label="Dashboard" className="h-11 px-4 lg:w-11 lg:px-0 xl:w-auto xl:px-4">
+                    <LayoutDashboard className="w-4 h-4 mr-2 lg:mr-0 xl:mr-2" aria-hidden="true" />
+                    <span className="lg:hidden xl:inline">Dashboard</span>
                   </Button>
                 </Link>
                 <Button variant="ghost" onClick={handleSignOut} aria-label="Sign out" className="hidden h-11 w-11 p-0 lg:inline-flex">
@@ -270,7 +286,8 @@ const Navbar = ({ wide = false }: { wide?: boolean }) => {
                     )}
                   >
                     <link.icon className="w-4 h-4 mr-2" />
-                    {link.label}
+                    {link.menuLabel ?? link.label}
+                    {link.isNew && <NewBadge />}
                   </Button>
                 </Link>
               ))}

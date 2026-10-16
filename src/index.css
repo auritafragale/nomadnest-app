@@ -177,6 +177,27 @@
     --nn-gold-text: #3A2A06;
     /* Partner logos are drawn for a light background, in both modes. */
     --nn-logo-bg: hsl(0 0% 100%);
+    --nn-logo-border: hsl(220 13% 91%);
+    --nn-logo-ink: hsl(215 9% 27%);
+    /* Perks placements (P2), the same in light and dark: the Trip pass sunset
+       (coral to gold) and the Your perks card (teal to mint), both with dark
+       text (#1F1B16 on the darkest stop is 5.6:1 and 5.3:1). */
+    --nn-sunset-1: #E8735A;
+    --nn-sunset-2: #F09A6B;
+    --nn-sunset-3: #E8B53E;
+    --nn-on-sunset: #1F1B16;
+    --nn-on-sunset-soft: #3A1A0F;
+    --nn-mint-1: #2A9D8C;
+    --nn-mint-2: #5CC4B3;
+    --nn-mint-3: #A8E3D6;
+    --nn-on-mint: #1F1B16;
+    --nn-strip: hsl(0 0% 100% / 0.88);
+    /* The free-time panel and the Done chip (teal soft), light and dark. */
+    --nn-teal-soft: hsl(168 62% 95%);
+    --nn-teal-soft-text: hsl(171 56% 27%);
+    /* Membership perks block (warm gold). */
+    --nn-gold-soft: hsl(42 100% 93%);
+    --nn-gold-soft-link: #6B4A00;
   }
   :root[data-active-role="owner"],
   [data-nn-role="owner"] {
@@ -229,6 +250,10 @@
     --nn-ink-muted: hsl(30 6% 84%);
     --nn-pick-bg: hsl(171 59% 18%);
     --nn-pick-text: hsl(171 50% 67%);
+    --nn-teal-soft: hsl(171 59% 18%);
+    --nn-teal-soft-text: hsl(171 50% 67%);
+    --nn-gold-soft: hsl(42 40% 14%);
+    --nn-gold-soft-link: hsl(42 90% 70%);
     /* Small coral and teal text on dark surfaces: lighter shades. */
     --brand-coral-text: 11 85% 72%;
     --brand-teal-text: 168 50% 58%;
