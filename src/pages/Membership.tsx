@@ -397,7 +397,13 @@ const Membership = () => {
                 {/* Store apps: the neutral line is already on the member card or in the perks block above. */}
                 {!store && (
                   <>
-                    <button type="button" onClick={() => void choose()} disabled={busy || (!!user && m.loading)} className={nnButton("primary", "h-12 w-full md:w-auto md:self-start md:px-10")}>
+                    {/* A one-side member already has the gold Switch to Combined box as the main action. */}
+                    <button
+                      type="button"
+                      onClick={() => void choose()}
+                      disabled={busy || (!!user && m.loading)}
+                      className={nnButton(current && current !== "combined" ? "secondary" : "primary", "h-12 w-full md:w-auto md:self-start md:px-10")}
+                    >
                       {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                       {ctaLabel}
                     </button>
