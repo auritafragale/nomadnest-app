@@ -266,14 +266,21 @@ export const PerksDashCard = ({ parentMode = false, className }: { parentMode?: 
   return (
     <section
       aria-label="Your perks"
-      className={cn("relative flex flex-col gap-3.5 overflow-hidden rounded-[22px] p-[18px] text-[var(--nn-on-mint)]", className)}
-      style={{ background: "linear-gradient(135deg, var(--nn-mint-1) 0%, var(--nn-mint-2) 55%, var(--nn-mint-3) 100%)" }}
+      className={cn("relative flex flex-col gap-3.5 overflow-hidden rounded-[22px] p-[18px] text-[var(--nn-on-perk-gold)]", className)}
+      style={{
+        background: "linear-gradient(135deg, var(--nn-perk-gold-1) 0%, var(--nn-perk-gold-2) 50%, var(--nn-perk-gold-3) 100%)",
+        boxShadow: "var(--nn-perk-gold-shadow)",
+      }}
     >
-      <span aria-hidden="true" className="absolute -right-[50px] -top-[70px] h-[190px] w-[190px] rounded-full bg-[radial-gradient(circle,rgba(232,181,62,0.75),transparent_70%)]" />
+      <span
+        aria-hidden="true"
+        className="absolute -right-[50px] -top-[70px] h-[190px] w-[190px] rounded-full"
+        style={{ background: "radial-gradient(circle, var(--nn-perk-gold-glow), transparent 70%)" }}
+      />
       <div className="relative flex items-center justify-between gap-2.5">
         <span className="flex flex-col gap-[3px]">
           <span className="font-display text-[24px] leading-[1.1]">{parentMode ? "Off on your own trip?" : "Your perks"}</span>
-          <span className="text-sm">
+          <span className="text-sm text-[var(--nn-on-perk-gold-soft)]">
             {perks.length} partner {perks.length === 1 ? "perk" : "perks"}. {used} used so far.
           </span>
         </span>
@@ -283,11 +290,11 @@ export const PerksDashCard = ({ parentMode = false, className }: { parentMode?: 
         <button
           type="button"
           onClick={() => open(ofMonth)}
-          className="relative flex min-h-[64px] items-center gap-3 rounded-2xl bg-[var(--nn-strip)] p-3 text-left text-[var(--nn-on-mint)] shadow-[0_2px_8px_rgba(16,54,47,0.15)]"
+          className="relative flex min-h-[64px] items-center gap-3 rounded-2xl bg-[var(--nn-logo-bg)] p-3 text-left text-[var(--nn-on-perk-gold)] shadow-[0_2px_8px_rgba(58,42,6,0.15)]"
         >
           <PerkLogo name={ofMonth.name} logoUrl={ofMonth.logo_url} size={42} />
           <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-            <span className="inline-flex h-[22px] w-fit items-center gap-1 rounded-full bg-[var(--nn-gold)] px-2 text-[11px] font-bold text-[var(--nn-gold-text)]">
+            <span className="inline-flex h-[22px] w-fit items-center gap-1 rounded-full bg-[var(--nn-on-perk-gold)] px-2 text-[11px] font-bold text-[var(--nn-perk-gold-1)]">
               <Sparkles className="h-2.5 w-2.5" aria-hidden="true" />
               Perk of the month
             </span>
@@ -302,11 +309,11 @@ export const PerksDashCard = ({ parentMode = false, className }: { parentMode?: 
       <div className="relative flex items-center justify-between gap-2.5">
         <Link
           to="/perks"
-          className="inline-flex h-11 items-center justify-center rounded-[14px] bg-[var(--nn-on-mint)] px-4 text-sm font-bold text-[var(--nn-logo-bg)]"
+          className="inline-flex h-11 items-center justify-center rounded-[14px] bg-[var(--nn-on-perk-gold)] px-4 text-sm font-bold text-[var(--nn-logo-bg)]"
         >
           See all perks
         </Link>
-        <span className="text-xs font-semibold">Partner offers</span>
+        <span className="text-xs font-semibold text-[var(--nn-on-perk-gold-soft)]">Partner offers</span>
       </div>
     </section>
   );
