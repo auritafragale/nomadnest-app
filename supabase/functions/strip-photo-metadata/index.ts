@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import postgres from "npm:postgres@3.4.9";
 import { stripPhotoMetadata } from "../_shared/photo-metadata.ts";
 import { errorBody, statusFor, type Reason } from "../_shared/http-status.ts";

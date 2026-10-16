@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { providerError, redact } from "../_shared/safe-log.ts";
 import { errorBody, getUserFailureReason, statusFor, type Reason } from "../_shared/http-status.ts";
 

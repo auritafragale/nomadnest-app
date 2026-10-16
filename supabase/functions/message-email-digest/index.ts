@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.89.0";
+import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { renderBrandedEmail, sendBrandedEmail } from "../_shared/branded-email.ts";
 import { buildNotificationEmail } from "../_shared/email-templates.ts";
 import { rejectIfNotInternal } from "../_shared/internal.ts";
