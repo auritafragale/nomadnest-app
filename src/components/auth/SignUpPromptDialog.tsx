@@ -39,7 +39,7 @@ const SignUpPromptDialog = ({
           <DialogTitle className="font-display text-[26px] font-normal">{title}</DialogTitle>
           <DialogDescription className="text-[15px]">{message}</DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <Link
             to="/auth?signup=true"
             className="flex h-[52px] items-center justify-center rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground"
