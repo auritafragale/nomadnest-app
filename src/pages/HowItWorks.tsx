@@ -133,7 +133,7 @@ const HowItWorks = () => {
 
           {/* Hero */}
           <section className="max-w-3xl mx-auto text-center mb-16">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-terracotta-light text-primary text-sm font-semibold mb-4">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-terracotta-light text-[var(--nn-accent-dark)] text-sm font-semibold mb-4">
               A genuine exchange
             </span>
             <h1 className="text-3xl md:text-5xl font-display mb-5">
@@ -219,7 +219,7 @@ const HowItWorks = () => {
                       Pet Parent
                       {!store && <div className="text-xs font-normal text-muted-foreground">£59 / year</div>}
                     </TableHead>
-                    <TableHead className="font-display text-primary text-center">
+                    <TableHead className="font-display text-[var(--nn-accent-dark)] text-center">
                       Combined
                       {!store && <div className="text-xs font-normal text-muted-foreground">£99 / year</div>}
                     </TableHead>

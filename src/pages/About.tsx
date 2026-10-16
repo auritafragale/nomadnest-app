@@ -217,7 +217,7 @@ const About = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Feature</TableHead>
-                      <TableHead className="text-primary font-semibold">
+                      <TableHead className="text-[var(--nn-accent-dark)] font-semibold">
                         NomadNest
                       </TableHead>
                       <TableHead>Others</TableHead>
@@ -227,7 +227,7 @@ const About = () => {
                     {comparisonRows.map((row) => (
                       <TableRow key={row.feature}>
                         <TableCell className="font-medium">{row.feature}</TableCell>
-                        <TableCell className="text-primary font-medium">
+                        <TableCell className="text-[var(--nn-accent-dark)] font-medium">
                           {row.nn}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
@@ -245,7 +245,7 @@ const About = () => {
         {/* Community */}
         <section className="container py-8 md:py-12">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-terracotta-light text-primary mb-4">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-terracotta-light text-[var(--nn-accent-dark)] mb-4">
               <Heart className="w-6 h-6" />
             </div>
             <h2 className="font-display text-3xl md:text-4xl text-foreground mb-6">
@@ -286,7 +286,7 @@ const About = () => {
                     rel="noopener noreferrer"
                     className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-muted transition-colors text-center"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-terracotta-light text-primary flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-lg bg-terracotta-light text-[var(--nn-accent-dark)] flex items-center justify-center">
                       <Instagram className="w-5 h-5" />
                     </div>
                     <p className="text-sm font-semibold text-foreground">Instagram</p>
@@ -298,7 +298,7 @@ const About = () => {
                     rel="noopener noreferrer"
                     className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-muted transition-colors text-center"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-terracotta-light text-primary flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-lg bg-terracotta-light text-[var(--nn-accent-dark)] flex items-center justify-center">
                       <Facebook className="w-5 h-5" />
                     </div>
                     <p className="text-sm font-semibold text-foreground">Facebook</p>
@@ -308,7 +308,7 @@ const About = () => {
                     href="mailto:support@nomadnest.global"
                     className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-muted transition-colors text-center"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-terracotta-light text-primary flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-lg bg-terracotta-light text-[var(--nn-accent-dark)] flex items-center justify-center">
                       <Mail className="w-5 h-5" />
                     </div>
                     <p className="text-sm font-semibold text-foreground">Email</p>
