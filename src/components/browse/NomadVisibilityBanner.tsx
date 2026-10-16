@@ -7,13 +7,13 @@ import { cn } from "@/lib/utils";
 
 
 interface NomadVisibilityBannerProps {
-  /** True when rendered over a map, so the card blends into it instead of sitting as a solid block. */
-  transparent?: boolean;
-  /** True to skip the outer container/spacing wrapper, so the caller controls placement. */
-  bare?: boolean;
+  /** "row": the full sentence (desktop panel, empty state). "pill": a small
+   *  floating pill on the map ("Visible" or "Hidden" and the switch). */
+  variant?: "row" | "pill";
+  className?: string;
 }
 
-const NomadVisibilityBanner = ({ transparent = false, bare = false }: NomadVisibilityBannerProps = {}) => {
+const NomadVisibilityBanner = ({ variant = "row", className }: NomadVisibilityBannerProps = {}) => {
   const { user, role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -90,26 +90,28 @@ const NomadVisibilityBanner = ({ transparent = false, bare = false }: NomadVisib
     });
   };
 
-  // One slim row: a status dot, the state in words, and the switch. The
-  // whole row is the switch (56px tap target); the switch inside is drawn
-  // at its usual size.
+  const pill = variant === "pill";
+  // The whole row (or pill) is the switch; the switch inside is drawn at its
+  // usual size. Row: 56px tap target. Pill: 44px, floating on the map.
   const row = (
     <button
       type="button"
-      id="nomad-visibility"
       role="switch"
       aria-checked={isVisible}
-      aria-labelledby="nomad-visibility-label"
+      aria-label={pill ? (isVisible ? "You are visible on the map" : "You are hidden from the map") : undefined}
       disabled={updating}
       onClick={() => void handleToggle(!isVisible)}
       className={cn(
-        "flex min-h-[56px] w-full cursor-pointer items-center gap-3 rounded-[18px] border border-border px-4 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-70",
-        transparent ? "bg-background/80 backdrop-blur-sm" : "bg-card",
+        "flex cursor-pointer items-center gap-3 border border-border bg-card text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-70",
+        pill
+          ? "h-11 shrink-0 gap-2 whitespace-nowrap rounded-full px-3 text-sm font-bold shadow-[var(--nn-float-shadow)]"
+          : "min-h-[56px] w-full rounded-[18px] px-4 py-2",
+        className,
       )}
     >
       <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", isVisible ? "bg-brand-teal" : "bg-muted-foreground")} aria-hidden="true" />
-      <span id="nomad-visibility-label" className="min-w-0 flex-1 text-[15px] font-semibold">
-        {isVisible ? "You are visible on the map" : "You are hidden from the map"}
+      <span className={cn("min-w-0", pill ? "" : "flex-1 text-[15px] font-semibold")}>
+        {pill ? (isVisible ? "Visible" : "Hidden") : isVisible ? "You are visible on the map" : "You are hidden from the map"}
       </span>
       <span
         aria-hidden="true"
@@ -120,9 +122,7 @@ const NomadVisibilityBanner = ({ transparent = false, bare = false }: NomadVisib
     </button>
   );
 
-  if (bare) return row;
-
-  return <div className="container pt-4">{row}</div>;
+  return row;
 };
 
 export default NomadVisibilityBanner;
