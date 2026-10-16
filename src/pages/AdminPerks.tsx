@@ -255,7 +255,7 @@ const AdminPerks = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0 space-y-3">
-                    <p className="text-sm text-primary font-medium">
+                    <p className="text-sm font-medium text-[var(--nn-accent-dark)]">
                       {[perk.benefit_headline, perk.benefit_subline].filter(Boolean).join(" ") || "Member discount (no headline yet)"}
                     </p>
                     <p className="text-xs text-muted-foreground break-all">{perk.affiliate_url}</p>
