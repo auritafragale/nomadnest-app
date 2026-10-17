@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Star, CheckCircle, MapPin } from "lucide-react";
 import { SitterWithProfile } from "@/hooks/useSitters";
+import { MAP_CONTROLS, WORLD_RESTRICTION, useWorldMinZoom } from "./mapLimits";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 import MessageSitterButton from "@/components/browse/MessageSitterButton";
 
@@ -218,22 +219,21 @@ interface SitterGoogleMapProps {
 const MapContent = ({ sitters }: SitterGoogleMapProps) => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const { nomadMapId } = useGoogleMapsConfig();
+  const { ref, minZoom } = useWorldMinZoom();
 
   const sittersWithCoords = sitters.filter((s) => s.latitude && s.longitude);
   const selected = sittersWithCoords.find((s) => s.user_id === selectedUserId) || null;
 
   return (
-    <div className="w-full aspect-[3/4] min-h-[420px] max-h-[80vh] sm:aspect-auto sm:h-[600px] sm:max-h-none rounded-lg overflow-hidden border border-border relative">
+    <div ref={ref} className="w-full aspect-[3/4] min-h-[420px] max-h-[80vh] sm:aspect-auto sm:h-[600px] sm:max-h-none rounded-lg overflow-hidden border border-border relative">
       <Map
         defaultCenter={{ lat: 25, lng: 10 }}
-        defaultZoom={2}
+        defaultZoom={minZoom}
+        minZoom={minZoom}
+        restriction={WORLD_RESTRICTION}
         gestureHandling="greedy"
-        rotateControl={false}
         tilt={0}
-        disableDefaultUI={false}
-        streetViewControl={false}
-        zoomControl={false}
-        mapTypeControl={false}
+        {...MAP_CONTROLS}
         mapId={nomadMapId || "nomad-map"}
         className="w-full h-full"
         onClick={() => setSelectedUserId(null)}

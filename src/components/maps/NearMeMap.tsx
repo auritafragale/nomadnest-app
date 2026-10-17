@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Map as GoogleMap, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
+import { MAP_CONTROLS, WORLD_RESTRICTION, useWorldMinZoom } from "./mapLimits";
 import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 
@@ -98,22 +99,21 @@ const MapInner = ({
   const { nomadMapId } = useGoogleMapsConfig();
   const { theme } = useTheme();
   const scheme = theme === "dark" ? "DARK" : "LIGHT";
+  const { ref, minZoom } = useWorldMinZoom();
   return (
-    <div className={cn("relative h-full w-full overflow-hidden", className)} aria-label="Map of Nomads nearby" role="region">
+    <div ref={ref} className={cn("relative h-full w-full overflow-hidden", className)} aria-label="Map of Nomads nearby" role="region">
       {/* The colour scheme is set when the map starts, so a theme change starts a new one. */}
       <GoogleMap
         key={scheme}
         colorScheme={scheme}
         defaultCenter={{ lat: 30, lng: 0 }}
-        defaultZoom={2}
+        defaultZoom={minZoom}
+        minZoom={minZoom}
         maxZoom={MAX_ZOOM}
+        restriction={WORLD_RESTRICTION}
         gestureHandling="greedy"
-        rotateControl={false}
         tilt={0}
-        streetViewControl={false}
-        zoomControl={false}
-        mapTypeControl={false}
-        fullscreenControl={false}
+        {...MAP_CONTROLS}
         clickableIcons={false}
         mapId={nomadMapId || "nomad-map"}
         style={{ width: "100%", height: "100%" }}
