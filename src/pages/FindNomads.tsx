@@ -11,6 +11,8 @@ import NomadVisibilityBanner from "@/components/browse/NomadVisibilityBanner";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStartConversation } from "@/hooks/useConversations";
+import { DESKTOP_QUERY, SHORT_LANDSCAPE_QUERY, useMediaQuery } from "@/hooks/useMediaQuery";
+import { useNoPagePinch } from "@/hooks/useNoPagePinch";
 import { toast } from "@/hooks/use-toast";
 import { RoleTheme, nnButton } from "@/components/nn/ui";
 import { matchesAllTokens, cn } from "@/lib/utils";
@@ -42,8 +44,11 @@ const FLOAT = "border border-border bg-card shadow-[var(--nn-float-shadow)]";
 const NOTE = "Pins show the city a Nomad chose, never a home.";
 
 // Room kept clear of the floating cards when the map fits its pins.
-const PHONE_PADDING: MapPadding = { top: 140, right: 40, bottom: 290, left: 40 };
-const DESKTOP_PADDING: MapPadding = { top: 90, right: 90, bottom: 90, left: 430 };
+const PADDING: Record<"phone" | "landscape" | "desktop", MapPadding> = {
+  phone: { top: 140, right: 40, bottom: 290, left: 40 },
+  landscape: { top: 80, right: 40, bottom: 40, left: 330 },
+  desktop: { top: 90, right: 90, bottom: 90, left: 430 },
+};
 
 const Avatar = ({ nomad, size = "h-[46px] w-[46px]" }: { nomad: NomadOnMap; size?: string }) => (
   <span className={cn("flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#D8C3B0] text-base font-bold text-[#5A4636]", size)}>
@@ -89,14 +94,12 @@ const FindNomads = () => {
   const [listOpen, setListOpen] = useState(false);
   const carousel = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const [desktop, setDesktop] = useState(() => typeof window !== "undefined" && window.matchMedia?.("(min-width: 1024px)").matches);
-  useEffect(() => {
-    const mq = window.matchMedia?.("(min-width: 1024px)");
-    if (!mq) return;
-    const on = () => setDesktop(mq.matches);
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
+  const panel = useRef<HTMLDivElement>(null);
+  useNoPagePinch();
+  // Phone and tablet: floating cards. A phone turned sideways: a side panel.
+  const desktop = useMediaQuery(DESKTOP_QUERY);
+  const landscape = useMediaQuery(SHORT_LANDSCAPE_QUERY) && !desktop;
+  const layout = desktop ? "desktop" : landscape ? "landscape" : "phone";
 
   // The City Chat pill follows the City Chat rule: only rooms the member can
   // open now (a confirmed or in-progress sit there), the same list as the
@@ -186,7 +189,7 @@ const FindNomads = () => {
   }, [filtered, pins]);
 
   // Phone and tablet start with the first card picked (design: NearMeMapPhone).
-  const active = ordered.find((n) => n.user_id === activeId) ?? (desktop ? null : ordered[0] ?? null);
+  const active = ordered.find((n) => n.user_id === activeId) ?? (layout === "phone" ? ordered[0] ?? null : null);
   const selectedCity = active ? cityKey(active) : null;
   const selectedPin = pins.find((p) => p.key === selectedCity) ?? null;
   const mine = user ? all.find((n) => n.user_id === user.id) ?? null : null;
@@ -198,7 +201,8 @@ const FindNomads = () => {
   }, [ordered, activeId]);
 
   const scrollToCard = (id: string) => {
-    const el = carousel.current?.querySelector<HTMLElement>(`[data-nomad="${id}"]`);
+    const box = layout === "phone" ? carousel.current : panel.current;
+    const el = box?.querySelector<HTMLElement>(`[data-nomad="${id}"]`);
     el?.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", inline: "center", block: "nearest" });
   };
 
@@ -303,7 +307,7 @@ const FindNomads = () => {
 
   // One row in the full list (phone sheet and desktop panel).
   const listRow = (n: NomadOnMap) => (
-    <li key={n.user_id}>
+    <li key={n.user_id} data-nomad={n.user_id}>
       <div
         className={cn(
           "flex items-center gap-3 rounded-[18px] border bg-card p-3",
@@ -354,18 +358,20 @@ const FindNomads = () => {
 
       {/* The map fills everything between the top bar and the bottom bar. */}
       <main className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] top-16 md:bottom-0">
-        <h1 className="sr-only lg:hidden">Nomads Near Me</h1>
+        {layout !== "desktop" && <h1 className="sr-only">Nomads Near Me</h1>}
         <NearMeMap
           pins={pins}
           selected={selectedCity}
           onSelect={pickCity}
-          padding={desktop ? DESKTOP_PADDING : PHONE_PADDING}
+          padding={PADDING[layout]}
           focus={focus}
         />
 
         {/* ── Phone and tablet: floating pills and cards ── */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2.5 px-4 pt-3.5 md:flex-row md:items-center lg:hidden">
-          <div className={cn("pointer-events-auto flex min-w-0 items-center rounded-full md:flex-1", FLOAT)}>
+        {layout === "phone" && (
+        <>
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2.5 px-4 pt-3.5 md:flex-row md:items-center">
+          <div className={cn("pointer-events-auto flex min-w-0 touch-none items-center rounded-full md:flex-1", FLOAT)}>
             {searchInput("flex-1")}
             <button
               type="button"
@@ -376,13 +382,13 @@ const FindNomads = () => {
               <List className="h-[18px] w-[18px]" aria-hidden="true" />
             </button>
           </div>
-          <div className="pointer-events-auto flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] md:overflow-visible md:pb-0">
+          <div className="pointer-events-auto flex touch-pan-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] md:overflow-visible md:pb-0">
             <NomadVisibilityBanner variant="pill" />
             {cityChatPill}
           </div>
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 pb-3 lg:hidden">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 pb-3">
           {isError ? (
             <div className="pointer-events-auto px-4">{errorCard}</div>
           ) : empty ? (
@@ -390,10 +396,10 @@ const FindNomads = () => {
           ) : (
             <>
               <div className="flex items-center justify-between px-4">
-                <span aria-live="polite" className={cn("pointer-events-auto flex h-[34px] items-center whitespace-nowrap rounded-full px-3.5 text-[13px] font-bold", FLOAT)}>
+                <span aria-live="polite" className={cn("pointer-events-auto flex h-[34px] touch-none items-center whitespace-nowrap rounded-full px-3.5 text-[13px] font-bold", FLOAT)}>
                   {loading ? "Finding Nomads…" : countLine}
                 </span>
-                <span className="pointer-events-auto">{centreButton}</span>
+                <span className="pointer-events-auto touch-none">{centreButton}</span>
               </div>
               <div
                 ref={carousel}
@@ -402,7 +408,7 @@ const FindNomads = () => {
                 onTouchEnd={onTouchEnd}
                 aria-label="Nomads nearby"
                 role="list"
-                className="pointer-events-auto flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 pt-1 [scrollbar-width:none] motion-reduce:scroll-auto [&::-webkit-scrollbar]:hidden"
+                className="pointer-events-auto flex touch-pan-x snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 pt-1 [scrollbar-width:none] motion-reduce:scroll-auto [&::-webkit-scrollbar]:hidden"
               >
                 {ordered.map((n) => (
                   <article
@@ -435,12 +441,14 @@ const FindNomads = () => {
               </div>
             </>
           )}
-          <span className="pointer-events-auto self-center whitespace-nowrap rounded-full bg-card/90 px-2.5 py-1 text-xs text-foreground/80">{NOTE}</span>
+          <span className="pointer-events-auto self-center touch-none whitespace-nowrap rounded-full bg-card/90 px-2.5 py-1 text-xs text-foreground/80">{NOTE}</span>
         </div>
+        </>
+        )}
 
         {/* Phone and tablet: the full list over two thirds of the map. */}
-        <Drawer open={listOpen} onOpenChange={setListOpen} shouldScaleBackground={false}>
-          <DrawerContent className="h-[66dvh] lg:hidden">
+        <Drawer open={listOpen && layout === "phone"} onOpenChange={setListOpen} shouldScaleBackground={false}>
+          <DrawerContent className="h-[66dvh]">
             <div className="flex items-center justify-between gap-3 px-5 pb-2 pt-3">
               <div>
                 <DrawerTitle className="text-[17px] font-bold">{nomads(filtered.length)} nearby</DrawerTitle>
@@ -454,10 +462,37 @@ const FindNomads = () => {
           </DrawerContent>
         </Drawer>
 
-        {/* ── Desktop: a floating panel on the left ── */}
+        {/* ── A phone turned sideways: cards in a side panel, pills in one row ── */}
+        {layout === "landscape" && (
+          <>
+            <div className="pointer-events-none absolute left-[324px] right-3 top-3 z-10 flex touch-pan-x gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className={cn("pointer-events-auto flex w-[240px] shrink-0 touch-none items-center rounded-full", FLOAT)}>{searchInput("flex-1")}</div>
+              <span className="pointer-events-auto">
+                <NomadVisibilityBanner variant="pill" />
+              </span>
+              <span className="pointer-events-auto">{cityChatPill}</span>
+            </div>
+            <section aria-label="Nomads nearby" className={cn("absolute bottom-3 left-3 top-3 z-10 flex w-[300px] flex-col gap-2.5 overflow-hidden rounded-[20px] p-3", FLOAT)}>
+              <p aria-live="polite" className="text-sm font-bold">
+                {loading ? "Finding Nomads…" : isError ? "" : countLine}
+              </p>
+              <div ref={panel} className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 pb-1">
+                {isError ? errorCard : empty ? emptyCard : <ul className="flex flex-col gap-2.5">{ordered.map(listRow)}</ul>}
+              </div>
+            </section>
+            <div className="absolute bottom-3 right-3 z-10 flex touch-none flex-col items-end gap-2">
+              {centreButton}
+              <span className="whitespace-nowrap rounded-full bg-card/90 px-2.5 py-1 text-xs text-foreground/80">{NOTE}</span>
+            </div>
+          </>
+        )}
+
+        {/* ── Desktop: a floating panel on the left, as tall as its content ── */}
+        {layout === "desktop" && (
+        <>
         <section
           aria-labelledby="near-me-title"
-          className={cn("absolute bottom-6 left-6 top-6 z-10 hidden w-[380px] flex-col gap-3 overflow-hidden rounded-[24px] p-5 lg:flex", FLOAT)}
+          className={cn("absolute left-6 top-6 z-10 flex max-h-[calc(100%-3rem)] w-[380px] flex-col gap-3 overflow-hidden rounded-[24px] p-5", FLOAT)}
         >
           <div className="flex flex-col gap-1">
             <h1 id="near-me-title" className="font-display text-[30px] font-normal leading-tight">
@@ -470,7 +505,7 @@ const FindNomads = () => {
           <p aria-live="polite" className="text-sm font-semibold">
             {loading ? "Finding Nomads…" : isError ? "" : countLine}
           </p>
-          <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 pb-1">
+          <div ref={panel} className="-mx-1 min-h-0 overflow-y-auto px-1 pb-1">
             {isError ? (
               errorCard
             ) : empty ? (
@@ -485,11 +520,13 @@ const FindNomads = () => {
             )}
           </div>
         </section>
-        <div className="absolute right-6 top-6 z-10 hidden lg:block">{cityChatPill}</div>
-        <div className="absolute bottom-6 right-6 z-10 hidden flex-col items-end gap-2 lg:flex">
+        <div className="absolute right-6 top-6 z-10">{cityChatPill}</div>
+        <div className="absolute bottom-6 right-6 z-10 flex flex-col items-end gap-2">
           {centreButton}
           <span className="whitespace-nowrap rounded-full bg-card/90 px-2.5 py-1 text-xs text-foreground/80">{NOTE}</span>
         </div>
+        </>
+        )}
       </main>
     </RoleTheme>
   );

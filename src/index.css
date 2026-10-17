@@ -200,6 +200,9 @@
     /* Membership perks block (warm gold). */
     --nn-gold-soft: hsl(42 100% 93%);
     --nn-gold-soft-link: #6B4A00;
+    /* A chip on a photo (the host rating on map sit cards), the same in both modes. */
+    --nn-photo-chip: hsl(0 0% 100% / 0.95);
+    --nn-photo-chip-ink: #1F1B16;
     /* Cards and pills floating on a map (Nomads Near Me). */
     --nn-float-shadow: 0 8px 24px rgba(20, 16, 12, 0.18);
   }

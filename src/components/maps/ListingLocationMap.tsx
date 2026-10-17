@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Map, useMap } from "@vis.gl/react-google-maps";
+import { MAP_CONTROLS, WORLD_RESTRICTION, useWorldMinZoom } from "./mapLimits";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
 
 /**
@@ -38,19 +39,18 @@ const AreaCircle = ({ latitude, longitude }: { latitude: number; longitude: numb
 
 const MapContent = ({ latitude, longitude }: ListingLocationMapProps) => {
   const { listingMapId } = useGoogleMapsConfig();
+  const { ref, minZoom } = useWorldMinZoom();
 
   return (
-    <div className="w-full aspect-[4/3] min-h-[220px] sm:aspect-auto sm:h-[250px] rounded-2xl overflow-hidden border border-border">
+    <div ref={ref} className="w-full aspect-[4/3] min-h-[220px] sm:aspect-auto sm:h-[250px] rounded-2xl overflow-hidden border border-border">
       <Map
         defaultCenter={{ lat: latitude, lng: longitude }}
         defaultZoom={14}
+        minZoom={minZoom}
+        restriction={WORLD_RESTRICTION}
         gestureHandling="cooperative"
-        rotateControl={false}
         tilt={0}
-        disableDefaultUI
-        streetViewControl={false}
-        zoomControl={false}
-        mapTypeControl={false}
+        {...MAP_CONTROLS}
         mapId={listingMapId || "listing-map"}
         className="w-full h-full"
       >

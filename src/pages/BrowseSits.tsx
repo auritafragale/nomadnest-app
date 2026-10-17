@@ -1,11 +1,13 @@
-import { useState, lazy, Suspense, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { Map as MapIcon } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useListings, ListingFilters } from "@/hooks/useListings";
 import ListingCard from "@/components/browse/ListingCard";
 import { SitFilterBar, SitFiltersPanel, clearFilters } from "@/components/browse/SitFilters";
+import SitsMapView from "@/components/browse/SitsMapView";
 import BackToTopButton from "@/components/ui/BackToTopButton";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import Pagination from "@/components/browse/Pagination";
@@ -16,12 +18,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { NN_PAGE, RoleTheme, nnButton } from "@/components/nn/ui";
 import { cn } from "@/lib/utils";
 
-const ListingGoogleMap = lazy(() => import("@/components/maps/ListingGoogleMap"));
-
 const ITEMS_PER_PAGE = 12;
 const VIEW_MODE_KEY = "nomadnest_browse_view";
 
-/** Browse Sits (design: BrowsePhone, BrowseTabletDark, BrowseDesktop). */
+/**
+ * Browse Sits (design: BrowsePhone, BrowseTabletDark, BrowseDesktop; map view:
+ * SitsMapPhone, SitsListPhone, SitsMapTabletDark, SitsMapDesktop).
+ */
 const BrowseSits = () => {
   const { user } = useAuth();
   const [params] = useSearchParams();
@@ -64,6 +67,53 @@ const BrowseSits = () => {
     ([k, v]) => k !== "sortBy" && (Array.isArray(v) ? v.length > 0 : v !== undefined && v !== "" && v !== false),
   );
 
+  const filtersPanel = (
+    <SitFiltersPanel
+      open={panelOpen}
+      onOpenChange={setPanelOpen}
+      filters={filters}
+      onChange={setFilters}
+      resultCount={isLoading ? null : listings?.length ?? 0}
+    />
+  );
+  const signUpPrompt = (
+    <SignUpPromptDialog
+      open={promptOpen}
+      onOpenChange={setPromptOpen}
+      heart
+      title="Save sits you love"
+      message={
+        isStoreApp()
+          ? `Create a free account to save sits and see full profiles. ${STORE_MEMBERSHIP_LINE}`
+          : "Create a free account to save sits and see full profiles. Membership from £59 a year when you are ready to apply."
+      }
+    />
+  );
+
+  // Map view: the map fills the screen; no footer.
+  if (viewMode === "map") {
+    return (
+      <RoleTheme role="sitter">
+        <Navbar wide />
+        <SitsMapView
+          user={user}
+          listings={listings}
+          isLoading={isLoading}
+          error={error}
+          refetch={() => void refetch()}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onOpenFilters={() => setPanelOpen(true)}
+          onShowList={() => setViewMode("grid")}
+          onSignUpPrompt={() => setPromptOpen(true)}
+          hasActiveFilters={hasActiveFilters}
+        />
+        {filtersPanel}
+        {signUpPrompt}
+      </RoleTheme>
+    );
+  }
+
   return (
     <RoleTheme role="sitter" className="flex min-h-screen flex-col">
       <Navbar wide />
@@ -81,31 +131,15 @@ const BrowseSits = () => {
           <p className="text-[15px] text-muted-foreground">Homes and pets looking for a Nomad, all over the world.</p>
         </div>
 
-        <SitFilterBar
-          filters={filters}
-          onChange={setFilters}
-          onOpenFilters={() => setPanelOpen(true)}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-        />
-        <SitFiltersPanel
-          open={panelOpen}
-          onOpenChange={setPanelOpen}
-          filters={filters}
-          onChange={setFilters}
-          resultCount={isLoading ? null : listings?.length ?? 0}
-        />
+        <SitFilterBar filters={filters} onChange={setFilters} onOpenFilters={() => setPanelOpen(true)} onShowMap={() => setViewMode("map")} />
+        {filtersPanel}
 
         {isLoading ? (
-          viewMode === "map" ? (
-            <Skeleton className="h-[600px] w-full rounded-[22px]" />
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Skeleton key={i} className="h-80 rounded-[22px]" />
-              ))}
-            </div>
-          )
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Skeleton key={i} className="h-80 rounded-[22px]" />
+            ))}
+          </div>
         ) : error ? (
           <div className="flex flex-col items-center gap-3 rounded-[22px] border border-border p-8 text-center">
             <p className="text-[16px] font-bold">We couldn't load sits</p>
@@ -117,25 +151,14 @@ const BrowseSits = () => {
         ) : listings && listings.length > 0 ? (
           <>
             <p className="text-[15px] text-muted-foreground">
-              Showing {viewMode === "map" ? totalItems : `${startIndex}–${endIndex} of ${totalItems}`} {totalItems === 1 ? "sit" : "sits"}
+              Showing {`${startIndex}–${endIndex} of ${totalItems}`} {totalItems === 1 ? "sit" : "sits"}
             </p>
-            {viewMode === "map" ? (
-              <div className="-mx-5 md:mx-0">
-                <Suspense fallback={<Skeleton className="h-[600px] w-full rounded-[22px]" />}>
-                  <ListingGoogleMap listings={listings} />
-                </Suspense>
-                <p className="px-5 pt-2 text-[13px] text-muted-foreground md:px-0">Circles show the area, never the home.</p>
-              </div>
-            ) : (
-              <>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {paginatedItems.map((listing) => (
-                    <ListingCard key={listing.id} listing={listing} onSignUpPrompt={() => setPromptOpen(true)} />
-                  ))}
-                </div>
-                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} className="mt-4" />
-              </>
-            )}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {paginatedItems.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} onSignUpPrompt={() => setPromptOpen(true)} />
+              ))}
+            </div>
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} className="mt-4" />
           </>
         ) : hasActiveFilters ? (
           <div className="flex flex-col items-center gap-3 rounded-[22px] border border-dashed border-border p-8 text-center">
@@ -164,17 +187,20 @@ const BrowseSits = () => {
         )}
       </main>
 
-      <SignUpPromptDialog
-        open={promptOpen}
-        onOpenChange={setPromptOpen}
-        heart
-        title="Save sits you love"
-        message={
-          isStoreApp()
-            ? `Create a free account to save sits and see full profiles. ${STORE_MEMBERSHIP_LINE}`
-            : "Create a free account to save sits and see full profiles. Membership from £59 a year when you are ready to apply."
-        }
-      />
+      {/* Phone and tablet: the floating Map pill, above the bottom bar. */}
+      <button
+        type="button"
+        onClick={() => setViewMode("map")}
+        className={cn(
+          "fixed left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-[var(--nn-ink)] px-5 text-[15px] font-bold text-[var(--nn-ink-text)] shadow-[var(--nn-float-shadow)] md:bottom-6 lg:hidden",
+          user ? "bottom-[calc(5rem+env(safe-area-inset-bottom))]" : "bottom-[calc(1rem+env(safe-area-inset-bottom))]",
+        )}
+      >
+        <MapIcon className="h-[18px] w-[18px]" aria-hidden="true" />
+        Map
+      </button>
+
+      {signUpPrompt}
       <Footer />
       <BackToTopButton />
     </RoleTheme>

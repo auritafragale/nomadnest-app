@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import type { DateRange } from "react-day-picker";
-import { CalendarIcon, Heart, List, Map as MapIcon, SlidersHorizontal, X } from "lucide-react";
+import { CalendarIcon, Heart, Map as MapIcon, SlidersHorizontal, X } from "lucide-react";
 import LocationSearchInput from "@/components/search/LocationSearchInput";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -283,36 +283,73 @@ export const SitFiltersPanel = ({
   );
 };
 
-/** Search, Filters (with a count), Saved and List / Map, then the active filters as tags. */
+/** Filters, with how many are on. `floating`: a pill on the map. */
+export const SitFiltersButton = ({ filters, onOpenFilters, floating = false }: { filters: ListingFilters; onOpenFilters: () => void; floating?: boolean }) => {
+  const count = activeFilterTags(filters).length;
+  return (
+    <button
+      type="button"
+      onClick={onOpenFilters}
+      aria-label={count > 0 ? `Filters, ${count} on` : "Filters"}
+      className={cn(
+        "flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-bold",
+        floating ? "border border-border bg-card shadow-[var(--nn-float-shadow)]" : "border-[1.5px] border-border bg-card",
+      )}
+    >
+      <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+      Filters
+      {count > 0 && (
+        <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground">{count}</span>
+      )}
+    </button>
+  );
+};
+
+/** The filters that are on, each removable. `floating`: pills on the map, in one scrolling row. */
+export const SitFilterTags = ({ filters, onChange, floating = false }: { filters: ListingFilters; onChange: (f: ListingFilters) => void; floating?: boolean }) => {
+  const tags = activeFilterTags(filters);
+  if (tags.length === 0) return null;
+  return (
+    <>
+      {tags.map((t) => (
+        <button
+          key={t.key}
+          type="button"
+          onClick={() => onChange(t.remove(filters))}
+          aria-label={`Remove filter: ${t.label}`}
+          className={cn(
+            "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-sm font-semibold",
+            floating ? "border border-border bg-card shadow-[var(--nn-float-shadow)]" : "bg-primary/15",
+          )}
+        >
+          {t.label}
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      ))}
+      {!floating && (
+        <button type="button" onClick={() => onChange(clearFilters(filters))} className="min-h-11 px-2 text-sm font-bold underline-offset-2 hover:underline">
+          Clear all
+        </button>
+      )}
+    </>
+  );
+};
+
+/** List view: search, Filters, Saved and (desktop) Map view, then the tags. */
 export const SitFilterBar = ({
   filters,
   onChange,
   onOpenFilters,
-  viewMode,
-  onViewModeChange,
+  onShowMap,
 }: {
   filters: ListingFilters;
   onChange: (f: ListingFilters) => void;
   onOpenFilters: () => void;
-  viewMode: "grid" | "map";
-  onViewModeChange: (m: "grid" | "map") => void;
+  /** Desktop: switch to the map. Phone and tablet use the floating Map pill. */
+  onShowMap: () => void;
 }) => {
   const { user } = useAuth();
-  const tags = activeFilterTags(filters);
-  const seg = (mode: "grid" | "map", label: string, Icon: typeof List) => (
-    <button
-      type="button"
-      aria-pressed={viewMode === mode}
-      onClick={() => onViewModeChange(mode)}
-      className={cn(
-        "flex h-11 items-center gap-1.5 rounded-full px-3 text-sm sm:px-4",
-        viewMode === mode ? "bg-card font-bold shadow-sm" : "font-semibold text-muted-foreground",
-      )}
-    >
-      <Icon className="h-4 w-4" aria-hidden="true" />
-      {label}
-    </button>
-  );
+  const hasTags = activeFilterTags(filters).length > 0;
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
@@ -323,18 +360,14 @@ export const SitFilterBar = ({
           onChange={(v) => onChange({ ...filters, search: v })}
         />
         <div className="flex items-center gap-2">
+          <SitFiltersButton filters={filters} onOpenFilters={onOpenFilters} />
           <button
             type="button"
-            onClick={onOpenFilters}
-            className="flex h-11 items-center gap-2 rounded-full border-[1.5px] border-border bg-card px-4 text-sm font-bold"
+            onClick={onShowMap}
+            className="hidden h-11 items-center gap-2 rounded-full border-[1.5px] border-border bg-card px-4 text-sm font-bold lg:flex"
           >
-            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-            Filters
-            {tags.length > 0 && (
-              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground">
-                {tags.length}
-              </span>
-            )}
+            <MapIcon className="h-4 w-4" aria-hidden="true" />
+            Map view
           </button>
           {user && (
             <Link to="/saved" aria-label="Saved" className="flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-bold hover:bg-muted sm:px-3">
@@ -342,29 +375,11 @@ export const SitFilterBar = ({
               <span className="hidden sm:inline">Saved</span>
             </Link>
           )}
-          <div role="group" aria-label="View" className="ml-auto flex rounded-full bg-muted p-1">
-            {seg("grid", "List", List)}
-            {seg("map", "Map", MapIcon)}
-          </div>
         </div>
       </div>
-      {tags.length > 0 && (
+      {hasTags && (
         <div className="flex flex-wrap items-center gap-2">
-          {tags.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => onChange(t.remove(filters))}
-              aria-label={`Remove filter: ${t.label}`}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-primary/15 px-3.5 text-sm font-semibold"
-            >
-              {t.label}
-              <X className="h-3.5 w-3.5" aria-hidden="true" />
-            </button>
-          ))}
-          <button type="button" onClick={() => onChange(clearFilters(filters))} className="min-h-11 px-2 text-sm font-bold underline-offset-2 hover:underline">
-            Clear all
-          </button>
+          <SitFilterTags filters={filters} onChange={onChange} />
         </div>
       )}
     </div>
