@@ -293,7 +293,7 @@ export const SitFiltersButton = ({ filters, onOpenFilters, floating = false }: {
       aria-label={count > 0 ? `Filters, ${count} on` : "Filters"}
       className={cn(
         "flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-bold",
-        floating ? "border border-border bg-card shadow-[var(--nn-float-shadow)]" : "border-[1.5px] border-border bg-card",
+        floating ? "border border-border bg-card shadow-float" : "border-[1.5px] border-border bg-card",
       )}
     >
       <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
@@ -319,7 +319,7 @@ export const SitFilterTags = ({ filters, onChange, floating = false }: { filters
           aria-label={`Remove filter: ${t.label}`}
           className={cn(
             "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-sm font-semibold",
-            floating ? "border border-border bg-card shadow-[var(--nn-float-shadow)]" : "bg-primary/15",
+            floating ? "border border-border bg-card shadow-float" : "bg-primary/15",
           )}
         >
           {t.label}
@@ -335,7 +335,7 @@ export const SitFilterTags = ({ filters, onChange, floating = false }: { filters
   );
 };
 
-/** List view: search, Filters, Saved and (desktop) Map view, then the tags. */
+/** List view (design: SitsListPhone): the search pill, then one row with Filters, Map view (desktop), Saved, the tags and Clear all. */
 export const SitFilterBar = ({
   filters,
   onChange,
@@ -349,39 +349,34 @@ export const SitFilterBar = ({
   onShowMap: () => void;
 }) => {
   const { user } = useAuth();
-  const hasTags = activeFilterTags(filters).length > 0;
+  const pill = "flex h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-border bg-card text-sm font-bold shadow-float";
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
-        <LocationSearchInput
-          wrapperClassName="w-full lg:flex-1"
-          placeholder="Where do you want to go?"
-          value={filters.search || ""}
-          onChange={(v) => onChange({ ...filters, search: v })}
-        />
-        <div className="flex items-center gap-2">
-          <SitFiltersButton filters={filters} onOpenFilters={onOpenFilters} />
-          <button
-            type="button"
-            onClick={onShowMap}
-            className="hidden h-11 items-center gap-2 rounded-full border-[1.5px] border-border bg-card px-4 text-sm font-bold lg:flex"
-          >
-            <MapIcon className="h-4 w-4" aria-hidden="true" />
-            Map view
+      <LocationSearchInput
+        wrapperClassName="w-full"
+        className="rounded-full border-0 bg-card text-[15px] shadow-float"
+        placeholder="Where do you want to go?"
+        value={filters.search || ""}
+        onChange={(v) => onChange({ ...filters, search: v })}
+      />
+      <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1.5 pt-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <SitFiltersButton filters={filters} onOpenFilters={onOpenFilters} floating />
+        <button type="button" onClick={onShowMap} className={cn(pill, "hidden px-4 lg:flex")}>
+          <MapIcon className="h-4 w-4" aria-hidden="true" />
+          Map view
+        </button>
+        {user && (
+          <Link to="/saved" aria-label="Saved" className={cn(pill, "w-11")}>
+            <Heart className="h-[18px] w-[18px]" aria-hidden="true" />
+          </Link>
+        )}
+        <SitFilterTags filters={filters} onChange={onChange} floating />
+        {activeFilterTags(filters).length > 0 && (
+          <button type="button" onClick={() => onChange(clearFilters(filters))} className="min-h-11 shrink-0 whitespace-nowrap px-2 text-sm font-bold underline-offset-2 hover:underline">
+            Clear all
           </button>
-          {user && (
-            <Link to="/saved" aria-label="Saved" className="flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-bold hover:bg-muted sm:px-3">
-              <Heart className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Saved</span>
-            </Link>
-          )}
-        </div>
+        )}
       </div>
-      {hasTags && (
-        <div className="flex flex-wrap items-center gap-2">
-          <SitFilterTags filters={filters} onChange={onChange} />
-        </div>
-      )}
     </div>
   );
 };

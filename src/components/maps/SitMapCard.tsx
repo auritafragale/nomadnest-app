@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, MapPin } from "lucide-react";
 import type { ListingWithDetails } from "@/hooks/useListings";
@@ -12,28 +11,26 @@ import { cn } from "@/lib/utils";
  * Save heart and the host rating, title, place, first open dates, pet chips
  * and View sit. Used in the carousel and the desktop panel.
  */
-const SitMapCard = forwardRef<
-  HTMLElement,
-  {
-    listing: ListingWithDetails;
-    selected: boolean;
-    onPick: () => void;
-    onSignUpPrompt: () => void;
-    className?: string;
-  }
->(({ listing, selected, onPick, onSignUpPrompt, className }, ref) => {
+const SitMapCard = ({
+  listing,
+  selected,
+  onPick,
+  onSignUpPrompt,
+}: {
+  listing: ListingWithDetails;
+  selected: boolean;
+  onPick: () => void;
+  onSignUpPrompt: () => void;
+}) => {
   const { first, more } = openDates(listing);
   return (
     <article
-      ref={ref}
-      data-sit={listing.id}
       onClick={(e) => {
         if (!(e.target as HTMLElement).closest("a,button")) onPick();
       }}
       className={cn(
-        "flex shrink-0 overflow-hidden rounded-[20px] bg-card shadow-[var(--nn-float-shadow)]",
+        "flex h-full w-full overflow-hidden rounded-[20px] bg-card shadow-float",
         selected ? "border-2 border-brand-coral" : "border border-border",
-        className,
       )}
     >
       <div className="relative w-[104px] shrink-0 bg-[#CDB79E]">
@@ -44,7 +41,7 @@ const SitMapCard = forwardRef<
         </span>
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-[5px] p-3">
-        <h3 className="line-clamp-2 text-[15px] font-bold leading-[1.3]">{listing.title}</h3>
+        <h3 className="line-clamp-2 font-body text-[15px] font-bold leading-[1.3]">{listing.title}</h3>
         <span className="flex min-w-0 items-center gap-[5px] text-[13px] text-muted-foreground">
           <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span className="truncate">{sitPlace(listing)}</span>
@@ -65,7 +62,6 @@ const SitMapCard = forwardRef<
       </div>
     </article>
   );
-});
-SitMapCard.displayName = "SitMapCard";
+};
 
 export default SitMapCard;

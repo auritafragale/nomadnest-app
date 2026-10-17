@@ -17,6 +17,8 @@ import { FieldLabel, inputClass } from "@/components/listing/form/FormBits";
 import { NN_PAGE, RoleTheme } from "@/components/nn/ui";
 import { BioField, CouldNotLoad, EditorHub, PrivateDetailsFields, SectionPage, type SectionDef } from "@/components/profile/edit/EditorParts";
 import { wordFilterMessage } from "@/lib/wordFilter";
+import { PROFILE_COMPLETION_KEY, useOwnerCompletion } from "@/hooks/useProfileCompletion";
+import { ownerCompletion } from "@/lib/profileCompletion";
 import { cn } from "@/lib/utils";
 
 const HUB = "/edit-owner-profile";
@@ -75,6 +77,8 @@ const EditOwnerProfile = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data, isLoading, isError, refetch } = useParentData(user?.id);
+  // The same completeness as the Dashboard (shared hook and function).
+  const { data: completion } = useOwnerCompletion();
   const [form, setForm] = useState<ParentData | null>(null);
   const [aiBio, setAiBio] = useState(false);
   const [removed, setRemoved] = useState<string[]>([]);
@@ -123,8 +127,7 @@ const EditOwnerProfile = () => {
       { id: "city", done: !!data.city && !!data.country },
       { id: "about", done: !!data.bio.trim() },
     ];
-    const done = checks.filter((c) => c.done).length;
-    const percent = Math.round((done / checks.length) * 100);
+    const percent = (completion ?? ownerCompletion(data, { bio: data.bio })).percent;
     const firstTodo = checks.find((c) => !c.done)?.id;
     const HINTS: Record<string, string> = {
       photo: "Add your photo and first name. Nomads like to see who they'll be sitting for.",
@@ -261,6 +264,7 @@ const EditOwnerProfile = () => {
       await s.save();
       await deleteStoredImages(removed.filter((u) => u !== form.avatar_url));
       queryClient.invalidateQueries({ queryKey: ["edit-parent-profile"] });
+      queryClient.invalidateQueries({ queryKey: PROFILE_COMPLETION_KEY });
       toast({ title: "Saved", description: "Your profile is up to date." });
       navigate(HUB);
     } catch (e) {

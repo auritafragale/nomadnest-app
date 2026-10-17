@@ -104,7 +104,7 @@ const NomadVisibilityBanner = ({ variant = "row", className }: NomadVisibilityBa
       className={cn(
         "flex cursor-pointer items-center gap-3 border border-border bg-card text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-70",
         pill
-          ? "h-11 shrink-0 gap-2 whitespace-nowrap rounded-full px-3 text-sm font-bold shadow-[var(--nn-float-shadow)]"
+          ? "h-11 shrink-0 gap-2 whitespace-nowrap rounded-full px-3 text-sm font-bold shadow-float"
           : "min-h-[56px] w-full rounded-[18px] px-4 py-2",
         className,
       )}

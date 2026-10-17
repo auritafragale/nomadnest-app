@@ -13,6 +13,8 @@ import { useMyAvailability } from "@/hooks/useMyAvailability";
 import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 import { geocodeCityCountry } from "@/lib/geocode";
 import { SITTER_PROFILE_COLUMNS } from "@/lib/profileColumns";
+import { PROFILE_COMPLETION_KEY, useSitterCompletion } from "@/hooks/useProfileCompletion";
+import { sitterCompletion } from "@/lib/profileCompletion";
 import { PET_TYPE_OPTIONS, canonicalPetType, formatPetType } from "@/lib/petTypes";
 import { useHideBottomNav } from "@/lib/bottomNav";
 import ImageUpload, { deleteStoredImages } from "@/components/listing/ImageUpload";
@@ -198,6 +200,8 @@ const EditSitterProfile = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data, isLoading, isError, refetch } = useNomadData(user?.id);
+  // The same completeness as the Dashboard (shared hook and function).
+  const { data: completion } = useSitterCompletion();
   const { data: availability } = useMyAvailability();
   const { data: mapsConfig } = useGoogleMapsKey();
   const [form, setForm] = useState<NomadData | null>(null);
@@ -259,8 +263,7 @@ const EditSitterProfile = () => {
       { id: "city", done: !!d.city && !!d.country },
       { id: "style", done: !!d.sit_style },
     ];
-    const done = checks.filter((c) => c.done).length;
-    const percent = Math.round((done / checks.length) * 100);
+    const percent = (completion ?? sitterCompletion(d, d)).percent;
     const firstTodo = checks.find((c) => !c.done)?.id;
     const missingPhotos = Math.max(0, 2 - d.gallery.length);
     const HINTS: Record<string, string> = {
@@ -506,6 +509,7 @@ const EditSitterProfile = () => {
       // Photos taken out are only deleted once the change is saved.
       await deleteStoredImages(removed.filter((u) => u !== form.avatar_url && !form.gallery.includes(u)));
       queryClient.invalidateQueries({ queryKey: ["edit-nomad-profile"] });
+      queryClient.invalidateQueries({ queryKey: PROFILE_COMPLETION_KEY });
       queryClient.invalidateQueries({ queryKey: ["nomads-map"] });
       queryClient.invalidateQueries({ queryKey: ["sitters"] });
       toast({ title: "Saved", description: "Your profile is up to date." });

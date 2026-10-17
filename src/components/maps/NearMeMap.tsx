@@ -1,9 +1,11 @@
 import { useEffect } from "react";
-import { Map as GoogleMap, AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
+import { AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
-import { MAP_CONTROLS, WORLD_RESTRICTION, useWorldMinZoom } from "./mapLimits";
-import { useTheme } from "@/contexts/ThemeContext";
+import { WorldMap } from "./WorldMap";
+import type { MapPadding } from "./mapLimits";
 import { cn } from "@/lib/utils";
+
+export type { MapPadding };
 
 // Pins sit on a Nomad's chosen city, never a home, and the map can't zoom in
 // past city scale.
@@ -16,9 +18,6 @@ export interface CityPin {
   latitude: number;
   longitude: number;
 }
-
-/** Room kept clear of floating cards when fitting the pins. */
-export type MapPadding = { top: number; right: number; bottom: number; left: number };
 
 /** Centre on one pin, or (key null) show every pin. `nonce` repeats it. */
 export type MapFocus = { key: string | null; nonce: number };
@@ -97,48 +96,28 @@ const MapInner = ({
   className?: string;
 }) => {
   const { nomadMapId } = useGoogleMapsConfig();
-  const { theme } = useTheme();
-  const scheme = theme === "dark" ? "DARK" : "LIGHT";
-  const { ref, minZoom } = useWorldMinZoom();
   return (
-    <div ref={ref} className={cn("relative h-full w-full overflow-hidden", className)} aria-label="Map of Nomads nearby" role="region">
-      {/* The colour scheme is set when the map starts, so a theme change starts a new one. */}
-      <GoogleMap
-        key={scheme}
-        colorScheme={scheme}
-        defaultCenter={{ lat: 30, lng: 0 }}
-        defaultZoom={minZoom}
-        minZoom={minZoom}
-        maxZoom={MAX_ZOOM}
-        restriction={WORLD_RESTRICTION}
-        gestureHandling="greedy"
-        tilt={0}
-        {...MAP_CONTROLS}
-        clickableIcons={false}
-        mapId={nomadMapId || "nomad-map"}
-        style={{ width: "100%", height: "100%" }}
-      >
-        <Camera pins={pins} padding={padding} focus={focus} />
-        {pins.map((p) => {
-          const on = p.key === selected;
-          return (
-            <AdvancedMarker key={p.key} position={{ lat: p.latitude, lng: p.longitude }} onClick={() => onSelect(p.key)} zIndex={on ? 1000 : p.count}>
-              <button
-                type="button"
-                aria-label={`${p.count} ${p.count === 1 ? "Nomad" : "Nomads"} in ${p.label}`}
-                aria-pressed={on}
-                className={cn(
-                  "flex items-center justify-center rounded-full border-[3px] px-2 font-bold text-primary-foreground shadow-[var(--nn-float-shadow)] transition-transform",
-                  on ? "h-[58px] min-w-[58px] border-brand-coral bg-brand-teal text-[17px]" : "h-12 min-w-12 border-[var(--nn-logo-bg)] bg-brand-teal text-[15px]",
-                )}
-              >
-                {p.count}
-              </button>
-            </AdvancedMarker>
-          );
-        })}
-      </GoogleMap>
-    </div>
+    <WorldMap mapId={nomadMapId || "nomad-map"} label="Map of Nomads nearby" maxZoom={MAX_ZOOM} className={className}>
+      <Camera pins={pins} padding={padding} focus={focus} />
+      {pins.map((p) => {
+        const on = p.key === selected;
+        return (
+          <AdvancedMarker key={p.key} position={{ lat: p.latitude, lng: p.longitude }} onClick={() => onSelect(p.key)} zIndex={on ? 1000 : p.count}>
+            <button
+              type="button"
+              aria-label={`${p.count} ${p.count === 1 ? "Nomad" : "Nomads"} in ${p.label}`}
+              aria-pressed={on}
+              className={cn(
+                "flex items-center justify-center rounded-full border-[3px] px-2 font-bold text-primary-foreground shadow-float transition-transform",
+                on ? "h-[58px] min-w-[58px] border-brand-coral bg-brand-teal text-[17px]" : "h-12 min-w-12 border-[var(--nn-logo-bg)] bg-brand-teal text-[15px]",
+              )}
+            >
+              {p.count}
+            </button>
+          </AdvancedMarker>
+        );
+      })}
+    </WorldMap>
   );
 };
 

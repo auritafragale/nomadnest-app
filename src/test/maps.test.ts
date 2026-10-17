@@ -22,11 +22,19 @@ describe("no map zooms out past the world", () => {
   });
 
   it("every map uses the limits", () => {
-    for (const name of ["ListingGoogleMap", "NearMeMap", "SitterGoogleMap", "ListingLocationMap"]) {
-      const src = readFileSync(join(__dirname, "..", "components", "maps", `${name}.tsx`), "utf8");
+    const read = (name: string) => readFileSync(join(__dirname, "..", "components", "maps", `${name}.tsx`), "utf8");
+    // The shared map, and the listing page's small area map, set them directly…
+    for (const name of ["WorldMap", "ListingLocationMap"]) {
+      const src = read(name);
       expect(src, name).toContain("restriction={WORLD_RESTRICTION}");
       expect(src, name).toContain("minZoom={minZoom}");
       expect(src, name).toContain("{...MAP_CONTROLS}");
+    }
+    // …and every full-screen map is a WorldMap.
+    for (const name of ["ListingGoogleMap", "NearMeMap", "SitterGoogleMap"]) {
+      const src = read(name);
+      expect(src, name).toContain("<WorldMap");
+      expect(src, name).not.toMatch(/<GoogleMap\b|<Map\b/);
     }
   });
 });

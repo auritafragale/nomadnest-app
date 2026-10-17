@@ -5,7 +5,6 @@ import { Bell, X } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
-import { supabase } from "@/integrations/supabase/client";
 import { fetchMyProfile } from "@/lib/myProfile";
 import Navbar from "@/components/layout/Navbar";
 import DashboardHeader, { ModeSwitch } from "@/components/dashboard/DashboardHeader";
@@ -13,7 +12,8 @@ import { NomadDashboard } from "@/components/nomad/NomadDashboard";
 import { ParentDashboard } from "@/components/parent/ParentDashboard";
 import { NN_PAGE, RoleTheme } from "@/components/nn/ui";
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
-import { ownerCompletion, sitterCompletion } from "@/lib/profileCompletion";
+import { useOwnerCompletion, useSitterCompletion } from "@/hooks/useProfileCompletion";
+import type { Completion } from "@/lib/profileCompletion";
 import MembershipNotice from "@/components/membership/MembershipNotice";
 
 interface Profile {
@@ -23,18 +23,9 @@ interface Profile {
   city: string | null;
 }
 
-interface SitterProfile {
-  headline: string | null;
-  bio: string | null;
-  pet_types: string[] | null;
-  gallery: string[] | null;
-}
-
-interface OwnerProfile {
-  bio: string | null;
-}
-
 const PUSH_BANNER_DISMISSED_KEY = "nomadnest_push_banner_dismissed";
+/** Until the real answer arrives, no "Finish your profile" nag. */
+const COMPLETION_PENDING: Completion = { percent: 100, missing: [], line: "" };
 
 
 const Dashboard = () => {
@@ -47,8 +38,9 @@ const Dashboard = () => {
   // every unrelated Dashboard re-render.
   const handleReviewAutoOpened = useCallback(() => setOpenReviewSitId(null), []);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
-  const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
+  // Profile completeness: the same hooks and functions as the profile editors.
+  const { data: sitterDone } = useSitterCompletion(role === "sitter" || role === "both");
+  const { data: ownerDone } = useOwnerCompletion(role === "owner" || role === "both");
   const { isSupported, isSubscribed, isLoading: pushLoading, subscribe } = usePushNotifications();
   const [pushBannerDismissed, setPushBannerDismissed] = useState(() => {
     try {
@@ -122,28 +114,10 @@ const Dashboard = () => {
       if (!user) return;
       const { data: profileData } = await fetchMyProfile().catch(() => ({ data: null }));
       if (profileData) setProfile(profileData);
-
-      if (role === "sitter" || role === "both") {
-        const { data: sitterData } = await supabase
-          .from("sitter_profiles")
-          .select("headline, bio, pet_types, gallery")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (sitterData) setSitterProfile(sitterData);
-      }
-
-      if (role === "owner" || role === "both") {
-        const { data: ownerData } = await supabase
-          .from("owner_profiles")
-          .select("bio")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (ownerData) setOwnerProfile(ownerData);
-      }
     };
 
     fetchProfiles();
-  }, [user, role]);
+  }, [user]);
 
   if (loading) {
     return (
@@ -156,7 +130,7 @@ const Dashboard = () => {
   const displayName = profile?.first_name || user?.email?.split("@")[0] || "there";
   const viewRole: "sitter" | "owner" =
     role === "both" ? (activeRole === "owner" ? "owner" : "sitter") : role === "owner" ? "owner" : "sitter";
-  const completion = viewRole === "sitter" ? sitterCompletion(profile, sitterProfile) : ownerCompletion(profile, ownerProfile);
+  const completion = (viewRole === "sitter" ? sitterDone : ownerDone) ?? COMPLETION_PENDING;
   const header = (
     <DashboardHeader
       role={viewRole}
