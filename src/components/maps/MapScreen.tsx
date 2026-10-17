@@ -2,7 +2,7 @@ import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { List } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DESKTOP_QUERY, SHORT_LANDSCAPE_QUERY, useMediaQuery } from "@/hooks/useMediaQuery";
+import { useMapLayout, type MapLayout } from "@/hooks/useMapLayout";
 import { useNoPagePinch } from "@/hooks/useNoPagePinch";
 import type { MapFocus, MapPadding } from "./mapLimits";
 import { cn } from "@/lib/utils";
@@ -11,10 +11,8 @@ import { cn } from "@/lib/utils";
 export const FLOAT = "border border-border bg-card shadow-float";
 const reducedMotion = () => !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-type Layout = "phone" | "landscape" | "desktop";
-
 // Room kept clear of the floating cards when the map fits its points.
-const PADDING: Record<Layout, MapPadding> = {
+const PADDING: Record<MapLayout, MapPadding> = {
   phone: { top: 150, right: 40, bottom: 300, left: 40 },
   landscape: { top: 80, right: 40, bottom: 40, left: 330 },
   desktop: { top: 90, right: 90, bottom: 90, left: 450 },
@@ -57,9 +55,9 @@ export interface MapScreenProps<T> {
  */
 export function MapScreen<T>(p: MapScreenProps<T>) {
   useNoPagePinch();
-  const desktop = useMediaQuery(DESKTOP_QUERY);
-  const landscape = useMediaQuery(SHORT_LANDSCAPE_QUERY) && !desktop;
-  const layout: Layout = desktop ? "desktop" : landscape ? "landscape" : "phone";
+  // Never switches while the search has focus (the keyboard would close).
+  const { layout, typing, focusProps } = useMapLayout();
+  const desktop = layout === "desktop";
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [focus, setFocus] = useState<MapFocus | null>(null);
@@ -126,9 +124,6 @@ export function MapScreen<T>(p: MapScreenProps<T>) {
     </span>
   );
   const notePill = <span className="touch-none whitespace-nowrap rounded-full bg-card/90 px-2.5 py-1 text-xs text-foreground/80">{p.note}</span>;
-  const filterRow = (
-    <div className="flex min-w-0 touch-pan-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{p.filters("float")}</div>
-  );
   const card = (item: T, wrapper: string) => {
     const id = p.getId(item);
     return (
@@ -145,6 +140,7 @@ export function MapScreen<T>(p: MapScreenProps<T>) {
 
   return (
     <main
+      {...focusProps}
       className={cn(
         "fixed inset-x-0 top-16 overflow-hidden",
         // Members have the bottom bar on phones; the map stops above it.
@@ -156,43 +152,79 @@ export function MapScreen<T>(p: MapScreenProps<T>) {
         {p.renderMap({ selectedId: selected, onPick: pickFromMap, padding: PADDING[layout], focus })}
       </Suspense>
 
+      {/* Search and filters: one element in every layout, so the search is
+          never rebuilt (that would close the keyboard). On desktop it is the
+          floating panel, with the title, the count and the cards. */}
+      <section
+        aria-labelledby={desktop ? "map-screen-title" : undefined}
+        aria-label={desktop ? undefined : "Search and filters"}
+        className={cn(
+          "absolute z-10 flex",
+          layout === "phone" && "pointer-events-none inset-x-0 top-0 flex-col gap-2.5 px-4 pt-3.5",
+          layout === "landscape" && "pointer-events-none left-[324px] right-3 top-3 items-start gap-2",
+          desktop && cn("left-6 top-6 max-h-[calc(100%-3rem)] w-[396px] flex-col gap-3 overflow-hidden rounded-[24px] p-5", FLOAT),
+        )}
+      >
+        {desktop && (
+          <div className="flex flex-col gap-1">
+            <h1 id="map-screen-title" className="font-display text-[30px] font-normal leading-tight">
+              {p.title}
+            </h1>
+            <p className="text-[15px] text-muted-foreground">{p.subtitle}</p>
+          </div>
+        )}
+        <div className={cn("pointer-events-auto flex", layout === "phone" && "touch-none", layout === "landscape" && "w-[260px] shrink-0 touch-none")}>
+          {p.search(desktop ? "panel" : "float")}
+        </div>
+        <div
+          className={cn(
+            "pointer-events-auto flex min-w-0 gap-2",
+            desktop ? "flex-wrap" : "-mx-4 -mb-6 -mt-2 touch-pan-x overflow-x-auto px-4 pb-6 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            layout === "landscape" && "flex-1",
+          )}
+        >
+          {p.filters(desktop ? "panel" : "float")}
+        </div>
+        {desktop && (
+          <>
+            <p aria-live="polite" className="text-sm font-semibold">
+              {count}
+            </p>
+            {stacked}
+          </>
+        )}
+      </section>
+
+      {/* Phone and tablet: the cards. Hidden while the search has focus, so
+          nothing jumps when the keyboard opens; back on blur. */}
       {layout === "phone" && (
-        <>
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2.5 px-4 pt-3.5">
-            <div className="pointer-events-auto flex touch-none">{p.search("float")}</div>
-            <div className="pointer-events-auto">{filterRow}</div>
-          </div>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 pb-3">
-            {p.message ? (
-              <div className={cn("pointer-events-auto mx-4 rounded-[20px] p-5", FLOAT)}>{p.message}</div>
-            ) : (
-              <>
-                <div className="pointer-events-auto flex items-center justify-between gap-2 px-4">
-                  {countPill}
-                  {listPill}
-                </div>
-                <div
-                  ref={carousel}
-                  onScroll={onCarouselScroll}
-                  role="list"
-                  aria-label={p.countLabel}
-                  className="pointer-events-auto flex touch-pan-x snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 pt-1 [scrollbar-width:none] motion-reduce:scroll-auto [&::-webkit-scrollbar]:hidden"
-                >
-                  {p.items.map((item) => card(item, cn("shrink-0 snap-center", p.cardWidth)))}
-                </div>
-              </>
-            )}
-            <span className="pointer-events-auto self-center">{notePill}</span>
-          </div>
-        </>
+        <div className={cn("pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 pb-3", typing && "invisible")}>
+          {p.message ? (
+            <div className={cn("pointer-events-auto mx-4 rounded-[20px] p-5", FLOAT)}>{p.message}</div>
+          ) : (
+            <>
+              <div className="pointer-events-auto flex items-center justify-between gap-2 px-4">
+                {countPill}
+                {listPill}
+              </div>
+              <div
+                ref={carousel}
+                onScroll={onCarouselScroll}
+                role="list"
+                aria-label={p.countLabel}
+                className="pointer-events-auto flex touch-pan-x snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 pt-1 [scrollbar-width:none] motion-reduce:scroll-auto [&::-webkit-scrollbar]:hidden"
+              >
+                {p.items.map((item) => card(item, cn("shrink-0 snap-center", p.cardWidth)))}
+              </div>
+            </>
+          )}
+          <span className="pointer-events-auto self-center">{notePill}</span>
+        </div>
       )}
 
+      {/* A phone turned sideways: the cards in a side panel. */}
       {layout === "landscape" && (
         <>
-          <div className="pointer-events-none absolute left-[324px] right-3 top-3 z-10 flex items-start gap-2">
-            <div className="pointer-events-auto flex w-[260px] shrink-0 touch-none">{p.search("float")}</div>
-            <div className="pointer-events-auto min-w-0 flex-1">{filterRow}</div>
-          </div>
           <section aria-label={p.countLabel} className={cn("absolute bottom-3 left-3 top-3 z-10 flex w-[300px] flex-col gap-2.5 overflow-hidden rounded-[20px] p-3", FLOAT)}>
             <div className="flex items-center justify-between gap-2">
               <span aria-live="polite" className="text-sm font-bold">
@@ -206,25 +238,8 @@ export function MapScreen<T>(p: MapScreenProps<T>) {
         </>
       )}
 
-      {layout === "desktop" && (
+      {desktop && (
         <>
-          <section
-            aria-labelledby="map-screen-title"
-            className={cn("absolute left-6 top-6 z-10 flex max-h-[calc(100%-3rem)] w-[396px] flex-col gap-3 overflow-hidden rounded-[24px] p-5", FLOAT)}
-          >
-            <div className="flex flex-col gap-1">
-              <h1 id="map-screen-title" className="font-display text-[30px] font-normal leading-tight">
-                {p.title}
-              </h1>
-              <p className="text-[15px] text-muted-foreground">{p.subtitle}</p>
-            </div>
-            {p.search("panel")}
-            <div className="flex flex-wrap gap-2">{p.filters("panel")}</div>
-            <p aria-live="polite" className="text-sm font-semibold">
-              {count}
-            </p>
-            {stacked}
-          </section>
           <div className="absolute right-6 top-6 z-10 flex gap-2">
             {p.topRight}
             {listPill}

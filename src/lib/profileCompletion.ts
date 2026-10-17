@@ -15,6 +15,9 @@ export interface CompletionSitter {
   bio?: string | null;
   pet_types?: string[] | null;
   gallery?: string[] | null;
+  experience_level?: string | null;
+  languages?: string[] | null;
+  sit_style?: string | null;
 }
 
 export interface CompletionOwner {
@@ -37,7 +40,9 @@ const join = (items: string[]) =>
 const summarise = (checks: [boolean, string][]): Completion => {
   const missing = checks.filter(([ok]) => !ok).map(([, label]) => label);
   const percent = Math.round(((checks.length - missing.length) / checks.length) * 100);
-  const line = missing.length === 0 ? "" : `Add ${join(missing.slice(0, 2))}${missing.length > 2 ? " and more" : ""}`;
+  // "Add a bio", "Add a bio and your city", "Add a bio, your city and more".
+  const line =
+    missing.length === 0 ? "" : missing.length > 2 ? `Add ${missing.slice(0, 2).join(", ")} and more` : `Add ${join(missing)}`;
   return { percent, missing, line };
 };
 
@@ -51,6 +56,10 @@ export const sitterCompletion = (p: CompletionProfile | null, s: CompletionSitte
     [filled(s?.bio), "a bio"],
     [(s?.pet_types ?? []).length > 0, "the pets you care for"],
     [photos >= 2, photos === 1 ? "1 more photo" : "2 photos"],
+    // The same rules as the Nomad editor sections.
+    [filled(s?.experience_level), "your experience"],
+    [(s?.languages ?? []).filter(Boolean).length > 0, "the languages you speak"],
+    [filled(s?.sit_style), "your sit style"],
   ]);
 };
 

@@ -16,5 +16,3 @@ export const useMediaQuery = (query: string) => {
 
 /** Desktop layout (lg and up). */
 export const DESKTOP_QUERY = "(min-width: 1024px)";
-/** A phone turned sideways: landscape and short. */
-export const SHORT_LANDSCAPE_QUERY = "(orientation: landscape) and (max-height: 500px)";

@@ -359,7 +359,7 @@ export const SitFilterBar = ({
         value={filters.search || ""}
         onChange={(v) => onChange({ ...filters, search: v })}
       />
-      <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1.5 pt-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="-mx-5 -mb-6 -mt-2 flex items-center gap-2 overflow-x-auto px-5 pb-6 pt-2 [scrollbar-width:none] md:-mx-1 md:px-1 [&::-webkit-scrollbar]:hidden">
         <SitFiltersButton filters={filters} onOpenFilters={onOpenFilters} floating />
         <button type="button" onClick={onShowMap} className={cn(pill, "hidden px-4 lg:flex")}>
           <MapIcon className="h-4 w-4" aria-hidden="true" />

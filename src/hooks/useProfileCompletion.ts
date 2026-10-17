@@ -24,7 +24,7 @@ export const fetchOwnerCompletion = async (userId: string): Promise<Completion> 
 export const fetchSitterCompletion = async (userId: string): Promise<Completion> => {
   const [{ data: me }, { data: sp, error }] = await Promise.all([
     fetchMyProfile(),
-    supabase.from("sitter_profiles").select("headline, bio, pet_types, gallery").eq("user_id", userId).maybeSingle(),
+    supabase.from("sitter_profiles").select("headline, bio, pet_types, gallery, experience_level, languages, sit_style").eq("user_id", userId).maybeSingle(),
   ]);
   if (error) throw error;
   return sitterCompletion(me, sp);
