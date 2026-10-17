@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 
+/** Room kept clear of floating cards when a map fits its points. */
+export type MapPadding = { top: number; right: number; bottom: number; left: number };
+/** Move the map to one point; `nonce` repeats the move. */
+export type MapFocus = { id: string; nonce: number };
+
 /**
  * Shared rules for every map in the app.
  *

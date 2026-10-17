@@ -28,6 +28,9 @@ export interface Completion {
   line: string;
 }
 
+/** Text that counts as filled in: a bio of only spaces is empty. */
+const filled = (v: string | null | undefined) => !!v?.trim();
+
 const join = (items: string[]) =>
   items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 
@@ -41,11 +44,11 @@ const summarise = (checks: [boolean, string][]): Completion => {
 export const sitterCompletion = (p: CompletionProfile | null, s: CompletionSitter | null): Completion => {
   const photos = (s?.gallery ?? []).filter(Boolean).length;
   return summarise([
-    [!!p?.first_name, "your name"],
+    [filled(p?.first_name), "your name"],
     [!!p?.avatar_url, "a profile photo"],
-    [!!(p?.city && p?.country), "your city"],
-    [!!s?.headline, "a headline"],
-    [!!s?.bio, "a bio"],
+    [filled(p?.city) && filled(p?.country), "your city"],
+    [filled(s?.headline), "a headline"],
+    [filled(s?.bio), "a bio"],
     [(s?.pet_types ?? []).length > 0, "the pets you care for"],
     [photos >= 2, photos === 1 ? "1 more photo" : "2 photos"],
   ]);
@@ -53,8 +56,8 @@ export const sitterCompletion = (p: CompletionProfile | null, s: CompletionSitte
 
 export const ownerCompletion = (p: CompletionProfile | null, o: CompletionOwner | null): Completion =>
   summarise([
-    [!!p?.first_name, "your name"],
+    [filled(p?.first_name), "your name"],
     [!!p?.avatar_url, "a profile photo"],
-    [!!(p?.city && p?.country), "your city"],
-    [!!o?.bio, "a bio"],
+    [filled(p?.city) && filled(p?.country), "your city"],
+    [filled(o?.bio), "a bio"],
   ]);

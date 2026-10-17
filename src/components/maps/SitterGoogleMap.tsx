@@ -1,275 +1,58 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Map, AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
-import { MarkerClusterer, type Marker } from "@googlemaps/markerclusterer";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Star, CheckCircle, MapPin } from "lucide-react";
-import { SitterWithProfile } from "@/hooks/useSitters";
-import { MAP_CONTROLS, WORLD_RESTRICTION, useWorldMinZoom } from "./mapLimits";
+import { useMemo } from "react";
+import type { SitterWithProfile } from "@/hooks/useSitters";
 import GoogleMapsProvider, { useGoogleMapsConfig } from "./GoogleMapsProvider";
-import MessageSitterButton from "@/components/browse/MessageSitterButton";
+import { ClusteredPins, FitAndFocus, WorldMap } from "./WorldMap";
+import type { MapFocus, MapPadding } from "./mapLimits";
+import { cn } from "@/lib/utils";
 
-
-const AvatarPin = ({ sitter }: { sitter: SitterWithProfile }) => {
-  const name = sitter.profile
-    ? (sitter.profile.first_name || "").trim()
-    : "?";
-  const initials = name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "?";
-
+// A Nomad's pin sits on the city they chose (stored rounded to ~1 km, never
+// an address). The picked Nomad's pin grows and gets a coral ring.
+const NomadPin = ({ sitter, on }: { sitter: SitterWithProfile; on: boolean }) => {
+  const first = (sitter.profile?.first_name || "").trim();
   return (
-    <div className="relative flex flex-col items-center">
-      <div className="w-10 h-10 rounded-full border-2 border-primary-foreground bg-primary shadow-lg overflow-hidden">
-        {sitter.profile?.avatar_url ? (
-          <img
-            src={sitter.profile.avatar_url}
-            alt={name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-primary-foreground text-xs font-bold">
-            {initials}
-          </div>
-        )}
-      </div>
-      {/* Small triangle pointer below */}
-      <div
-        className="w-0 h-0"
-        style={{
-          borderLeft: "5px solid transparent",
-          borderRight: "5px solid transparent",
-          borderTop: "6px solid white",
-          filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.3))",
-        }}
-      />
-    </div>
-  );
-};
-
-
-const FitBoundsInner = ({ sitters }: { sitters: SitterWithProfile[] }) => {
-  const map = useMap();
-  useEffect(() => {
-    const gm = (window as unknown as { google?: typeof google }).google?.maps;
-    if (!map || sitters.length === 0 || !gm) return;
-    const bounds = new gm.LatLngBounds();
-    sitters.forEach((s) => {
-      if (s.latitude && s.longitude) bounds.extend({ lat: s.latitude, lng: s.longitude });
-    });
-    if (!bounds.isEmpty()) {
-      map.fitBounds(bounds, 80);
-      const listener = gm.event.addListenerOnce(map, "idle", () => {
-        const z = map.getZoom();
-        if (z && z > 10) map.setZoom(10);
-      });
-      return () => gm.event.removeListener(listener);
-    }
-  }, [sitters, map]);
-  return null;
-};
-
-const ClusteredSitterMarkers = ({
-  sitters,
-  onSelect,
-}: {
-  sitters: SitterWithProfile[];
-  onSelect: (userId: string) => void;
-}) => {
-  const map = useMap();
-  const clusterer = useRef<MarkerClusterer | null>(null);
-  const markersRef = useRef<{ [key: string]: Marker }>({});
-
-  useEffect(() => {
-    if (!map) return;
-    if (!clusterer.current) {
-      clusterer.current = new MarkerClusterer({
-        map,
-        renderer: {
-          render: ({ count, position }) => {
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-              <circle cx="20" cy="20" r="18" fill="hsl(var(--primary))" stroke="hsl(var(--primary-foreground))" stroke-width="2"/>
-              <text x="20" y="25" text-anchor="middle" fill="hsl(var(--primary-foreground))" font-size="14" font-weight="bold">${count}</text>
-            </svg>`;
-            const div = document.createElement("div");
-            div.innerHTML = svg;
-            return new google.maps.marker.AdvancedMarkerElement({
-              position,
-              content: div,
-              zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
-            });
-          },
-        },
-      });
-    }
-  }, [map]);
-
-  useEffect(() => {
-    clusterer.current?.clearMarkers();
-    clusterer.current?.addMarkers(Object.values(markersRef.current));
-  }, [sitters]);
-
-  const setMarkerRef = useCallback((marker: Marker | null, key: string) => {
-    if (marker && markersRef.current[key]) return;
-    if (!marker && !markersRef.current[key]) return;
-    if (marker) {
-      markersRef.current[key] = marker;
-    } else {
-      delete markersRef.current[key];
-    }
-  }, []);
-
-  return (
-    <>
-      {sitters.map((sitter) => (
-        <AdvancedMarker
-          key={sitter.user_id}
-          position={{ lat: sitter.latitude!, lng: sitter.longitude! }}
-          onClick={() => onSelect(sitter.user_id)}
-          ref={(marker) => setMarkerRef(marker as unknown as Marker, sitter.user_id)}
-        >
-          <AvatarPin sitter={sitter} />
-        </AdvancedMarker>
-      ))}
-    </>
-  );
-};
-
-const SitterInfoWindow = ({ sitter, onClose }: { sitter: SitterWithProfile; onClose: () => void }) => {
-  const name = sitter.profile
-    ? (sitter.profile.first_name || "").trim() || "Nomad"
-    : "Nomad";
-  const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-  const location = sitter.profile
-    ? [sitter.profile.city, sitter.profile.country].filter(Boolean).join(", ")
-    : null;
-  const { average, count } = sitter.rating;
-
-  return (
-    <InfoWindow
-      position={{ lat: sitter.latitude!, lng: sitter.longitude! }}
-      onCloseClick={onClose}
-      pixelOffset={[0, -52]}
+    <span
+      className={cn(
+        "flex items-center justify-center overflow-hidden rounded-full border-[3px] bg-[#D8C3B0] font-bold text-[#5A4636] shadow-float",
+        on ? "h-[58px] w-[58px] border-brand-coral text-[17px]" : "h-12 w-12 border-[var(--nn-logo-bg)] text-[16px]",
+      )}
     >
-      <div className="min-w-[180px] max-w-[220px] font-sans">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-border bg-primary">
-            {sitter.profile?.avatar_url ? (
-              <img src={sitter.profile.avatar_url} alt={name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-primary-foreground text-xs font-bold">
-                {initials}
-              </div>
-            )}
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold text-sm leading-tight truncate">{name}</p>
-            {sitter.id_verified && (
-              <div className="flex items-center gap-0.5 text-success">
-                <CheckCircle className="w-3 h-3" />
-                <span className="text-xs">ID Verified</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {location && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
-            <MapPin className="w-3 h-3 flex-shrink-0" />
-            {location}
-          </p>
-        )}
-
-        {count > 0 && (
-          <div className="flex items-center gap-0.5 text-xs mb-1">
-            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-            <span className="font-medium">{average.toFixed(1)}</span>
-            <span className="text-muted-foreground">({count})</span>
-          </div>
-        )}
-
-        {sitter.headline && (
-          <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{sitter.headline}</p>
-        )}
-
-        <Link to={`/sitter/${sitter.user_id}`}>
-          <Button size="sm" className="w-full h-7 text-xs mb-1">
-            View Profile
-          </Button>
-        </Link>
-        <MessageSitterButton
-          sitterUserId={sitter.user_id}
-          size="sm"
-          variant="outline"
-          className="w-full h-7 text-xs"
-        />
-
-      </div>
-    </InfoWindow>
+      {sitter.profile?.avatar_url ? <img src={sitter.profile.avatar_url} alt="" className="h-full w-full object-cover" /> : (first[0] ?? "?").toUpperCase()}
+    </span>
   );
 };
 
 interface SitterGoogleMapProps {
+  /** Nomads with a city point (latitude and longitude set). */
   sitters: SitterWithProfile[];
+  selectedId: string | null;
+  /** A pin ([user id]) or a cluster (its user ids) was tapped. */
+  onPick: (ids: string[]) => void;
+  padding: MapPadding;
+  focus: MapFocus | null;
 }
 
-const MapContent = ({ sitters }: SitterGoogleMapProps) => {
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+const MapContent = ({ sitters, selectedId, onPick, padding, focus }: SitterGoogleMapProps) => {
   const { nomadMapId } = useGoogleMapsConfig();
-  const { ref, minZoom } = useWorldMinZoom();
-
-  const sittersWithCoords = sitters.filter((s) => s.latitude && s.longitude);
-  const selected = sittersWithCoords.find((s) => s.user_id === selectedUserId) || null;
-
+  const points = useMemo(() => sitters.map((s) => ({ id: s.user_id, lat: s.latitude!, lng: s.longitude! })), [sitters]);
+  const byId = useMemo(() => new Map(sitters.map((s) => [s.user_id, s])), [sitters]);
   return (
-    <div ref={ref} className="w-full aspect-[3/4] min-h-[420px] max-h-[80vh] sm:aspect-auto sm:h-[600px] sm:max-h-none rounded-lg overflow-hidden border border-border relative">
-      <Map
-        defaultCenter={{ lat: 25, lng: 10 }}
-        defaultZoom={minZoom}
-        minZoom={minZoom}
-        restriction={WORLD_RESTRICTION}
-        gestureHandling="greedy"
-        tilt={0}
-        {...MAP_CONTROLS}
-        mapId={nomadMapId || "nomad-map"}
-        className="w-full h-full"
-        onClick={() => setSelectedUserId(null)}
-      >
-        
-        <FitBoundsInner sitters={sittersWithCoords} />
-        <ClusteredSitterMarkers
-          sitters={sittersWithCoords}
-          onSelect={setSelectedUserId}
-        />
-        {selected && (
-          <SitterInfoWindow
-            sitter={selected}
-            onClose={() => setSelectedUserId(null)}
-          />
-        )}
-      </Map>
-
-      {sittersWithCoords.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/60 pointer-events-none">
-          <p className="text-muted-foreground text-sm">No nomads with location data yet.</p>
-        </div>
-      )}
-
-      {sittersWithCoords.length > 0 && sitters.length > sittersWithCoords.length && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/90 text-xs text-muted-foreground px-3 py-1.5 rounded-full border border-border shadow pointer-events-none">
-          Showing {sittersWithCoords.length} of {sitters.length} nomads (location visible)
-        </div>
-      )}
-    </div>
+    <WorldMap mapId={nomadMapId || "nomad-map"} label="Map of Nomads">
+      <FitAndFocus points={points} padding={padding} focus={focus} maxFitZoom={10} />
+      <ClusteredPins
+        points={points}
+        selectedId={selectedId}
+        onPick={onPick}
+        renderPin={(id, on) => <NomadPin sitter={byId.get(id)!} on={on} />}
+        titleOf={(id) => `${byId.get(id)?.profile?.first_name || "Nomad"}, ${byId.get(id)?.profile?.city || "their city"}`}
+      />
+    </WorldMap>
   );
 };
 
-const SitterGoogleMap = ({ sitters }: SitterGoogleMapProps) => (
-  <GoogleMapsProvider>
-    <MapContent sitters={sitters} />
+/** Browse Nomads map: one pin per Nomad on their chosen city, clustered, filling its container. */
+const SitterGoogleMap = (props: SitterGoogleMapProps) => (
+  <GoogleMapsProvider height="100%">
+    <MapContent {...props} />
   </GoogleMapsProvider>
 );
 

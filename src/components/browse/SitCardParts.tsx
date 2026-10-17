@@ -2,7 +2,7 @@ import { Heart, Loader2, Star } from "lucide-react";
 import type { ListingWithDetails } from "@/hooks/useListings";
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatPetType, petTypeIcon } from "@/lib/petTypes";
+import { dedupePetTypes, formatPetType, petTypeIcon } from "@/lib/petTypes";
 import { petCounts } from "@/lib/sitCard";
 import { cn } from "@/lib/utils";
 
@@ -114,5 +114,30 @@ export const SaveHeart = ({
         )}
       </span>
     </button>
+  );
+};
+
+/** Pet types a Nomad cares for: icon-only teal chips, named in full for screen readers. */
+export const PetTypeChips = ({ types, className }: { types: string[]; className?: string }) => {
+  const list = dedupePetTypes(types);
+  if (list.length === 0) return null;
+  return (
+    <span className={cn("flex flex-wrap gap-1.5", className)}>
+      {list.map((type) => {
+        const Icon = petTypeIcon(type);
+        const name = formatPetType(type);
+        return (
+          <span
+            key={type}
+            role="img"
+            aria-label={`Cares for ${name.toLowerCase()}`}
+            title={name}
+            className="inline-flex h-[26px] w-[30px] items-center justify-center rounded-full bg-[var(--nn-teal-soft)] text-[var(--nn-teal-soft-text)]"
+          >
+            <Icon className="h-[15px] w-[15px]" aria-hidden="true" />
+          </span>
+        );
+      })}
+    </span>
   );
 };

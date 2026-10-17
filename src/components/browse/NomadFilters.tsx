@@ -1,4 +1,4 @@
-import { List, Map as MapIcon, SlidersHorizontal, X } from "lucide-react";
+import { Map as MapIcon, SlidersHorizontal, X } from "lucide-react";
 import LocationSearchInput from "@/components/search/LocationSearchInput";
 import ResponsiveSheet from "@/components/nn/ResponsiveSheet";
 import { nnButton } from "@/components/nn/ui";
@@ -107,76 +107,94 @@ export const NomadFiltersPanel = ({
   );
 };
 
-/** Search, Filters (with a count), List / Map, then the active filters as tags. */
+/** Filters, with how many are on. `floating`: a pill on the map. */
+export const NomadFiltersButton = ({ filters, onOpenFilters, floating = false }: { filters: NomadFilterState; onOpenFilters: () => void; floating?: boolean }) => {
+  const count = nomadFilterCount(filters);
+  return (
+    <button
+      type="button"
+      onClick={onOpenFilters}
+      aria-label={count > 0 ? `Filters, ${count} on` : "Filters"}
+      className={cn(
+        "flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-bold",
+        floating ? "border border-border bg-card shadow-float" : "border-[1.5px] border-border bg-card",
+      )}
+    >
+      <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+      Filters
+      {count > 0 && (
+        <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--nn-accent)] px-1.5 text-xs font-bold text-primary-foreground">{count}</span>
+      )}
+    </button>
+  );
+};
+
+/** The filters that are on, each removable. `floating`: pills on the map, in one scrolling row. */
+export const NomadFilterTags = ({ filters, onChange, floating = false }: { filters: NomadFilterState; onChange: (f: NomadFilterState) => void; floating?: boolean }) => {
+  const tags = nomadTags(filters);
+  if (tags.length === 0) return null;
+  return (
+    <>
+      {tags.map((t) => (
+        <button
+          key={t.key}
+          type="button"
+          onClick={() => onChange(t.remove(filters))}
+          aria-label={`Remove filter: ${t.label}`}
+          className={cn(
+            "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-sm font-semibold",
+            floating ? "border border-border bg-card shadow-float" : "bg-[var(--nn-tint)]",
+          )}
+        >
+          {t.label}
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      ))}
+      {!floating && (
+        <button type="button" onClick={() => onChange(EMPTY_NOMAD_FILTERS)} className="min-h-11 px-2 text-sm font-bold underline-offset-2 hover:underline">
+          Clear all
+        </button>
+      )}
+    </>
+  );
+};
+
+/** List view: search, Filters (with a count) and (desktop) Map view, then the active filters as tags. */
 export const NomadFilterBar = ({
   search,
   onSearch,
   filters,
   onChange,
   onOpenFilters,
-  viewMode,
-  onViewModeChange,
+  onShowMap,
 }: {
   search: string;
   onSearch: (v: string) => void;
   filters: NomadFilterState;
   onChange: (f: NomadFilterState) => void;
   onOpenFilters: () => void;
-  viewMode: "grid" | "map";
-  onViewModeChange: (m: "grid" | "map") => void;
-}) => {
-  const tags = nomadTags(filters);
-  const seg = (mode: "grid" | "map", label: string, Icon: typeof List) => (
-    <button
-      type="button"
-      aria-pressed={viewMode === mode}
-      onClick={() => onViewModeChange(mode)}
-      className={cn("flex h-11 items-center gap-1.5 rounded-full px-3 text-sm sm:px-4", viewMode === mode ? "bg-card font-bold shadow-sm" : "font-semibold text-muted-foreground")}
-    >
-      <Icon className="h-4 w-4" aria-hidden="true" />
-      {label}
-    </button>
-  );
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
-        <LocationSearchInput wrapperClassName="w-full lg:flex-1" placeholder="Name, place or language" value={search} onChange={onSearch} />
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={onOpenFilters} className="flex h-11 items-center gap-2 rounded-full border-[1.5px] border-border bg-card px-4 text-sm font-bold">
-            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-            Filters
-            {tags.length > 0 && (
-              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--nn-accent)] px-1.5 text-xs font-bold text-primary-foreground">
-                {tags.length}
-              </span>
-            )}
-          </button>
-          <div role="group" aria-label="View" className="ml-auto flex rounded-full bg-muted p-1">
-            {seg("grid", "List", List)}
-            {seg("map", "Map", MapIcon)}
-          </div>
-        </div>
+  /** Desktop: switch to the map. Phone and tablet use the floating Map pill. */
+  onShowMap: () => void;
+}) => (
+  <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
+      <LocationSearchInput wrapperClassName="w-full lg:flex-1" placeholder="Name, place or language" value={search} onChange={onSearch} />
+      <div className="flex items-center gap-2">
+        <NomadFiltersButton filters={filters} onOpenFilters={onOpenFilters} />
+        <button
+          type="button"
+          onClick={onShowMap}
+          className="hidden h-11 items-center gap-2 rounded-full border-[1.5px] border-border bg-card px-4 text-sm font-bold lg:flex"
+        >
+          <MapIcon className="h-4 w-4" aria-hidden="true" />
+          Map view
+        </button>
       </div>
-      {tags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          {tags.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => onChange(t.remove(filters))}
-              aria-label={`Remove filter: ${t.label}`}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[var(--nn-tint)] px-3.5 text-sm font-semibold"
-            >
-              {t.label}
-              <X className="h-3.5 w-3.5" aria-hidden="true" />
-            </button>
-          ))}
-          <button type="button" onClick={() => onChange(EMPTY_NOMAD_FILTERS)} className="min-h-11 px-2 text-sm font-bold underline-offset-2 hover:underline">
-            Clear all
-          </button>
-        </div>
-      )}
     </div>
-  );
-};
-
+    {nomadFilterCount(filters) > 0 && (
+      <div className="flex flex-wrap items-center gap-2">
+        <NomadFilterTags filters={filters} onChange={onChange} />
+      </div>
+    )}
+  </div>
+);

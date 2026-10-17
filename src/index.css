@@ -370,6 +370,10 @@
 }
 
 @layer utilities {
+  /* Cards and pills floating on a map: a soft shadow in light, a deeper one in dark. */
+  .shadow-float {
+    box-shadow: var(--nn-float-shadow);
+  }
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;

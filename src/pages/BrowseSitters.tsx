@@ -1,6 +1,5 @@
-import { useState, lazy, Suspense, useMemo, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Map as MapIcon, Sparkles } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +9,7 @@ import { useSitters } from "@/hooks/useSitters";
 import { useNomadMatch } from "@/hooks/useNomadMatch";
 import NomadBrowseCard from "@/components/browse/NomadBrowseCard";
 import { EMPTY_NOMAD_FILTERS, NomadFilterBar, NomadFiltersPanel, nomadFilterCount, type NomadFilterState } from "@/components/browse/NomadFilters";
+import NomadsMapView from "@/components/browse/NomadsMapView";
 import BackToTopButton from "@/components/ui/BackToTopButton";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import Pagination from "@/components/browse/Pagination";
@@ -18,12 +18,10 @@ import { NN_PAGE, RoleTheme, nnButton } from "@/components/nn/ui";
 import { cn } from "@/lib/utils";
 import MembersOnlyNotice from "@/components/nn/MembersOnlyNotice";
 
-const SitterGoogleMap = lazy(() => import("@/components/maps/SitterGoogleMap"));
-
 const ITEMS_PER_PAGE = 24;
 const VIEW_MODE_KEY = "nomadnest_sitters_view";
 
-/** Browse Nomads (design: NomadsPhone, NomadsTabletDark, NomadsDesktop). */
+/** Browse Nomads (design: NomadsPhone, NomadsTabletDark, NomadsDesktop; map view: NomadsMapPhone, NomadsMapDesktop). */
 const BrowseSitters = () => {
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<"grid" | "map">(() => {
@@ -74,12 +72,44 @@ const BrowseSitters = () => {
   };
 
   const filtered = !!searchQuery || nomadFilterCount(filters) > 0;
+  const membersOnly = (!user && !loading) || !!authError;
+  const panel = (
+    <NomadFiltersPanel open={panelOpen} onOpenChange={setPanelOpen} filters={filters} onChange={setFilters} resultCount={loading ? null : sitters.length} />
+  );
+
+  // Map view: the map fills the screen; no footer.
+  if (viewMode === "map") {
+    return (
+      <RoleTheme role="owner">
+        <Navbar wide />
+        <NomadsMapView
+          user={user}
+          membersOnly={membersOnly}
+          sitters={sitters}
+          loading={loading}
+          error={error}
+          refetch={() => void refetch()}
+          search={searchQuery}
+          onSearch={setSearchQuery}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onOpenFilters={() => setPanelOpen(true)}
+          onClearAll={() => {
+            setFilters(EMPTY_NOMAD_FILTERS);
+            setSearchQuery("");
+          }}
+          onShowList={() => setViewMode("grid")}
+        />
+        {panel}
+      </RoleTheme>
+    );
+  }
 
   return (
     <RoleTheme role="owner" className="flex min-h-screen flex-col">
       <Navbar wide />
 
-      <main className={cn(NN_PAGE, "flex flex-1 flex-col gap-4 pb-12 pt-20 md:pt-24")}>
+      <main className={cn(NN_PAGE, "flex flex-1 flex-col gap-4 pb-28 pt-20 md:pt-24 lg:pb-12")}>
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-1.5">
             <h1 className="font-display text-[32px] font-normal leading-tight lg:text-[38px]">Browse Nomads</h1>
@@ -92,7 +122,7 @@ const BrowseSitters = () => {
           <p className="text-[15px] text-muted-foreground">Trusted Nomads ready to look after your home and pets.</p>
         </div>
 
-        {(!user && !loading) || authError ? (
+        {membersOnly ? (
           <MembersOnlyNotice headingLevel="h2" />
         ) : (
           <>
@@ -102,10 +132,9 @@ const BrowseSitters = () => {
               filters={filters}
               onChange={setFilters}
               onOpenFilters={() => setPanelOpen(true)}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
+              onShowMap={() => setViewMode("map")}
             />
-            <NomadFiltersPanel open={panelOpen} onOpenChange={setPanelOpen} filters={filters} onChange={setFilters} resultCount={loading ? null : sitters.length} />
+            {panel}
 
             {matchVisible && (
               <div
@@ -131,15 +160,11 @@ const BrowseSitters = () => {
             )}
 
             {loading ? (
-              viewMode === "map" ? (
-                <Skeleton className="h-[600px] w-full rounded-[22px]" />
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <Skeleton key={i} className="h-60 rounded-[22px]" />
-                  ))}
-                </div>
-              )
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Skeleton key={i} className="h-60 rounded-[22px]" />
+                ))}
+              </div>
             ) : error ? (
               <div role="alert" className="flex flex-col items-center gap-3 rounded-[22px] border border-border p-8 text-center">
                 <p className="text-[17px] font-bold">We couldn't load Nomads</p>
@@ -165,13 +190,6 @@ const BrowseSitters = () => {
                   </button>
                 )}
               </div>
-            ) : viewMode === "map" ? (
-              <div className="-mx-5 md:mx-0">
-                <Suspense fallback={<Skeleton className="h-[600px] w-full rounded-[22px]" />}>
-                  <SitterGoogleMap sitters={sitters} />
-                </Suspense>
-                <p className="px-5 pt-2 text-[13px] text-muted-foreground md:px-0">Pins show the city a Nomad chose, never a home.</p>
-              </div>
             ) : (
               <>
                 <p className="text-[15px] text-muted-foreground">
@@ -189,6 +207,21 @@ const BrowseSitters = () => {
           </>
         )}
       </main>
+
+      {/* Phone and tablet: the floating Map pill, above the bottom bar. */}
+      {!membersOnly && (
+        <button
+          type="button"
+          onClick={() => setViewMode("map")}
+          className={cn(
+            "fixed left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-[var(--nn-ink)] px-5 text-[15px] font-bold text-[var(--nn-ink-text)] shadow-float md:bottom-6 lg:hidden",
+            user ? "bottom-[calc(5rem+env(safe-area-inset-bottom))]" : "bottom-[calc(1rem+env(safe-area-inset-bottom))]",
+          )}
+        >
+          <MapIcon className="h-[18px] w-[18px]" aria-hidden="true" />
+          Map
+        </button>
+      )}
 
       <Footer />
       <BackToTopButton />

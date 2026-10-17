@@ -40,7 +40,7 @@ const nomads = (count: number) => `${count} ${count === 1 ? "Nomad" : "Nomads"}`
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 /** Pills and cards floating on the map. */
-const FLOAT = "border border-border bg-card shadow-[var(--nn-float-shadow)]";
+const FLOAT = "border border-border bg-card shadow-float";
 const NOTE = "Pins show the city a Nomad chose, never a home.";
 
 // Room kept clear of the floating cards when the map fits its pins.
@@ -286,7 +286,7 @@ const FindNomads = () => {
   const cityChatPill = cityChat && (
     <Link
       to={cityChat.to}
-      className="flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-brand-teal pl-3 pr-1.5 text-sm font-bold text-primary-foreground shadow-[var(--nn-float-shadow)]"
+      className="flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-brand-teal pl-3 pr-1.5 text-sm font-bold text-primary-foreground shadow-float"
     >
       <MessageCircle className="h-4 w-4" aria-hidden="true" />
       {cityChat.title}
@@ -419,7 +419,7 @@ const FindNomads = () => {
                       if (!(e.target as HTMLElement).closest("a,button")) pickNomad(n);
                     }}
                     className={cn(
-                      "flex w-[268px] shrink-0 snap-center flex-col gap-2.5 rounded-[20px] bg-card p-3.5 shadow-[var(--nn-float-shadow)] md:w-[300px]",
+                      "flex w-[268px] shrink-0 snap-center flex-col gap-2.5 rounded-[20px] bg-card p-3.5 shadow-float md:w-[300px]",
                       n.user_id === active?.user_id ? "border-2 border-brand-coral" : "border border-border",
                     )}
                   >

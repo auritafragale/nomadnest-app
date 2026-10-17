@@ -118,17 +118,17 @@ const BrowseSits = () => {
     <RoleTheme role="sitter" className="flex min-h-screen flex-col">
       <Navbar wide />
 
-      <main className={cn(NN_PAGE, "flex flex-1 flex-col gap-4 pb-12 pt-20 md:pt-24")}>
+      <main className={cn(NN_PAGE, "flex flex-1 flex-col gap-4 pb-28 pt-20 md:pt-24 lg:pb-12")}>
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-1.5">
-            <h1 className="font-display text-[32px] font-normal leading-tight lg:text-[38px]">Browse Sits</h1>
+            <h1 className="font-display text-[30px] font-normal leading-tight md:text-[32px] lg:text-[38px]">Browse Sits</h1>
             <HelpTooltip
               className="-my-3 h-11 w-11"
               label="How matching works"
               content="Matching works both ways. You apply to sits you like, and Pet Parents can invite you directly from your profile."
             />
           </div>
-          <p className="text-[15px] text-muted-foreground">Homes and pets looking for a Nomad, all over the world.</p>
+          <p className="hidden text-[15px] text-muted-foreground md:block">Homes and pets looking for a Nomad, all over the world.</p>
         </div>
 
         <SitFilterBar filters={filters} onChange={setFilters} onOpenFilters={() => setPanelOpen(true)} onShowMap={() => setViewMode("map")} />
@@ -192,7 +192,7 @@ const BrowseSits = () => {
         type="button"
         onClick={() => setViewMode("map")}
         className={cn(
-          "fixed left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-[var(--nn-ink)] px-5 text-[15px] font-bold text-[var(--nn-ink-text)] shadow-[var(--nn-float-shadow)] md:bottom-6 lg:hidden",
+          "fixed left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-[var(--nn-ink)] px-5 text-[15px] font-bold text-[var(--nn-ink-text)] shadow-float md:bottom-6 lg:hidden",
           user ? "bottom-[calc(5rem+env(safe-area-inset-bottom))]" : "bottom-[calc(1rem+env(safe-area-inset-bottom))]",
         )}
       >
