@@ -57,16 +57,35 @@ describe("profile completeness: Dashboard and editors agree", () => {
     expect(parentEditor(COMPLETE_PROFILE, "   ")).toBe(75);
   });
 
-  it("Nomad: same rows, same percent", async () => {
-    const sitter = { headline: "Calm with cats", bio: "Ten years of dogs and cats.", pet_types: ["cats"], gallery: ["a.jpg"] };
+  it("Nomad: same rows, same percent (10 checks)", async () => {
+    const sitter = { headline: "Calm with cats", bio: "Ten years of dogs and cats.", pet_types: ["cats"], gallery: ["a.jpg"], experience_level: "experienced", languages: [], sit_style: "" };
     db.sitter = sitter;
     const dashboard = await fetchSitterCompletion("u1");
     expect(dashboard.percent).toBe(nomadEditor(COMPLETE_PROFILE, sitter));
-    expect(dashboard.missing).toEqual(["1 more photo"]);
+    expect(dashboard.percent).toBe(70);
+    expect(dashboard.missing).toEqual(["1 more photo", "the languages you speak", "your sit style"]);
+    expect(dashboard.line).toBe("Add 1 more photo, the languages you speak and more");
+  });
+
+  it("Nomad: a fully filled profile is 100% on both", async () => {
+    const sitter = {
+      headline: "Calm with cats",
+      bio: "Ten years of dogs and cats.",
+      pet_types: ["cats", "dogs"],
+      gallery: ["a.jpg", "b.jpg"],
+      experience_level: "experienced",
+      languages: ["English"],
+      sit_style: "Home-based",
+    };
+    db.sitter = sitter;
+    const dashboard = await fetchSitterCompletion("u1");
+    expect(dashboard.percent).toBe(100);
+    expect(dashboard.line).toBe("");
+    expect(nomadEditor(COMPLETE_PROFILE, sitter)).toBe(100);
   });
 
   it("Combined: each side agrees with its own editor", async () => {
-    const sitter = { headline: "Calm with cats", bio: " ", pet_types: [], gallery: ["a.jpg", "b.jpg"] };
+    const sitter = { headline: "Calm with cats", bio: " ", pet_types: [], gallery: ["a.jpg", "b.jpg"], experience_level: "expert", languages: ["English"], sit_style: "Home-based" };
     db.sitter = sitter;
     db.owner = { bio: "Two cats, one balcony." };
     const nomad = await fetchSitterCompletion("u1");

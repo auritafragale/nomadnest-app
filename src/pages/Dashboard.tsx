@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Bell, X } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { PUSH_BAR_TEXT, shouldShowPushBar } from "@/lib/pushBar";
+import { isStoreApp } from "@/lib/storeApp";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveRole } from "@/contexts/ActiveRoleContext";
 import { fetchMyProfile } from "@/lib/myProfile";
@@ -41,7 +43,7 @@ const Dashboard = () => {
   // Profile completeness: the same hooks and functions as the profile editors.
   const { data: sitterDone } = useSitterCompletion(role === "sitter" || role === "both");
   const { data: ownerDone } = useOwnerCompletion(role === "owner" || role === "both");
-  const { isSupported, isSubscribed, isLoading: pushLoading, subscribe } = usePushNotifications();
+  const { isSupported, isSubscribed, isLoading: pushLoading, permission, subscribe } = usePushNotifications();
   const [pushBannerDismissed, setPushBannerDismissed] = useState(() => {
     try {
       return localStorage.getItem(PUSH_BANNER_DISMISSED_KEY) === "true";
@@ -60,7 +62,16 @@ const Dashboard = () => {
     setPushBannerDismissed(true);
   };
 
-  const showPushBanner = isSupported && !isSubscribed && !pushBannerDismissed && !!user;
+  // Never while the check runs, never when this device is set up or blocked, never in the store apps.
+  const showPushBanner = shouldShowPushBar({
+    supported: isSupported,
+    loading: pushLoading,
+    subscribed: isSubscribed,
+    permission,
+    dismissed: pushBannerDismissed,
+    signedIn: !!user,
+    storeApp: isStoreApp(),
+  });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -154,7 +165,7 @@ const Dashboard = () => {
           <div className="flex items-center gap-2 min-w-0">
             <Bell className="w-4 h-4 shrink-0" />
             <span className="text-sm truncate">
-              Enable notifications to get instant alerts for new messages, applications and invitations
+              {PUSH_BAR_TEXT}
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">

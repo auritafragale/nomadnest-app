@@ -11,7 +11,7 @@ import NomadVisibilityBanner from "@/components/browse/NomadVisibilityBanner";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStartConversation } from "@/hooks/useConversations";
-import { DESKTOP_QUERY, SHORT_LANDSCAPE_QUERY, useMediaQuery } from "@/hooks/useMediaQuery";
+import { useMapLayout } from "@/hooks/useMapLayout";
 import { useNoPagePinch } from "@/hooks/useNoPagePinch";
 import { toast } from "@/hooks/use-toast";
 import { RoleTheme, nnButton } from "@/components/nn/ui";
@@ -97,9 +97,9 @@ const FindNomads = () => {
   const panel = useRef<HTMLDivElement>(null);
   useNoPagePinch();
   // Phone and tablet: floating cards. A phone turned sideways: a side panel.
-  const desktop = useMediaQuery(DESKTOP_QUERY);
-  const landscape = useMediaQuery(SHORT_LANDSCAPE_QUERY) && !desktop;
-  const layout = desktop ? "desktop" : landscape ? "landscape" : "phone";
+  // Never switches while the search has focus (the keyboard would close).
+  const { layout, typing, focusProps } = useMapLayout();
+  const desktop = layout === "desktop";
 
   // The City Chat pill follows the City Chat rule: only rooms the member can
   // open now (a confirmed or in-progress sit there), the same list as the
@@ -357,7 +357,7 @@ const FindNomads = () => {
       <Navbar wide />
 
       {/* The map fills everything between the top bar and the bottom bar. */}
-      <main className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] top-16 md:bottom-0">
+      <main {...focusProps} className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] top-16 md:bottom-0">
         {layout !== "desktop" && <h1 className="sr-only">Nomads Near Me</h1>}
         <NearMeMap
           pins={pins}
@@ -367,28 +367,81 @@ const FindNomads = () => {
           focus={focus}
         />
 
-        {/* ── Phone and tablet: floating pills and cards ── */}
-        {layout === "phone" && (
-        <>
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2.5 px-4 pt-3.5 md:flex-row md:items-center">
-          <div className={cn("pointer-events-auto flex min-w-0 touch-none items-center rounded-full md:flex-1", FLOAT)}>
+        {/* Search, visibility and City Chat: one element in every layout, so
+            the search is never rebuilt (that would close the keyboard). On
+            desktop it is the floating panel, with the title and the list. */}
+        <section
+          aria-labelledby={desktop ? "near-me-title" : undefined}
+          aria-label={desktop ? undefined : "Search"}
+          className={cn(
+            "absolute z-10 flex",
+            layout === "phone" && "pointer-events-none inset-x-0 top-0 flex-col gap-2.5 px-4 pt-3.5 md:flex-row md:items-center",
+            layout === "landscape" && "pointer-events-none left-[324px] right-3 top-3 touch-pan-x gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            desktop && cn("left-6 top-6 max-h-[calc(100%-3rem)] w-[380px] flex-col gap-3 overflow-hidden rounded-[24px] p-5", FLOAT),
+          )}
+        >
+          {desktop && (
+            <div className="flex flex-col gap-1">
+              <h1 id="near-me-title" className="font-display text-[30px] font-normal leading-tight">
+                Nomads Near Me
+              </h1>
+              <p className="text-[15px] text-muted-foreground">Meet other Nomads in the cities you visit.</p>
+            </div>
+          )}
+          {desktop && <NomadVisibilityBanner />}
+          <div
+            className={cn(
+              "flex items-center rounded-full",
+              desktop ? "border border-border bg-background" : cn("pointer-events-auto min-w-0 touch-none", FLOAT),
+              layout === "phone" && "md:flex-1",
+              layout === "landscape" && "w-[240px] shrink-0",
+            )}
+          >
             {searchInput("flex-1")}
-            <button
-              type="button"
-              onClick={() => setListOpen(true)}
-              aria-label="Show list"
-              className="mr-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
-            >
-              <List className="h-[18px] w-[18px]" aria-hidden="true" />
-            </button>
+            {layout === "phone" && (
+              <button
+                type="button"
+                onClick={() => setListOpen(true)}
+                aria-label="Show list"
+                className="mr-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
+              >
+                <List className="h-[18px] w-[18px]" aria-hidden="true" />
+              </button>
+            )}
           </div>
-          <div className="pointer-events-auto flex touch-pan-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] md:overflow-visible md:pb-0">
-            <NomadVisibilityBanner variant="pill" />
-            {cityChatPill}
-          </div>
-        </div>
+          {!desktop && (
+            <div className={cn("pointer-events-auto flex gap-2", layout === "phone" && "-mx-4 -mb-6 -mt-2 touch-pan-x overflow-x-auto px-4 pb-6 pt-2 [scrollbar-width:none] md:mx-0 md:my-0 md:overflow-visible md:p-0")}>
+              <NomadVisibilityBanner variant="pill" />
+              {cityChatPill}
+            </div>
+          )}
+          {desktop && (
+            <>
+              <p aria-live="polite" className="text-sm font-semibold">
+                {loading ? "Finding Nomads…" : isError ? "" : countLine}
+              </p>
+              <div ref={panel} className="-mx-1 min-h-0 overflow-y-auto px-1 pb-1">
+                {isError ? (
+                  errorCard
+                ) : empty ? (
+                  <div className="flex flex-col gap-2 rounded-[18px] border border-dashed border-border p-5 text-center">
+                    <p className="text-[17px] font-bold">{searchQuery ? "No Nomads match" : "No Nomads near you yet"}</p>
+                    <p className="text-[15px] text-muted-foreground">
+                      {searchQuery ? "Try another name or city." : "When Nomads near you turn on their visibility, they show up here."}
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="flex flex-col gap-2.5">{ordered.map(listRow)}</ul>
+                )}
+              </div>
+            </>
+          )}
+        </section>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 pb-3">
+        {/* ── Phone and tablet: the cards. Hidden while the search has focus,
+            so nothing jumps when the keyboard opens; back on blur. ── */}
+        {layout === "phone" && (
+        <div className={cn("pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 pb-3", typing && "invisible")}>
           {isError ? (
             <div className="pointer-events-auto px-4">{errorCard}</div>
           ) : empty ? (
@@ -443,7 +496,6 @@ const FindNomads = () => {
           )}
           <span className="pointer-events-auto self-center touch-none whitespace-nowrap rounded-full bg-card/90 px-2.5 py-1 text-xs text-foreground/80">{NOTE}</span>
         </div>
-        </>
         )}
 
         {/* Phone and tablet: the full list over two thirds of the map. */}
@@ -462,16 +514,9 @@ const FindNomads = () => {
           </DrawerContent>
         </Drawer>
 
-        {/* ── A phone turned sideways: cards in a side panel, pills in one row ── */}
+        {/* ── A phone turned sideways: the cards in a side panel ── */}
         {layout === "landscape" && (
           <>
-            <div className="pointer-events-none absolute left-[324px] right-3 top-3 z-10 flex touch-pan-x gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className={cn("pointer-events-auto flex w-[240px] shrink-0 touch-none items-center rounded-full", FLOAT)}>{searchInput("flex-1")}</div>
-              <span className="pointer-events-auto">
-                <NomadVisibilityBanner variant="pill" />
-              </span>
-              <span className="pointer-events-auto">{cityChatPill}</span>
-            </div>
             <section aria-label="Nomads nearby" className={cn("absolute bottom-3 left-3 top-3 z-10 flex w-[300px] flex-col gap-2.5 overflow-hidden rounded-[20px] p-3", FLOAT)}>
               <p aria-live="polite" className="text-sm font-bold">
                 {loading ? "Finding Nomads…" : isError ? "" : countLine}
@@ -487,45 +532,15 @@ const FindNomads = () => {
           </>
         )}
 
-        {/* ── Desktop: a floating panel on the left, as tall as its content ── */}
-        {layout === "desktop" && (
-        <>
-        <section
-          aria-labelledby="near-me-title"
-          className={cn("absolute left-6 top-6 z-10 flex max-h-[calc(100%-3rem)] w-[380px] flex-col gap-3 overflow-hidden rounded-[24px] p-5", FLOAT)}
-        >
-          <div className="flex flex-col gap-1">
-            <h1 id="near-me-title" className="font-display text-[30px] font-normal leading-tight">
-              Nomads Near Me
-            </h1>
-            <p className="text-[15px] text-muted-foreground">Meet other Nomads in the cities you visit.</p>
-          </div>
-          <NomadVisibilityBanner />
-          {searchInput("border border-border bg-background")}
-          <p aria-live="polite" className="text-sm font-semibold">
-            {loading ? "Finding Nomads…" : isError ? "" : countLine}
-          </p>
-          <div ref={panel} className="-mx-1 min-h-0 overflow-y-auto px-1 pb-1">
-            {isError ? (
-              errorCard
-            ) : empty ? (
-              <div className="flex flex-col gap-2 rounded-[18px] border border-dashed border-border p-5 text-center">
-                <p className="text-[17px] font-bold">{searchQuery ? "No Nomads match" : "No Nomads near you yet"}</p>
-                <p className="text-[15px] text-muted-foreground">
-                  {searchQuery ? "Try another name or city." : "When Nomads near you turn on their visibility, they show up here."}
-                </p>
-              </div>
-            ) : (
-              <ul className="flex flex-col gap-2.5">{ordered.map(listRow)}</ul>
-            )}
-          </div>
-        </section>
-        <div className="absolute right-6 top-6 z-10">{cityChatPill}</div>
-        <div className="absolute bottom-6 right-6 z-10 flex flex-col items-end gap-2">
-          {centreButton}
-          <span className="whitespace-nowrap rounded-full bg-card/90 px-2.5 py-1 text-xs text-foreground/80">{NOTE}</span>
-        </div>
-        </>
+        {/* ── Desktop: City Chat top right, centre on me and the note bottom right ── */}
+        {desktop && (
+          <>
+            <div className="absolute right-6 top-6 z-10">{cityChatPill}</div>
+            <div className="absolute bottom-6 right-6 z-10 flex flex-col items-end gap-2">
+              {centreButton}
+              <span className="whitespace-nowrap rounded-full bg-card/90 px-2.5 py-1 text-xs text-foreground/80">{NOTE}</span>
+            </div>
+          </>
         )}
       </main>
     </RoleTheme>
